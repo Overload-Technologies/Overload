@@ -60,6 +60,7 @@ std::array<int, 4> FindBestFitWindowSizeAndPosition(std::array<int, 4> p_workAre
 	}
 
 	OVASSERT(false, "No resolution found to fit the work area");
+	return {};
 }
 
 OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::string& p_projectName) :

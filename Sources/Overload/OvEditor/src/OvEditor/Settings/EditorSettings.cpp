@@ -4,8 +4,11 @@
 * @licence: MIT
 */
 
-#include "OvEditor/Settings/EditorSettings.h"
+#include <filesystem>
+
+#include <OvEditor/Settings/EditorSettings.h>
 #include <OvTools/Filesystem/IniFile.h>
+#include <OvTools/Utils/SystemCalls.h>
 
 template<class T>
 void LoadIniEntry(OvTools::Filesystem::IniFile& iniFile, const std::string& entry, OvEditor::Settings::EditorSettings::Property<T>& out)
@@ -16,10 +19,20 @@ void LoadIniEntry(OvTools::Filesystem::IniFile& iniFile, const std::string& entr
 	}
 }
 
+OvTools::Filesystem::IniFile GetEditorIniFile()
+{
+	const auto filePath = std::filesystem::path{ OvTools::Utils::SystemCalls::GetPathToAppdata() } /
+		"OverloadTech" /
+		"OvEditor" /
+		"editor.ini";
+
+	return OvTools::Filesystem::IniFile{ filePath.string() };
+}
+
 void OvEditor::Settings::EditorSettings::Save()
 {
-	std::string editorSettingsPath = std::string(getenv("APPDATA")) + "\\OverloadTech\\OvEditor\\editor.ini";
-	OvTools::Filesystem::IniFile iniFile(editorSettingsPath);
+	OvTools::Filesystem::IniFile iniFile = GetEditorIniFile();
+
 	iniFile.RemoveAll();
 	iniFile.Add("show_geometry_bounds", ShowGeometryBounds.Get());
 	iniFile.Add("show_light_bounds", ShowLightBounds.Get());
@@ -34,8 +47,7 @@ void OvEditor::Settings::EditorSettings::Save()
 
 void OvEditor::Settings::EditorSettings::Load()
 {
-	std::string editorSettingsPath = std::string(getenv("APPDATA")) + "\\OverloadTech\\OvEditor\\editor.ini";
-	OvTools::Filesystem::IniFile iniFile(editorSettingsPath);
+	OvTools::Filesystem::IniFile iniFile = GetEditorIniFile();
 
 	LoadIniEntry<bool>(iniFile, "show_geometry_bounds", ShowGeometryBounds);
 	LoadIniEntry<bool>(iniFile, "show_light_bounds", ShowLightBounds);

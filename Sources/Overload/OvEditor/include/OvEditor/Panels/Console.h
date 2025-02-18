@@ -63,9 +63,13 @@ namespace OvEditor::Panels
 		void SetShowWarningLogs(bool p_value);
 		void SetShowErrorLogs(bool p_value);
 
+		void SetMaxNumberLogs(const std::string& p_newMax);
+
 	private:
 		OvUI::Widgets::Layout::Group* m_logGroup;
 		std::unordered_map<OvUI::Widgets::Texts::TextColored*, OvDebug::ELogLevel> m_logTextWidgets;
+
+		int m_maxNumberLogs = 500;
 
 		bool m_clearOnPlay = true;
 		bool m_showDefaultLog = true;

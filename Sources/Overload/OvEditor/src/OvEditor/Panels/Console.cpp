@@ -13,6 +13,8 @@
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
+#include "OvUI/Widgets/Texts/Text.h"
+#include <OvUI/Widgets/InputFields/InputText.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -68,18 +70,24 @@ OvEditor::Panels::Console::Console
 	auto& enableInfo = CreateWidget<Selection::CheckBox>(true, "Info");
 	auto& enableWarning = CreateWidget<Selection::CheckBox>(true, "Warning");
 	auto& enableError = CreateWidget<Selection::CheckBox>(true, "Error");
+	auto& logLimitLabel = CreateWidget<Texts::Text>("Max Number of Logs");
+	auto& logLimit = CreateWidget<InputFields::InputText>(std::to_string(m_maxNumberLogs));
 
 	clearOnPlay.lineBreak = false;
 	enableDefault.lineBreak = false;
 	enableInfo.lineBreak = false;
 	enableWarning.lineBreak = false;
 	enableError.lineBreak = true;
+	logLimitLabel.lineBreak = false;
+	logLimit.lineBreak = false;
 
 	clearOnPlay.ValueChangedEvent += [this](bool p_value) { m_clearOnPlay = p_value; };
 	enableDefault.ValueChangedEvent += std::bind(&Console::SetShowDefaultLogs, this, std::placeholders::_1);
 	enableInfo.ValueChangedEvent += std::bind(&Console::SetShowInfoLogs, this, std::placeholders::_1);
 	enableWarning.ValueChangedEvent += std::bind(&Console::SetShowWarningLogs, this, std::placeholders::_1);
 	enableError.ValueChangedEvent += std::bind(&Console::SetShowErrorLogs, this, std::placeholders::_1);
+
+	logLimit.EnterPressedEvent += std::bind(&Console::SetMaxNumberLogs, this, std::placeholders::_1);
 
 	CreateWidget<Visual::Separator>();
 
@@ -100,6 +108,11 @@ void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData & p_logD
 	consoleItem1.enabled = IsAllowedByFilter(p_logData.logLevel);
 
 	m_logTextWidgets[&consoleItem1] = p_logData.logLevel;
+
+	//Code Here
+	if (m_logGroup->GetWidgets().size() > m_maxNumberLogs) {
+		m_logGroup->RemoveWidget(*m_logGroup->GetWidgets().front().first);
+	}
 }
 
 void OvEditor::Panels::Console::ClearOnPlay()
@@ -155,4 +168,22 @@ void OvEditor::Panels::Console::SetShowErrorLogs(bool p_value)
 {
 	m_showErrorLog = p_value;
 	FilterLogs();
+}
+
+void OvEditor::Panels::Console::SetMaxNumberLogs(const std::string& p_newMax)
+{
+	try {
+		int newMax = std::stoi(p_newMax);
+
+		if (newMax < m_maxNumberLogs) {
+			while (m_logGroup->GetWidgets().size() > newMax) {
+				m_logGroup->RemoveWidget(*m_logGroup->GetWidgets().front().first);
+			}
+		}
+
+		m_maxNumberLogs = newMax;
+	}
+	catch (const std::invalid_argument& e) {
+		std::cerr << "Invalid argument: " << e.what() << std::endl;
+	}
 }

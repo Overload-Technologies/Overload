@@ -92,4 +92,13 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 
 		GUIDrawer::DrawDDString(columns, "Start scene", GenerateGatherer<std::string>("start_scene"), GenerateProvider<std::string>("start_scene"), "File");
 	}
+
+	{
+		/* Editor Settings */
+		auto& editorRoot = CreateWidget<Layout::GroupCollapsable>("Editor Settings");
+		auto& columns = editorRoot.CreateWidget<Layout::Columns<2>>();
+		columns.widths[0] = 125;
+
+		GUIDrawer::DrawDDString(columns, "Console Max Logs", GenerateGatherer<std::string>("console_max_logs"), GenerateProvider<std::string>("console_max_logs"), "Console");
+	}
 }

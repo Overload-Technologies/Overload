@@ -82,6 +82,11 @@ void OvEditor::Core::Editor::PreUpdate()
 
 void OvEditor::Core::Editor::Update(float p_deltaTime)
 {
+	for (size_t i = 0; i < 50; i++)
+	{
+		OVLOG("Coucou");
+	}
+
 	HandleGlobalShortcuts();
 	UpdateCurrentEditorMode(p_deltaTime);
 	RenderViews(p_deltaTime);

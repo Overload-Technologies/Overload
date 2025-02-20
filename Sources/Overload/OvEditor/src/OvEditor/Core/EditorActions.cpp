@@ -952,9 +952,11 @@ void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(c
 		{
 			using namespace std;
 
+			const auto tempFilePath = filesystem::path{ OvTools::Utils::SystemCalls::GetPathToAppdata() } / "rename.tmp";
+
 			{
 				ifstream in(entry.path().string().c_str());
-				ofstream out("TEMP");
+				ofstream out(tempFilePath.string());
 				string wordToReplace(">" + p_previousName + "<");
 				string wordToReplaceWith(">" + p_newName + "<");
 
@@ -970,8 +972,8 @@ void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(c
 				out.close(); in.close();
 			}
 
-			std::filesystem::copy_file("TEMP", entry.path(), std::filesystem::copy_options::overwrite_existing);
-			std::filesystem::remove("TEMP");
+			std::filesystem::copy_file(tempFilePath.string(), entry.path(), std::filesystem::copy_options::overwrite_existing);
+			std::filesystem::remove(tempFilePath.string());
 		}
 	}
 }

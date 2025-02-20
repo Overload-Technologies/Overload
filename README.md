@@ -1,23 +1,23 @@
 ![Overload Logo](https://user-images.githubusercontent.com/33324216/94352497-cc8c2200-0033-11eb-93e1-1a30386133b9.png)
 
 <p align="center">
-  <a href="https://github.com/adriengivry/Overload/releases">Releases</a> |
+  <a href="https://github.com/Overload-Technologies/Overload/releases">Releases</a> |
   <a href="#screenshots">Screenshots</a> |
   <a href="#features">Features</a> |
-  <a href="https://github.com/adriengivry/Overload/wiki">Wiki</a> |
-  <a href="https://github.com/adriengivry/Overload/blob/develop/CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/Overload-Technologies/Overload/wiki">Wiki</a> |
+  <a href="https://github.com/Overload-Technologies/Overload/blob/develop/CONTRIBUTING.md">Contributing</a>
 <br/>
 <br/>
 <br/>
-<a href="https://github.com/adriengivry/Overload/releases"><img alt="platforms" src="https://img.shields.io/badge/platforms-Windows-blue?style=flat-square"/></a>
-<a href="https://github.com/adriengivry/Overload/releases"><img alt="release" src="https://img.shields.io/github/v/release/adriengivry/overload?style=flat-square"/></a>
-<a href="https://github.com/adriengivry/Overload/tree/develop/Sources/Overload"><img alt="size" src="https://img.shields.io/github/repo-size/adriengivry/overload?style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="platforms" src="https://img.shields.io/badge/platforms-Windows-blue?style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="release" src="https://img.shields.io/github/v/release/adriengivry/overload?style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/tree/develop/Sources/Overload"><img alt="size" src="https://img.shields.io/github/repo-size/adriengivry/overload?style=flat-square"/></a>
 <br/>
-<a href="https://github.com/adriengivry/overload/issues"><img alt="issues" src="https://img.shields.io/github/issues-raw/adriengivry/overload.svg?color=yellow&style=flat-square"/></a>
-<a href="https://github.com/adriengivry/overload/pulls"><img alt="pulls" src="https://img.shields.io/github/issues-pr-raw/adriengivry/overload?color=yellow&style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/issues"><img alt="issues" src="https://img.shields.io/github/issues-raw/adriengivry/overload.svg?color=yellow&style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/pulls"><img alt="pulls" src="https://img.shields.io/github/issues-pr-raw/adriengivry/overload?color=yellow&style=flat-square"/></a>
 <br/>
-<a href="https://github.com/adriengivry/Overload/blob/develop/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adriengivry/overload?color=green&style=flat-square"/></a>
-<a href="https://github.com/adriengivry/Overload/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/adriengivry/overload/total?color=green&style=flat-square"></a>
+<a href="https://github.com/Overload-Technologies/Overload/blob/develop/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adriengivry/overload?color=green&style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/adriengivry/overload/total?color=green&style=flat-square"></a>
 <br/>
 <br/>
 <br/>
@@ -47,7 +47,7 @@ Overload pillars are:
 - Rigidbody physics
 - And many more to come...
 
-Check out our [issues](https://github.com/adriengivry/Overload/issues) and [pull requests](https://github.com/adriengivry/Overload/pulls) to learn more about what's coming next!
+Check out our [issues](https://github.com/Overload-Technologies/Overload/issues) and [pull requests](https://github.com/Overload-Technologies/Overload/pulls) to learn more about what's coming next!
 
 # Architecture
 Overload is divided into 12 modules: 10 libraries (SDK), and 2 executables (Applications).
@@ -87,7 +87,7 @@ Overload depends on a few third-party libraries:
 
 # Getting started
 ## Running Overload from a Release Build
-Get started with Overload in no time by downloading one of our [release builds](https://github.com/adriengivry/Overload/releases). While this is the fastest way to get started, you might miss out on some cool features we're cooking up!
+Get started with Overload in no time by downloading one of our [release builds](https://github.com/Overload-Technologies/Overload/releases). While this is the fastest way to get started, you might miss out on some cool features we're cooking up!
 
 After downloading the archive, unzip it and run the `Overload.exe` executable file.
 
@@ -98,7 +98,7 @@ To start working with Overload quickly, clone the repository and run the `OpenIn
 
 ```powershell
 # These 2 lines will clone Overload, generate project files, and open the Visual Studio solution.
-git clone https://github.com/adriengivry/Overload
+git clone https://github.com/Overload-Technologies/Overload
 .\Overload\OpenInVisualStudio.bat
 ```
 
@@ -128,12 +128,12 @@ If you'd like to build Overload directly from the command line (without opening 
 ```
 
 ## Tutorials & Scripting API
-Learn how to create your own games using Overload by visiting our [wiki](https://github.com/adriengivry/Overload/wiki).
+Learn how to create your own games using Overload by visiting our [wiki](https://github.com/Overload-Technologies/Overload/wiki).
 
 # Contributing
 Overload is open to contributions of all kinds. Feel free to open issues (feature requests or bug reports) or submit pull requests.
 
-If you'd like to contribute, please refer to our [contribution guildelines](https://github.com/adriengivry/Overload/blob/develop/CONTRIBUTING.md).
+If you'd like to contribute, please refer to our [contribution guildelines](https://github.com/Overload-Technologies/Overload/blob/develop/CONTRIBUTING.md).
 
 # Requirements
 - **RAM:** 100MB

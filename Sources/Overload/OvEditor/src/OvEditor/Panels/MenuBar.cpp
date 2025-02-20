@@ -204,12 +204,12 @@ void OvEditor::Panels::MenuBar::CreateLayoutMenu()
 void OvEditor::Panels::MenuBar::CreateHelpMenu()
 {
     auto& helpMenu = CreateWidget<MenuList>("Help");
-    helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/adriengivry/Overload"); };
-    helpMenu.CreateWidget<MenuItem>("Tutorials").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/adriengivry/Overload/wiki/Tutorials"); };
-    helpMenu.CreateWidget<MenuItem>("Scripting API").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/adriengivry/Overload/wiki/Scripting-API"); };
+    helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload"); };
+    helpMenu.CreateWidget<MenuItem>("Tutorials").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/wiki/Tutorials"); };
+    helpMenu.CreateWidget<MenuItem>("Scripting API").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/wiki/Scripting-API"); };
     helpMenu.CreateWidget<Visual::Separator>();
-    helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/adriengivry/Overload/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
-    helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/adriengivry/Overload/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };
+    helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
+    helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };
     helpMenu.CreateWidget<Visual::Separator>();
     helpMenu.CreateWidget<Texts::Text>("Version: " + std::string(OVERLOAD_VERSION));
 }

@@ -944,36 +944,84 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	EDITOR_PANEL(Panels::MaterialEditor, "Material Editor").Refresh();
 }
 
-void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(const std::string& p_previousName, const std::string& p_newName, OvTools::Utils::PathParser::EFileType p_fileType)
+uint64_t ReplaceStringInFile(const std::filesystem::path& p_filePath,
+	const std::string& p_searchStr,
+	const std::string& p_replaceStr
+)
 {
-	for (auto& entry : std::filesystem::recursive_directory_iterator(m_context.projectAssetsPath))
+	uint64_t occurences = 0;
+
+	if (!std::filesystem::exists(p_filePath))
 	{
-		if (OvTools::Utils::PathParser::GetFileType(entry.path().string()) == p_fileType)
+		throw std::runtime_error("File does not exist: " + p_filePath.string());
+	}
+
+	std::string content;
+
+	if (auto inFile = std::ifstream{ p_filePath, std::ios::in })
+	{
+		std::stringstream buffer;
+		buffer << inFile.rdbuf();
+		content = buffer.str();
+	}
+	else
+	{
+		throw std::runtime_error("Cannot open file for reading: " + p_filePath.string());
+	}
+	 
+	size_t pos = 0;
+
+	while ((pos = content.find(p_searchStr, pos)) != std::string::npos)
+	{
+		content.replace(pos, p_searchStr.length(), p_replaceStr);
+		pos += p_replaceStr.length();
+		++occurences;
+	}
+
+	if (occurences > 0)
+	{
+		if (auto outFile = std::ofstream{ p_filePath, std::ios::out | std::ios::trunc })
 		{
-			using namespace std;
+			outFile << content;
+		}
+		else
+		{
+			throw std::runtime_error("Cannot open file for writing: " + p_filePath.string());
+		}
+	}
 
-			const auto tempFilePath = filesystem::path{ OvTools::Utils::SystemCalls::GetPathToAppdata() } / "rename.tmp";
+	return occurences;
+}
 
+void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(
+	const std::string& p_previousName,
+	const std::string& p_newName,
+	OvTools::Utils::PathParser::EFileType p_fileType
+)
+{
+	const auto replaceFrom = std::string{ ">" + p_previousName + "<" };
+	const auto replaceTo = std::string{ ">" + p_newName + "<" };
+
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(m_context.projectAssetsPath))
+	{
+		const std::filesystem::path entryPath = entry.path();
+
+		if (OvTools::Utils::PathParser::GetFileType(entryPath.string()) == p_fileType)
+		{
+			try
 			{
-				ifstream in(entry.path().string().c_str());
-				ofstream out(tempFilePath.string());
-				string wordToReplace(">" + p_previousName + "<");
-				string wordToReplaceWith(">" + p_newName + "<");
+				const uint64_t occurences = ReplaceStringInFile(entryPath, replaceFrom, replaceTo);
 
-				string line;
-				size_t len = wordToReplace.length();
-				while (getline(in, line))
+				if (occurences > 0)
 				{
-					if (OvTools::Utils::String::Replace(line, wordToReplace, wordToReplaceWith))
-						OVLOG_INFO("Asset retargeting: \"" + p_previousName + "\" to \"" + p_newName + "\" in \"" + entry.path().string() + "\"");
-					out << line << '\n';
+					OVLOG_INFO("Asset retargeting: \"" + p_previousName + "\" to \"" + p_newName + "\" in \"" + entryPath.string() + "\"");
 				}
-
-				out.close(); in.close();
 			}
-
-			std::filesystem::copy_file(tempFilePath.string(), entry.path(), std::filesystem::copy_options::overwrite_existing);
-			std::filesystem::remove(tempFilePath.string());
+			catch (const std::exception& e)
+			{
+				const auto errorMessage = std::string{ e.what() };
+				OVLOG_ERROR("Asset retargeting failed: " + errorMessage);
+			}
 		}
 	}
 }

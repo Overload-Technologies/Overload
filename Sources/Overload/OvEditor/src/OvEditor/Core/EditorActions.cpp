@@ -945,8 +945,8 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 }
 
 uint64_t ReplaceStringInFile(const std::filesystem::path& p_filePath,
-	const std::string& p_searchStr,
-	const std::string& p_replaceStr
+	const std::string_view p_searchStr,
+	const std::string_view p_replaceStr
 )
 {
 	uint64_t occurences = 0;

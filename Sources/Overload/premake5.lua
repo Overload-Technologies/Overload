@@ -1,8 +1,23 @@
+-- Function to read the version number from VERSION.txt
+local function readVersion()
+    local versionFile = io.open("../../VERSION.txt", "r")
+    if versionFile then
+        local version = versionFile:read("*l")
+        versionFile:close()
+        return version
+    else
+        error("Could not open VERSION.txt")
+    end
+end
+
+local version = readVersion()
+
 workspace "Overload"
 	configurations { "Debug", "Release" }
 	platforms { "x64" }
 	startproject "OvEditor"
 	defines { "LUA_SCRIPTING" }
+	defines { "OVERLOAD_VERSION=\"" .. version .. "\"" }
 
 outputdir = "%{wks.location}/../../Bin/"
 objoutdir = "%{wks.location}/../../Bin-Int/"

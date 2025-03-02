@@ -20,6 +20,7 @@ namespace OvRendering::HAL
 		using Attachment = TFramebufferAttachment<Backend, GLTextureContext, GLTextureHandleContext, GLRenderbufferContext>;
 
 		bool valid = false;
+		std::string debugName = "";
 		std::unordered_map<std::underlying_type_t<Settings::EFramebufferAttachment>, Attachment> attachments;
 	};
 

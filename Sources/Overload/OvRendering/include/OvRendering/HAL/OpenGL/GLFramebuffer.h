@@ -21,6 +21,7 @@ namespace OvRendering::HAL
 
 		uint32_t id = 0;
 		bool valid = false;
+		std::string debugName;
 		std::unordered_map<uint32_t, Attachment> attachments;
 	};
 

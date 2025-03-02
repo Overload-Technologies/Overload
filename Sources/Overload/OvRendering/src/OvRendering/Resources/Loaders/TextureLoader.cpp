@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "OvRendering/Resources/Loaders/TextureLoader.h"
+#include <OvTools/Utils/PathParser.h>
 
 namespace
 {
@@ -77,7 +78,7 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 {
 	if (Image image{ p_filepath })
 	{
-		auto texture = std::make_unique<HAL::Texture>();
+		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filepath));
 		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap);
 		return new Texture{ p_filepath, std::move(texture) };
 	}
@@ -99,7 +100,7 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 
 OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap)
 {
-	auto texture = std::make_unique<HAL::Texture>();
+	auto texture = std::make_unique<HAL::Texture>("FromMemory");
 	PrepareTexture(*texture, p_data, p_minFilter, p_magFilter, p_width, p_height, p_generateMipmap);
 	return new Texture("", std::move(texture));
 }
@@ -108,7 +109,7 @@ void OvRendering::Resources::Loaders::TextureLoader::Reload(Texture& p_texture, 
 {
 	if (Image image{ p_filePath })
 	{
-		auto texture = std::make_unique<HAL::Texture>();
+		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filePath));
 		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap);
 		p_texture.SetTexture(std::move(texture));
 	}

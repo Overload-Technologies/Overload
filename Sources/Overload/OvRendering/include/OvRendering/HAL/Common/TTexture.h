@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include <string>
+
 #include <OvMaths/FVector4.h>
 #include <OvRendering/HAL/Common/TTextureHandle.h>
 #include <OvRendering/Settings/EGraphicsBackend.h>
 #include <OvRendering/Settings/TextureDesc.h>
+#include <OvTools/Eventing/Event.h>
 
 namespace OvRendering::HAL
 {
@@ -22,8 +25,9 @@ namespace OvRendering::HAL
 	public:
 		/**
 		* Creates a texture.
+		* @param p_debugName A name used to identify the texture for debugging purposes
 		*/
-		TTexture();
+		TTexture(std::string_view p_debugName = std::string_view{});
 
 		/**
 		* Destroys the texture.
@@ -76,6 +80,15 @@ namespace OvRendering::HAL
 		* @param p_color
 		*/
 		void SetBorderColor(const OvMaths::FVector4& p_color);
+
+		/**
+		* Returns the debug name of the texture.
+		*/
+		const std::string& GetDebugName() const;
+
+	public:
+		static OvTools::Eventing::Event<TTexture&> CreationEvent;
+		static OvTools::Eventing::Event<TTexture&> DestructionEvent;
 
 	private:
 		TextureContext m_textureContext;

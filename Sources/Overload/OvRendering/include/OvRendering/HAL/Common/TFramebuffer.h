@@ -50,8 +50,9 @@ namespace OvRendering::HAL
 
 		/**
 		* Creates a framebuffer.
+		* @param p_debugName A name used to identify the framebuffer for debugging purposes
 		*/
-		TFramebuffer();
+		TFramebuffer(std::string_view p_debugName = std::string_view{});
 
 		/**
 		* Destroys the framebuffer.
@@ -163,6 +164,11 @@ namespace OvRendering::HAL
 			Settings::EPixelDataType p_type,
 			void* p_data
 		) const;
+
+		/**
+		* Returns the debug name of the framebuffer.
+		*/
+		const std::string& GetDebugName() const;
 
 	protected:
 		FramebufferContext m_context;

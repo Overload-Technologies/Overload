@@ -8,14 +8,20 @@
 
 #include <OvRendering/HAL/None//NoneTexture.h>
 
+OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::CreationEvent;
+OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::DestructionEvent;
+
 template<>
-OvRendering::HAL::NoneTexture::TTexture() : TTextureHandle{ 0 }
+OvRendering::HAL::NoneTexture::TTexture(std::string_view p_debugName) : TTextureHandle{ 0 }
 {
+	m_textureContext.debugName = p_debugName;
+	CreationEvent.Invoke(*this);
 }
 
 template<>
 OvRendering::HAL::NoneTexture::~TTexture()
 {
+	DestructionEvent.Invoke(*this);
 }
 
 template<>

@@ -23,6 +23,7 @@
 #include "OvEditor/Panels/MaterialEditor.h"
 #include "OvEditor/Panels/ProjectSettings.h"
 #include "OvEditor/Panels/AssetProperties.h"
+#include <OvEditor/Panels/TextureDebugger.h>
 #include "OvEditor/Settings/EditorSettings.h"
 
 using namespace OvCore::ResourceManagement;
@@ -69,6 +70,7 @@ void OvEditor::Core::Editor::SetupUI()
 	m_panelsManager.CreatePanel<Panels::MaterialEditor>("Material Editor", false, settings);
 	m_panelsManager.CreatePanel<Panels::ProjectSettings>("Project Settings", false, settings);
 	m_panelsManager.CreatePanel<Panels::AssetProperties>("Asset Properties", false, settings);
+	m_panelsManager.CreatePanel<Panels::TextureDebugger>("Texture Debugger", false, settings);
 
 	// Needs to be called after all panels got created, because some settings in this menu depend on other panels
 	m_panelsManager.GetPanelAs<Panels::MenuBar>("Menu Bar").InitializeSettingsMenu();
@@ -171,6 +173,7 @@ void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 	auto& sceneView = m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View");
 	auto& gameView = m_panelsManager.GetPanelAs<OvEditor::Panels::GameView>("Game View");
 	auto& assetView = m_panelsManager.GetPanelAs<OvEditor::Panels::AssetView>("Asset View");
+	auto& textureDebugger = m_panelsManager.GetPanelAs<OvEditor::Panels::TextureDebugger>("Texture Debugger");
 
 	menuBar.HandleShortcuts(p_deltaTime);
 
@@ -209,6 +212,12 @@ void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 	{
 		PROFILER_SPY("Hardware Info Update");
 		hardwareInfo.Update(p_deltaTime);
+	}
+
+	if (textureDebugger.IsOpened())
+	{
+		PROFILER_SPY("Texture Debugger Update");
+		textureDebugger.Update(p_deltaTime);
 	}
 }
 

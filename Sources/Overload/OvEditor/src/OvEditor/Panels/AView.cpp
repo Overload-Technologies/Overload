@@ -14,7 +14,8 @@ OvEditor::Panels::AView::AView
 	const std::string& p_title,
 	bool p_opened,
 	const OvUI::Settings::PanelWindowSettings& p_windowSettings
-) : PanelWindow(p_title, p_opened, p_windowSettings)
+) : PanelWindow(p_title, p_opened, p_windowSettings),
+	m_framebuffer(p_title)
 {
 	OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
 		m_framebuffer,

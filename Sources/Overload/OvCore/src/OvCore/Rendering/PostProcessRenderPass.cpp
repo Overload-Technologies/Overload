@@ -13,7 +13,11 @@
 #include <OvRendering/Core/CompositeRenderer.h>
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
-	OvRendering::Core::ARenderPass(p_renderer)
+	OvRendering::Core::ARenderPass(p_renderer),
+	m_pingPongBuffers{
+		OvRendering::HAL::Framebuffer{"PostProcessBlitPingPong0"},
+		OvRendering::HAL::Framebuffer{"PostProcessBlitPingPong1"}
+	}
 {
 	for (auto& buffer : m_pingPongBuffers)
 	{

@@ -15,6 +15,7 @@ namespace OvRendering::HAL
 	{
 		Settings::TextureDesc desc;
 		bool allocated = false;
+		std::string debugName;
 	};
 
 	using GLTexture = TTexture<Settings::EGraphicsBackend::OPENGL, GLTextureContext, GLTextureHandleContext>;

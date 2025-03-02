@@ -6,53 +6,39 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
+#include <memory>
 
-#include "OvRendering/Settings/ETextureFilteringMode.h"
+#include <OvRendering/Settings/ETextureFilteringMode.h>
+#include <OvRendering/HAL/Texture.h>
 
 namespace OvRendering::Resources
 {
 	namespace Loaders { class TextureLoader; }
 
-	class TextureHandle
-	{
-	public:
-		TextureHandle(const uint32_t p_id) : id(p_id) {}
-
-		/**
-		* Bind the texture to the given slot
-		* @param p_slot
-		*/
-		void Bind(uint32_t p_slot = 0) const;
-
-		/**
-		* Unbind the texture
-		*/
-		void Unbind() const;
-
-	public:
-		const uint32_t id;
-	};
-
 	/**
-	* OpenGL texture wrapper
+	* Texture saved on the disk
 	*/
-	class Texture : public TextureHandle
+	class Texture
 	{
 		friend class Loaders::TextureLoader;
 
+	public:
+		/**
+		* Returns the associated HAL::Texture instance
+		*/
+		HAL::Texture& GetTexture();
+
 	private:
-		Texture(const std::string p_path, uint32_t p_id, uint32_t p_width, uint32_t p_height, uint32_t p_bpp, Settings::ETextureFilteringMode p_firstFilter, Settings::ETextureFilteringMode p_secondFilter, bool p_generateMipmap);
+		Texture(const std::string p_path, std::unique_ptr<HAL::Texture>&& p_texture);
 		~Texture() = default;
+		void SetTexture(std::unique_ptr<HAL::Texture>&& p_texture);
 
 	public:
-		const uint32_t width;
-		const uint32_t height;
-		const uint32_t bitsPerPixel;
-		const Settings::ETextureFilteringMode firstFilter;
-		const Settings::ETextureFilteringMode secondFilter;
 		const std::string path;
-		const bool isMimapped;
+
+	private:
+		std::unique_ptr<HAL::Texture> m_texture;
 	};
 }

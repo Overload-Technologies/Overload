@@ -37,7 +37,8 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 				{
 					if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
 					{
-						material.Set("_ShadowMap", light.GetShadowBuffer().GetTexture(), true); // Single use material property
+						const auto shadowTex = light.GetShadowBuffer().GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::DEPTH);
+						material.Set("_ShadowMap", shadowTex, true); // Single use material property
 						material.Set("_LightSpaceMatrix", light.GetLightSpaceMatrix());
 						++lightIndex;
 					}

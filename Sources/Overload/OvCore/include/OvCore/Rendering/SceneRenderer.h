@@ -12,8 +12,8 @@
 #include <OvRendering/Resources/Mesh.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Entities/Drawable.h>
-#include <OvRendering/Buffers/UniformBuffer.h>
-#include <OvRendering/Buffers/ShaderStorageBuffer.h>
+#include <OvRendering/HAL/UniformBuffer.h>
+#include <OvRendering/HAL/ShaderStorageBuffer.h>
 
 #include "OvCore/Resources/Material.h"
 #include "OvCore/ECS/Actor.h"

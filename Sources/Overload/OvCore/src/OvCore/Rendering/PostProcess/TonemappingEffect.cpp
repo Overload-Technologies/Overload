@@ -15,8 +15,8 @@ OvCore::Rendering::PostProcess::TonemappingEffect::TonemappingEffect(OvRendering
 
 void OvCore::Rendering::PostProcess::TonemappingEffect::Draw(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::Buffers::Framebuffer& p_src,
-	OvRendering::Buffers::Framebuffer& p_dst,
+	OvRendering::HAL::Framebuffer& p_src,
+	OvRendering::HAL::Framebuffer& p_dst,
 	const EffectSettings& p_settings
 )
 {

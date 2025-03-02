@@ -89,7 +89,7 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 	/* Settings */
 	OvWindowing::Settings::DeviceSettings deviceSettings;
 	deviceSettings.contextMajorVersion = 4;
-	deviceSettings.contextMinorVersion = 3;
+	deviceSettings.contextMinorVersion = 5;
 
 	/* Window creation */
 	device = std::make_unique<OvWindowing::Context::Device>(deviceSettings);
@@ -178,7 +178,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<bool>("multisampling", true);
 	projectSettings.Add<int>("samples", 4);
 	projectSettings.Add<int>("opengl_major", 4);
-	projectSettings.Add<int>("opengl_minor", 3);
+	projectSettings.Add<int>("opengl_minor", 5);
 	projectSettings.Add<bool>("dev_build", true);
 }
 

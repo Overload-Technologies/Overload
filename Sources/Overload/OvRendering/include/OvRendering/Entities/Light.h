@@ -13,7 +13,7 @@
 #include "OvRendering/Entities/Entity.h"
 #include "OvRendering/Settings/ELightType.h"
 #include "OvRendering/Resources/Texture.h"
-#include "OvRendering/Buffers/Framebuffer.h"
+#include "OvRendering/HAL/Framebuffer.h"
 #include <OvRendering/Entities/Camera.h>
 
 namespace OvRendering::Entities
@@ -52,7 +52,7 @@ namespace OvRendering::Entities
 		/**
 		* Returns the framebuffer used to render the shadow map
 		*/
-		const OvRendering::Buffers::Framebuffer& GetShadowBuffer() const;
+		const OvRendering::HAL::Framebuffer& GetShadowBuffer() const;
 
 		/**
 		* Generate the light matrix, ready to send to the GPU
@@ -65,6 +65,6 @@ namespace OvRendering::Entities
 		float GetEffectRange() const;
 
 		OvMaths::FMatrix4 lightSpaceMatrix;
-		std::unique_ptr<OvRendering::Buffers::Framebuffer> shadowBuffer;
+		std::unique_ptr<OvRendering::HAL::Framebuffer> shadowBuffer;
 	};
 }

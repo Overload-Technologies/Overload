@@ -1,5 +1,5 @@
 #shader vertex
-#version 430 core
+#version 450 core
 
 layout(location = 0) in vec2 geo_Pos;
 layout(location = 1) in vec2 geo_TexCoords;
@@ -13,7 +13,7 @@ void main()
 }
 
 #shader fragment
-#version 430 core
+#version 450 core
 
 in vec2 TexCoords;
 out vec4 FRAGMENT_COLOR;

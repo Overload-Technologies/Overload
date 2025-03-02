@@ -7,6 +7,7 @@
 #pragma once
 
 #include <OvRendering/Core/ARenderPass.h>
+#include <OvRendering/HAL/Framebuffer.h>
 #include <OvCore/Rendering/PostProcess/AEffect.h>
 
 namespace OvCore::Rendering
@@ -29,6 +30,6 @@ namespace OvCore::Rendering
 	private:
 		OvRendering::Data::Material m_blitMaterial;
 		std::vector<std::unique_ptr<PostProcess::AEffect>> m_effects;
-		std::array<OvRendering::Buffers::Framebuffer, 2> m_pingPongBuffers;
+		std::array<OvRendering::HAL::Framebuffer, 2> m_pingPongBuffers;
 	};
 }

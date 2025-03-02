@@ -14,6 +14,7 @@
 #include "OvRendering/Resources/Texture.h"
 #include "OvRendering/Entities/Drawable.h"
 #include "OvRendering/Settings/EBlitFlags.h"
+#include "OvRendering/Context/Driver.h"
 
 namespace OvRendering::Core
 {
@@ -64,26 +65,6 @@ namespace OvRendering::Core
 		bool IsDrawing() const;
 
 		/**
-		 * Read a block of pixels from the frame buffer.
-		 * @param p_x
-		 * @param p_y
-		 * @param p_width
-		 * @param p_height
-		 * @param p_format
-		 * @param p_type
-		 * @param p_data
-		 */
-		void ReadPixels(
-			uint32_t p_x,
-			uint32_t p_y,
-			uint32_t p_width,
-			uint32_t p_height,
-			Settings::EPixelDataFormat p_format,
-			Settings::EPixelDataType p_type,
-			void* p_data
-		) const;
-
-		/**
 		* Set the viewport
 		* @param p_x
 		* @param p_y
@@ -116,8 +97,8 @@ namespace OvRendering::Core
 		*/
 		virtual void Blit(
 			OvRendering::Data::PipelineState p_pso,
-			OvRendering::Buffers::Framebuffer& p_src,
-			OvRendering::Buffers::Framebuffer& p_dst,
+			OvRendering::HAL::Framebuffer& p_src,
+			OvRendering::HAL::Framebuffer& p_dst,
 			OvRendering::Data::Material& p_material,
 			OvRendering::Settings::EBlitFlags p_flags = OvRendering::Settings::EBlitFlags::DEFAULT
 		);

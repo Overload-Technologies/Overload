@@ -6,8 +6,6 @@
 
 #pragma once
 
-
-
 #define FORCE_DEDICATED_GPU \
 extern "C"\
 {\

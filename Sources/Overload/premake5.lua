@@ -16,7 +16,7 @@ workspace "Overload"
 	configurations { "Debug", "Release" }
 	platforms { "x64" }
 	startproject "OvEditor"
-	defines { "LUA_SCRIPTING", "OVERLOAD_VERSION=\"" .. version .. "\"" }
+	defines { "LUA_SCRIPTING", "GRAPHICS_API_OPENGL", "OVERLOAD_VERSION=\"" .. version .. "\"" }
 
 outputdir = "%{wks.location}/../../Bin/"
 objoutdir = "%{wks.location}/../../Bin-Int/"

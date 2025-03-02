@@ -4,29 +4,45 @@
 * @licence: MIT
 */
 
-#include "OvCore/Rendering/PostProcess/AutoExposureEffect.h"
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/PostProcess/AutoExposureEffect.h>
+#include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 constexpr uint32_t kLuminanceBufferResolution = 1024;
 constexpr uint32_t kExposureBufferResolution = 1;
 
-OvCore::Rendering::PostProcess::AutoExposureEffect::AutoExposureEffect(OvRendering::Core::CompositeRenderer& p_renderer) : AEffect(p_renderer)
+OvCore::Rendering::PostProcess::AutoExposureEffect::AutoExposureEffect(
+	OvRendering::Core::CompositeRenderer& p_renderer
+) :	AEffect(p_renderer)
 {
+	for (auto& buffer : m_exposurePingPongBuffer)
+	{
+		FramebufferUtil::SetupFramebuffer(
+			buffer,
+			kExposureBufferResolution,
+			kExposureBufferResolution,
+			false, false, false
+		);
+	}
+
+	FramebufferUtil::SetupFramebuffer(
+		m_luminanceBuffer,
+		kLuminanceBufferResolution,
+		kLuminanceBufferResolution,
+		false, false,
+		true // <-- use mipmaps
+	);
+
 	m_luminanceMaterial.SetShader(OVSERVICE(OvCore::ResourceManagement::ShaderManager)[":Shaders\\PostProcess\\Luminance.ovfx"]);
 	m_exposureMaterial.SetShader(OVSERVICE(OvCore::ResourceManagement::ShaderManager)[":Shaders\\PostProcess\\AutoExposure.ovfx"]);
 	m_compensationMaterial.SetShader(OVSERVICE(OvCore::ResourceManagement::ShaderManager)[":Shaders\\PostProcess\\ApplyExposure.ovfx"]);
-
-	for (auto& buffer : m_exposurePingPongBuffer)
-	{
-		buffer.Resize(kExposureBufferResolution, kExposureBufferResolution);
-	}
 }
 
 void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::Buffers::Framebuffer& p_src,
-	OvRendering::Buffers::Framebuffer& p_dst,
+	OvRendering::HAL::Framebuffer& p_src,
+	OvRendering::HAL::Framebuffer& p_dst,
 	const EffectSettings& p_settings
 )
 {
@@ -37,7 +53,8 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	m_luminanceMaterial.Set("_CenterWeightBias", autoExposureSettings.centerWeightBias, true);
 	m_renderer.Blit(p_pso, p_src, m_luminanceBuffer, m_luminanceMaterial,
 		OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC);
-	m_luminanceBuffer.GenerateMipMaps();
+	const auto luminanceTex = m_luminanceBuffer.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	luminanceTex->GenerateMipmaps();
 
 	float elapsedTime = 1.0f;
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -54,7 +71,7 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	m_exposurePingPongIndex = (m_exposurePingPongIndex + 1) % 2;
 
 	// Exposure adaptation
-	m_exposureMaterial.Set("_LuminanceTexture", m_luminanceBuffer.GetTexture(), true);
+	m_exposureMaterial.Set("_LuminanceTexture", luminanceTex, true);
 	m_exposureMaterial.Set("_MinLuminanceEV", autoExposureSettings.minLuminanceEV, true);
 	m_exposureMaterial.Set("_MaxLuminanceEV", autoExposureSettings.maxLuminanceEV, true);
 	m_exposureMaterial.Set("_ExposureCompensationEV", autoExposureSettings.exposureCompensationEV, true);
@@ -65,6 +82,7 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	m_renderer.Blit(p_pso, previousExposure, currentExposure, m_exposureMaterial);
 
 	// Apply the exposure to the final image
-	m_compensationMaterial.Set("_ExposureTexture", currentExposure.GetTexture(), true);
+	const auto exposureTex = currentExposure.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	m_compensationMaterial.Set("_ExposureTexture", exposureTex, true);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_compensationMaterial);
 }

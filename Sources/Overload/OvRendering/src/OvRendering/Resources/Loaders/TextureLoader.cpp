@@ -6,51 +6,83 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#include <GL/glew.h>
 #include <stb_image/stb_image.h>
 #include <array>
+#include <memory>
 
 #include "OvRendering/Resources/Loaders/TextureLoader.h"
 
-OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::Create(const std::string& p_filepath, OvRendering::Settings::ETextureFilteringMode p_firstFilter, OvRendering::Settings::ETextureFilteringMode p_secondFilter, bool p_generateMipmap)
+namespace
 {
-	GLuint textureID;
-	int textureWidth;
-	int textureHeight;
-	int bitsPerPixel;
-	glGenTextures(1, &textureID);
-
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* dataBuffer = stbi_load(p_filepath.c_str(), &textureWidth, &textureHeight, &bitsPerPixel, 4);
-
-	if (dataBuffer)
+	struct Image
 	{
-		// TODO: Cleanup this code to use "Load from Memory"
-		glBindTexture(GL_TEXTURE_2D, textureID);
+		uint8_t* data;
+		int width;
+		int height;
+		int bpp;
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataBuffer);
+		Image(const std::string& p_filepath)
+		{
+			stbi_set_flip_vertically_on_load(true);
+			data = stbi_load(p_filepath.c_str(), &width, &height, &bpp, 4);
+		}
+
+		~Image()
+		{
+			stbi_image_free(data);
+		}
+
+		bool IsValid() const
+		{
+			return data;
+		}
+
+		operator bool() const
+		{
+			return IsValid();
+		}
+	};
+
+	void PrepareTexture(
+		OvRendering::HAL::Texture& p_texture,
+		uint8_t* p_data,
+		OvRendering::Settings::ETextureFilteringMode p_minFilter,
+		OvRendering::Settings::ETextureFilteringMode p_magFilter,
+		uint32_t p_width,
+		uint32_t p_height,
+		bool p_generateMipmap
+	)
+	{
+		using namespace OvRendering::Settings;
+
+		p_texture.Allocate({
+			.width = p_width,
+			.height = p_height,
+			.minFilter = p_minFilter,
+			.magFilter = p_magFilter,
+			.internalFormat = EInternalFormat::RGBA8,
+			.useMipMaps = p_generateMipmap
+		});
+
+		p_texture.Upload(p_data, EFormat::RGBA, EPixelDataType::UNSIGNED_BYTE);
 
 		if (p_generateMipmap)
 		{
-			glGenerateMipmap(GL_TEXTURE_2D);
+			p_texture.GenerateMipmaps();
 		}
-		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(p_firstFilter));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(p_secondFilter));
-
-		stbi_image_free(dataBuffer);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		return new Texture(p_filepath, textureID, textureWidth, textureHeight, bitsPerPixel, p_firstFilter, p_secondFilter, p_generateMipmap);
 	}
-	else
+}
+
+OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::Create(const std::string& p_filepath, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap)
+{
+	if (Image image{ p_filepath })
 	{
-		stbi_image_free(dataBuffer);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		return nullptr;
+		auto texture = std::make_unique<HAL::Texture>();
+		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap);
+		return new Texture{ p_filepath, std::move(texture) };
 	}
+
+	return nullptr;
 }
 
 OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreatePixel(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -65,45 +97,20 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	);
 }
 
-OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height, OvRendering::Settings::ETextureFilteringMode p_firstFilter, OvRendering::Settings::ETextureFilteringMode p_secondFilter, bool p_generateMipmap)
+OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap)
 {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, p_width, p_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, p_data);
-
-	if (p_generateMipmap)
-	{
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(p_firstFilter));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(p_secondFilter));
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return new Texture("", textureID, 1, 1, 32, p_firstFilter, p_secondFilter, p_generateMipmap);
+	auto texture = std::make_unique<HAL::Texture>();
+	PrepareTexture(*texture, p_data, p_minFilter, p_magFilter, p_width, p_height, p_generateMipmap);
+	return new Texture("", std::move(texture));
 }
 
-void OvRendering::Resources::Loaders::TextureLoader::Reload(Texture& p_texture, const std::string& p_filePath, OvRendering::Settings::ETextureFilteringMode p_firstFilter, OvRendering::Settings::ETextureFilteringMode p_secondFilter, bool p_generateMipmap)
+void OvRendering::Resources::Loaders::TextureLoader::Reload(Texture& p_texture, const std::string& p_filePath, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap)
 {
-	Texture* newTexture = Create(p_filePath, p_firstFilter, p_secondFilter, p_generateMipmap);
-
-	if (newTexture)
+	if (Image image{ p_filePath })
 	{
-		glDeleteTextures(1, &p_texture.id);
-
-		*const_cast<uint32_t*>(&p_texture.id) = newTexture->id;
-		*const_cast<uint32_t*>(&p_texture.width) = newTexture->width;
-		*const_cast<uint32_t*>(&p_texture.height) = newTexture->height;
-		*const_cast<uint32_t*>(&p_texture.bitsPerPixel) = newTexture->bitsPerPixel;
-		*const_cast<Settings::ETextureFilteringMode*>(&p_texture.firstFilter) = newTexture->firstFilter;
-		*const_cast<Settings::ETextureFilteringMode*>(&p_texture.secondFilter) = newTexture->secondFilter;
-		*const_cast<bool*>(&p_texture.isMimapped) = newTexture->isMimapped;
-		delete newTexture;
+		auto texture = std::make_unique<HAL::Texture>();
+		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap);
+		p_texture.SetTexture(std::move(texture));
 	}
 }
 
@@ -111,7 +118,6 @@ bool OvRendering::Resources::Loaders::TextureLoader::Destroy(Texture*& p_texture
 {
 	if (p_textureInstance)
 	{
-		glDeleteTextures(1, &p_textureInstance->id);
 		delete p_textureInstance;
 		p_textureInstance = nullptr;
 		return true;

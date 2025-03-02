@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "OvRendering/Buffers/VertexArray.h"
+#include "OvRendering/HAL/VertexArray.h"
 
 namespace OvRendering::Resources
 {

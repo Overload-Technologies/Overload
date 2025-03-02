@@ -6,10 +6,11 @@
 
 #include <filesystem>
 
-#include "OvGame/Core/Context.h"
-
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Scripting/ScriptEngine.h>
+#include <OvCore/Rendering/FramebufferUtil.h>
+
+#include <OvGame/Core/Context.h>
 
 using namespace OvCore::Global;
 using namespace OvCore::ResourceManagement;
@@ -142,7 +143,14 @@ OvGame::Core::Context::Context() :
 	ServiceLocator::Provide<OvAudio::Core::AudioPlayer>(*audioPlayer);
 	ServiceLocator::Provide<OvCore::Scripting::ScriptEngine>(*scriptEngine);
 
-	framebuffer = std::make_unique<OvRendering::Buffers::Framebuffer>(windowSettings.width, windowSettings.height);
+	framebuffer = std::make_unique<OvRendering::HAL::Framebuffer>();
+
+	OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
+		*framebuffer,
+		windowSettings.width,
+		windowSettings.height,
+		true, false, false
+	);
 }
 
 OvGame::Core::Context::~Context()

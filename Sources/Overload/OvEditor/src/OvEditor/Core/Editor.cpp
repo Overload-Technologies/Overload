@@ -221,9 +221,20 @@ void OvEditor::Core::Editor::RenderViews(float p_deltaTime)
 	{
 		PROFILER_SPY("Editor Views Update");
 
-		assetView.Update(p_deltaTime);
-		gameView.Update(p_deltaTime);
-		sceneView.Update(p_deltaTime);
+		if (assetView.IsOpened())
+		{
+			assetView.Update(p_deltaTime);
+		}
+
+		if (gameView.IsOpened())
+		{
+			gameView.Update(p_deltaTime);
+		}
+
+		if (sceneView.IsOpened())
+		{
+			sceneView.Update(p_deltaTime);
+		}
 	}
 
 	if (assetView.IsOpened() && assetView.IsVisible())

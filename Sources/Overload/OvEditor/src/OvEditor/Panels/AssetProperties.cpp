@@ -277,37 +277,49 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 
 void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 {
-	m_metadata->Add("MIN_FILTER", static_cast<int>(OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR));
-	m_metadata->Add("MAG_FILTER", static_cast<int>(OvRendering::Settings::ETextureFilteringMode::LINEAR));
-	m_metadata->Add("ENABLE_MIPMAPPING", true);
+	using namespace OvRendering::Settings;
 
-    std::map<int, std::string> filteringModes
-    {
-        {0x2600, "NEAREST"},
-        {0x2601, "LINEAR"},
-        {0x2700, "NEAREST_MIPMAP_NEAREST"},
-        {0x2703, "LINEAR_MIPMAP_LINEAR"},
-        {0x2701, "LINEAR_MIPMAP_NEAREST"},
-        {0x2702, "NEAREST_MIPMAP_LINEAR"}
-    };
+	const std::string kMinFilter = "MIN_FILTER";
+	const std::string kMagFilter = "MAG_FILTER";
+	const std::string kEnableMipmapping = "ENABLE_MIPMAPPING";
 
-	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, "MIN_FILTER");
-	auto& minFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>("MIN_FILTER"));
+	m_metadata->Add(kMinFilter, static_cast<int>(ETextureFilteringMode::LINEAR_MIPMAP_LINEAR));
+	m_metadata->Add(kMagFilter, static_cast<int>(ETextureFilteringMode::LINEAR));
+	m_metadata->Add(kEnableMipmapping, true);
+
+	const auto filteringModes = std::map<int, std::string>{
+		{static_cast<int>(ETextureFilteringMode::NEAREST), "NEAREST"},
+		{static_cast<int>(ETextureFilteringMode::LINEAR), "LINEAR"},
+		{static_cast<int>(ETextureFilteringMode::NEAREST_MIPMAP_NEAREST), "NEAREST_MIPMAP_NEAREST"},
+		{static_cast<int>(ETextureFilteringMode::LINEAR_MIPMAP_LINEAR), "LINEAR_MIPMAP_LINEAR"},
+		{static_cast<int>(ETextureFilteringMode::LINEAR_MIPMAP_NEAREST), "LINEAR_MIPMAP_NEAREST"},
+		{static_cast<int>(ETextureFilteringMode::NEAREST_MIPMAP_LINEAR), "NEAREST_MIPMAP_LINEAR"}
+	};
+
+	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kMinFilter);
+	auto& minFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kMinFilter));
 	minFilter.choices = filteringModes;
-	minFilter.ValueChangedEvent += [this](int p_choice)
+	minFilter.ValueChangedEvent += [this, kMinFilter](int p_choice)
 	{
-		m_metadata->Set("MIN_FILTER", p_choice);
+		m_metadata->Set(kMinFilter, p_choice);
 	};
 
-	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, "MAG_FILTER");
-	auto& magFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>("MAG_FILTER"));
+	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kMagFilter);
+	auto& magFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kMagFilter));
 	magFilter.choices = filteringModes;
-	magFilter.ValueChangedEvent += [this](int p_choice)
+	magFilter.ValueChangedEvent += [this, kMagFilter](int p_choice)
 	{
-		m_metadata->Set("MAG_FILTER", p_choice);
+		m_metadata->Set(kMagFilter, p_choice);
 	};
 
-	OvCore::Helpers::GUIDrawer::DrawBoolean(*m_settingsColumns, "ENABLE_MIPMAPPING", [&]() { return m_metadata->Get<bool>("ENABLE_MIPMAPPING"); }, [&](bool value) { m_metadata->Set<bool>("ENABLE_MIPMAPPING", value); });
+	OvCore::Helpers::GUIDrawer::DrawBoolean(*m_settingsColumns, kEnableMipmapping,
+		[this, kEnableMipmapping]() {
+			return m_metadata->Get<bool>(kEnableMipmapping);
+		},
+		[this, kEnableMipmapping](bool value) {
+			m_metadata->Set<bool>(kEnableMipmapping, value);
+		}
+	);
 }
 
 void OvEditor::Panels::AssetProperties::Apply()

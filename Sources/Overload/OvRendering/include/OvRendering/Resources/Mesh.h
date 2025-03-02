@@ -6,14 +6,14 @@
 
 #pragma once
 
-#include <vector>
 #include <memory>
 
-#include "OvRendering/Buffers/VertexArray.h"
-#include "OvRendering/Buffers/IndexBuffer.h"
-#include "OvRendering/Resources/IMesh.h"
-#include "OvRendering/Geometry/Vertex.h"
-#include "OvRendering/Geometry/BoundingSphere.h"
+#include <OvRendering/HAL/IndexBuffer.h>
+#include <OvRendering/HAL/VertexArray.h>
+#include <OvRendering/HAL/VertexBuffer.h>
+#include <OvRendering/Geometry/Vertex.h>
+#include <OvRendering/Geometry/BoundingSphere.h>
+#include <OvRendering/Resources/IMesh.h>
 
 namespace OvRendering::Resources
 {
@@ -29,7 +29,11 @@ namespace OvRendering::Resources
 		* @param p_indices
 		* @param p_materialIndex
 		*/
-		Mesh(const std::vector<Geometry::Vertex>& p_vertices, const std::vector<uint32_t>& p_indices, uint32_t p_materialIndex);
+		Mesh(
+			std::span<const Geometry::Vertex> p_vertices,
+			std::span<const uint32_t> p_indices,
+			uint32_t p_materialIndex = 0
+		);
 
 		/**
 		* Bind the mesh (Actually bind its VAO)
@@ -62,17 +66,17 @@ namespace OvRendering::Resources
 		const OvRendering::Geometry::BoundingSphere& GetBoundingSphere() const;
 
 	private:
-		void CreateBuffers(const std::vector<Geometry::Vertex>& p_vertices, const std::vector<uint32_t>& p_indices);
-		void ComputeBoundingSphere(const std::vector<Geometry::Vertex>& p_vertices);
+		void Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices);
+		void ComputeBoundingSphere(std::span<const Geometry::Vertex> p_vertices);
 
 	private:
 		const uint32_t m_vertexCount;
 		const uint32_t m_indicesCount;
 		const uint32_t m_materialIndex;
 
-		Buffers::VertexArray							m_vertexArray;
-		std::unique_ptr<Buffers::VertexBuffer<float>>	m_vertexBuffer;
-		std::unique_ptr<Buffers::IndexBuffer>			m_indexBuffer;
+		HAL::VertexArray m_vertexArray;
+		HAL::VertexBuffer m_vertexBuffer;
+		HAL::IndexBuffer m_indexBuffer;
 
 		Geometry::BoundingSphere m_boundingSphere;
 	};

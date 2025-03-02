@@ -32,13 +32,13 @@ namespace OvWindowing::Settings
 		* Specify the client API major version that the created context must be compatible with. The exact
 		* behavior of these hints depend on the requested client API
 		*/
-		uint8_t contextMajorVersion = 3;
+		uint8_t contextMajorVersion = 4;
 
 		/**
 		* Specify the client API minor version that the created context must be compatible with. The exact
 		* behavior of these hints depend on the requested client API
 		*/
-		uint8_t contextMinorVersion = 2;
+		uint8_t contextMinorVersion = 5;
 
 		/**
 		* Defines the amount of samples to use (Requiered for multi-sampling)

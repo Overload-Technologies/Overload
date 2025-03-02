@@ -4,16 +4,24 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Core/CompositeRenderer.h"
-#include "OvCore/Rendering/PostProcessRenderPass.h"
-#include "OvCore/ResourceManagement/ShaderManager.h"
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/Rendering/SceneRenderer.h"
-#include "OvCore/ECS/Components/CPostProcessStack.h"
+#include <OvCore/ECS/Components/CPostProcessStack.h>
+#include <OvCore/Rendering/PostProcessRenderPass.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/FramebufferUtil.h>
+#include <OvCore/Rendering/SceneRenderer.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvRendering/Core/CompositeRenderer.h>
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
 {
+	for (auto& buffer : m_pingPongBuffers)
+	{
+		OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
+			buffer, 1, 1, false, false, false
+		);
+	}
+
 	m_blitMaterial.SetShader(OVSERVICE(OvCore::ResourceManagement::ShaderManager)[":Shaders\\PostProcess\\Blit.ovfx"]);
 
 	// Instantiate available effects
@@ -51,8 +59,7 @@ void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineS
 		auto& framebuffer = m_renderer.GetFrameDescriptor().outputBuffer.value();
 
 		const uint64_t kPingPongBufferSize = m_pingPongBuffers.size();
-
-		m_blitMaterial.Set("_InputTexture", framebuffer.GetTexture(), true);
+		
 		m_renderer.Blit(p_pso, framebuffer, m_pingPongBuffers[0], m_blitMaterial);
 
 		for (auto& effect : m_effects)

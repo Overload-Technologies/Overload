@@ -11,6 +11,9 @@
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
+OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::CreationEvent;
+OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::DestructionEvent;
+
 namespace
 {
 	constexpr uint32_t CalculateMipMapLevels(uint32_t p_width, uint32_t p_height)
@@ -30,15 +33,18 @@ namespace
 }
 
 template<>
-OvRendering::HAL::GLTexture::TTexture()
+OvRendering::HAL::GLTexture::TTexture(std::string_view p_debugName)
 {
 	glGenTextures(1, &m_context.id);
+	m_textureContext.debugName = p_debugName;
+	CreationEvent.Invoke(*this);
 }
 
 template<>
 OvRendering::HAL::GLTexture::~TTexture()
 {
 	glDeleteTextures(1, &m_context.id);
+	DestructionEvent.Invoke(*this);
 }
 
 template<>
@@ -181,4 +187,10 @@ void OvRendering::HAL::GLTexture::SetBorderColor(const OvMaths::FVector4& p_colo
 {
 	OVASSERT(IsValid(), "Cannot set border color for a texture before it has been allocated");
 	glTextureParameterfvEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &p_color.x);
+}
+
+template<>
+const std::string& OvRendering::HAL::GLTexture::GetDebugName() const
+{
+	return m_textureContext.debugName;
 }

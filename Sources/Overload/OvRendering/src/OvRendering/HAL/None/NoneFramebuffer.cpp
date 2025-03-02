@@ -27,7 +27,8 @@ void OvRendering::HAL::NoneFramebuffer::Attach(std::shared_ptr<NoneTexture> p_to
 }
 
 template<>
-OvRendering::HAL::NoneFramebuffer::TFramebuffer()
+OvRendering::HAL::NoneFramebuffer::TFramebuffer(std::string_view p_debugName) :
+	m_context{ .debugName = std::string{p_debugName} }
 {
 }
 

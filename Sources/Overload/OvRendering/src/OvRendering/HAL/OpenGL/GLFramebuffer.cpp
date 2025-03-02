@@ -43,7 +43,8 @@ void OvRendering::HAL::GLFramebuffer::Attach(
 }
 
 template<>
-OvRendering::HAL::GLFramebuffer::TFramebuffer()
+OvRendering::HAL::GLFramebuffer::TFramebuffer(std::string_view p_debugName) :
+	m_context{ .debugName = std::string{p_debugName} }
 {
 	glGenFramebuffers(1, &m_context.id);
 }
@@ -249,4 +250,10 @@ void OvRendering::HAL::GLFramebuffer::ReadPixels(
 		p_data
 	);
 	Unbind();
+}
+
+template<>
+const std::string& OvRendering::HAL::GLFramebuffer::GetDebugName() const
+{
+	return m_context.debugName;
 }

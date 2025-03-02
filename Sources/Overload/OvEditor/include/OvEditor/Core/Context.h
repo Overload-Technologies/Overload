@@ -32,6 +32,7 @@
 #include <OvAudio/Core/AudioPlayer.h>
 
 #include "OvEditor/Core/EditorResources.h"
+#include <OvEditor/Utils/TextureRegistry.h>
 
 namespace OvEditor::Core
 {
@@ -81,6 +82,7 @@ namespace OvEditor::Core
 		std::unique_ptr<OvWindowing::Context::Device> device;
 		std::unique_ptr<OvWindowing::Window> window;
 		std::unique_ptr<OvWindowing::Inputs::InputManager> inputManager;
+		std::unique_ptr<OvEditor::Utils::TextureRegistry> textureRegistry;
 		std::unique_ptr<OvRendering::Context::Driver> driver;
 		std::unique_ptr<OvUI::Core::UIManager> uiManager;
 		std::unique_ptr<OvPhysics::Core::PhysicsEngine> physicsEngine;

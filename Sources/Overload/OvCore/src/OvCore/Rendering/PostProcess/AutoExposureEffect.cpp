@@ -14,7 +14,12 @@ constexpr uint32_t kExposureBufferResolution = 1;
 
 OvCore::Rendering::PostProcess::AutoExposureEffect::AutoExposureEffect(
 	OvRendering::Core::CompositeRenderer& p_renderer
-) :	AEffect(p_renderer)
+) :	AEffect(p_renderer),
+	m_luminanceBuffer{ "Luminance" },
+	m_exposurePingPongBuffer{
+		OvRendering::HAL::Framebuffer{"ExposurePingPong0"},
+		OvRendering::HAL::Framebuffer{"ExposurePingPong1"}
+	}
 {
 	for (auto& buffer : m_exposurePingPongBuffer)
 	{

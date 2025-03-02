@@ -15,6 +15,7 @@ namespace OvRendering::HAL
 	{
 		OvRendering::Settings::TextureDesc desc;
 		bool allocated = false;
+		std::string debugName = "";
 	};
 
 	using NoneTexture = TTexture<Settings::EGraphicsBackend::NONE, NoneTextureContext, NoneTextureHandleContext>;

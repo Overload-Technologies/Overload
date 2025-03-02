@@ -10,7 +10,11 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
-	AEffect(p_renderer)
+	AEffect(p_renderer),
+	m_bloomPingPong{
+		OvRendering::HAL::Framebuffer{"BloomPingPong0"},
+		OvRendering::HAL::Framebuffer{"BloomPingPong1"}
+	}
 {
 	for (auto& buffer : m_bloomPingPong)
 	{

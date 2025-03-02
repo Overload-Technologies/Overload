@@ -15,7 +15,8 @@
 #include <OvCore/Rendering/FramebufferUtil.h>
 
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
-	OvRendering::Core::ARenderPass(p_renderer)
+	OvRendering::Core::ARenderPass(p_renderer),
+	m_actorPickingFramebuffer("ActorPicking")
 {
 	OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
 		m_actorPickingFramebuffer, 1, 1, true, false, false

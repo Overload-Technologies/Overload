@@ -26,7 +26,7 @@ namespace OvCore::Rendering::FramebufferUtil
 		p_width = static_cast<uint16_t>(std::max(1u, p_width));
 		p_height = static_cast<uint16_t>(std::max(1u, p_height));
 
-		const auto renderTexture = std::make_shared<Texture>();
+		const auto renderTexture = std::make_shared<Texture>(p_framebuffer.GetDebugName() + "/Color");
 
 		TextureDesc renderTextureDesc{
 			.width = p_width,

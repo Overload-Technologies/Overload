@@ -109,6 +109,7 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 
 	/* Graphics context creation */
 	driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ true });
+	textureRegistry = std::make_unique<OvEditor::Utils::TextureRegistry>();
 
 	std::filesystem::create_directories(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\");
 
@@ -152,6 +153,7 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 	ServiceLocator::Provide<OvAudio::Core::AudioEngine>(*audioEngine);
 	ServiceLocator::Provide<OvAudio::Core::AudioPlayer>(*audioPlayer);
 	ServiceLocator::Provide<OvCore::Scripting::ScriptEngine>(*scriptEngine);
+	ServiceLocator::Provide<OvEditor::Utils::TextureRegistry>(*textureRegistry);
 
 	ApplyProjectSettings();
 }

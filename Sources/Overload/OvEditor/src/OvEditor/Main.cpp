@@ -85,7 +85,7 @@ static void TryRun(const std::string& projectPath, const std::string& projectNam
 	auto errorEvent =
 		[](OvWindowing::Context::EDeviceError, std::string errMsg)
 		{
-			errMsg = "Overload requires OpenGL 4.3 or newer.\r\n" + errMsg;
+			errMsg = "Overload requires OpenGL 4.5 or newer.\r\n" + errMsg;
 			MessageBox(0, errMsg.c_str(), "Overload", MB_OK | MB_ICONSTOP);
 		};
 

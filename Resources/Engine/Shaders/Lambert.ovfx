@@ -1,5 +1,5 @@
 #shader vertex
-#version 430 core
+#version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
@@ -25,7 +25,7 @@ void main()
 }
 
 #shader fragment
-#version 430 core
+#version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"

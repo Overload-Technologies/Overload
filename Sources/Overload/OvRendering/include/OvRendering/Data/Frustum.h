@@ -13,6 +13,7 @@
 
 #include "OvRendering/Geometry/BoundingSphere.h"
 #include "OvRendering/Resources/Model.h"
+#include <OvRendering/Settings/ECullingOptions.h>
 
 namespace OvRendering::Data
 {

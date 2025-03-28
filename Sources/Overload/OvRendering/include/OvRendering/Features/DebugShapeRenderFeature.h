@@ -104,8 +104,8 @@ namespace OvRendering::Features
 
 	private:
 		OvRendering::Resources::Shader* m_lineShader = nullptr;
-		OvRendering::Resources::Mesh* m_lineMesh = nullptr;
 
+		std::unique_ptr<OvRendering::Resources::Mesh> m_lineMesh;
 		std::unique_ptr<OvRendering::Data::Material> m_lineMaterial;
 	};
 }

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <OvRendering/Buffers/UniformBuffer.h>
-#include <OvRendering/Buffers/ShaderStorageBuffer.h>
+#include <OvRendering/HAL/UniformBuffer.h>
+#include <OvRendering/HAL/ShaderStorageBuffer.h>
 
 #include <OvPhysics/Core/PhysicsEngine.h>
 
@@ -62,7 +62,7 @@ namespace OvGame::Core
 		std::unique_ptr<OvAudio::Core::AudioEngine> audioEngine;
 		std::unique_ptr<OvAudio::Core::AudioPlayer> audioPlayer;
 		std::unique_ptr<OvCore::Scripting::ScriptEngine> scriptEngine;
-		std::unique_ptr<OvRendering::Buffers::Framebuffer> framebuffer;
+		std::unique_ptr<OvRendering::HAL::Framebuffer> framebuffer;
 
 		OvCore::SceneSystem::SceneManager sceneManager;
 

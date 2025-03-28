@@ -24,9 +24,9 @@ namespace OvUI::Core
 		* Create the UI manager. Will setup ImGui internally\
 		* @param p_glfwWindow
 		* @param p_style
-		* @param p_glslVersion (Ex: #version 150)
+		* @param p_glslVersion (Ex: #version 450)
 		*/
-		UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_style = Styling::EStyle::IM_DARK_STYLE, const std::string& p_glslVersion = "#version 150");
+		UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_style = Styling::EStyle::IM_DARK_STYLE, std::string_view p_glslVersion = "#version 450");
 
 		/**
 		* Destroy the UI manager. Will handle ImGui destruction internally

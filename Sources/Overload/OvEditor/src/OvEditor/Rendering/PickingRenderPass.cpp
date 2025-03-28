@@ -4,18 +4,23 @@
 * @licence: MIT
 */
 
-#include "OvEditor/Rendering/DebugModelRenderFeature.h"
-#include "OvEditor/Rendering/PickingRenderPass.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Settings/EditorSettings.h"
-#include "OvEditor/Rendering/DebugSceneRenderer.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Rendering/DebugModelRenderFeature.h>
+#include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvCore/Rendering/FramebufferUtil.h>
 
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
 {
+	OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
+		m_actorPickingFramebuffer, 1, 1, true, false, false
+	);
+
 	/* Light Material */
 	m_lightMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Billboard"));
 	m_lightMaterial.SetDepthTest(true);
@@ -42,18 +47,12 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Rendering::Picki
 {
 	uint8_t pixel[3];
 
-	m_actorPickingFramebuffer.Bind();
-
-	auto pso = m_renderer.CreatePipelineState();
-
-	m_renderer.ReadPixels(
+	m_actorPickingFramebuffer.ReadPixels(
 		p_x, p_y, 1, 1,
 		OvRendering::Settings::EPixelDataFormat::RGB,
 		OvRendering::Settings::EPixelDataType::UNSIGNED_BYTE,
 		pixel
 	);
-
-	m_actorPickingFramebuffer.Unbind();
 
 	uint32_t actorID = (0 << 24) | (pixel[2] << 16) | (pixel[1] << 8) | (pixel[0] << 0);
 	auto actorUnderMouse = p_scene.FindActorByID(actorID);

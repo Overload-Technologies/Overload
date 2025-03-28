@@ -9,17 +9,15 @@
 namespace OvRendering::Settings
 {
 	/**
-	* OpenGL texture filtering mode enum wrapper
+	* Enumeration of texture filtering modes
 	*/
-	// TODO: Dissociate the values from OpenGL values, and convert them in the driver.cpp
-	// Would require the driver.cpp to wrap all GL functions
-	enum class ETextureFilteringMode
+	enum class ETextureFilteringMode : uint8_t
 	{
-		NEAREST					= 0x2600,
-		LINEAR					= 0x2601,
-		NEAREST_MIPMAP_NEAREST	= 0x2700,
-		LINEAR_MIPMAP_LINEAR	= 0x2703,
-		LINEAR_MIPMAP_NEAREST	= 0x2701,
-		NEAREST_MIPMAP_LINEAR	= 0x2702
+		NEAREST,
+		LINEAR,
+		NEAREST_MIPMAP_NEAREST,
+		LINEAR_MIPMAP_LINEAR,
+		LINEAR_MIPMAP_NEAREST,
+		NEAREST_MIPMAP_LINEAR
 	};
 }

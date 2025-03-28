@@ -11,7 +11,7 @@
 namespace OvRendering::Settings
 {
 	/**
-	* OpenGL primitive mode enum wrapper
+	* Enumeration of primitive modes
 	*/
 	enum class EPrimitiveMode : uint8_t
 	{

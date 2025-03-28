@@ -4,245 +4,293 @@
 * @licence: MIT
 */
 
-#include <sstream>
+#include <algorithm>
+#include <array>
 #include <fstream>
-
-#include <GL/glew.h>
+#include <optional>
+#include <span>
+#include <sstream>
 
 #include <OvDebug/Logger.h>
+#include <OvDebug/Assertion.h>
 
-#include "OvRendering/Resources/Loaders/ShaderLoader.h"
+#include <OvRendering/Resources/Loaders/ShaderLoader.h>
+#include <OvRendering/Resources/Shader.h>
+#include <OvRendering/HAL/ShaderProgram.h>
+#include <OvRendering/HAL/ShaderStage.h>
+#include <OvRendering/Utils/ShaderUtil.h>
 
-std::string OvRendering::Resources::Loaders::ShaderLoader::__FILE_TRACE;
-
-OvRendering::Resources::Shader* OvRendering::Resources::Loaders::ShaderLoader::Create(const std::string& p_filePath, FilePathParserCallback p_pathParser)
+namespace
 {
-	__FILE_TRACE = p_filePath;
+	std::string __FILE_TRACE;
 
-	std::pair<std::string, std::string> source = ParseShader(p_filePath, p_pathParser);
-
-	uint32_t programID = CreateProgram(source.first, source.second);
-
-	if (programID)
-		return new Shader(p_filePath, programID);
-
-	return nullptr;
-}
-
-OvRendering::Resources::Shader* OvRendering::Resources::Loaders::ShaderLoader::CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader)
-{
-	uint32_t programID = CreateProgram(p_vertexShader, p_fragmentShader);
-
-	if (programID)
-		return new Shader("", programID);
-
-	return nullptr;
-}
-
-void OvRendering::Resources::Loaders::ShaderLoader::Recompile(Shader& p_shader, const std::string& p_filePath, FilePathParserCallback p_pathParser)
-{
-	__FILE_TRACE = p_filePath;
-
-	std::pair<std::string, std::string> source = ParseShader(p_filePath, p_pathParser);
-
-	/* Create the new program */
-	uint32_t newProgram = CreateProgram(source.first, source.second);
-
-	if (newProgram)
+	struct ShaderStageDesc
 	{
-		/* Pointer to the shaderID (const data member, tricks to access it) */
-		std::uint32_t* shaderID = reinterpret_cast<uint32_t*>(&p_shader) + offsetof(Shader, id);
+		const std::string source;
+		const OvRendering::Settings::EShaderType type;
+	};
 
-		/* Deletes the previous program */
-		glDeleteProgram(*shaderID);
-
-		/* Store the new program in the shader */
-		*shaderID = newProgram;
-
-		p_shader.QueryUniforms();
-
-		OVLOG_INFO("[COMPILE] \"" + __FILE_TRACE + "\": Success!");
-	}
-	else
+	struct ProcessedShaderStage
 	{
-		OVLOG_ERROR("[COMPILE] \"" + __FILE_TRACE + "\": Failed! Previous shader version keept");
-	}
-}
+		const OvRendering::HAL::ShaderStage stage;
+		std::optional<OvRendering::Settings::ShaderCompilationResult> compilationResult;
+	};
 
-bool OvRendering::Resources::Loaders::ShaderLoader::Destroy(Shader*& p_shader)
-{
-	if (p_shader)
+	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
+		std::span<ShaderStageDesc> p_stages,
+		bool p_verbose = false
+	)
 	{
-		delete p_shader;
-		p_shader = nullptr;
+		using namespace OvRendering::HAL;
+		using namespace OvRendering::Resources;
+		using namespace OvRendering::Settings;
 
-		return true;
-	}
-	
-	return false;
-}
+		std::vector<ProcessedShaderStage> processedStages;
+		processedStages.reserve(p_stages.size());
 
-bool OvRendering::Resources::Loaders::ShaderLoader::ParseIncludeDirective(const std::string& line, std::string& includeFilePath)
-{
-	// Find the position of the opening and closing quotes
-	size_t start = line.find("\"");
-	size_t end = line.find("\"", start + 1);
+		uint32_t errorCount = 0;
 
-	// Check if both quotes are found
-	if (start != std::string::npos && end != std::string::npos && end > start)
-	{
-		// Extract the included file path
-		includeFilePath = line.substr(start + 1, end - start - 1);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-std::string OvRendering::Resources::Loaders::ShaderLoader::LoadShader(const std::string& p_filePath, FilePathParserCallback p_pathParser)
-{
-	std::ifstream file(p_filePath);
-
-	if (!file.is_open())
-	{
-		OVLOG_ERROR("Error: Could not open shader file - " + p_filePath);
-		return "";
-	}
-
-	std::stringstream buffer;
-	std::string line;
-
-	while (std::getline(file, line))
-	{
-		if (line.find("#include") != std::string::npos)
+		for (auto& stageInput : p_stages)
 		{
-			// If the line contains #include, process the included file
-			std::string includeFilePath;
-			if (ParseIncludeDirective(line, includeFilePath))
+			const auto& processedStage = processedStages.emplace_back(stageInput.type);
+			processedStage.stage.Upload(stageInput.source);
+			const auto compilationResult = processedStage.stage.Compile();
+			if (!compilationResult.success)
 			{
-				// Recursively load the included file
-				const std::string realIncludeFilePath = p_pathParser ? p_pathParser(includeFilePath) : includeFilePath;
-				std::string includedShader = LoadShader(realIncludeFilePath, p_pathParser);
-				buffer << includedShader << std::endl;
+				std::string shaderTypeStr = OvRendering::Utils::GetShaderTypeName(stageInput.type);
+				std::transform(shaderTypeStr.begin(), shaderTypeStr.end(), shaderTypeStr.begin(), std::toupper);
+				OVLOG_ERROR("[" + shaderTypeStr + " COMPILE] \"" + __FILE_TRACE + "\": " + compilationResult.message);
+				++errorCount;
+			}
+		}
+
+		if (errorCount == 0)
+		{
+			auto program = std::make_unique<ShaderProgram>();
+
+			for (const auto& processedStage : processedStages)
+			{
+				program->Attach(processedStage.stage);
+			}
+
+			const auto linkResult = program->Link();
+
+			for (const auto& processedStage : processedStages)
+			{
+				program->Detach(processedStage.stage);
+			}
+
+			if (linkResult.success)
+			{
+				if (p_verbose)
+				{
+					OVLOG_INFO("[COMPILE] \"" + __FILE_TRACE + "\": Success!");
+				}
+				return program;
 			}
 			else
 			{
-				OVLOG_ERROR("Error: Invalid #include directive in file - " + p_filePath);
+				OVLOG_ERROR("[LINK] \"" + __FILE_TRACE + "\": Failed: " + linkResult.message);
 			}
 		}
-		else {
-			// If the line does not contain #include, just append it to the buffer
-			buffer << line << std::endl;
-		}
+
+		return nullptr;
 	}
 
-	return buffer.str();
-}
-
-std::pair<std::string, std::string> OvRendering::Resources::Loaders::ShaderLoader::ParseShader(const std::string& p_filePath, FilePathParserCallback p_pathParser)
-{
-	const std::string shaderCode = LoadShader(p_filePath, p_pathParser);
-
-	std::istringstream stream(shaderCode);  // Add this line to create a stringstream from shaderCode
-	std::string line;
-	std::stringstream ss[2];
-
-	enum class ShaderType { NONE = -1, VERTEX = 0, FRAGMENT = 1 };
-
-	ShaderType type = ShaderType::NONE;
-
-	while (std::getline(stream, line))
+	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateDefaultProgram()
 	{
-		if (line.find("#shader") != std::string::npos)
+		const std::string vertex =R"(
+#version 450 core
+
+layout(location = 0) in vec3 geo_Pos;
+
+void main()
+{
+	gl_Position = vec4(geo_Pos, 1.0);
+}
+)";
+
+		const std::string fragment = R"(
+#version 450 core
+
+out vec4 FragColor;
+
+void main()
+{
+	FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+}
+)";
+
+		auto shaders = std::array<ShaderStageDesc, 2>{
+			ShaderStageDesc{vertex, OvRendering::Settings::EShaderType::VERTEX},
+			ShaderStageDesc{fragment, OvRendering::Settings::EShaderType::FRAGMENT}
+		};
+
+		auto program = CreateProgram(shaders);
+		OVASSERT(program != nullptr, "Failed to create default shader program");
+		return std::move(program);
+	}
+
+	bool ParseIncludeDirective(const std::string& line, std::string& includeFilePath)
+	{
+		// Find the position of the opening and closing quotes
+		size_t start = line.find("\"");
+		size_t end = line.find("\"", start + 1);
+
+		// Check if both quotes are found
+		if (start != std::string::npos && end != std::string::npos && end > start)
 		{
-			if (line.find("vertex") != std::string::npos)
-				type = ShaderType::VERTEX;
-			else if (line.find("fragment") != std::string::npos)
-				type = ShaderType::FRAGMENT;
+			// Extract the included file path
+			includeFilePath = line.substr(start + 1, end - start - 1);
+			return true;
 		}
-		else if (type != ShaderType::NONE)
+		else
 		{
-			ss[static_cast<int>(type)] << line << '\n';
+			return false;
 		}
 	}
 
-	return
+	std::string LoadShader(const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
 	{
-		ss[static_cast<int>(ShaderType::VERTEX)].str(),
-		ss[static_cast<int>(ShaderType::FRAGMENT)].str()
-	};
-}
+		std::ifstream file(p_filePath);
 
-uint32_t OvRendering::Resources::Loaders::ShaderLoader::CreateProgram(const std::string& p_vertexShader, const std::string& p_fragmentShader)
-{
-	const uint32_t program = glCreateProgram();
+		if (!file.is_open())
+		{
+			OVLOG_ERROR("Error: Could not open shader file - " + p_filePath);
+			return "";
+		}
 
-	const uint32_t vs = CompileShader(GL_VERTEX_SHADER, p_vertexShader);
-	const uint32_t fs = CompileShader(GL_FRAGMENT_SHADER, p_fragmentShader);
+		std::stringstream buffer;
+		std::string line;
 
-	if (vs == 0 || fs == 0)
-		return 0;
+		while (std::getline(file, line))
+		{
+			if (line.find("#include") != std::string::npos)
+			{
+				// If the line contains #include, process the included file
+				std::string includeFilePath;
+				if (ParseIncludeDirective(line, includeFilePath))
+				{
+					// Recursively load the included file
+					const std::string realIncludeFilePath = p_pathParser ? p_pathParser(includeFilePath) : includeFilePath;
+					std::string includedShader = LoadShader(realIncludeFilePath, p_pathParser);
+					buffer << includedShader << std::endl;
+				}
+				else
+				{
+					OVLOG_ERROR("Error: Invalid #include directive in file - " + p_filePath);
+				}
+			}
+			else {
+				// If the line does not contain #include, just append it to the buffer
+				buffer << line << std::endl;
+			}
+		}
 
-	glAttachShader(program, vs);
-	glAttachShader(program, fs);
-	glLinkProgram(program);
-
-	GLint linkStatus;
-	glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
-
-	if (linkStatus == GL_FALSE)
-	{
-		GLint maxLength;
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-
-		std::string errorLog(maxLength, ' ');
-		glGetProgramInfoLog(program, maxLength, &maxLength, errorLog.data());
-
-		OVLOG_ERROR("[LINK] \"" + __FILE_TRACE + "\":\n" + errorLog);
-
-		glDeleteProgram(program);
-
-		return 0;
+		return buffer.str();
 	}
 
-	glValidateProgram(program);
-	glDeleteShader(vs);
-	glDeleteShader(fs);
+	std::pair<std::string, std::string> ParseShader(const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
+	{
+		const std::string shaderCode = LoadShader(p_filePath, p_pathParser);
 
-	return program;
+		std::istringstream stream(shaderCode);  // Add this line to create a stringstream from shaderCode
+		std::string line;
+		std::unordered_map<OvRendering::Settings::EShaderType, std::stringstream> ss;
+
+		auto type = OvRendering::Settings::EShaderType::NONE;
+
+		while (std::getline(stream, line))
+		{
+			if (line.find("#shader") != std::string::npos)
+			{
+				if (line.find("vertex") != std::string::npos)
+					type = OvRendering::Settings::EShaderType::VERTEX;
+				else if (line.find("fragment") != std::string::npos)
+					type = OvRendering::Settings::EShaderType::FRAGMENT;
+			}
+			else if (type != OvRendering::Settings::EShaderType::NONE)
+			{
+				ss[type] << line << '\n';
+			}
+		}
+
+		return
+		{
+			ss[OvRendering::Settings::EShaderType::VERTEX].str(),
+			ss[OvRendering::Settings::EShaderType::FRAGMENT].str()
+		};
+	}
 }
 
-uint32_t OvRendering::Resources::Loaders::ShaderLoader::CompileShader(uint32_t p_type, const std::string& p_source)
+namespace OvRendering::Resources::Loaders
 {
-	const uint32_t id = glCreateShader(p_type);
-
-	const char* src = p_source.c_str();
-
-	glShaderSource(id, 1, &src, nullptr);
-
-	glCompileShader(id);
-
-	GLint compileStatus;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &compileStatus);
-
-	if (compileStatus == GL_FALSE)
+	Shader* ShaderLoader::Create(const std::string& p_filePath, FilePathParserCallback p_pathParser)
 	{
-		GLint maxLength;
-		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &maxLength);
+		__FILE_TRACE = p_filePath;
 
-		std::string errorLog(maxLength, ' ');
-		glGetShaderInfoLog(id, maxLength, &maxLength, errorLog.data());
+		auto [vertex, fragment] = ParseShader(p_filePath, p_pathParser);
 
-		std::string shaderTypeString = p_type == GL_VERTEX_SHADER ? "VERTEX SHADER" : "FRAGMENT SHADER";
-		std::string errorHeader = "[" + shaderTypeString + "] \"";
-		OVLOG_ERROR(errorHeader + __FILE_TRACE + "\":\n" + errorLog);
+		auto shaders = std::array<ShaderStageDesc, 2>{
+			ShaderStageDesc{vertex, Settings::EShaderType::VERTEX},
+			ShaderStageDesc{fragment, Settings::EShaderType::FRAGMENT}
+		};
 
-		glDeleteShader(id);
+		if (auto program = CreateProgram(shaders))
+		{
+			return new Shader(p_filePath, std::move(program));
+		}
 
-		return 0;
+		return new Shader(p_filePath, std::move(CreateDefaultProgram()));
 	}
 
-	return id;
+	Shader* ShaderLoader::CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader)
+	{
+		__FILE_TRACE = "{C++ embedded shader}";
+
+		auto shaders = std::array<ShaderStageDesc, 2>{
+			ShaderStageDesc{p_vertexShader, Settings::EShaderType::VERTEX},
+			ShaderStageDesc{p_fragmentShader, Settings::EShaderType::FRAGMENT}
+		};
+
+		if (auto program = CreateProgram(shaders))
+		{
+			return new Shader("", std::move(program));
+		}
+
+		return new Shader("", std::move(CreateDefaultProgram()));
+	}
+
+	void ShaderLoader::Recompile(Shader& p_shader, const std::string& p_filePath, FilePathParserCallback p_pathParser)
+	{
+		__FILE_TRACE = p_filePath;
+
+		auto [vertex, fragment] = ParseShader(p_filePath, p_pathParser);
+
+		auto shaders = std::array<ShaderStageDesc, 2>{
+			ShaderStageDesc{vertex, Settings::EShaderType::VERTEX},
+			ShaderStageDesc{fragment, Settings::EShaderType::FRAGMENT}
+		};
+
+		if (auto program = CreateProgram(shaders, true)) // verbose = true
+		{
+			p_shader.SetProgram(std::move(program));
+		}
+		else
+		{
+			OVLOG_ERROR("[COMPILE] \"" + __FILE_TRACE + "\": Failed! Previous shader version keept");
+		}
+	}
+
+	bool ShaderLoader::Destroy(Shader*& p_shader)
+	{
+		if (p_shader)
+		{
+			delete p_shader;
+			p_shader = nullptr;
+			return true;
+		}
+
+		return false;
+	}
 }

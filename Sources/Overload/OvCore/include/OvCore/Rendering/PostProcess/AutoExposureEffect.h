@@ -13,6 +13,9 @@
 
 namespace OvCore::Rendering::PostProcess
 {
+	/**
+	* Settings for the AutoExposure effect
+	*/
 	struct AutoExposureSettings : public EffectSettings
 	{
 		float centerWeightBias = 0.5f;
@@ -46,15 +49,15 @@ namespace OvCore::Rendering::PostProcess
 		*/
 		virtual void Draw(
 			OvRendering::Data::PipelineState p_pso,
-			OvRendering::Buffers::Framebuffer& p_src,
-			OvRendering::Buffers::Framebuffer& p_dst,
+			OvRendering::HAL::Framebuffer& p_src,
+			OvRendering::HAL::Framebuffer& p_dst,
 			const EffectSettings& p_settings
 		) override;
 
 	private:
 		std::optional<std::chrono::high_resolution_clock::time_point> m_previousTime;
-		OvRendering::Buffers::Framebuffer m_luminanceBuffer;
-		std::array<OvRendering::Buffers::Framebuffer, 2> m_exposurePingPongBuffer;
+		OvRendering::HAL::Framebuffer m_luminanceBuffer;
+		std::array<OvRendering::HAL::Framebuffer, 2> m_exposurePingPongBuffer;
 		uint8_t m_exposurePingPongIndex = 0;
 		OvRendering::Data::Material m_luminanceMaterial;
 		OvRendering::Data::Material m_exposureMaterial;

@@ -8,6 +8,7 @@
 
 #include "OvRendering/Core/ABaseRenderer.h"
 #include "OvRendering/Resources/Loaders/TextureLoader.h"
+#include <OvRendering/HAL/TextureHandle.h>
 
 std::atomic_bool OvRendering::Core::ABaseRenderer::s_isDrawing{ false };
 
@@ -100,19 +101,6 @@ bool OvRendering::Core::ABaseRenderer::IsDrawing() const
 	return m_isDrawing;
 }
 
-void OvRendering::Core::ABaseRenderer::ReadPixels(
-	uint32_t p_x,
-	uint32_t p_y,
-	uint32_t p_width,
-	uint32_t p_height,
-	Settings::EPixelDataFormat p_format,
-	Settings::EPixelDataType p_type,
-	void* p_data
-) const
-{
-	return m_driver.ReadPixels(p_x, p_y, p_width, p_height, p_format, p_type, p_data);
-}
-
 void OvRendering::Core::ABaseRenderer::SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height)
 {
 	m_driver.SetViewport(p_x, p_y, p_width, p_height);
@@ -130,22 +118,26 @@ void OvRendering::Core::ABaseRenderer::Clear(
 
 void OvRendering::Core::ABaseRenderer::Blit(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::Buffers::Framebuffer& p_src,
-	OvRendering::Buffers::Framebuffer& p_dst,
+	OvRendering::HAL::Framebuffer& p_src,
+	OvRendering::HAL::Framebuffer& p_dst,
 	OvRendering::Data::Material& p_material,
 	OvRendering::Settings::EBlitFlags p_flags
 )
 {
 	OVASSERT(m_unitQuad != nullptr, "Invalid unit quad mesh, cannot blit!");
 
+	auto [srcWidth, srcHeight] = p_src.GetSize();
+
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC, p_flags))
 	{
-		p_dst.Resize(p_src.GetWidth(), p_src.GetHeight());
+		p_dst.Resize(srcWidth, srcHeight);
 	}
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::FILL_INPUT_TEXTURE, p_flags))
 	{
-		p_material.Set("_InputTexture", p_src.GetTexture());
+		const auto colorTex = p_src.GetAttachment<HAL::Texture>(Settings::EFramebufferAttachment::COLOR);
+		OVASSERT(colorTex.has_value(), "Invalid color attachment");
+		p_material.Set("_InputTexture", colorTex);
 	}
 
 	OvRendering::Entities::Drawable blit;
@@ -171,7 +163,7 @@ void OvRendering::Core::ABaseRenderer::Blit(
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::UPDATE_VIEWPORT_SIZE, p_flags))
 	{
-		SetViewport(0, 0, p_dst.GetWidth(), p_dst.GetHeight());
+		SetViewport(0, 0, srcWidth, srcHeight);
 	}
 
 	DrawEntity(p_pso, blit);

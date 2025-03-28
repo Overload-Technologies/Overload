@@ -10,12 +10,12 @@
 
 namespace OvRendering::Settings
 {
-    /**
-    * Projection modes, mostly used for cameras
-    */
-    enum class EProjectionMode : uint8_t
-    {
-        ORTHOGRAPHIC,
-        PERSPECTIVE
-    };
+	/**
+	* Projection modes, mostly used for cameras
+	*/
+	enum class EProjectionMode : uint8_t
+	{
+		ORTHOGRAPHIC,
+		PERSPECTIVE
+	};
 }

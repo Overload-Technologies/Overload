@@ -10,17 +10,15 @@
 #include "OvRendering/Context/Driver.h"
 #include "OvRendering/Utils/Conversions.h"
 
-#include "OvRendering/HAL/GraphicsAPI.h"
+#include "OvRendering/HAL/Backend.h"
 
-using SelectedAPI = OvRendering::HAL::OpenGL;
-
-std::unique_ptr<SelectedAPI> m_driverImpl;
+std::unique_ptr<OvRendering::HAL::Backend> m_gfxBackend;
 
 OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings& p_driverSettings)
 {
-	m_driverImpl = std::make_unique<SelectedAPI>();
+	m_gfxBackend = std::make_unique<OvRendering::HAL::Backend>();
 
-	auto initialPipelineState = m_driverImpl->Init(p_driverSettings.debugMode);
+	auto initialPipelineState = m_gfxBackend->Init(p_driverSettings.debugMode);
 
 	OVASSERT(initialPipelineState.has_value(), "Failed to initialized driver!");
 
@@ -32,10 +30,16 @@ OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings
 	m_pipelineState = initialPipelineState.value();
 	SetPipelineState(m_defaultPipelineState);
 
-	m_vendor = m_driverImpl->GetVendor();
-	m_hardware = m_driverImpl->GetHardware();
-	m_version = m_driverImpl->GetVersion();
-	m_shadingLanguageVersion = m_driverImpl->GetShadingLanguageVersion();
+	m_vendor = m_gfxBackend->GetVendor();
+	m_hardware = m_gfxBackend->GetHardware();
+	m_version = m_gfxBackend->GetVersion();
+	m_shadingLanguageVersion = m_gfxBackend->GetShadingLanguageVersion();
+
+	OVLOG_INFO("Graphics driver initialized:");
+	OVLOG_INFO("\tVendor => " + m_vendor);
+	OVLOG_INFO("\tHardware => " + m_hardware);
+	OVLOG_INFO("\tVersion => " + m_version);
+	OVLOG_INFO("\tShading Language => " + m_shadingLanguageVersion);
 }
 
 OvRendering::Context::Driver::~Driver()
@@ -44,7 +48,7 @@ OvRendering::Context::Driver::~Driver()
 
 void OvRendering::Context::Driver::SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height)
 {
-	m_driverImpl->SetViewport(p_x, p_y, p_width, p_height);
+	m_gfxBackend->SetViewport(p_x, p_y, p_width, p_height);
 }
 
 void OvRendering::Context::Driver::Clear(
@@ -56,7 +60,7 @@ void OvRendering::Context::Driver::Clear(
 {
 	if (p_colorBuffer)
 	{
-		m_driverImpl->SetClearColor(p_color.x, p_color.y, p_color.z, p_color.w);
+		m_gfxBackend->SetClearColor(p_color.x, p_color.y, p_color.z, p_color.w);
 	}
 
 	auto pso = CreatePipelineState();
@@ -70,20 +74,7 @@ void OvRendering::Context::Driver::Clear(
 
 	SetPipelineState(pso);
 
-	m_driverImpl->Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer);
-}
-
-void OvRendering::Context::Driver::ReadPixels(
-	uint32_t p_x,
-	uint32_t p_y,
-	uint32_t p_width,
-	uint32_t p_height,
-	OvRendering::Settings::EPixelDataFormat p_format,
-	OvRendering::Settings::EPixelDataType p_type,
-	void* p_data
-) const
-{
-	m_driverImpl->ReadPixels(p_x, p_y, p_width, p_height, p_format, p_type, p_data);
+	m_gfxBackend->Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer);
 }
 
 void OvRendering::Context::Driver::Draw(
@@ -103,22 +94,22 @@ void OvRendering::Context::Driver::Draw(
 		{
 			if (p_instances == 1)
 			{
-				m_driverImpl->DrawElements(p_primitiveMode, p_mesh.GetIndexCount());
+				m_gfxBackend->DrawElements(p_primitiveMode, p_mesh.GetIndexCount());
 			}
 			else
 			{
-				m_driverImpl->DrawElementsInstanced(p_primitiveMode, p_mesh.GetIndexCount(), p_instances);
+				m_gfxBackend->DrawElementsInstanced(p_primitiveMode, p_mesh.GetIndexCount(), p_instances);
 			}
 		}
 		else
 		{
 			if (p_instances == 1)
 			{
-				m_driverImpl->DrawArrays(p_primitiveMode, p_mesh.GetVertexCount());
+				m_gfxBackend->DrawArrays(p_primitiveMode, p_mesh.GetVertexCount());
 			}
 			else
 			{
-				m_driverImpl->DrawArraysInstanced(p_primitiveMode, p_mesh.GetVertexCount(), p_instances);
+				m_gfxBackend->DrawArraysInstanced(p_primitiveMode, p_mesh.GetVertexCount(), p_instances);
 			}
 		}
 
@@ -136,36 +127,36 @@ void OvRendering::Context::Driver::SetPipelineState(OvRendering::Data::PipelineS
 		auto& c = m_pipelineState;
 
 		// Rasterization
-		if (i.rasterizationMode != c.rasterizationMode) m_driverImpl->SetRasterizationMode(i.rasterizationMode);
-		if (i.lineWidthPow2 != c.lineWidthPow2) m_driverImpl->SetRasterizationLinesWidth(Utils::Conversions::Pow2toFloat(i.lineWidthPow2));
+		if (i.rasterizationMode != c.rasterizationMode) m_gfxBackend->SetRasterizationMode(i.rasterizationMode);
+		if (i.lineWidthPow2 != c.lineWidthPow2) m_gfxBackend->SetRasterizationLinesWidth(Utils::Conversions::Pow2toFloat(i.lineWidthPow2));
 
-		if (i.colorWriting.mask != c.colorWriting.mask) m_driverImpl->SetColorWriting(i.colorWriting.r, i.colorWriting.g, i.colorWriting.b, i.colorWriting.a);
-		if (i.depthWriting != c.depthWriting) m_driverImpl->SetDepthWriting(i.depthWriting);
+		if (i.colorWriting.mask != c.colorWriting.mask) m_gfxBackend->SetColorWriting(i.colorWriting.r, i.colorWriting.g, i.colorWriting.b, i.colorWriting.a);
+		if (i.depthWriting != c.depthWriting) m_gfxBackend->SetDepthWriting(i.depthWriting);
 
-		if (i.blending != c.blending) m_driverImpl->SetCapability(ERenderingCapability::BLEND, i.blending);
-		if (i.culling != c.culling) m_driverImpl->SetCapability(ERenderingCapability::CULL_FACE, i.culling);
-		if (i.dither != c.dither) m_driverImpl->SetCapability(ERenderingCapability::DITHER, i.dither);
-		if (i.polygonOffsetFill != c.polygonOffsetFill) m_driverImpl->SetCapability(ERenderingCapability::POLYGON_OFFSET_FILL, i.polygonOffsetFill);
-		if (i.sampleAlphaToCoverage != c.sampleAlphaToCoverage) m_driverImpl->SetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE, i.sampleAlphaToCoverage);
-		if (i.depthTest != c.depthTest) m_driverImpl->SetCapability(ERenderingCapability::DEPTH_TEST, i.depthTest);
-		if (i.scissorTest != c.scissorTest) m_driverImpl->SetCapability(ERenderingCapability::SCISSOR_TEST, i.scissorTest);
-		if (i.stencilTest != c.stencilTest) m_driverImpl->SetCapability(ERenderingCapability::STENCIL_TEST, i.stencilTest);
-		if (i.multisample != c.multisample) m_driverImpl->SetCapability(ERenderingCapability::MULTISAMPLE, i.multisample);
+		if (i.blending != c.blending) m_gfxBackend->SetCapability(ERenderingCapability::BLEND, i.blending);
+		if (i.culling != c.culling) m_gfxBackend->SetCapability(ERenderingCapability::CULL_FACE, i.culling);
+		if (i.dither != c.dither) m_gfxBackend->SetCapability(ERenderingCapability::DITHER, i.dither);
+		if (i.polygonOffsetFill != c.polygonOffsetFill) m_gfxBackend->SetCapability(ERenderingCapability::POLYGON_OFFSET_FILL, i.polygonOffsetFill);
+		if (i.sampleAlphaToCoverage != c.sampleAlphaToCoverage) m_gfxBackend->SetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE, i.sampleAlphaToCoverage);
+		if (i.depthTest != c.depthTest) m_gfxBackend->SetCapability(ERenderingCapability::DEPTH_TEST, i.depthTest);
+		if (i.scissorTest != c.scissorTest) m_gfxBackend->SetCapability(ERenderingCapability::SCISSOR_TEST, i.scissorTest);
+		if (i.stencilTest != c.stencilTest) m_gfxBackend->SetCapability(ERenderingCapability::STENCIL_TEST, i.stencilTest);
+		if (i.multisample != c.multisample) m_gfxBackend->SetCapability(ERenderingCapability::MULTISAMPLE, i.multisample);
 
 		// Stencil algorithm
 		if (i.stencilFuncOp != c.stencilFuncOp ||
 			i.stencilFuncRef != c.stencilFuncRef ||
 			i.stencilFuncMask != c.stencilFuncMask)
-			m_driverImpl->SetStencilAlgorithm(i.stencilFuncOp, i.stencilFuncRef, i.stencilFuncMask);
+			m_gfxBackend->SetStencilAlgorithm(i.stencilFuncOp, i.stencilFuncRef, i.stencilFuncMask);
 
-		if (i.stencilWriteMask != c.stencilWriteMask) m_driverImpl->SetStencilMask(i.stencilWriteMask);
-		if (i.stencilOpFail != c.stencilOpFail || i.depthOpFail != c.depthOpFail || i.bothOpFail != c.bothOpFail) m_driverImpl->SetStencilOperations(i.stencilOpFail, i.depthOpFail, i.bothOpFail);
+		if (i.stencilWriteMask != c.stencilWriteMask) m_gfxBackend->SetStencilMask(i.stencilWriteMask);
+		if (i.stencilOpFail != c.stencilOpFail || i.depthOpFail != c.depthOpFail || i.bothOpFail != c.bothOpFail) m_gfxBackend->SetStencilOperations(i.stencilOpFail, i.depthOpFail, i.bothOpFail);
 
 		// Depth
-		if (i.depthFunc != c.depthFunc) m_driverImpl->SetDepthAlgorithm(i.depthFunc);
+		if (i.depthFunc != c.depthFunc) m_gfxBackend->SetDepthAlgorithm(i.depthFunc);
 
 		// Culling
-		if (i.cullFace != c.cullFace) m_driverImpl->SetCullFace(i.cullFace);
+		if (i.cullFace != c.cullFace) m_gfxBackend->SetCullFace(i.cullFace);
 
 		m_pipelineState = p_state;
 	}

@@ -6,19 +6,19 @@
 
 #pragma once
 
-#include <OvRendering/Entities/Camera.h>
-#include <OvRendering/Features/DebugShapeRenderFeature.h>
-
 #include <OvCore/ECS/Actor.h>
-#include <OvCore/SceneSystem/SceneManager.h>
-#include <OvCore/ECS/Components/CModelRenderer.h>
-#include <OvCore/Resources/Material.h>
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
+#include <OvCore/ECS/Components/CModelRenderer.h>
+#include <OvCore/Resources/Material.h>
 #include <OvCore/Rendering/SceneRenderer.h>
+#include <OvCore/SceneSystem/SceneManager.h>
 
-#include "OvEditor/Core/Context.h"
-#include "OvEditor/Core/GizmoBehaviour.h"
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Core/GizmoBehaviour.h>
+
+#include <OvRendering/Entities/Camera.h>
+#include <OvRendering/Features/DebugShapeRenderFeature.h>
 
 namespace OvEditor::Rendering
 {
@@ -65,7 +65,7 @@ namespace OvEditor::Rendering
 		);
 
 	private:
-		OvRendering::Buffers::Framebuffer m_actorPickingFramebuffer;
+		OvRendering::HAL::Framebuffer m_actorPickingFramebuffer;
 		OvCore::Resources::Material m_actorPickingMaterial;
 		OvCore::Resources::Material m_lightMaterial;
 		OvCore::Resources::Material m_gizmoPickingMaterial;

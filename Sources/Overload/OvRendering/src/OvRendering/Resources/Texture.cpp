@@ -4,23 +4,22 @@
 * @licence: MIT
 */
 
-#include <GL/glew.h>
+#include <OvDebug/Assertion.h>
+#include <OvRendering/Resources/Texture.h>
 
-#include "OvRendering/Resources/Texture.h"
-
-void OvRendering::Resources::TextureHandle::Bind(uint32_t p_slot) const
+OvRendering::HAL::Texture& OvRendering::Resources::Texture::GetTexture()
 {
-	glActiveTexture(GL_TEXTURE0 + p_slot);
-	glBindTexture(GL_TEXTURE_2D, id);
+	OVASSERT(m_texture != nullptr, "Trying to access a null Texture");
+	return *m_texture;
 }
 
-void OvRendering::Resources::TextureHandle::Unbind() const
+OvRendering::Resources::Texture::Texture(const std::string p_path, std::unique_ptr<HAL::Texture>&& p_texture) : path(p_path)
 {
-	glBindTexture(GL_TEXTURE_2D, 0);
+	SetTexture(std::move(p_texture));
 }
 
-OvRendering::Resources::Texture::Texture(const std::string p_path, uint32_t p_id, uint32_t p_width, uint32_t p_height, uint32_t p_bpp, Settings::ETextureFilteringMode p_firstFilter, Settings::ETextureFilteringMode p_secondFilter, bool p_generateMipmap) : path(p_path),
-	TextureHandle(p_id), width(p_width), height(p_height), bitsPerPixel(p_bpp), firstFilter(p_firstFilter), secondFilter(p_secondFilter), isMimapped(p_generateMipmap)
+void OvRendering::Resources::Texture::SetTexture(std::unique_ptr<HAL::Texture>&& p_texture)
 {
-
+	OVASSERT(p_texture != nullptr, "Cannot assign an invalid texture!");
+	m_texture = std::move(p_texture);
 }

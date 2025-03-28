@@ -24,8 +24,6 @@ OvEditor::Panels::GameView::GameView
 {
 	m_renderer = std::make_unique<OvCore::Rendering::SceneRenderer>(*EDITOR_CONTEXT(driver));
 	m_renderer->AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
-
-	OvRendering::Buffers::UniformBuffer test(1024, 1);
 }
 
 OvRendering::Entities::Camera* OvEditor::Panels::GameView::GetCamera()

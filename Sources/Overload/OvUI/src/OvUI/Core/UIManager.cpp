@@ -6,7 +6,7 @@
 
 #include "OvUI/Core/UIManager.h"
 
-OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_style, const std::string& p_glslVersion)
+OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_style, std::string_view p_glslVersion)
 {
 	ImGui::CreateContext();
 
@@ -16,7 +16,7 @@ OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_sty
 	ApplyStyle(p_style);
 	
 	ImGui_ImplGlfw_InitForOpenGL(p_glfwWindow, true);
-	ImGui_ImplOpenGL3_Init(p_glslVersion.c_str());
+	ImGui_ImplOpenGL3_Init(p_glslVersion.data());
 }
 
 OvUI::Core::UIManager::~UIManager()

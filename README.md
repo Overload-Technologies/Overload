@@ -138,7 +138,7 @@ If you'd like to contribute, please refer to our [contribution guildelines](http
 # Requirements
 - **RAM:** 100MB
 - **OS:** Windows 7
-- **GPU:** Graphics card supporting OpenGL 4.3
+- **GPU:** Graphics card supporting OpenGL 4.5
 - **CPU:** x64
 
 # Screenshots

@@ -10,7 +10,7 @@
 #include "OvRendering/Features/ARenderFeature.h"
 #include "OvRendering/Data/FrameInfo.h"
 #include "OvRendering/Entities/Light.h"
-#include "OvRendering/Buffers/ShaderStorageBuffer.h"
+#include "OvRendering/HAL/ShaderStorageBuffer.h"
 #include "OvRendering/Data/Frustum.h"
 
 namespace OvRendering::Features
@@ -41,6 +41,6 @@ namespace OvRendering::Features
 
 	private:
 		uint32_t m_bufferBindingPoint;
-		std::unique_ptr<OvRendering::Buffers::ShaderStorageBuffer> m_lightBuffer;
+		std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_lightBuffer;
 	};
 }

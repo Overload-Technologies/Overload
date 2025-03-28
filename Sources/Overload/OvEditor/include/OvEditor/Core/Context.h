@@ -8,8 +8,8 @@
 
 #include <OvTools/Filesystem/IniFile.h>
 
-#include <OvRendering/Buffers/UniformBuffer.h>
-#include <OvRendering/Buffers/ShaderStorageBuffer.h>
+#include <OvRendering/HAL/UniformBuffer.h>
+#include <OvRendering/HAL/ShaderStorageBuffer.h>
 
 #include <OvPhysics/Core/PhysicsEngine.h>
 

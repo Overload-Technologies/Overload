@@ -4,12 +4,21 @@
 * @licence: MIT
 */
 
-#include <OvCore/Rendering/PostProcess/BloomEffect.h>
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/FramebufferUtil.h>
+#include <OvCore/Rendering/PostProcess/BloomEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
-OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) : AEffect(p_renderer)
+OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
+	AEffect(p_renderer)
 {
+	for (auto& buffer : m_bloomPingPong)
+	{
+		FramebufferUtil::SetupFramebuffer(
+			buffer, 1, 1, false, false, false
+		);
+	}
+
 	auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 
 	m_brightnessMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Brightness.ovfx"]);
@@ -28,8 +37,8 @@ bool OvCore::Rendering::PostProcess::BloomEffect::IsApplicable(const EffectSetti
 
 void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::Buffers::Framebuffer& p_src,
-	OvRendering::Buffers::Framebuffer& p_dst,
+	OvRendering::HAL::Framebuffer& p_src,
+	OvRendering::HAL::Framebuffer& p_dst,
 	const EffectSettings& p_settings
 )
 {
@@ -56,7 +65,8 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	}
 
 	// Step 3: Combine bloom with original framebuffer
-	m_bloomMaterial.Set("_BloomTexture", m_bloomPingPong[0].GetTexture(), true);
+	const auto bloomTex = m_bloomPingPong[0].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	m_bloomMaterial.Set("_BloomTexture", bloomTex, true);
 	m_bloomMaterial.Set("_BloomIntensity", bloomSettings.intensity, true);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);
 }

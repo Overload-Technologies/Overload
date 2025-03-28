@@ -52,14 +52,5 @@ namespace OvRendering::Resources::Loaders
 		* @param p_shader
 		*/
 		static bool Destroy(Shader*& p_shader);
-
-	private:
-		static bool ParseIncludeDirective(const std::string& line, std::string& includeFilePath);
-		static std::string LoadShader(const std::string& p_filePath, FilePathParserCallback p_pathParser);
-		static std::pair<std::string, std::string> ParseShader(const std::string& p_filePath, FilePathParserCallback p_pathParser);
-		static uint32_t CreateProgram(const std::string& p_vertexShader, const std::string& p_fragmentShader);
-		static uint32_t CompileShader(uint32_t p_type, const std::string& p_source);
-
-		static std::string __FILE_TRACE;
 	};
 }

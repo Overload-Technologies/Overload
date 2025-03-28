@@ -10,7 +10,7 @@
 OvRendering::Features::LightingRenderFeature::LightingRenderFeature(Core::CompositeRenderer& p_renderer, uint32_t p_bufferBindingPoint)
 	: ARenderFeature(p_renderer), m_bufferBindingPoint(p_bufferBindingPoint)
 {
-	m_lightBuffer = std::make_unique<Buffers::ShaderStorageBuffer>(Settings::EAccessSpecifier::STREAM_DRAW);
+	m_lightBuffer = std::make_unique<HAL::ShaderStorageBuffer>();
 }
 
 bool IsLightInFrustum(const OvRendering::Entities::Light& p_light, const OvRendering::Data::Frustum& p_frustum)
@@ -34,6 +34,8 @@ void OvRendering::Features::LightingRenderFeature::OnBeginFrame(const Data::Fram
 	auto& frameDescriptor = m_renderer.GetFrameDescriptor();
 
 	std::vector<OvMaths::FMatrix4> lightMatrices;
+	lightMatrices.reserve(lightDescriptor.lights.size());
+
 	auto frustum = lightDescriptor.frustumOverride ?
 		lightDescriptor.frustumOverride :
 		frameDescriptor.camera->GetLightFrustum();
@@ -46,7 +48,12 @@ void OvRendering::Features::LightingRenderFeature::OnBeginFrame(const Data::Fram
 		}
 	}
 
-	m_lightBuffer->SendBlocks<OvMaths::FMatrix4>(lightMatrices.data(), lightMatrices.size() * sizeof(OvMaths::FMatrix4));
+	const auto lightMatricesView = std::span{ lightMatrices };
+
+	if (m_lightBuffer->Allocate(lightMatricesView.size_bytes(), Settings::EAccessSpecifier::STREAM_DRAW))
+	{
+		m_lightBuffer->Upload(lightMatricesView.data());
+	}
 
 	m_lightBuffer->Bind(m_bufferBindingPoint);
 }

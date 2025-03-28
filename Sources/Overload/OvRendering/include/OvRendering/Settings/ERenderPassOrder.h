@@ -23,6 +23,7 @@ namespace OvRendering::Settings
 		static constexpr PassType Transparent		= 30000U;
 		static constexpr PassType PostProcessing	= 40000U;
 		static constexpr PassType UI				= 50000U;
+		static constexpr PassType Debug				= 60000U;
 		static constexpr PassType Last				= ~First;
 	};
 }

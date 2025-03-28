@@ -568,9 +568,9 @@ OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context
 	AddFeature<OvEditor::Rendering::OutlineRenderFeature>();
 	AddFeature<OvEditor::Rendering::GizmoRenderFeature>();
 
-	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::PostProcessing + 1);
-	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::PostProcessing + 2);
-	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::PostProcessing + 3);
-	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::PostProcessing + 4);
-	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::PostProcessing + 5);
+	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::Debug);
 }

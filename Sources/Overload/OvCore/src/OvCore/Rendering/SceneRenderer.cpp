@@ -92,6 +92,27 @@ protected:
 	}
 };
 
+class UIRenderPass : public SceneRenderPass
+{
+public:
+	UIRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
+		SceneRenderPass(p_renderer, p_stencilWrite) {}
+
+protected:
+	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
+	{
+		PrepareStencilBuffer(p_pso);
+
+		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
+
+		for (const auto& [distance, drawable] : sceneContent.drawables.ui)
+		{
+			m_renderer.DrawEntity(p_pso, drawable);
+		}
+	}
+};
+
+
 OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_driver, bool p_stencilWrite)
 	: OvRendering::Core::CompositeRenderer(p_driver)
 {
@@ -103,6 +124,7 @@ OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_
 	AddPass<OpaqueRenderPass>("Opaques", OvRendering::Settings::ERenderPassOrder::Opaque, p_stencilWrite);
 	AddPass<TransparentRenderPass>("Transparents", OvRendering::Settings::ERenderPassOrder::Transparent, p_stencilWrite);
 	AddPass<PostProcessRenderPass>("Post-Process", OvRendering::Settings::ERenderPassOrder::PostProcessing);
+	AddPass<UIRenderPass>("UI", OvRendering::Settings::ERenderPassOrder::UI);
 }
 
 OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const OvCore::SceneSystem::Scene& p_scene)
@@ -170,6 +192,7 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 	OpaqueDrawables opaques;
 	TransparentDrawables transparents;
+	UIDrawables ui;
 
 	auto& camera = m_frameDescriptor.camera.value();
 
@@ -265,13 +288,20 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 									materialRenderer->GetUserMatrix()
 								});
 
-								if (material->IsBlendable())
+								if (material->IsUserInterface())
 								{
-									transparents.emplace(distanceToActor, drawable);
+									ui.emplace(distanceToActor, drawable);
 								}
 								else
 								{
-									opaques.emplace(distanceToActor, drawable);
+									if (material->IsBlendable())
+									{
+										transparents.emplace(distanceToActor, drawable);
+									}
+									else
+									{
+										opaques.emplace(distanceToActor, drawable);
+									}
 								}
 							}
 						}
@@ -281,5 +311,5 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 		}
 	}
 
-	return { opaques, transparents };
+	return { opaques, transparents, ui };
 }

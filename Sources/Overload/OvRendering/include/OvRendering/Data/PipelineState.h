@@ -56,9 +56,10 @@ namespace OvRendering::Data
 
 				// B5
 				uint8_t lineWidthPow2 : 3;
-				Settings::EComparaisonAlgorithm depthFunc : 3;
+				Settings::EComparaisonAlgorithm depthFunc : 2;
 				bool depthWriting : 1;
 				bool blending : 1;
+				bool userInterface : 1;
 
 				// B6
 				bool culling : 1;

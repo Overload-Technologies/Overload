@@ -26,6 +26,7 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument & p_doc, tin
 	Serializer::SerializeBoolean(p_doc, settingsNode, "color_writing", m_colorWriting);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "cast_shadows", m_castShadows);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "receive_shadows", m_receiveShadows);
+	Serializer::SerializeBoolean(p_doc, settingsNode, "user_interface", m_userInterface);
 	Serializer::SerializeInt(p_doc, settingsNode, "gpu_instances", m_gpuInstances);
 
 	// Create "Uniforms" (Every uniform will be attached to "Uniforms")
@@ -95,6 +96,7 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument & p_doc, t
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "color_writing", m_colorWriting);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "cast_shadows", m_castShadows);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "receive_shadows", m_receiveShadows);
+		Serializer::DeserializeBoolean(p_doc, settingsNode, "user_interface", m_userInterface);
 		Serializer::DeserializeInt(p_doc, settingsNode, "gpu_instances", m_gpuInstances);
 	}
 

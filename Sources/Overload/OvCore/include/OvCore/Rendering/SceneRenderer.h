@@ -30,11 +30,13 @@ namespace OvCore::Rendering
 	public:
 		using OpaqueDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::less<float>>;
 		using TransparentDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::greater<float>>;
+		using UIDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::greater<float>>;
 
 		struct AllDrawables
 		{
 			OpaqueDrawables opaques;
 			TransparentDrawables transparents;
+			UIDrawables ui;
 		};
 
 		struct SceneDescriptor

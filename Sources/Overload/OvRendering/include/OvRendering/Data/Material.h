@@ -105,6 +105,13 @@ namespace OvRendering::Data
 		void SetBlendable(bool p_blendable);
 
 		/**
+		* Defines if the material is used on UI
+		* @param p_blendable
+		*/
+		void SetUserInterface(bool p_userInterface);
+
+
+		/**
 		* Defines if the material has backface culling
 		* @param p_backfaceCulling
 		*/
@@ -156,6 +163,11 @@ namespace OvRendering::Data
 		* Returns true if the material is blendable
 		*/
 		bool IsBlendable() const;
+
+		/**
+		* Returns true if the material will be used on UI
+		*/
+		bool IsUserInterface() const;
 
 		/**
 		* Returns true if the material has backface culling
@@ -211,6 +223,7 @@ namespace OvRendering::Data
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
 
+		bool m_userInterface = false;
 		bool m_blendable = false;
 		bool m_backfaceCulling = true;
 		bool m_frontfaceCulling = false;

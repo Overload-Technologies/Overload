@@ -4,15 +4,22 @@
 * @licence: MIT
 */
 
-#include "OvAudio/Core/AudioEngine.h"
-
 #include <algorithm>
 
 #include <irrklang/irrKlang.h>
 
+#include <OvAudio/Core/AudioEngine.h>
+#include <OvDebug/Logger.h>
+
 OvAudio::Core::AudioEngine::AudioEngine(const std::string & p_workingDirectory) : m_workingDirectory(p_workingDirectory)
 {
 	m_irrklangEngine = irrklang::createIrrKlangDevice();
+
+	if (!IsValid())
+	{
+		OVLOG_WARNING("Failed to create the audio engine. Playback requests will be ignored.");
+		return;
+	}
 
 	using AudioSourceReceiver	= void(AudioEngine::*)(OvAudio::Entities::AudioSource&);
 	using AudioListenerReceiver = void(AudioEngine::*)(OvAudio::Entities::AudioListener&);
@@ -25,11 +32,24 @@ OvAudio::Core::AudioEngine::AudioEngine(const std::string & p_workingDirectory) 
 
 OvAudio::Core::AudioEngine::~AudioEngine()
 {
-	m_irrklangEngine->drop();
+	if (IsValid())
+	{
+		m_irrklangEngine->drop();
+	}
+}
+
+bool OvAudio::Core::AudioEngine::IsValid() const
+{
+	return m_irrklangEngine != nullptr;
 }
 
 void OvAudio::Core::AudioEngine::Update()
 {
+	if (!IsValid())
+	{
+		return;
+	}
+
 	/* Update tracked sounds */
 	std::for_each(m_audioSources.begin(), m_audioSources.end(), std::mem_fn(&Entities::AudioSource::UpdateTrackedSoundPosition));
 
@@ -80,7 +100,7 @@ const std::string& OvAudio::Core::AudioEngine::GetWorkingDirectory() const
 	return m_workingDirectory;
 }
 
-irrklang::ISoundEngine * OvAudio::Core::AudioEngine::GetIrrklangEngine() const
+irrklang::ISoundEngine* OvAudio::Core::AudioEngine::GetIrrklangEngine() const
 {
 	return m_irrklangEngine;
 }

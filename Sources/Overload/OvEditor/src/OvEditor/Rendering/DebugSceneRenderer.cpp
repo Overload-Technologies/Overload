@@ -62,11 +62,11 @@ std::optional<std::string> GetLightTypeTextureName(OvRendering::Settings::ELight
 
 	switch (type)
 	{
-	case ELightType::POINT: return "Bill_Point_Light";
-	case ELightType::SPOT: return "Bill_Spot_Light";
-	case ELightType::DIRECTIONAL: return "Bill_Directional_Light";
-	case ELightType::AMBIENT_BOX: return "Bill_Ambient_Box_Light";
-	case ELightType::AMBIENT_SPHERE: return "Bill_Ambient_Sphere_Light";
+	case ELightType::POINT: return "Point_Light";
+	case ELightType::SPOT: return "Spot_Light";
+	case ELightType::DIRECTIONAL: return "Directional_Light";
+	case ELightType::AMBIENT_BOX: return "Ambient_Box_Light";
+	case ELightType::AMBIENT_SPHERE: return "Ambient_Sphere_Light";
 	}
 
 	return std::nullopt;

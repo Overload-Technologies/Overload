@@ -43,6 +43,8 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 
 int main(int argc, char** argv)
 {
+	std::locale::global(std::locale("")); // User's locale, as defined by the system's regional settings
+
 	UpdateWorkingDirectory(argv[0]);
 
 	bool ready = false;

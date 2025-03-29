@@ -18,6 +18,8 @@ int main()
 INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 #endif
 {
+	std::locale::global(std::locale("")); // User's locale, as defined by the system's regional settings
+
 	OvGame::Core::Application app;
 	app.Run();
 

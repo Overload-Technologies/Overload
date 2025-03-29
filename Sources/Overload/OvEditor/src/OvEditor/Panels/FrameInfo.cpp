@@ -52,9 +52,8 @@ void OvEditor::Panels::FrameInfo::Update(OvTools::Utils::OptRef<AView> p_targetV
 
 	auto& frameInfo = p_targetView ? GetFrameInfoFromView(p_targetView.value()) : kEmptyFrameInfo;
 
-	const auto loc = std::locale{ "en_US" };
-	m_batchCountText.content = std::format(loc, "Batches: {:L}", frameInfo.batchCount);
-	m_instanceCountText.content = std::format(loc, "Instances: {:L}", frameInfo.instanceCount);
-	m_polyCountText.content = std::format(loc, "Polygons: {:L}", frameInfo.polyCount);
-	m_vertexCountText.content = std::format(loc, "Vertices: {:L}", frameInfo.vertexCount);
+	m_batchCountText.content = std::format("Batches: {:L}", frameInfo.batchCount);
+	m_instanceCountText.content = std::format("Instances: {:L}", frameInfo.instanceCount);
+	m_polyCountText.content = std::format("Polygons: {:L}", frameInfo.polyCount);
+	m_vertexCountText.content = std::format("Vertices: {:L}", frameInfo.vertexCount);
 }

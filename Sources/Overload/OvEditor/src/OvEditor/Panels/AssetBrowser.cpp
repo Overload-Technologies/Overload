@@ -186,6 +186,18 @@ public:
 			OvTools::Utils::SystemCalls::ShowInExplorer(filePath);
 		};
 
+		auto& openFolderInVsCode = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open In Visual Studio Code");
+		openFolderInVsCode.ClickedEvent += [this]
+		{
+			const auto command = std::format("code \"{}\"", filePath);
+			const auto result = std::system(command.c_str());
+
+			if (result != 0)
+			{
+				OVLOG_ERROR("Failed to open Visual Studio Code with error code: " + std::to_string(result));
+			}
+		};
+
 		if (!m_protected)
 		{
 			auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");

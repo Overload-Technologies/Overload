@@ -50,7 +50,7 @@ void OvUI::Widgets::AWidget::Draw()
 		_Draw_Impl();
 
 		if (m_autoExecutePlugins)
-			ExecutePlugins();
+			ExecutePlugins(Plugins::EPluginExecutionContext::WIDGET);
 
 		if (!lineBreak)
 			ImGui::SameLine();

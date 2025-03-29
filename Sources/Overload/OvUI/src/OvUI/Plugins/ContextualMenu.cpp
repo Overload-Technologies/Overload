@@ -4,11 +4,12 @@
 * @licence: MIT
 */
 
-#include "OvUI/Plugins/ContextualMenu.h"
+#include <OvUI/Panels/APanel.h>
+#include <OvUI/Plugins/ContextualMenu.h>
 
-void OvUI::Plugins::ContextualMenu::Execute()
+void OvUI::Plugins::ContextualMenu::Execute(EPluginExecutionContext p_context)
 {
-	if (ImGui::BeginPopupContextItem())
+	if (p_context == EPluginExecutionContext::PANEL ? ImGui::BeginPopupContextWindow() : ImGui::BeginPopupContextItem())
 	{
 		DrawWidgets();
 		ImGui::EndPopup();

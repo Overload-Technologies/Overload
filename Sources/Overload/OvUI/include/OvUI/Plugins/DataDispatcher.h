@@ -85,8 +85,9 @@ namespace OvUI::Plugins
 
 		/**
 		* Execute the data dispatcher behaviour (No effect)
+		* @param p_context
 		*/
-		virtual void Execute() override {}
+		virtual void Execute(EPluginExecutionContext p_context) override {}
 
 	private:
 		bool m_valueChanged = false;

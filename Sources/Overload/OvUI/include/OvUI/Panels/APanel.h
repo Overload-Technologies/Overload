@@ -9,14 +9,15 @@
 #include <vector>
 #include <unordered_map>
 
-#include "OvUI/Internal/WidgetContainer.h"
+#include <OvUI/Internal/WidgetContainer.h>
+#include <OvUI/Plugins/Pluginable.h>
 
 namespace OvUI::Panels
 {
 	/**
 	* A Panel is a component of a canvas. It is a sort of window in the UI
 	*/
-	class APanel : public API::IDrawable, public Internal::WidgetContainer
+	class APanel : public API::IDrawable, public Plugins::Pluginable, public Internal::WidgetContainer
 	{
 	public:
 		/**

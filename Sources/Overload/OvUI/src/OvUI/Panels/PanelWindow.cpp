@@ -173,6 +173,7 @@ void OvUI::Panels::PanelWindow::_Draw_Impl()
                 m_mustScrollToTop = false;
             }
 
+			ExecutePlugins(Plugins::EPluginExecutionContext::PANEL);
 			DrawWidgets();
 		}
 

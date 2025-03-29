@@ -32,9 +32,9 @@ namespace OvUI::Plugins
 
 		/**
 		* Execute the drag and drop target behaviour
-		* @param p_identifier
+		* @param p_context
 		*/
-		virtual void Execute() override
+		virtual void Execute(EPluginExecutionContext p_context) override
 		{
 			if (ImGui::BeginDragDropTarget())
 			{

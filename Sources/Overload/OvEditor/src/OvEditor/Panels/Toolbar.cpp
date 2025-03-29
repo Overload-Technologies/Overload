@@ -23,13 +23,13 @@ OvEditor::Panels::Toolbar::Toolbar
 
 	auto& textureManager = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>();
 
-	m_playButton	= &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Button_Play")->id, OvMaths::FVector2{ 20, 20 });
-	m_pauseButton	= &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Button_Pause")->id, OvMaths::FVector2{ 20, 20 });
-	m_stopButton	= &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Button_Stop")->id, OvMaths::FVector2{ 20, 20 });
-	m_nextButton	= &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Button_Next")->id, OvMaths::FVector2{ 20, 20 });
+	m_playButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Play")->id, OvMaths::FVector2{ 20, 20 });
+	m_pauseButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Pause")->id, OvMaths::FVector2{ 20, 20 });
+	m_stopButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Stop")->id, OvMaths::FVector2{ 20, 20 });
+	m_nextButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Next")->id, OvMaths::FVector2{ 20, 20 });
 
 	CreateWidget<OvUI::Widgets::Layout::Spacing>(0).lineBreak = false;
-	auto& refreshButton	= CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Button_Refresh")->id, OvMaths::FVector2{ 20, 20 });
+	auto& refreshButton = CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Refresh")->id, OvMaths::FVector2{ 20, 20 });
 
 	m_playButton->lineBreak		= false;
 	m_pauseButton->lineBreak	= false;

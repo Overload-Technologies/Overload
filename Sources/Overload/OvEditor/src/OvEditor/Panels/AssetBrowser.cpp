@@ -89,7 +89,7 @@ public:
 		texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[p_path];
 	}
 
-	virtual void Execute() override
+	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
 	{
 		if (ImGui::IsItemHovered())
 		{
@@ -158,10 +158,10 @@ public:
 		}
 	}
 
-	virtual void Execute() override
+	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
 	{
 		if (m_widgets.size() > 0)
-			OvUI::Plugins::ContextualMenu::Execute();
+			OvUI::Plugins::ContextualMenu::Execute(p_context);
 	}
 
 	virtual void DeleteItem() = 0;

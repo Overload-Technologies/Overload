@@ -85,10 +85,10 @@ public:
         OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(createActor, m_target, std::bind(&OvUI::Widgets::Layout::TreeNode::Open, &m_treeNode));
 	}
 
-	virtual void Execute() override
+	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
 	{
 		if (m_widgets.size() > 0)
-			OvUI::Plugins::ContextualMenu::Execute();
+			OvUI::Plugins::ContextualMenu::Execute(p_context);
 	}
 
 private:
@@ -191,7 +191,9 @@ OvEditor::Panels::Hierarchy::Hierarchy
 
 		p_element.first->DetachFromParent();
 	};
-    m_sceneRoot->AddPlugin<ActorContextualMenu>(nullptr, *m_sceneRoot);
+	m_sceneRoot->AddPlugin<ActorContextualMenu>(nullptr, *m_sceneRoot);
+
+	AddPlugin<ActorContextualMenu>(nullptr, *m_sceneRoot);
 
 	// TODO: This code is unsafe, if the hierarchy gets deleted before the last actor gets deleted, this might crash
 	EDITOR_EVENT(ActorUnselectedEvent) += std::bind(&Hierarchy::UnselectActorsWidgets, this);

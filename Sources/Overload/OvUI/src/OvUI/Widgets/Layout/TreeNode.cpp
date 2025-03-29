@@ -70,7 +70,7 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 
 		m_opened = true;
 
-		ExecutePlugins(); // Manually execute plugins to make plugins considering the TreeNode and no childs
+		ExecutePlugins(Plugins::EPluginExecutionContext::WIDGET); // Manually execute plugins to make plugins considering the TreeNode and no childs
 
 		DrawWidgets();
 
@@ -83,6 +83,6 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 
 		m_opened = false;
 
-		ExecutePlugins(); // Manually execute plugins to make plugins considering the TreeNode and no childs
+		ExecutePlugins(Plugins::EPluginExecutionContext::WIDGET); // Manually execute plugins to make plugins considering the TreeNode and no childs
 	}
 }

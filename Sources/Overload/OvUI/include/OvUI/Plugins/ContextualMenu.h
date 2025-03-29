@@ -22,8 +22,9 @@ namespace OvUI::Plugins
 	public:
 		/**
 		* Execute the plugin
+		* @param p_context
 		*/
-		void Execute();
+		void Execute(EPluginExecutionContext p_context);
 
 		/**
 		* Force close the contextual menu

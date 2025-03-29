@@ -21,7 +21,7 @@ namespace OvUI::Plugins
 		/**
 		* Destructor (Destroys every plugins)
 		*/
-		~Pluginable()
+		virtual ~Pluginable()
 		{
 			RemoveAllPlugins();
 		}
@@ -61,10 +61,10 @@ namespace OvUI::Plugins
 		/**
 		* Execute every plugins
 		*/
-		void ExecutePlugins()
+		void ExecutePlugins(EPluginExecutionContext p_context)
 		{
 			for (auto& plugin : m_plugins)
-				plugin->Execute();
+				plugin->Execute(p_context);
 		}
 
 		/**

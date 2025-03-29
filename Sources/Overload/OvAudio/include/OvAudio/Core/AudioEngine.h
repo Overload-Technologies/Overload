@@ -33,6 +33,11 @@ namespace OvAudio::Core
 		~AudioEngine();
 
 		/**
+		* Returns true if the AudioEngine is valid (properly initialized and available)
+		*/
+		bool IsValid() const;
+
+		/**
 		* Update AudioSources and AudioListeners
 		*/
 		void Update();

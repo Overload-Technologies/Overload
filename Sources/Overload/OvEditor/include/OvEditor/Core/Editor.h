@@ -6,16 +6,14 @@
 
 #pragma once
 
-#include <OvRendering/Entities/Camera.h>
-
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Core/PanelsManager.h"
-
-#include <OvUI/Modules/Canvas.h>
-
-#include "OvEditor/Core/Context.h"
 
 #include <OvAnalytics/Profiling/ProfilerSpy.h>
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/PanelsManager.h>
+#include <OvEditor/Panels/AView.h>
+#include <OvRendering/Entities/Camera.h>
+#include <OvUI/Modules/Canvas.h>
 
 namespace OvEditor::Core
 {
@@ -102,9 +100,10 @@ namespace OvEditor::Core
 
 	private:
 		uint64_t m_elapsedFrames = 0;
-		OvUI::Modules::Canvas			m_canvas;
-		OvEditor::Core::Context&		m_context;
-		OvEditor::Core::PanelsManager	m_panelsManager;
-		OvEditor::Core::EditorActions	m_editorActions;
+		OvUI::Modules::Canvas m_canvas;
+		OvEditor::Core::Context& m_context;
+		OvEditor::Core::PanelsManager m_panelsManager;
+		OvEditor::Core::EditorActions m_editorActions;
+		OvTools::Utils::OptRef<Panels::AView> m_lastFocusedView;
 	};
 }

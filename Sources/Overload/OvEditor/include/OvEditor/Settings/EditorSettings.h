@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <OvEditor/Utils/ExternalTools.h>
 #include <OvTools/Eventing/Event.h>
 
 namespace OvEditor::Settings
@@ -92,5 +93,7 @@ namespace OvEditor::Settings
 		inline static Property<float> TranslationSnapUnit = { 1.0f };
 		inline static Property<float> RotationSnapUnit = { 15.0f };
 		inline static Property<float> ScalingSnapUnit = { 1.0f };
+		inline static Property<std::string> FolderExternalToolName = std::string{ Utils::ExternalTools.front().name};
+		inline static Property<std::string> FolderExternalToolCommand = std::string{ Utils::ExternalTools.front().command};
 	};
 }

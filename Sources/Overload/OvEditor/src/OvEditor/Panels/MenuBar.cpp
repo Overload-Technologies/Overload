@@ -18,18 +18,20 @@
 #include <OvCore/ECS/Components/CAudioSource.h>
 #include <OvCore/ECS/Components/CAudioListener.h>
 
+#include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Sliders/SliderInt.h>
 #include <OvUI/Widgets/Sliders/SliderFloat.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 
-#include "OvEditor/Panels/MenuBar.h"
-#include "OvEditor/Panels/SceneView.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Settings/EditorSettings.h"
-#include "OvEditor/Utils/ActorCreationMenu.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/MenuBar.h>
+#include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Settings/EditorSettings.h>
+#include <OvEditor/Utils/ActorCreationMenu.h>
+#include <OvEditor/Utils/ExternalTools.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -69,6 +71,38 @@ void OvEditor::Panels::MenuBar::HandleShortcuts(float p_deltaTime)
 
 void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 {
+	using namespace OvEditor::Settings;
+
+	auto& folderInExternalToolSettings = m_settingsMenu->CreateWidget<Menu::MenuList>("Folder External Tool...");
+	auto& folderExternalToolName = folderInExternalToolSettings.CreateWidget<InputFields::InputText>("", "Name");
+	auto& folderExternalToolCommand = folderInExternalToolSettings.CreateWidget<InputFields::InputText>("", "Command");
+	folderExternalToolCommand.selectAllOnClick = true;
+	folderInExternalToolSettings.ClickedEvent += [&folderExternalToolCommand, &folderExternalToolName]
+	{
+		folderExternalToolName.content = EditorSettings::FolderExternalToolName;
+		folderExternalToolCommand.content = EditorSettings::FolderExternalToolCommand;
+	};
+	folderExternalToolName.ContentChangedEvent += [](const auto& p_content)
+	{
+		EditorSettings::FolderExternalToolName = p_content;
+	};
+	folderExternalToolCommand.ContentChangedEvent += [](const auto& p_content)
+	{
+		EditorSettings::FolderExternalToolCommand = p_content;
+	};
+	folderInExternalToolSettings.CreateWidget<Visual::Separator>();	
+	folderInExternalToolSettings.CreateWidget<Texts::Text>("Load External Tool Preset:");
+	for (auto& tool : Utils::ExternalTools)
+	{
+		folderInExternalToolSettings.CreateWidget<Buttons::Button>(std::string{ tool.name }, 300.0f).ClickedEvent += [&folderExternalToolName, &folderExternalToolCommand, &tool]
+		{
+			EditorSettings::FolderExternalToolName = std::string{ tool.name };
+			EditorSettings::FolderExternalToolCommand = std::string{ tool.command };
+			folderExternalToolName.content = tool.name;
+			folderExternalToolCommand.content = tool.command;
+		};
+	}
+
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);
 	m_settingsMenu->CreateWidget<MenuItem>("Vertical Synchronization", "", true, true).ValueChangedEvent += [this](bool p_value) { EDITOR_CONTEXT(device)->SetVsync(p_value); };
 	auto& cameraSpeedMenu = m_settingsMenu->CreateWidget<MenuList>("Camera Speed");

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <OvEditor/Settings/EditorSettings.h>
+
 #include <OvUI/Widgets/Texts/TextClickable.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Visual/Separator.h>
@@ -175,8 +177,26 @@ public:
 
 class FolderContextualMenu : public BrowserItemContextualMenu
 {
+private:
+	OvTools::Utils::OptRef<OvUI::Widgets::Menu::MenuItem> m_openInExternalTool;
+
 public:
 	FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
+
+	auto GetOpenInExternalToolName() const
+	{
+		return std::format(
+			"Open in {}",
+			OvEditor::Settings::EditorSettings::FolderExternalToolName.Get()
+		);
+	}
+	virtual void Execute() override
+	{
+		BrowserItemContextualMenu::Execute();
+
+		// Keep the "Open In External Tool" menu item label up to date
+		m_openInExternalTool->name = GetOpenInExternalToolName();
+	}
 
 	virtual void CreateList() override
 	{
@@ -186,15 +206,23 @@ public:
 			OvTools::Utils::SystemCalls::ShowInExplorer(filePath);
 		};
 
-		auto& openFolderInVsCode = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open In Visual Studio Code");
-		openFolderInVsCode.ClickedEvent += [this]
+		m_openInExternalTool = CreateWidget<OvUI::Widgets::Menu::MenuItem>(GetOpenInExternalToolName());
+		m_openInExternalTool->ClickedEvent += [this]
 		{
-			const auto command = std::format("code \"{}\"", filePath);
+			const auto command = std::vformat(
+				OvEditor::Settings::EditorSettings::FolderExternalToolCommand.Get(),
+				std::make_format_args(filePath)
+			);
+
 			const auto result = std::system(command.c_str());
 
 			if (result != 0)
 			{
-				OVLOG_ERROR("Failed to open Visual Studio Code with error code: " + std::to_string(result));
+				OVLOG_ERROR(std::format(
+					"Failed to open {} with error code: {}",
+					OvEditor::Settings::EditorSettings::FolderExternalToolName.Get(),
+					std::to_string(result)
+				));
 			}
 		};
 

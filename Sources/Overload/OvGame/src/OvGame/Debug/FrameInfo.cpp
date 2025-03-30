@@ -25,10 +25,11 @@ OvGame::Debug::FrameInfo::FrameInfo(OvWindowing::Window& p_window) :
 
 void OvGame::Debug::FrameInfo::Update(const OvRendering::Data::FrameInfo& p_frameInfo)
 {
-	m_batchText.content = std::format("Batches: {:L}", p_frameInfo.batchCount);
-	m_instanceText.content = std::format("Instances: {:L}", p_frameInfo.instanceCount);
-	m_polyText.content = std::format("Polygons: {:L}", p_frameInfo.polyCount);
-	m_vertexText.content = std::format("Vertices: {:L}", p_frameInfo.vertexCount);
+	const auto loc = std::locale("");
+	m_batchText.content = std::format(loc, "Batches: {:L}", p_frameInfo.batchCount);
+	m_instanceText.content = std::format(loc, "Instances: {:L}", p_frameInfo.instanceCount);
+	m_polyText.content = std::format(loc, "Polygons: {:L}", p_frameInfo.polyCount);
+	m_vertexText.content = std::format(loc, "Vertices: {:L}", p_frameInfo.vertexCount);
 
 	SetPosition({ 10.0f , static_cast<float>(m_window.GetSize().second) - 10.f });
 	SetAlignment(OvUI::Settings::EHorizontalAlignment::LEFT, OvUI::Settings::EVerticalAlignment::BOTTOM);

@@ -44,757 +44,423 @@ using namespace OvUI::Widgets;
 
 const std::string FILENAMES_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_=+ 0123456789()[]";
 
-std::string GetAssociatedMetaFile(const std::string& p_assetPath)
+namespace
 {
-	return p_assetPath + ".meta";
-}
-
-void RenameAsset(const std::string& p_prev, const std::string& p_new)
-{
-	std::filesystem::rename(p_prev, p_new);
-
-	if (const std::string previousMetaPath = GetAssociatedMetaFile(p_prev); std::filesystem::exists(previousMetaPath))
+	template<typename ResourceManager>
+	auto& GetResource(const std::string& p_path, bool p_isEngineResource)
 	{
-		if (const std::string newMetaPath = GetAssociatedMetaFile(p_new); !std::filesystem::exists(newMetaPath))
-		{
-			std::filesystem::rename(previousMetaPath, newMetaPath);
-		}
-		else
-		{
-			OVLOG_ERROR(newMetaPath + " is already existing, .meta creation failed");
-		}
-	}
-}
-
-void RemoveAsset(const std::string& p_toDelete)
-{
-	std::filesystem::remove(p_toDelete);
-
-	if (const std::string metaPath = GetAssociatedMetaFile(p_toDelete); std::filesystem::exists(metaPath))
-	{
-		std::filesystem::remove(metaPath);
-	}
-}
-
-class TexturePreview : public OvUI::Plugins::IPlugin
-{
-public:
-	TexturePreview() : image(0, { 80, 80 })
-	{
-
+		auto resource = OvCore::Global::ServiceLocator::Get<ResourceManager>()[EDITOR_EXEC(GetResourcePath(p_path, p_isEngineResource))];
+		OVASSERT(resource, "Resource not found");
+		return *resource;
 	}
 
-	void SetPath(const std::string& p_path)
+	void OpenInAssetView(auto& p_resource)
 	{
-		texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[p_path];
+		auto& assetView = EDITOR_PANEL(OvEditor::Panels::AssetView, "Asset View");
+		assetView.SetResource(OvEditor::Panels::AssetView::ViewableResource{ &p_resource });
+		assetView.Open();
+		assetView.Focus();
 	}
 
-	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
+	void OpenInMaterialEditor(auto& p_resource)
 	{
-		if (ImGui::IsItemHovered())
-		{
-			if (texture)
-				image.textureID.id = texture->id;
-
-			ImGui::BeginTooltip();
-			image.Draw();
-			ImGui::EndTooltip();
-		}
+		auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+		materialEditor.SetTarget(p_resource);
+		materialEditor.Open();
+		materialEditor.Focus();
 	}
 
-	OvRendering::Resources::Texture* texture = nullptr;
-	OvUI::Widgets::Visual::Image image;
-};
-
-class BrowserItemContextualMenu : public OvUI::Plugins::ContextualMenu
-{
-public:
-	BrowserItemContextualMenu(const std::string p_filePath, bool p_protected = false) : m_protected(p_protected), filePath(p_filePath) {}
-
-	virtual void CreateList()
+	std::string GetAssociatedMetaFile(const std::string& p_assetPath)
 	{
-		if (!m_protected)
-		{
-			auto& deleteAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
-			deleteAction.ClickedEvent += [this] { DeleteItem(); };
-
-			auto& renameMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Rename to...");
-
-			auto& nameEditor = renameMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			nameEditor.selectAllOnClick = true;
-
-			renameMenu.ClickedEvent += [this, &nameEditor]
-			{
-				nameEditor.content = OvTools::Utils::PathParser::GetElementName(filePath);
-
-				if (!std::filesystem::is_directory(filePath))
-					if (size_t pos = nameEditor.content.rfind('.'); pos != std::string::npos)
-						nameEditor.content = nameEditor.content.substr(0, pos);
-			};
-
-			nameEditor.EnterPressedEvent += [this](std::string p_newName)
-			{
-				if (!std::filesystem::is_directory(filePath))
-					p_newName += '.' + OvTools::Utils::PathParser::GetExtension(filePath);
-
-				/* Clean the name (Remove special chars) */
-				p_newName.erase(std::remove_if(p_newName.begin(), p_newName.end(), [](auto& c)
-				{
-					return std::find(FILENAMES_CHARS.begin(), FILENAMES_CHARS.end(), c) == FILENAMES_CHARS.end();
-				}), p_newName.end());
-
-				std::string containingFolderPath = OvTools::Utils::PathParser::GetContainingFolder(filePath);
-				std::string newPath = containingFolderPath + p_newName;
-				std::string oldPath = filePath;
-
-				if (filePath != newPath && !std::filesystem::exists(newPath))
-					filePath = newPath;
-
-				if (std::filesystem::is_directory(oldPath))
-					filePath += '\\';
-
-				RenamedEvent.Invoke(oldPath, newPath);
-			};
-		}
+		return p_assetPath + ".meta";
 	}
 
-	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
+	void RenameAsset(const std::string& p_prev, const std::string& p_new)
 	{
-		if (m_widgets.size() > 0)
-			OvUI::Plugins::ContextualMenu::Execute(p_context);
-	}
+		std::filesystem::rename(p_prev, p_new);
 
-	virtual void DeleteItem() = 0;
-
-public:
-	bool m_protected;
-	std::string filePath;
-	OvTools::Eventing::Event<std::string> DestroyedEvent;
-	OvTools::Eventing::Event<std::string, std::string> RenamedEvent;
-};
-
-class FolderContextualMenu : public BrowserItemContextualMenu
-{
-public:
-	FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		auto& showInExplorer = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Show in explorer");
-		showInExplorer.ClickedEvent += [this]
+		if (const std::string previousMetaPath = GetAssociatedMetaFile(p_prev); std::filesystem::exists(previousMetaPath))
 		{
-			OvTools::Utils::SystemCalls::ShowInExplorer(filePath);
-		};
-
-		if (!m_protected)
-		{
-			auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
-			importAssetHere.ClickedEvent += [this]
+			if (const std::string newMetaPath = GetAssociatedMetaFile(p_new); !std::filesystem::exists(newMetaPath))
 			{
-				if (EDITOR_EXEC(ImportAssetAtLocation(filePath)))
-				{
-					OvUI::Widgets::Layout::TreeNode* pluginOwner = reinterpret_cast<OvUI::Widgets::Layout::TreeNode*>(userData);
-					pluginOwner->Close();
-					EDITOR_EXEC(DelayAction(std::bind(&OvUI::Widgets::Layout::TreeNode::Open, pluginOwner)));
-				}
-			};
-
-			auto& createMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Create..");
-
-			auto& createFolderMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Folder");
-			auto& createSceneMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Scene");
-			auto& createShaderMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Shader");
-			auto& createMaterialMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Material");
-
-			auto& createEmptyShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Empty");
-			auto& createPartialShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Partial");
-			auto& createStandardShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard template");
-			auto& createStandardPBRShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard PBR template");
-			auto& createUnlitShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit template");
-			auto& createLambertShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert template");
-
-			auto& createEmptyMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Empty");
-			auto& createStandardMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard");
-			auto& createStandardPBRMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard PBR");
-			auto& createUnlitMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit");
-			auto& createLambertMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert");
-
-			auto& createFolder = createFolderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createScene = createSceneMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-
-			auto& createEmptyMaterial = createEmptyMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createStandardMaterial = createStandardMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createStandardPBRMaterial = createStandardPBRMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createUnlitMaterial = createUnlitMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createLambertMaterial = createLambertMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-
-			auto& createEmptyShader = createEmptyShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createPartialShader = createPartialShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createStandardShader = createStandardShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createStandardPBRShader = createStandardPBRShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createUnlitShader = createUnlitShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			auto& createLambertShader = createLambertShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-
-			createFolderMenu.ClickedEvent += [&createFolder] { createFolder.content = ""; };
-			createSceneMenu.ClickedEvent += [&createScene] { createScene.content = ""; };
-			createStandardShaderMenu.ClickedEvent += [&createStandardShader] { createStandardShader.content = ""; };
-			createStandardPBRShaderMenu.ClickedEvent += [&createStandardPBRShader] { createStandardPBRShader.content = ""; };
-			createUnlitShaderMenu.ClickedEvent += [&createUnlitShader] { createUnlitShader.content = ""; };
-			createLambertShaderMenu.ClickedEvent += [&createLambertShader] { createLambertShader.content = ""; };
-			createEmptyMaterialMenu.ClickedEvent += [&createEmptyMaterial] { createEmptyMaterial.content = ""; };
-			createEmptyShaderMenu.ClickedEvent += [&createEmptyShader] { createEmptyShader.content = ""; };
-			createPartialShaderMenu.ClickedEvent += [&createPartialShader] { createPartialShader.content = ""; };
-			createStandardMaterialMenu.ClickedEvent += [&createStandardMaterial] { createStandardMaterial.content = ""; };
-			createStandardPBRMaterialMenu.ClickedEvent += [&createStandardPBRMaterial] { createStandardPBRMaterial.content = ""; };
-			createUnlitMaterialMenu.ClickedEvent += [&createUnlitMaterial] { createUnlitMaterial.content = ""; };
-			createLambertMaterialMenu.ClickedEvent += [&createLambertMaterial] { createLambertMaterial.content = ""; };
-
-			createFolder.EnterPressedEvent += [this](std::string newFolderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? newFolderName : newFolderName + " (" + std::to_string(fails) + ')');
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				std::filesystem::create_directory(finalPath);
-
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createScene.EnterPressedEvent += [this](std::string newSceneName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? newSceneName : newSceneName + " (" + std::to_string(fails) + ')') + ".ovscene";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				auto emptyScene = OvCore::SceneSystem::Scene{};
-				emptyScene.AddDefaultCamera();
-				emptyScene.AddDefaultLights();
-
-				EDITOR_EXEC(SaveSceneToDisk(emptyScene, finalPath));
-
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createEmptyShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createPartialShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfxh";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createStandardShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Standard.ovfx", finalPath);
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createStandardPBRShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\StandardPBR.ovfx", finalPath);
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createUnlitShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Unlit.ovfx", finalPath);
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-
-			createLambertShader.EnterPressedEvent += [this](std::string newShaderName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Lambert.ovfx", finalPath);
-				ItemAddedEvent.Invoke(finalPath);
-				Close();
-			};
-			
-			createEmptyMaterial.EnterPressedEvent += [this](std::string materialName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-					outfile << "<root><shader>?</shader></root>" << std::endl; // Empty material content
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-
-				if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					materialEditor.SetTarget(*instance);
-					materialEditor.Open();
-					materialEditor.Focus();
-					materialEditor.Preview();
-				}
-				Close();
-			};
-
-			createStandardMaterial.EnterPressedEvent += [this](std::string materialName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-					outfile << "<root><shader>:Shaders\\Standard.ovfx</shader></root>" << std::endl; // Empty standard material content
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-
-				if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					materialEditor.SetTarget(*instance);
-					materialEditor.Open();
-					materialEditor.Focus();
-					materialEditor.Preview();
-				}
-				Close();
-			};
-
-			createStandardPBRMaterial.EnterPressedEvent += [this](std::string materialName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-					outfile << "<root><shader>:Shaders\\StandardPBR.ovfx</shader></root>" << std::endl; // Empty standard material content
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-
-				if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					materialEditor.SetTarget(*instance);
-					materialEditor.Open();
-					materialEditor.Focus();
-					materialEditor.Preview();
-				}
-				Close();
-			};
-
-			createUnlitMaterial.EnterPressedEvent += [this](std::string materialName)
-			{
-				std::string newSceneName = "Material";
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-					outfile << "<root><shader>:Shaders\\Unlit.ovfx</shader></root>" << std::endl; // Empty unlit material content
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-
-				if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					materialEditor.SetTarget(*instance);
-					materialEditor.Open();
-					materialEditor.Focus();
-					materialEditor.Preview();
-				}
-				Close();
-			};
-
-			createLambertMaterial.EnterPressedEvent += [this](std::string materialName)
-			{
-				size_t fails = 0;
-				std::string finalPath;
-
-				do
-				{
-					finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-
-					++fails;
-				} while (std::filesystem::exists(finalPath));
-
-				{
-					std::ofstream outfile(finalPath);
-					outfile << "<root><shader>:Shaders\\Lambert.ovfx</shader></root>" << std::endl; // Empty unlit material content
-				}
-
-				ItemAddedEvent.Invoke(finalPath);
-
-				if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					materialEditor.SetTarget(*instance);
-					materialEditor.Open();
-					materialEditor.Focus();
-					materialEditor.Preview();
-				}
-				Close();
-			};
-
-			BrowserItemContextualMenu::CreateList();
-		}
-	}
-
-	virtual void DeleteItem() override
-	{
-		using namespace OvWindowing::Dialogs;
-		MessageBox message("Delete folder", "Deleting a folder (and all its content) is irreversible, are you sure that you want to delete \"" + filePath + "\"?", MessageBox::EMessageType::WARNING, MessageBox::EButtonLayout::YES_NO);
-
-		if (message.GetUserAction() == MessageBox::EUserAction::YES)
-		{
-			if (std::filesystem::exists(filePath) == true)
-			{
-				EDITOR_EXEC(PropagateFolderDestruction(filePath));
-				std::filesystem::remove_all(filePath);
-				DestroyedEvent.Invoke(filePath);
-			}
-		}
-	}
-
-public:
-	OvTools::Eventing::Event<std::string> ItemAddedEvent;
-};
-
-class ScriptFolderContextualMenu : public FolderContextualMenu
-{
-public:
-	ScriptFolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : FolderContextualMenu(p_filePath, p_protected) {}
-
-	void CreateScript(const std::string& p_name, const std::string& p_path)
-	{
-		const std::string fileContent = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultScriptContent(p_name);
-		
-		std::ofstream outfile(p_path);
-		outfile << fileContent << std::endl;
-
-		ItemAddedEvent.Invoke(p_path);
-		Close();
-	}
-
-	virtual void CreateList() override
-	{
-		FolderContextualMenu::CreateList();
-
-		auto& newScriptMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("New script...");
-		auto& nameEditor = newScriptMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-
-		newScriptMenu.ClickedEvent += [this, &nameEditor]
-		{
-			nameEditor.content = OvTools::Utils::PathParser::GetElementName("");
-		};
-
-		nameEditor.EnterPressedEvent += [this](std::string p_newName)
-		{
-			/* Clean the name (Remove special chars) */
-			p_newName.erase(std::remove_if(p_newName.begin(), p_newName.end(), [](auto& c)
-			{
-				return std::find(FILENAMES_CHARS.begin(), FILENAMES_CHARS.end(), c) == FILENAMES_CHARS.end();
-			}), p_newName.end());
-
-			const std::string extension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
-			const std::string newPath = filePath + p_newName + extension;
-
-			if (!std::filesystem::exists(newPath))
-			{
-				CreateScript(p_newName, newPath);
-			}
-		};
-	}
-};
-
-class FileContextualMenu : public BrowserItemContextualMenu
-{
-public:
-	FileContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
-
-		editAction.ClickedEvent += [this]
-		{
-			OvTools::Utils::SystemCalls::OpenFile(filePath);
-		};
-
-		if (!m_protected)
-		{
-			auto& duplicateAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Duplicate");
-
-			duplicateAction.ClickedEvent += [this]
-			{
-				std::string filePathWithoutExtension = filePath;
-
-				if (size_t pos = filePathWithoutExtension.rfind('.'); pos != std::string::npos)
-					filePathWithoutExtension = filePathWithoutExtension.substr(0, pos);
-
-				std::string extension = "." + OvTools::Utils::PathParser::GetExtension(filePath);
-
-                auto filenameAvailable = [&extension](const std::string& target)
-                {
-                    return !std::filesystem::exists(target + extension);
-                };
-
-                const auto newNameWithoutExtension = OvTools::Utils::String::GenerateUnique(filePathWithoutExtension, filenameAvailable);
-
-				std::string finalPath = newNameWithoutExtension + extension;
-				std::filesystem::copy(filePath, finalPath);
-
-				DuplicateEvent.Invoke(finalPath);
-			};
-		}
-
-		BrowserItemContextualMenu::CreateList();
-
-
-        auto& editMetadata = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Properties");
-
-        editMetadata.ClickedEvent += [this]
-        {
-            auto& panel = EDITOR_PANEL(OvEditor::Panels::AssetProperties, "Asset Properties");
-            std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-            panel.SetTarget(resourcePath);
-            panel.Open();
-            panel.Focus();
-        };
-	}
-
-	virtual void DeleteItem() override
-	{
-		using namespace OvWindowing::Dialogs;
-		MessageBox message("Delete file", "Deleting a file is irreversible, are you sure that you want to delete \"" + filePath + "\"?", MessageBox::EMessageType::WARNING, MessageBox::EButtonLayout::YES_NO);
-
-		if (message.GetUserAction() == MessageBox::EUserAction::YES)
-		{
-			RemoveAsset(filePath);
-			DestroyedEvent.Invoke(filePath);
-			EDITOR_EXEC(PropagateFileRename(filePath, "?"));
-		}
-	}
-
-public:
-	OvTools::Eventing::Event<std::string> DuplicateEvent;
-};
-
-template<typename Resource, typename ResourceLoader>
-class PreviewableContextualMenu : public FileContextualMenu
-{
-public:
-	PreviewableContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
-
-		previewAction.ClickedEvent += [this]
-		{
-			Resource* resource = OvCore::Global::ServiceLocator::Get<ResourceLoader>()[EDITOR_EXEC(GetResourcePath(filePath, m_protected))];
-			auto& assetView = EDITOR_PANEL(OvEditor::Panels::AssetView, "Asset View");
-			assetView.SetResource(resource);
-			assetView.Open();
-			assetView.Focus();
-		};
-
-		FileContextualMenu::CreateList();
-	}
-};
-
-class ShaderContextualMenu : public FileContextualMenu
-{
-public:
-	ShaderContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		FileContextualMenu::CreateList();
-
-		auto& compileAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Compile");
-
-		compileAction.ClickedEvent += [this]
-		{
-			auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
-			std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-			if (shaderManager.IsResourceRegistered(resourcePath))
-			{
-				/* Trying to recompile */
-				shaderManager.ReloadResource(shaderManager[resourcePath], filePath);
+				std::filesystem::rename(previousMetaPath, newMetaPath);
 			}
 			else
 			{
-				/* Trying to compile */
-				OvRendering::Resources::Shader* shader = OVSERVICE(OvCore::ResourceManagement::ShaderManager)[resourcePath];
-				if (shader)
-					OVLOG_INFO("[COMPILE] \"" + filePath + "\": Success!");
+				OVLOG_ERROR(newMetaPath + " is already existing, .meta creation failed");
 			}
-			
-		};
+		}
 	}
-};
 
-class ShaderPartContextualMenu : public FileContextualMenu
-{
-public:
-	ShaderPartContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
+	void RemoveAsset(const std::string& p_toDelete)
 	{
-		FileContextualMenu::CreateList();
-	}
-};
+		std::filesystem::remove(p_toDelete);
 
-class ModelContextualMenu : public PreviewableContextualMenu<OvRendering::Resources::Model, OvCore::ResourceManagement::ModelManager>
-{
-public:
-	ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
-
-		reloadAction.ClickedEvent += [this]
+		if (const std::string metaPath = GetAssociatedMetaFile(p_toDelete); std::filesystem::exists(metaPath))
 		{
-			auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-			std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-			if (modelManager.IsResourceRegistered(resourcePath))
+			std::filesystem::remove(metaPath);
+		}
+	}
+
+	class TexturePreview : public OvUI::Plugins::IPlugin
+	{
+	public:
+		TexturePreview() : image(0, { 80, 80 })
+		{
+
+		}
+
+		void SetPath(const std::string& p_path)
+		{
+			texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[p_path];
+		}
+
+		virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
+		{
+			if (ImGui::IsItemHovered())
 			{
-				modelManager.AResourceManager::ReloadResource(resourcePath);
+				if (texture)
+					image.textureID.id = texture->id;
+
+				ImGui::BeginTooltip();
+				image.Draw();
+				ImGui::EndTooltip();
 			}
-		};
+		}
 
-		if (!m_protected)
+		OvRendering::Resources::Texture* texture = nullptr;
+		OvUI::Widgets::Visual::Image image;
+	};
+
+	class BrowserItemContextualMenu : public OvUI::Plugins::ContextualMenu
+	{
+	public:
+		BrowserItemContextualMenu(const std::string p_filePath, bool p_protected = false) : m_protected(p_protected), filePath(p_filePath) {}
+
+		virtual void CreateList()
 		{
-			auto& generateMaterialsMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Generate materials...");
-
-			generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Standard").ClickedEvent += [this]
+			if (!m_protected)
 			{
-				auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-				std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-				if (auto model = modelManager.GetResource(resourcePath))
+				auto& deleteAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
+				deleteAction.ClickedEvent += [this] { DeleteItem(); };
+
+				auto& renameMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Rename to...");
+
+				auto& nameEditor = renameMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				nameEditor.selectAllOnClick = true;
+
+				renameMenu.ClickedEvent += [this, &nameEditor]
+					{
+						nameEditor.content = OvTools::Utils::PathParser::GetElementName(filePath);
+
+						if (!std::filesystem::is_directory(filePath))
+							if (size_t pos = nameEditor.content.rfind('.'); pos != std::string::npos)
+								nameEditor.content = nameEditor.content.substr(0, pos);
+					};
+
+				nameEditor.EnterPressedEvent += [this](std::string p_newName)
+					{
+						if (!std::filesystem::is_directory(filePath))
+							p_newName += '.' + OvTools::Utils::PathParser::GetExtension(filePath);
+
+						/* Clean the name (Remove special chars) */
+						p_newName.erase(std::remove_if(p_newName.begin(), p_newName.end(), [](auto& c)
+							{
+								return std::find(FILENAMES_CHARS.begin(), FILENAMES_CHARS.end(), c) == FILENAMES_CHARS.end();
+							}), p_newName.end());
+
+						std::string containingFolderPath = OvTools::Utils::PathParser::GetContainingFolder(filePath);
+						std::string newPath = containingFolderPath + p_newName;
+						std::string oldPath = filePath;
+
+						if (filePath != newPath && !std::filesystem::exists(newPath))
+							filePath = newPath;
+
+						if (std::filesystem::is_directory(oldPath))
+							filePath += '\\';
+
+						RenamedEvent.Invoke(oldPath, newPath);
+					};
+			}
+		}
+
+		virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
+		{
+			if (m_widgets.size() > 0)
+				OvUI::Plugins::ContextualMenu::Execute(p_context);
+		}
+
+		virtual void DeleteItem() = 0;
+
+	public:
+		bool m_protected;
+		std::string filePath;
+		OvTools::Eventing::Event<std::string> DestroyedEvent;
+		OvTools::Eventing::Event<std::string, std::string> RenamedEvent;
+	};
+
+	class FolderContextualMenu : public BrowserItemContextualMenu
+	{
+	public:
+		FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& showInExplorer = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Show in explorer");
+			showInExplorer.ClickedEvent += [this]
 				{
-					for (const std::string& materialName : model->GetMaterialNames())
+					OvTools::Utils::SystemCalls::ShowInExplorer(filePath);
+				};
+
+			if (!m_protected)
+			{
+				auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
+				importAssetHere.ClickedEvent += [this]
+					{
+						if (EDITOR_EXEC(ImportAssetAtLocation(filePath)))
+						{
+							OvUI::Widgets::Layout::TreeNode* pluginOwner = reinterpret_cast<OvUI::Widgets::Layout::TreeNode*>(userData);
+							pluginOwner->Close();
+							EDITOR_EXEC(DelayAction(std::bind(&OvUI::Widgets::Layout::TreeNode::Open, pluginOwner)));
+						}
+					};
+
+				auto& createMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Create..");
+
+				auto& createFolderMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Folder");
+				auto& createSceneMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Scene");
+				auto& createShaderMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Shader");
+				auto& createMaterialMenu = createMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Material");
+
+				auto& createEmptyShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Empty");
+				auto& createPartialShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Partial");
+				auto& createStandardShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard template");
+				auto& createStandardPBRShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard PBR template");
+				auto& createUnlitShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit template");
+				auto& createLambertShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert template");
+
+				auto& createEmptyMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Empty");
+				auto& createStandardMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard");
+				auto& createStandardPBRMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard PBR");
+				auto& createUnlitMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit");
+				auto& createLambertMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert");
+
+				auto& createFolder = createFolderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createScene = createSceneMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+
+				auto& createEmptyMaterial = createEmptyMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createStandardMaterial = createStandardMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createStandardPBRMaterial = createStandardPBRMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createUnlitMaterial = createUnlitMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createLambertMaterial = createLambertMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+
+				auto& createEmptyShader = createEmptyShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createPartialShader = createPartialShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createStandardShader = createStandardShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createStandardPBRShader = createStandardPBRShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createUnlitShader = createUnlitShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createLambertShader = createLambertShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+
+				createFolderMenu.ClickedEvent += [&createFolder] { createFolder.content = ""; };
+				createSceneMenu.ClickedEvent += [&createScene] { createScene.content = ""; };
+				createStandardShaderMenu.ClickedEvent += [&createStandardShader] { createStandardShader.content = ""; };
+				createStandardPBRShaderMenu.ClickedEvent += [&createStandardPBRShader] { createStandardPBRShader.content = ""; };
+				createUnlitShaderMenu.ClickedEvent += [&createUnlitShader] { createUnlitShader.content = ""; };
+				createLambertShaderMenu.ClickedEvent += [&createLambertShader] { createLambertShader.content = ""; };
+				createEmptyMaterialMenu.ClickedEvent += [&createEmptyMaterial] { createEmptyMaterial.content = ""; };
+				createEmptyShaderMenu.ClickedEvent += [&createEmptyShader] { createEmptyShader.content = ""; };
+				createPartialShaderMenu.ClickedEvent += [&createPartialShader] { createPartialShader.content = ""; };
+				createStandardMaterialMenu.ClickedEvent += [&createStandardMaterial] { createStandardMaterial.content = ""; };
+				createStandardPBRMaterialMenu.ClickedEvent += [&createStandardPBRMaterial] { createStandardPBRMaterial.content = ""; };
+				createUnlitMaterialMenu.ClickedEvent += [&createUnlitMaterial] { createUnlitMaterial.content = ""; };
+				createLambertMaterialMenu.ClickedEvent += [&createLambertMaterial] { createLambertMaterial.content = ""; };
+
+				createFolder.EnterPressedEvent += [this](std::string newFolderName)
 					{
 						size_t fails = 0;
 						std::string finalPath;
 
 						do
 						{
-							finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+							finalPath = filePath + (!fails ? newFolderName : newFolderName + " (" + std::to_string(fails) + ')');
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						std::filesystem::create_directory(finalPath);
+
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createScene.EnterPressedEvent += [this](std::string newSceneName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + (!fails ? newSceneName : newSceneName + " (" + std::to_string(fails) + ')') + ".ovscene";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						auto emptyScene = OvCore::SceneSystem::Scene{};
+						emptyScene.AddDefaultCamera();
+						emptyScene.AddDefaultLights();
+
+						EDITOR_EXEC(SaveSceneToDisk(emptyScene, finalPath));
+
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createEmptyShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						{
+							std::ofstream outfile(finalPath);
+						}
+
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createPartialShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfxh";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						{
+							std::ofstream outfile(finalPath);
+						}
+
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createStandardShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Standard.ovfx", finalPath);
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createStandardPBRShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\StandardPBR.ovfx", finalPath);
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createUnlitShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Unlit.ovfx", finalPath);
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createLambertShader.EnterPressedEvent += [this](std::string newShaderName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Lambert.ovfx", finalPath);
+						ItemAddedEvent.Invoke(finalPath);
+						Close();
+					};
+
+				createEmptyMaterial.EnterPressedEvent += [this](std::string materialName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+
+							++fails;
+						} while (std::filesystem::exists(finalPath));
+
+						{
+							std::ofstream outfile(finalPath);
+							outfile << "<root><shader>?</shader></root>" << std::endl; // Empty material content
+						}
+
+						ItemAddedEvent.Invoke(finalPath);
+
+						if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+						{
+							auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+							materialEditor.SetTarget(*instance);
+							materialEditor.Open();
+							materialEditor.Focus();
+							materialEditor.Preview();
+						}
+						Close();
+					};
+
+				createStandardMaterial.EnterPressedEvent += [this](std::string materialName)
+					{
+						size_t fails = 0;
+						std::string finalPath;
+
+						do
+						{
+							finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
 
 							++fails;
 						} while (std::filesystem::exists(finalPath));
@@ -804,25 +470,27 @@ public:
 							outfile << "<root><shader>:Shaders\\Standard.ovfx</shader></root>" << std::endl; // Empty standard material content
 						}
 
-						DuplicateEvent.Invoke(finalPath);
-					}
-				}
-			};
+						ItemAddedEvent.Invoke(finalPath);
 
-			generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("StandardPBR").ClickedEvent += [this]
-			{
-				auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-				std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-				if (auto model = modelManager.GetResource(resourcePath))
-				{
-					for (const std::string& materialName : model->GetMaterialNames())
+						if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+						{
+							auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+							materialEditor.SetTarget(*instance);
+							materialEditor.Open();
+							materialEditor.Focus();
+							materialEditor.Preview();
+						}
+						Close();
+					};
+
+				createStandardPBRMaterial.EnterPressedEvent += [this](std::string materialName)
 					{
 						size_t fails = 0;
 						std::string finalPath;
 
 						do
 						{
-							finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+							finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
 
 							++fails;
 						} while (std::filesystem::exists(finalPath));
@@ -832,158 +500,506 @@ public:
 							outfile << "<root><shader>:Shaders\\StandardPBR.ovfx</shader></root>" << std::endl; // Empty standard material content
 						}
 
-						DuplicateEvent.Invoke(finalPath);
-					}
-				}
-			};
+						ItemAddedEvent.Invoke(finalPath);
 
-			generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Unlit").ClickedEvent += [this]
-			{
-				auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-				std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-				if (auto model = modelManager.GetResource(resourcePath))
-				{
-					for (const std::string& materialName : model->GetMaterialNames())
+						if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+						{
+							auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+							materialEditor.SetTarget(*instance);
+							materialEditor.Open();
+							materialEditor.Focus();
+							materialEditor.Preview();
+						}
+						Close();
+					};
+
+				createUnlitMaterial.EnterPressedEvent += [this](std::string materialName)
 					{
+						std::string newSceneName = "Material";
 						size_t fails = 0;
 						std::string finalPath;
 
 						do
 						{
-							finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+							finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
 
 							++fails;
 						} while (std::filesystem::exists(finalPath));
 
 						{
 							std::ofstream outfile(finalPath);
-							outfile << "<root><shader>:Shaders\\Unlit.ovfx</shader></root>" << std::endl; // Empty standard material content
+							outfile << "<root><shader>:Shaders\\Unlit.ovfx</shader></root>" << std::endl; // Empty unlit material content
 						}
 
-						DuplicateEvent.Invoke(finalPath);
-					}
-				}
-			};
+						ItemAddedEvent.Invoke(finalPath);
 
-			generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Lambert").ClickedEvent += [this]
-			{
-				auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-				std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-				if (auto model = modelManager.GetResource(resourcePath))
-				{
-					for (const std::string& materialName : model->GetMaterialNames())
+						if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+						{
+							auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+							materialEditor.SetTarget(*instance);
+							materialEditor.Open();
+							materialEditor.Focus();
+							materialEditor.Preview();
+						}
+						Close();
+					};
+
+				createLambertMaterial.EnterPressedEvent += [this](std::string materialName)
 					{
 						size_t fails = 0;
 						std::string finalPath;
 
 						do
 						{
-							finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+							finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
 
 							++fails;
 						} while (std::filesystem::exists(finalPath));
 
 						{
 							std::ofstream outfile(finalPath);
-							outfile << "<root><shader>:Shaders\\Lambert.ovfx</shader></root>" << std::endl; // Empty standard material content
+							outfile << "<root><shader>:Shaders\\Lambert.ovfx</shader></root>" << std::endl; // Empty unlit material content
 						}
 
-						DuplicateEvent.Invoke(finalPath);
-					}
-				}
-			};
+						ItemAddedEvent.Invoke(finalPath);
+
+						if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+						{
+							auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+							materialEditor.SetTarget(*instance);
+							materialEditor.Open();
+							materialEditor.Focus();
+							materialEditor.Preview();
+						}
+						Close();
+					};
+
+				BrowserItemContextualMenu::CreateList();
+			}
 		}
 
-		PreviewableContextualMenu::CreateList();
-	}
-};
-
-class TextureContextualMenu : public PreviewableContextualMenu<OvRendering::Resources::Texture, OvCore::ResourceManagement::TextureManager>
-{
-public:
-	TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
-	{
-		auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
-
-		reloadAction.ClickedEvent += [this]
+		virtual void DeleteItem() override
 		{
-			auto& textureManager = OVSERVICE(OvCore::ResourceManagement::TextureManager);
-			std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-			if (textureManager.IsResourceRegistered(resourcePath))
+			using namespace OvWindowing::Dialogs;
+			MessageBox message("Delete folder", "Deleting a folder (and all its content) is irreversible, are you sure that you want to delete \"" + filePath + "\"?", MessageBox::EMessageType::WARNING, MessageBox::EButtonLayout::YES_NO);
+
+			if (message.GetUserAction() == MessageBox::EUserAction::YES)
 			{
-				/* Trying to recompile */
-				textureManager.AResourceManager::ReloadResource(resourcePath);
-				EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
+				if (std::filesystem::exists(filePath) == true)
+				{
+					EDITOR_EXEC(PropagateFolderDestruction(filePath));
+					std::filesystem::remove_all(filePath);
+					DestroyedEvent.Invoke(filePath);
+				}
 			}
-		};
+		}
 
-		PreviewableContextualMenu::CreateList();
-	}
-};
+	public:
+		OvTools::Eventing::Event<std::string> ItemAddedEvent;
+	};
 
-class SceneContextualMenu : public FileContextualMenu
-{
-public:
-	SceneContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-	virtual void CreateList() override
+	class ScriptFolderContextualMenu : public FolderContextualMenu
 	{
-		auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
+	public:
+		ScriptFolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : FolderContextualMenu(p_filePath, p_protected) {}
 
-		editAction.ClickedEvent += [this]
+		void CreateScript(const std::string& p_name, const std::string& p_path)
 		{
-			EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(filePath))));
-		};
+			const std::string fileContent = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultScriptContent(p_name);
 
-		FileContextualMenu::CreateList();
-	}
-};
+			std::ofstream outfile(p_path);
+			outfile << fileContent << std::endl;
 
-class MaterialContextualMenu : public PreviewableContextualMenu<OvCore::Resources::Material, OvCore::ResourceManagement::MaterialManager>
-{
-public:
-	MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+			ItemAddedEvent.Invoke(p_path);
+			Close();
+		}
 
-	virtual void CreateList() override
+		virtual void CreateList() override
+		{
+			FolderContextualMenu::CreateList();
+
+			auto& newScriptMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("New script...");
+			auto& nameEditor = newScriptMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+
+			newScriptMenu.ClickedEvent += [this, &nameEditor]
+				{
+					nameEditor.content = OvTools::Utils::PathParser::GetElementName("");
+				};
+
+			nameEditor.EnterPressedEvent += [this](std::string p_newName)
+				{
+					/* Clean the name (Remove special chars) */
+					p_newName.erase(std::remove_if(p_newName.begin(), p_newName.end(), [](auto& c)
+						{
+							return std::find(FILENAMES_CHARS.begin(), FILENAMES_CHARS.end(), c) == FILENAMES_CHARS.end();
+						}), p_newName.end());
+
+					const std::string extension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
+					const std::string newPath = filePath + p_newName + extension;
+
+					if (!std::filesystem::exists(newPath))
+					{
+						CreateScript(p_newName, newPath);
+					}
+				};
+		}
+	};
+
+	class FileContextualMenu : public BrowserItemContextualMenu
 	{
-		auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
+	public:
+		FileContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
 
-		editAction.ClickedEvent += [this]
+		virtual void CreateList() override
 		{
-			OvCore::Resources::Material* material = OVSERVICE(OvCore::ResourceManagement::MaterialManager)[EDITOR_EXEC(GetResourcePath(filePath, m_protected))];
-			if (material)
-			{
-				auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-				materialEditor.SetTarget(*material);
-				materialEditor.Open();
-				materialEditor.Focus();
-				
-				OvCore::Resources::Material* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>()[EDITOR_EXEC(GetResourcePath(filePath, m_protected))];
-				auto& assetView = EDITOR_PANEL(OvEditor::Panels::AssetView, "Asset View");
-				assetView.SetResource(resource);
-				assetView.Open();
-				assetView.Focus();
-			}
-		};
+			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
-		auto& reload = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
-		reload.ClickedEvent += [this]
+			editAction.ClickedEvent += [this]
+				{
+					OvTools::Utils::SystemCalls::OpenFile(filePath);
+				};
+
+			if (!m_protected)
+			{
+				auto& duplicateAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Duplicate");
+
+				duplicateAction.ClickedEvent += [this]
+					{
+						std::string filePathWithoutExtension = filePath;
+
+						if (size_t pos = filePathWithoutExtension.rfind('.'); pos != std::string::npos)
+							filePathWithoutExtension = filePathWithoutExtension.substr(0, pos);
+
+						std::string extension = "." + OvTools::Utils::PathParser::GetExtension(filePath);
+
+						auto filenameAvailable = [&extension](const std::string& target)
+							{
+								return !std::filesystem::exists(target + extension);
+							};
+
+						const auto newNameWithoutExtension = OvTools::Utils::String::GenerateUnique(filePathWithoutExtension, filenameAvailable);
+
+						std::string finalPath = newNameWithoutExtension + extension;
+						std::filesystem::copy(filePath, finalPath);
+
+						DuplicateEvent.Invoke(finalPath);
+					};
+			}
+
+			BrowserItemContextualMenu::CreateList();
+
+
+			auto& editMetadata = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Properties");
+
+			editMetadata.ClickedEvent += [this]
+				{
+					auto& panel = EDITOR_PANEL(OvEditor::Panels::AssetProperties, "Asset Properties");
+					std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+					panel.SetTarget(resourcePath);
+					panel.Open();
+					panel.Focus();
+				};
+		}
+
+		virtual void DeleteItem() override
 		{
-			auto materialManager = OVSERVICE(OvCore::ResourceManagement::MaterialManager);
-			auto resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-			OvCore::Resources::Material* material = materialManager[resourcePath];
-			if (material)
-			{
-				materialManager.AResourceManager::ReloadResource(resourcePath);
-				EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
-			}
-		};
+			using namespace OvWindowing::Dialogs;
+			MessageBox message("Delete file", "Deleting a file is irreversible, are you sure that you want to delete \"" + filePath + "\"?", MessageBox::EMessageType::WARNING, MessageBox::EButtonLayout::YES_NO);
 
-		PreviewableContextualMenu::CreateList();
-	}
-};
+			if (message.GetUserAction() == MessageBox::EUserAction::YES)
+			{
+				RemoveAsset(filePath);
+				DestroyedEvent.Invoke(filePath);
+				EDITOR_EXEC(PropagateFileRename(filePath, "?"));
+			}
+		}
+
+	public:
+		OvTools::Eventing::Event<std::string> DuplicateEvent;
+	};
+
+	template<typename Resource, typename ResourceLoader>
+	class PreviewableContextualMenu : public FileContextualMenu
+	{
+	public:
+		PreviewableContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
+
+			previewAction.ClickedEvent += [this]
+				{
+					OpenInAssetView(GetResource<ResourceLoader>(filePath, m_protected));
+				};
+
+			FileContextualMenu::CreateList();
+		}
+	};
+
+	class ShaderContextualMenu : public FileContextualMenu
+	{
+	public:
+		ShaderContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			FileContextualMenu::CreateList();
+
+			auto& compileAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Compile");
+
+			compileAction.ClickedEvent += [this]
+				{
+					auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
+					std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+					if (shaderManager.IsResourceRegistered(resourcePath))
+					{
+						/* Trying to recompile */
+						shaderManager.ReloadResource(shaderManager[resourcePath], filePath);
+					}
+					else
+					{
+						/* Trying to compile */
+						OvRendering::Resources::Shader* shader = OVSERVICE(OvCore::ResourceManagement::ShaderManager)[resourcePath];
+						if (shader)
+							OVLOG_INFO("[COMPILE] \"" + filePath + "\": Success!");
+					}
+
+				};
+		}
+	};
+
+	class ShaderPartContextualMenu : public FileContextualMenu
+	{
+	public:
+		ShaderPartContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			FileContextualMenu::CreateList();
+		}
+	};
+
+	class ModelContextualMenu : public PreviewableContextualMenu<OvRendering::Resources::Model, OvCore::ResourceManagement::ModelManager>
+	{
+	public:
+		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
+
+			reloadAction.ClickedEvent += [this]
+				{
+					auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+					std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+					if (modelManager.IsResourceRegistered(resourcePath))
+					{
+						modelManager.AResourceManager::ReloadResource(resourcePath);
+					}
+				};
+
+			if (!m_protected)
+			{
+				auto& generateMaterialsMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Generate materials...");
+
+				generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Standard").ClickedEvent += [this]
+					{
+						auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+						std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+						if (auto model = modelManager.GetResource(resourcePath))
+						{
+							for (const std::string& materialName : model->GetMaterialNames())
+							{
+								size_t fails = 0;
+								std::string finalPath;
+
+								do
+								{
+									finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+
+									++fails;
+								} while (std::filesystem::exists(finalPath));
+
+								{
+									std::ofstream outfile(finalPath);
+									outfile << "<root><shader>:Shaders\\Standard.ovfx</shader></root>" << std::endl; // Empty standard material content
+								}
+
+								DuplicateEvent.Invoke(finalPath);
+							}
+						}
+					};
+
+				generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("StandardPBR").ClickedEvent += [this]
+					{
+						auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+						std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+						if (auto model = modelManager.GetResource(resourcePath))
+						{
+							for (const std::string& materialName : model->GetMaterialNames())
+							{
+								size_t fails = 0;
+								std::string finalPath;
+
+								do
+								{
+									finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+
+									++fails;
+								} while (std::filesystem::exists(finalPath));
+
+								{
+									std::ofstream outfile(finalPath);
+									outfile << "<root><shader>:Shaders\\StandardPBR.ovfx</shader></root>" << std::endl; // Empty standard material content
+								}
+
+								DuplicateEvent.Invoke(finalPath);
+							}
+						}
+					};
+
+				generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Unlit").ClickedEvent += [this]
+					{
+						auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+						std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+						if (auto model = modelManager.GetResource(resourcePath))
+						{
+							for (const std::string& materialName : model->GetMaterialNames())
+							{
+								size_t fails = 0;
+								std::string finalPath;
+
+								do
+								{
+									finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+
+									++fails;
+								} while (std::filesystem::exists(finalPath));
+
+								{
+									std::ofstream outfile(finalPath);
+									outfile << "<root><shader>:Shaders\\Unlit.ovfx</shader></root>" << std::endl; // Empty standard material content
+								}
+
+								DuplicateEvent.Invoke(finalPath);
+							}
+						}
+					};
+
+				generateMaterialsMenu.CreateWidget<OvUI::Widgets::Menu::MenuItem>("Lambert").ClickedEvent += [this]
+					{
+						auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+						std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+						if (auto model = modelManager.GetResource(resourcePath))
+						{
+							for (const std::string& materialName : model->GetMaterialNames())
+							{
+								size_t fails = 0;
+								std::string finalPath;
+
+								do
+								{
+									finalPath = OvTools::Utils::PathParser::GetContainingFolder(filePath) + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+
+									++fails;
+								} while (std::filesystem::exists(finalPath));
+
+								{
+									std::ofstream outfile(finalPath);
+									outfile << "<root><shader>:Shaders\\Lambert.ovfx</shader></root>" << std::endl; // Empty standard material content
+								}
+
+								DuplicateEvent.Invoke(finalPath);
+							}
+						}
+					};
+			}
+
+			PreviewableContextualMenu::CreateList();
+		}
+	};
+
+	class TextureContextualMenu : public PreviewableContextualMenu<OvRendering::Resources::Texture, OvCore::ResourceManagement::TextureManager>
+	{
+	public:
+		TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
+
+			reloadAction.ClickedEvent += [this]
+				{
+					auto& textureManager = OVSERVICE(OvCore::ResourceManagement::TextureManager);
+					std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+					if (textureManager.IsResourceRegistered(resourcePath))
+					{
+						/* Trying to recompile */
+						textureManager.AResourceManager::ReloadResource(resourcePath);
+						EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
+					}
+				};
+
+			PreviewableContextualMenu::CreateList();
+		}
+	};
+
+	class SceneContextualMenu : public FileContextualMenu
+	{
+	public:
+		SceneContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
+
+			editAction.ClickedEvent += [this]
+				{
+					EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(filePath))));
+				};
+
+			FileContextualMenu::CreateList();
+		}
+	};
+
+	class MaterialContextualMenu : public PreviewableContextualMenu<OvCore::Resources::Material, OvCore::ResourceManagement::MaterialManager>
+	{
+	public:
+		MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
+
+			editAction.ClickedEvent += [this]
+				{
+					OvCore::Resources::Material* material = OVSERVICE(OvCore::ResourceManagement::MaterialManager)[EDITOR_EXEC(GetResourcePath(filePath, m_protected))];
+					if (material)
+					{
+						auto& res = GetResource<OvCore::ResourceManagement::MaterialManager>(filePath, m_protected);
+						OpenInAssetView(res);
+						OpenInMaterialEditor(res);
+					}
+				};
+
+			auto& reload = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
+			reload.ClickedEvent += [this]
+				{
+					auto materialManager = OVSERVICE(OvCore::ResourceManagement::MaterialManager);
+					auto resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+					OvCore::Resources::Material* material = materialManager[resourcePath];
+					if (material)
+					{
+						materialManager.AResourceManager::ReloadResource(resourcePath);
+						EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
+					}
+				};
+
+			PreviewableContextualMenu::CreateList();
+		}
+	};
+}
 
 OvEditor::Panels::AssetBrowser::AssetBrowser
 (
@@ -1343,10 +1359,46 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			EDITOR_EXEC(DelayAction(std::bind(&AssetBrowser::ConsiderItem, this, p_root, std::filesystem::directory_entry{ newItem }, p_isEngineItem, false, false), 0));
 		};
 
+		if (fileType == OvTools::Utils::PathParser::EFileType::SOUND ||
+			fileType == OvTools::Utils::PathParser::EFileType::SCRIPT ||
+			fileType == OvTools::Utils::PathParser::EFileType::SHADER ||
+			fileType == OvTools::Utils::PathParser::EFileType::SHADER_PART)
+		{
+			clickableText.DoubleClickedEvent += [path]
+			{
+				OvTools::Utils::SystemCalls::OpenFile(path);
+			};
+		}
+
+		if (fileType == OvTools::Utils::PathParser::EFileType::MODEL)
+		{
+			clickableText.DoubleClickedEvent += [path, p_isEngineItem]
+			{
+				auto& res = GetResource<OvCore::ResourceManagement::ModelManager>(path, p_isEngineItem);
+				OpenInAssetView(res);
+			};
+		}
+
+		if (fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
+		{
+			clickableText.DoubleClickedEvent += [path, p_isEngineItem]
+			{
+				auto& res = GetResource<OvCore::ResourceManagement::MaterialManager>(path, p_isEngineItem);
+				OpenInAssetView(res);
+				OpenInMaterialEditor(res);
+			};
+		}
+
 		if (fileType == OvTools::Utils::PathParser::EFileType::TEXTURE)
 		{
 			auto& texturePreview = clickableText.AddPlugin<TexturePreview>();
 			texturePreview.SetPath(resourceFormatPath);
+
+			clickableText.DoubleClickedEvent += [path, p_isEngineItem]
+			{
+				auto& res = GetResource<OvCore::ResourceManagement::TextureManager>(path, p_isEngineItem);
+				OpenInAssetView(res);
+			};
 		}
 
 		if (fileType == OvTools::Utils::PathParser::EFileType::SCENE)

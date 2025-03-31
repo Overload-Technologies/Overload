@@ -39,8 +39,9 @@ namespace OvUI::Plugins
 
 		/**
 		* Execute the behaviour of the drag and drop source
+		* @param p_context
 		*/
-		virtual void Execute() override
+		virtual void Execute(EPluginExecutionContext p_context) override
 		{
 			ImGuiDragDropFlags src_flags = 0;
 			src_flags |= ImGuiDragDropFlags_SourceNoDisableHover;     // Keep the source displayed as hovered

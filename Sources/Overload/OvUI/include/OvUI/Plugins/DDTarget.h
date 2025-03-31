@@ -10,9 +10,9 @@
 
 #include <OvTools/Eventing/Event.h>
 
-#include "OvUI/ImGui/imgui.h"
-
-#include "OvUI/Plugins/IPlugin.h"
+#include <OvUI/ImGui/imgui.h>
+#include <OvUI/ImGui/imgui_internal.h>
+#include <OvUI/Plugins/IPlugin.h>
 
 namespace OvUI::Plugins
 {
@@ -32,11 +32,19 @@ namespace OvUI::Plugins
 
 		/**
 		* Execute the drag and drop target behaviour
-		* @param p_identifier
+		* @param p_context
 		*/
-		virtual void Execute() override
+		virtual void Execute(EPluginExecutionContext p_context) override
 		{
-			if (ImGui::BeginDragDropTarget())
+			const bool result =
+				p_context == EPluginExecutionContext::WIDGET ?
+				ImGui::BeginDragDropTarget() :
+				ImGui::BeginDragDropTargetCustom(
+					ImGui::GetCurrentWindow()->WorkRect,
+					ImGui::GetID(identifier.c_str())
+				);
+
+			if (result)
 			{
 				if (!m_isHovered)
 					HoverStartEvent.Invoke();

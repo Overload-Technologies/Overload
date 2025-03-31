@@ -62,11 +62,11 @@ std::optional<std::string> GetLightTypeTextureName(OvRendering::Settings::ELight
 
 	switch (type)
 	{
-	case ELightType::POINT: return "Bill_Point_Light";
-	case ELightType::SPOT: return "Bill_Spot_Light";
-	case ELightType::DIRECTIONAL: return "Bill_Directional_Light";
-	case ELightType::AMBIENT_BOX: return "Bill_Ambient_Box_Light";
-	case ELightType::AMBIENT_SPHERE: return "Bill_Ambient_Sphere_Light";
+	case ELightType::POINT: return "Point_Light";
+	case ELightType::SPOT: return "Spot_Light";
+	case ELightType::DIRECTIONAL: return "Directional_Light";
+	case ELightType::AMBIENT_BOX: return "Ambient_Box_Light";
+	case ELightType::AMBIENT_SPHERE: return "Ambient_Sphere_Light";
 	}
 
 	return std::nullopt;
@@ -568,9 +568,9 @@ OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context
 	AddFeature<OvEditor::Rendering::OutlineRenderFeature>();
 	AddFeature<OvEditor::Rendering::GizmoRenderFeature>();
 
-	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::PostProcessing + 1);
-	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::PostProcessing + 2);
-	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::PostProcessing + 3);
-	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::PostProcessing + 4);
-	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::PostProcessing + 5);
+	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::Debug);
 }

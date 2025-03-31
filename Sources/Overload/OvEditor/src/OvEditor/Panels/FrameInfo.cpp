@@ -5,7 +5,6 @@
 */
 
 #include <OvDebug/Logger.h>
-#include <OvTools/Utils/Format.h>
 
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
 
@@ -53,8 +52,9 @@ void OvEditor::Panels::FrameInfo::Update(OvTools::Utils::OptRef<AView> p_targetV
 
 	auto& frameInfo = p_targetView ? GetFrameInfoFromView(p_targetView.value()) : kEmptyFrameInfo;
 
-	m_batchCountText.content = "Batches: " + Format::ReadableNumber(frameInfo.batchCount);
-	m_instanceCountText.content = "Instances: " + Format::ReadableNumber(frameInfo.instanceCount);
-	m_polyCountText.content = "Polygons: " + Format::ReadableNumber(frameInfo.polyCount);
-	m_vertexCountText.content = "Vertices: " + Format::ReadableNumber(frameInfo.vertexCount);
+	const auto loc = std::locale("");
+	m_batchCountText.content = std::format(loc, "Batches: {:L}", frameInfo.batchCount);
+	m_instanceCountText.content = std::format(loc, "Instances: {:L}", frameInfo.instanceCount);
+	m_polyCountText.content = std::format(loc, "Polygons: {:L}", frameInfo.polyCount);
+	m_vertexCountText.content = std::format(loc, "Vertices: {:L}", frameInfo.vertexCount);
 }

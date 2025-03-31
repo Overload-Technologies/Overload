@@ -84,8 +84,6 @@ namespace OvEditor::Panels
 		OvTools::Eventing::Event<OvCore::ECS::Actor&> ActorUnselectedEvent;
 
 	private:
-		OvUI::Widgets::Layout::TreeNode* m_sceneRoot;
-
 		std::unordered_map<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*> m_widgetActorLink;
 	};
 }

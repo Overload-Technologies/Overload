@@ -4,10 +4,45 @@
 * @licence: MIT
 */
 
-#include "OvTools/Filesystem/IniFile.h"
-#include "OvTools/Utils/String.h"
+#include <OvTools/Filesystem/IniFile.h>
+#include <OvTools/Utils/String.h>
 
 #include <fstream>
+
+namespace
+{
+	std::pair<std::string, std::string> ExtractKeyAndValue(std::string_view p_line)
+	{
+		std::string key;
+		std::string value;
+
+		std::string* currentBuffer = &key;
+
+		for (const char c : p_line)
+		{
+			if (c == '=')
+				currentBuffer = &value;
+			else
+				currentBuffer->push_back(c);
+		}
+
+		return { key, value };
+	}
+
+	bool IsValidLine(std::string_view p_attributeLine)
+	{
+		if (p_attributeLine.size() == 0)
+			return false;
+
+		if (p_attributeLine[0] == '#' || p_attributeLine[0] == ';' || p_attributeLine[0] == '[')
+			return false;
+
+		if (std::count(p_attributeLine.begin(), p_attributeLine.end(), '=') != 1)
+			return false;
+
+		return true;
+	}
+}
 
 OvTools::Filesystem::IniFile::IniFile(const std::string& p_filePath) : m_filePath(p_filePath)
 {
@@ -51,16 +86,6 @@ void OvTools::Filesystem::IniFile::RegisterPair(const AttributePair& p_pair)
 	m_data.insert(p_pair);
 }
 
-std::vector<std::string> OvTools::Filesystem::IniFile::GetFormattedContent() const
-{
-	std::vector<std::string> result;
-
-	for (const auto&[key, value] : m_data)
-		result.push_back(key + "=" + value);
-
-	return result;
-}
-
 void OvTools::Filesystem::IniFile::Load()
 {
 	std::fstream iniFile;
@@ -90,46 +115,11 @@ void OvTools::Filesystem::IniFile::Rewrite() const
 
 	if (outfile.is_open())
 	{
-		for (const auto&[key, value] : m_data)
+		for (const auto& [key, value] : m_data)
+		{
 			outfile << key << "=" << value << std::endl;
+		}
 	}
 
 	outfile.close();
-}
-
-std::pair<std::string, std::string> OvTools::Filesystem::IniFile::ExtractKeyAndValue(const std::string& p_line) const
-{
-	std::string key;
-	std::string value;
-
-	std::string* currentBuffer = &key;
-
-	for (auto& c : p_line)
-	{
-		if (c == '=')
-			currentBuffer = &value;
-		else
-			currentBuffer->push_back(c);
-	}
-
-	return std::make_pair(key, value);
-}
-
-bool OvTools::Filesystem::IniFile::IsValidLine(const std::string & p_attributeLine) const
-{
-	if (p_attributeLine.size() == 0)
-		return false;
-	
-	if (p_attributeLine[0] == '#' || p_attributeLine[0] == ';' || p_attributeLine[0] == '[')
-		return false;
-	
-	if (std::count(p_attributeLine.begin(), p_attributeLine.end(), '=') != 1)
-		return false;
-
-	return true;
-}
-
-bool OvTools::Filesystem::IniFile::StringToBoolean(const std::string & p_value) const
-{
-	return (p_value == "1" || p_value == "T" || p_value == "t" || p_value == "True" || p_value == "true");
 }

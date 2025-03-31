@@ -176,27 +176,17 @@ void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 
 	if (m_elapsedFrames == 1) // Let the first frame happen and then make the scene view the first seen view
 		sceneView.Focus();
+	
+	m_lastFocusedView =
+		sceneView.IsVisible() && sceneView.IsFocused() ? sceneView :
+		gameView.IsVisible() && gameView.IsFocused() ? gameView :
+		assetView.IsVisible() && assetView.IsFocused() ? assetView :
+		m_lastFocusedView;
 
 	if (frameInfo.IsOpened())
 	{
 		PROFILER_SPY("Frame Info Update");
-
-		if (sceneView.IsFocused())
-		{
-			frameInfo.Update(sceneView);
-		}
-		else if (gameView.IsFocused())
-		{
-			frameInfo.Update(gameView);
-		}
-		else if (assetView.IsFocused())
-		{
-			frameInfo.Update(assetView);
-		}
-		else
-		{
-			frameInfo.Update(std::nullopt);
-		}
+		frameInfo.Update(m_lastFocusedView);
 	}
 
 	if (profiler.IsOpened())

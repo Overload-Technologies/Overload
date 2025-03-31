@@ -9,9 +9,15 @@
 #include <string>
 #include <unordered_map>
 
-
 namespace OvTools::Filesystem
 {
+	template<typename T>
+	concept SupportedIniType =
+		std::same_as<T, bool> ||
+		std::same_as<T, std::string> ||
+		std::integral<T> ||
+		std::floating_point<T>;
+
 	/**
 	* The IniFile class represents a file .ini that stores a set of attributes/values that can get read and written
 	*/
@@ -40,10 +46,10 @@ namespace OvTools::Filesystem
 
 		/**
 		* Return the value attached to the given key
-		* If the key doesn't exist, a default value is returned (0, false, "NULL")
+		* If the key doesn't exist, a default value is returned
 		* @param p_key
 		*/
-		template<typename T>
+		template<SupportedIniType T>
 		T Get(const std::string& p_key);
 
 		/**
@@ -52,7 +58,7 @@ namespace OvTools::Filesystem
 		* @param p_key
 		* @param p_default
 		*/
-		template<typename T>
+		template<SupportedIniType T>
 		T GetOrDefault(const std::string& p_key, T p_default);
 
 		/**
@@ -60,7 +66,7 @@ namespace OvTools::Filesystem
 		* @param p_key
 		* @param p_outValue
 		*/
-		template<typename T>
+		template<SupportedIniType T>
 		bool TryGet(const std::string& p_key, T& p_outValue);
 
 		/**
@@ -68,7 +74,7 @@ namespace OvTools::Filesystem
 		* @param p_key
 		* @param p_value
 		*/
-		template<typename T>
+		template<SupportedIniType T>
 		bool Set(const std::string& p_key, const T& p_value);
 
 		/**
@@ -76,7 +82,7 @@ namespace OvTools::Filesystem
 		* @param p_key
 		* @param p_value
 		*/
-		template<typename T>
+		template<SupportedIniType T>
 		bool Add(const std::string& p_key, const T& p_value);
 
 		/**
@@ -96,24 +102,15 @@ namespace OvTools::Filesystem
 		*/
 		bool IsKeyExisting(const std::string& p_key) const;
 
-		/**
-		* Get the content stored in the ini file as a vector of strings (Each string correspond to an attribute pair : Attribute=Value
-		*/
-		std::vector<std::string> GetFormattedContent() const;
-
 	private:
 		void RegisterPair(const std::string& p_key, const std::string& p_value);
 		void RegisterPair(const AttributePair& p_pair);
 
 		void Load();
 
-		AttributePair	ExtractKeyAndValue(const std::string& p_attributeLine)	const;
-		bool			IsValidLine(const std::string& p_attributeLine)	const;
-		bool			StringToBoolean(const std::string& p_value)			const;
-
 	private:
-		std::string		m_filePath;
-		AttributeMap	m_data;
+		std::string m_filePath;
+		AttributeMap m_data;
 	};
 }
 

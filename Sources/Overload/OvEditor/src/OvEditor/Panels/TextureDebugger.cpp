@@ -5,6 +5,7 @@
 */
 
 #include <array>
+#include <format>
 
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvDebug/Assertion.h>
@@ -61,7 +62,11 @@ namespace OvEditor::Panels
 	void AddOption(OvUI::Widgets::Selection::ComboBox& p_selector, const OvRendering::HAL::Texture& p_texture)
 	{
 		const auto id = p_texture.GetID();
-		p_selector.choices[id] = "Texture " + std::to_string(id) + ": " + p_texture.GetDebugName();
+		p_selector.choices[id] = std::format(
+			"Texture {}: {}",
+			id,
+			p_texture.GetDebugName()
+		);
 	}
 
 	float CalculateOneToOneScale(const OvMaths::FVector2& p_windowSize, OvRendering::HAL::Texture& p_texture)
@@ -144,7 +149,12 @@ namespace OvEditor::Panels
 		{
 			if (p_desc.id != 0)
 			{
-				m_textureSelector.choices[p_desc.id] = "Texture " + std::to_string(p_desc.id) + ": " + p_desc.texture->GetDebugName();
+				m_textureSelector.choices[p_desc.id] = std::format(
+					"Texture {}: {}",
+					p_desc.id,
+					p_desc.texture->GetDebugName()
+				);
+
 				AddOption(m_textureSelector, *p_desc.texture);
 			}
 		};

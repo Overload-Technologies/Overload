@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include<format>
+
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvRendering/HAL/Framebuffer.h>
 #include <OvRendering/HAL/Renderbuffer.h>
@@ -26,7 +28,10 @@ namespace OvCore::Rendering::FramebufferUtil
 		p_width = static_cast<uint16_t>(std::max(1u, p_width));
 		p_height = static_cast<uint16_t>(std::max(1u, p_height));
 
-		const auto renderTexture = std::make_shared<Texture>(p_framebuffer.GetDebugName() + "/Color");
+		const auto renderTexture = std::make_shared<Texture>(std::format(
+			"{}/Color",
+			p_framebuffer.GetDebugName()
+		));
 
 		TextureDesc renderTextureDesc{
 			.width = p_width,

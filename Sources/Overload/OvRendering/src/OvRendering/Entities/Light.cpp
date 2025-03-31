@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <format>
+
 #include <OvDebug/Assertion.h>
 #include <OvRendering/Entities/Light.h>
 #include <OvRendering/HAL/Renderbuffer.h>
@@ -18,7 +20,10 @@ namespace
 		using namespace OvRendering::HAL;
 		using namespace OvRendering::Settings;
 
-		const auto renderTexture = std::make_shared<Texture>(p_framebuffer.GetDebugName() + "/Depth");
+		const auto renderTexture = std::make_shared<Texture>(std::format(
+			"{}/Depth",
+			p_framebuffer.GetDebugName()
+		));
 
 		TextureDesc renderTextureDesc{
 			.width = p_resolution,

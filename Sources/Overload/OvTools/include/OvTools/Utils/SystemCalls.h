@@ -39,6 +39,12 @@ namespace OvTools::Utils
 		static void EditFile(const std::string& p_file);
 
 		/**
+		* Execute a custom command. Returns true if the command invocation succeeded
+		* @param p_command
+		*/
+		static bool ExecuteCommand(const std::string_view p_command);
+
+		/**
 		* Open the given url with the default browser
 		* @param p_url
 		*/

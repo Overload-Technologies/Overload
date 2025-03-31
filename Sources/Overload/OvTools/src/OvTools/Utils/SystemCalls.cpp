@@ -4,13 +4,16 @@
 * @licence: MIT
 */
 
-#include "OvTools/Utils/PathParser.h"
-#include "OvTools/Utils/SystemCalls.h"
-
-#include <Windows.h>
-#include <ShlObj.h>
+#include <cassert>
+#include <format>
+#include <iostream>
 #include <memory>
-#include <assert.h>
+
+#include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/SystemCalls.h>
+
+#include <ShlObj.h>
+#include <Windows.h>
 
 void OvTools::Utils::SystemCalls::ShowInExplorer(const std::string & p_path)
 {
@@ -26,8 +29,43 @@ void OvTools::Utils::SystemCalls::OpenFile(const std::string & p_file, const std
 
 void OvTools::Utils::SystemCalls::EditFile(const std::string & p_file)
 {
-	ShellExecuteW(NULL, NULL, std::wstring(p_file.begin(), p_file.end()).c_str(), NULL, NULL, SW_NORMAL);
+	ShellExecuteW(NULL, NULL, std::wstring(p_file.begin(), p_file.end()).c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
+
+bool OvTools::Utils::SystemCalls::ExecuteCommand(const std::string_view p_command)
+{
+	STARTUPINFO startupInfo;
+	PROCESS_INFORMATION processInfo;
+
+	ZeroMemory(&startupInfo, sizeof(startupInfo));
+	startupInfo.cb = sizeof(startupInfo);
+	ZeroMemory(&processInfo, sizeof(processInfo));
+
+	std::string command = std::format("cmd.exe /c {}", p_command);
+
+	bool success = CreateProcess(
+		nullptr,							// Application name (nullptr uses command line)
+		command.data(),						// Command to execute
+		nullptr,							// Process security attributes
+		nullptr,							// Thread security attributes
+		FALSE,								// Do not inherit handles
+		CREATE_NO_WINDOW,					// Run the process without a window
+		nullptr,							// Environment variables
+		nullptr,							// Current directory
+		&startupInfo,						// STARTUPINFO structure
+		&processInfo						// PROCESS_INFORMATION structure
+	);
+
+	// Wait until child process exits.
+	WaitForSingleObject(processInfo.hProcess, INFINITE);
+
+	// Close the process and thread handles
+	CloseHandle(processInfo.hProcess);
+	CloseHandle(processInfo.hThread);
+
+	return success;
+}
+
 
 void OvTools::Utils::SystemCalls::OpenURL(const std::string& p_url)
 {

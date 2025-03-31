@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <OvEditor/Settings/EditorSettings.h>
+
 #include <OvUI/Widgets/Texts/TextClickable.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Visual/Separator.h>
@@ -201,8 +203,26 @@ namespace
 
 	class FolderContextualMenu : public BrowserItemContextualMenu
 	{
+	private:
+		OvTools::Utils::OptRef<OvUI::Widgets::Menu::MenuItem> m_openInExternalTool;
+
 	public:
 		FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
+
+		auto GetOpenInExternalToolName() const
+		{
+			return std::format(
+				"Open in {}",
+				OvEditor::Settings::EditorSettings::FolderExternalToolName.Get()
+			);
+		}
+		virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
+		{
+			BrowserItemContextualMenu::Execute(p_context);
+
+			// Keep the "Open In External Tool" menu item label up to date
+			m_openInExternalTool->name = GetOpenInExternalToolName();
+		}
 
 		virtual void CreateList() override
 		{
@@ -211,6 +231,23 @@ namespace
 				{
 					OvTools::Utils::SystemCalls::ShowInExplorer(filePath);
 				};
+
+			m_openInExternalTool = CreateWidget<OvUI::Widgets::Menu::MenuItem>(GetOpenInExternalToolName());
+			m_openInExternalTool->ClickedEvent += [this]
+			{
+				const auto command = std::vformat(
+					OvEditor::Settings::EditorSettings::FolderExternalToolCommand.Get(),
+					std::make_format_args(filePath)
+				);
+
+				if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
+				{
+					OVLOG_ERROR(std::format(
+						"Failed to open {}",
+						OvEditor::Settings::EditorSettings::FolderExternalToolName.Get()
+					));
+				}
+			};
 
 			if (!m_protected)
 			{

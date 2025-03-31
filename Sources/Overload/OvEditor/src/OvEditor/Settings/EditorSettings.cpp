@@ -42,6 +42,8 @@ void OvEditor::Settings::EditorSettings::Save()
 	iniFile.Add("translation_snap_unit", TranslationSnapUnit.Get());
 	iniFile.Add("rotation_snap_unit", RotationSnapUnit.Get());
 	iniFile.Add("scaling_snap_unit", ScalingSnapUnit.Get());
+	iniFile.Add("folder_external_tool_name", FolderExternalToolName.Get());
+	iniFile.Add("folder_external_tool_command", FolderExternalToolCommand.Get());
 	iniFile.Rewrite();
 }
 
@@ -57,4 +59,6 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<float>(iniFile, "translation_snap_unit", TranslationSnapUnit);
 	LoadIniEntry<float>(iniFile, "rotation_snap_unit", RotationSnapUnit);
 	LoadIniEntry<float>(iniFile, "scaling_snap_unit", ScalingSnapUnit);
+	LoadIniEntry<std::string>(iniFile, "folder_external_tool_name", FolderExternalToolName);
+	LoadIniEntry<std::string>(iniFile, "folder_external_tool_command", FolderExternalToolCommand);
 }

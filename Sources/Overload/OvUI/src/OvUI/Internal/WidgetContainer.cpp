@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <span>
 
 #include "OvUI/Internal/WidgetContainer.h"
 
@@ -77,16 +78,31 @@ void OvUI::Internal::WidgetContainer::DrawWidgets()
 {
 	CollectGarbages();
 
-    if (m_reversedDrawOrder)
-    {
-        for (auto it = m_widgets.crbegin(); it != m_widgets.crend(); ++it)
-            it->first->Draw();
-    }
-    else
-    {
-        for (const auto& widget : m_widgets)
-            widget.first->Draw();
-    }
+	std::vector<OvUI::Widgets::AWidget*> widgetsToDraw;
+	widgetsToDraw.reserve(m_widgets.size());
+
+	// We copy the widgets to draw in a separate vector to avoid issues when a widget is
+	// added/destroyed during the draw process, which would invalidate the iterator.
+	// This is especially useful to allow plugins to add and remove widgets during the draw process.
+	for (const auto& widgetPair : m_widgets)
+	{
+		widgetsToDraw.push_back(widgetPair.first);
+	}
+
+	if (m_reversedDrawOrder)
+	{
+		for (auto it = widgetsToDraw.rbegin(); it != widgetsToDraw.rend(); ++it)
+		{
+			(*it)->Draw();
+		}
+	}
+	else
+	{
+		for (const auto& widget : widgetsToDraw)
+		{
+			widget->Draw();
+		}
+	}
 }
 
 void OvUI::Internal::WidgetContainer::ReverseDrawOrder(const bool reversed)

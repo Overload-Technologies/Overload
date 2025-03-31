@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <span>
+#include <ranges>
 
 #include "OvUI/Internal/WidgetContainer.h"
 
@@ -78,27 +79,25 @@ void OvUI::Internal::WidgetContainer::DrawWidgets()
 {
 	CollectGarbages();
 
-	std::vector<OvUI::Widgets::AWidget*> widgetsToDraw;
-	widgetsToDraw.reserve(m_widgets.size());
+	using WidgetType = decltype(m_widgets)::value_type::first_type;
 
 	// We copy the widgets to draw in a separate vector to avoid issues when a widget is
 	// added/destroyed during the draw process, which would invalidate the iterator.
 	// This is especially useful to allow plugins to add and remove widgets during the draw process.
-	for (const auto& widgetPair : m_widgets)
-	{
-		widgetsToDraw.push_back(widgetPair.first);
-	}
+	std::vector<WidgetType> widgetsToDraw;
+	widgetsToDraw.reserve(m_widgets.size());
+	std::ranges::copy(m_widgets | std::views::keys, std::back_inserter(widgetsToDraw));
 
-	if (m_reversedDrawOrder)
+	if (m_reversedDrawOrder) [[unlikely]]
 	{
-		for (auto it = widgetsToDraw.rbegin(); it != widgetsToDraw.rend(); ++it)
+		for (WidgetType widget : widgetsToDraw | std::views::reverse)
 		{
-			(*it)->Draw();
+			widget->Draw();
 		}
 	}
 	else
 	{
-		for (const auto& widget : widgetsToDraw)
+		for (WidgetType widget : widgetsToDraw)
 		{
 			widget->Draw();
 		}

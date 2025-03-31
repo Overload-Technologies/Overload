@@ -137,7 +137,7 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>();
-	scriptEngine->SetScriptRootFolder(projectScriptsPath);
+	scriptEngine->SetScriptRootFolder(projectAssetsPath);
 
 	/* Service Locator providing */
 	ServiceLocator::Provide<OvPhysics::Core::PhysicsEngine>(*physicsEngine);

@@ -46,6 +46,7 @@ namespace OvEditor::Panels
 		void CreateActorsMenu();
 		void CreateResourcesMenu();
 		void CreateSettingsMenu();
+		void CreateToolsMenu();
 		void CreateLayoutMenu();
 		void CreateHelpMenu();
 

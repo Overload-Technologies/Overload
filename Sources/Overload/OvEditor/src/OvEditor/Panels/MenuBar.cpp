@@ -44,6 +44,7 @@ OvEditor::Panels::MenuBar::MenuBar()
 	CreateActorsMenu();
 	CreateResourcesMenu();
 	CreateSettingsMenu();
+	CreateToolsMenu();
 	CreateLayoutMenu();
 	CreateHelpMenu();
 }
@@ -193,6 +194,12 @@ void OvEditor::Panels::MenuBar::CreateResourcesMenu()
 void OvEditor::Panels::MenuBar::CreateSettingsMenu()
 {
 	m_settingsMenu = &CreateWidget<MenuList>("Settings");
+}
+
+void OvEditor::Panels::MenuBar::CreateToolsMenu()
+{
+	auto& toolsMenu = CreateWidget<MenuList>("Tools");
+	toolsMenu.CreateWidget<MenuItem>("Migrate Scripts To Assets Folder").ClickedEvent += EDITOR_BIND(MigrateScriptsToAssets);
 }
 
 void OvEditor::Panels::MenuBar::CreateLayoutMenu() 

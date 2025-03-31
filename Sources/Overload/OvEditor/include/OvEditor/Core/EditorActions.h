@@ -336,6 +336,11 @@ namespace OvEditor::Core
 		* Refresh every scripts (Re-interpret)
 		*/
 		void RefreshScripts();
+
+		/**
+		* Migrate all scripts from the Scripts/ folder to the Assets/Scripts/ folder
+		*/
+		void MigrateScriptsToAssets();
 		#pragma endregion
 
 		#pragma region BUILDING

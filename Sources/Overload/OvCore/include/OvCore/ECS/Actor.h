@@ -273,9 +273,9 @@ namespace OvCore::ECS
 
 		/**
 		* Add a behaviour to the actor
-		* @param p_name
+		* @param p_scriptPath
 		*/
-		Components::Behaviour& AddBehaviour(const std::string& p_name);
+		Components::Behaviour& AddBehaviour(const std::string& p_scriptPath);
 
 		/**
 		* Remove a behaviour by refering to the given instance
@@ -284,21 +284,22 @@ namespace OvCore::ECS
 		bool RemoveBehaviour(Components::Behaviour& p_behaviour);
 
 		/**
-		* Remove a behaviour by refering to his name
-		* @param p_name
+		* Remove a behaviour given its script name
+		* @param p_scriptName
 		*/
-		bool RemoveBehaviour(const std::string& p_name);
+		bool RemoveBehaviour(const std::string& p_scriptName);
 
 		/**
-		* Try to get the given behaviour (Returns nullptr on failure)
-		* @param p_name
+		* Try to get the behaviour by refering to the given script name.
+		* Returns nullptr on failure.
+		* @param p_scriptName
 		*/
-		Components::Behaviour* GetBehaviour(const std::string& p_name);
+		Components::Behaviour* GetBehaviour(const std::string& p_scriptName);
 
 		/**
 		* Returns a reference to the vector of behaviours
 		*/
-		std::unordered_map<std::string, Components::Behaviour>& GetBehaviours();
+		std::unordered_map<std::string, std::unique_ptr<Components::Behaviour>>& GetBehaviours();
 
 		/**
 		* Serialize all the components
@@ -355,7 +356,7 @@ namespace OvCore::ECS
 
 		/* Actors components */
 		std::vector<std::shared_ptr<Components::AComponent>> m_components;
-		std::unordered_map<std::string, Components::Behaviour> m_behaviours;
+		std::unordered_map<std::string, std::unique_ptr<Components::Behaviour>> m_behaviours;
 
 	public:
 		Components::CTransform& transform;

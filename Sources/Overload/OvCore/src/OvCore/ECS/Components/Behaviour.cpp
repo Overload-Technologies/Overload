@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <filesystem>
+
 #include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvDebug/Logger.h>
 
@@ -12,8 +14,10 @@
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Scripting/ScriptEngine.h>
 
-OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
-	name(p_name), AComponent(p_owner)
+OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_scriptPath) :
+	m_scriptPath(p_scriptPath), 
+	m_scriptName(std::filesystem::path{ p_scriptPath }.stem().string()), // TODO: Ideally this could be returned by the script engine, so it would match the internal type name
+	AComponent(p_owner)
 {
 	OVSERVICE(Scripting::ScriptEngine).AddBehaviour(*this);
 }
@@ -25,7 +29,17 @@ OvCore::ECS::Components::Behaviour::~Behaviour()
 
 std::string OvCore::ECS::Components::Behaviour::GetName()
 {
-	return "Behaviour";
+	return m_scriptName;
+}
+
+std::string OvCore::ECS::Components::Behaviour::GetScriptName() const
+{
+	return m_scriptName;
+}
+
+std::string OvCore::ECS::Components::Behaviour::GetScriptPath() const
+{
+	return m_scriptPath;
 }
 
 void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script>&& p_scriptContext)

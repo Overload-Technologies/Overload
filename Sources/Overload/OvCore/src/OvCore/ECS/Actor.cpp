@@ -23,6 +23,8 @@
 #include "OvCore/ECS/Components/CAmbientSphereLight.h"
 #include "OvCore/ECS/Components/CPostProcessStack.h"
 
+#include <OvDebug/Assertion.h>
+
 OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::DestroyedEvent;
 OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::CreatedEvent;
 OvTools::Eventing::Event<OvCore::ECS::Actor&, OvCore::ECS::Actor&> OvCore::ECS::Actor::AttachEvent;
@@ -61,7 +63,7 @@ OvCore::ECS::Actor::~Actor()
 	DetachFromParent();
 
 	std::for_each(m_components.begin(), m_components.end(), [&](std::shared_ptr<Components::AComponent> p_component) { ComponentRemovedEvent.Invoke(*p_component); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto& p_behaviour) { BehaviourRemovedEvent.Invoke(std::ref(p_behaviour.second)); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto& p_behaviour) { BehaviourRemovedEvent.Invoke(std::ref(*p_behaviour.second)); });
 	std::for_each(m_children.begin(), m_children.end(),		[](Actor* p_element) { delete p_element; });
 }
 
@@ -207,32 +209,32 @@ void OvCore::ECS::Actor::OnAwake()
 {
 	m_awaked = true;
 	std::for_each(m_components.begin(), m_components.end(), [](auto element) { element->OnAwake(); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second.OnAwake(); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second->OnAwake(); });
 }
 
 void OvCore::ECS::Actor::OnStart()
 {
 	m_started = true;
 	std::for_each(m_components.begin(), m_components.end(), [](auto element) { element->OnStart(); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second.OnStart(); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second->OnStart(); });
 }
 
 void OvCore::ECS::Actor::OnEnable()
 {
 	std::for_each(m_components.begin(), m_components.end(), [](auto element) { element->OnEnable(); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second.OnEnable(); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second->OnEnable(); });
 }
 
 void OvCore::ECS::Actor::OnDisable()
 {
 	std::for_each(m_components.begin(), m_components.end(), [](auto element) { element->OnDisable(); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second.OnDisable(); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second->OnDisable(); });
 }
 
 void OvCore::ECS::Actor::OnDestroy()
 {
 	std::for_each(m_components.begin(), m_components.end(), [](auto element) { element->OnDestroy(); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second.OnDestroy(); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [](auto & element) { element.second->OnDestroy(); });
 }
 
 void OvCore::ECS::Actor::OnUpdate(float p_deltaTime)
@@ -240,7 +242,7 @@ void OvCore::ECS::Actor::OnUpdate(float p_deltaTime)
 	if (IsActive())
 	{
 		std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnUpdate(p_deltaTime); });
-		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnUpdate(p_deltaTime); });
+		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnUpdate(p_deltaTime); });
 	}
 }
 
@@ -249,7 +251,7 @@ void OvCore::ECS::Actor::OnFixedUpdate(float p_deltaTime)
 	if (IsActive())
 	{
 		std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnFixedUpdate(p_deltaTime); });
-		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnFixedUpdate(p_deltaTime); });
+		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnFixedUpdate(p_deltaTime); });
 	}
 }
 
@@ -258,44 +260,44 @@ void OvCore::ECS::Actor::OnLateUpdate(float p_deltaTime)
 	if (IsActive())
 	{
 		std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnLateUpdate(p_deltaTime); });
-		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnLateUpdate(p_deltaTime); });
+		std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnLateUpdate(p_deltaTime); });
 	}
 }
 
 void OvCore::ECS::Actor::OnCollisionEnter(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnCollisionEnter(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnCollisionEnter(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnCollisionEnter(p_otherObject); });
 }
 
 void OvCore::ECS::Actor::OnCollisionStay(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnCollisionStay(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnCollisionStay(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnCollisionStay(p_otherObject); });
 }
 
 void OvCore::ECS::Actor::OnCollisionExit(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnCollisionExit(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnCollisionExit(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnCollisionExit(p_otherObject); });
 }
 
 void OvCore::ECS::Actor::OnTriggerEnter(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnTriggerEnter(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnTriggerEnter(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnTriggerEnter(p_otherObject); });
 }
 
 void OvCore::ECS::Actor::OnTriggerStay(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnTriggerStay(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnTriggerStay(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnTriggerStay(p_otherObject); });
 }
 
 void OvCore::ECS::Actor::OnTriggerExit(Components::CPhysicalObject& p_otherObject)
 {
 	std::for_each(m_components.begin(), m_components.end(), [&](auto element) { element->OnTriggerExit(p_otherObject); });
-	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second.OnTriggerExit(p_otherObject); });
+	std::for_each(m_behaviours.begin(), m_behaviours.end(), [&](auto & element) { element.second->OnTriggerExit(p_otherObject); });
 }
 
 bool OvCore::ECS::Actor::RemoveComponent(OvCore::ECS::Components::AComponent& p_component)
@@ -318,10 +320,13 @@ std::vector<std::shared_ptr<OvCore::ECS::Components::AComponent>>& OvCore::ECS::
 	return m_components;
 }
 
-OvCore::ECS::Components::Behaviour & OvCore::ECS::Actor::AddBehaviour(const std::string & p_name)
+OvCore::ECS::Components::Behaviour & OvCore::ECS::Actor::AddBehaviour(const std::string& p_scriptPath)
 {
-	m_behaviours.try_emplace(p_name, *this, p_name);
-	Components::Behaviour& newInstance = m_behaviours.at(p_name);
+	auto behaviour = std::make_unique<Components::Behaviour>(*this, p_scriptPath);
+	const auto key = behaviour->GetScriptName();
+	m_behaviours.try_emplace(key, std::move(behaviour));
+
+	Components::Behaviour& newInstance = *m_behaviours.at(key);
 	BehaviourAddedEvent.Invoke(newInstance);
 	if (m_playing && IsActive())
 	{
@@ -338,7 +343,7 @@ bool OvCore::ECS::Actor::RemoveBehaviour(Components::Behaviour& p_behaviour)
 
 	for (auto& [name, behaviour] : m_behaviours)
 	{
-		if (&behaviour == &p_behaviour)
+		if (behaviour.get() == &p_behaviour)
 		{
 			found = true;
 			break;
@@ -346,18 +351,18 @@ bool OvCore::ECS::Actor::RemoveBehaviour(Components::Behaviour& p_behaviour)
 	}
 
 	if (found)
-		return RemoveBehaviour(p_behaviour.name);
+		return RemoveBehaviour(p_behaviour.GetScriptPath());
 	else
 		return false;
 }
 
-bool OvCore::ECS::Actor::RemoveBehaviour(const std::string & p_name)
+bool OvCore::ECS::Actor::RemoveBehaviour(const std::string& p_scriptName)
 {
-	Components::Behaviour* found = GetBehaviour(p_name);
+	Components::Behaviour* found = GetBehaviour(p_scriptName);
 	if (found)
 	{
 		BehaviourRemovedEvent.Invoke(*found);
-		return m_behaviours.erase(p_name);
+		return m_behaviours.erase(p_scriptName);
 	}
 	else
 	{
@@ -365,15 +370,15 @@ bool OvCore::ECS::Actor::RemoveBehaviour(const std::string & p_name)
 	}
 }
 
-OvCore::ECS::Components::Behaviour* OvCore::ECS::Actor::GetBehaviour(const std::string& p_name)
+OvCore::ECS::Components::Behaviour* OvCore::ECS::Actor::GetBehaviour(const std::string& p_scriptName)
 {
-	if (auto result = m_behaviours.find(p_name); result != m_behaviours.end())
-		return &result->second;
+	if (auto result = m_behaviours.find(p_scriptName); result != m_behaviours.end())
+		return result->second.get();
 	else
 		return nullptr;
 }
 
-std::unordered_map<std::string, OvCore::ECS::Components::Behaviour>& OvCore::ECS::Actor::GetBehaviours()
+std::unordered_map<std::string, std::unique_ptr<OvCore::ECS::Components::Behaviour>>& OvCore::ECS::Actor::GetBehaviours()
 {
 	return m_behaviours;
 }
@@ -419,14 +424,14 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 		behavioursNode->InsertEndChild(behaviourNode);
 
 		/* Behaviour type */
-		OvCore::Helpers::Serializer::SerializeString(p_doc, behaviourNode, "type", behaviour.first);
+		OvCore::Helpers::Serializer::SerializeString(p_doc, behaviourNode, "type", behaviour.second->GetScriptPath());
 
 		/* Data node (Will be passed to the behaviour) */
 		tinyxml2::XMLElement* data = p_doc.NewElement("data");
 		behaviourNode->InsertEndChild(data);
 
 		/* Data serialization of the behaviour */
-		behaviour.second.OnSerialize(p_doc, data);
+		behaviour.second->OnSerialize(p_doc, data);
 	}
 }
 

@@ -115,7 +115,7 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
 		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour)
 		{
-			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), m_context.scriptRootFolder + behaviour.get().name + GetDefaultExtension()))
+			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), m_context.scriptRootFolder + behaviour.get().GetScriptPath()))
 			{
 				++m_context.errorCount;
 			}
@@ -180,7 +180,7 @@ void OvCore::Scripting::LuaScriptEngineBase::AddBehaviour(OvCore::ECS::Component
 
 	m_context.behaviours.push_back(std::ref(p_toAdd));
 
-	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, m_context.scriptRootFolder + p_toAdd.name + GetDefaultExtension()))
+	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, m_context.scriptRootFolder + p_toAdd.GetScriptPath()))
 	{
 		++m_context.errorCount;
 	}
@@ -196,7 +196,7 @@ void OvCore::Scripting::LuaScriptEngineBase::RemoveBehaviour(OvCore::ECS::Compon
 
 	m_context.behaviours.erase(
 		std::remove_if(m_context.behaviours.begin(), m_context.behaviours.end(),
-			[&p_toRemove](std::reference_wrapper< OvCore::ECS::Components::Behaviour> behaviour) {
+			[&p_toRemove](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
 				return &p_toRemove == &behaviour.get();
 			}
 		)

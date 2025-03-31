@@ -134,6 +134,27 @@ void OvEditor::Core::EditorActions::RefreshScripts()
 		OVLOG_INFO("Scripts interpretation succeeded!");
 }
 
+void OvEditor::Core::EditorActions::MigrateScriptsToAssets()
+{
+	// Copy all scripts from the project scripts folder to the project assets folder + "Scripts/"
+	std::filesystem::copy(m_context.projectScriptsPath, m_context.projectAssetsPath + "Scripts\\", std::filesystem::copy_options::recursive);
+	std::filesystem::remove_all(m_context.projectScriptsPath);
+
+	auto previousName = OvTools::Utils::PathParser::MakeNonWindowsStyle(m_context.projectScriptsPath);
+	auto newName = OvTools::Utils::PathParser::MakeNonWindowsStyle(m_context.projectAssetsPath + "Scripts\\");
+
+	for (auto& p : std::filesystem::recursive_directory_iterator(newName))
+	{
+		if (!p.is_directory())
+		{
+			std::string newFileName = GetResourcePath(OvTools::Utils::PathParser::MakeWindowsStyle(p.path().string()));
+			std::string previousFileName = std::filesystem::path{ newFileName }.stem().string();
+
+			PropagateScriptRename(OvTools::Utils::PathParser::MakeWindowsStyle(previousFileName), OvTools::Utils::PathParser::MakeWindowsStyle(newFileName));
+		}
+	}
+}
+
 std::optional<std::string> OvEditor::Core::EditorActions::SelectBuildFolder()
 {
 	OvWindowing::Dialogs::SaveFileDialog dialog("Build location");
@@ -793,17 +814,20 @@ void OvEditor::Core::EditorActions::PropagateFolderDestruction(std::string p_fol
 
 void OvEditor::Core::EditorActions::PropagateScriptRename(std::string p_previousName, std::string p_newName)
 {
-	p_previousName = GetScriptPath(p_previousName);
-	p_newName = GetScriptPath(p_newName);
+	const auto behaviourName = std::filesystem::path{ p_previousName }.stem().string();
 
 	if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+	{
 		for (auto actor : currentScene->GetActors())
-			if (actor->RemoveBehaviour(p_previousName))
-				actor->AddBehaviour(p_newName);
+		{
+			if (actor->RemoveBehaviour(behaviourName)) // Remove using the name
+			{
+				actor->AddBehaviour(p_newName); // Add using a path
+			}
+		}
+	}
 
 	PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
-
-	EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
 }
 
 void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousName, std::string p_newName)
@@ -937,6 +961,9 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		break;
+	case OvTools::Utils::PathParser::EFileType::SCRIPT:
+		PropagateScriptRename(p_previousName, p_newName);
 		break;
 	}
 

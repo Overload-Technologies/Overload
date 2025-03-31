@@ -15,17 +15,17 @@ namespace OvCore::ECS { class Actor; }
 namespace OvCore::ECS::Components
 {
 	/**
-	* ABehaviour is the base class for any behaviour.
-	* A Behaviour is a script that is used to manipulate an actor over time
+	* A Behaviour is a script that can be attached to an actor
 	*/
 	class Behaviour : public AComponent
 	{
 	public:
 		/**
-		* Constructor of a ABehaviour (Must be called by derived classes)
+		* Constructor of a Behaviour
 		* @param p_owner
+		* @param p_scriptPath
 		*/
-		Behaviour(ECS::Actor& p_owner, const std::string& p_name);
+		Behaviour(ECS::Actor& p_owner, const std::string& p_scriptPath);
 
 		/**
 		* Destructor
@@ -36,6 +36,16 @@ namespace OvCore::ECS::Components
 		* Returns the name of the component
 		*/
 		virtual std::string GetName() override;
+
+		/**
+		* Returns the script name associated with this behaviour
+		*/
+		std::string GetScriptName() const;
+
+		/**
+		* Returns the path of the script associated with this behaviour
+		*/
+		std::string GetScriptPath() const;
 
 		/**
 		* Sets the script associated with this behaviour
@@ -154,10 +164,9 @@ namespace OvCore::ECS::Components
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer & p_root) override;
 
-	public:
-		const std::string name;
-
 	private:
+		const std::string m_scriptName;
+		const std::string m_scriptPath;
 		std::unique_ptr<Scripting::Script> m_script;
 	};
 }

@@ -281,10 +281,8 @@ namespace
 			if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
 			{
 				auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-				materialEditor.SetTarget(*instance);
-				materialEditor.Open();
-				materialEditor.Focus();
-				materialEditor.Preview();
+				OpenInMaterialEditor(*instance);
+				OpenInAssetView(*instance);
 			}
 
 			Close();
@@ -947,10 +945,13 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 	}
 
 	std::string path = p_entry.path().string();
-	if (isDirectory && path.back() != '\\') // Add '\\' if is directory and backslash is missing
+
+	// Add '\\' if is directory and backslash is missing
+	if (isDirectory && path.back() != '\\') 
 	{
 		path += '\\';
 	}
+
 	const std::string resourceFormatPath = EDITOR_EXEC(GetResourcePath(path, p_isEngineItem));
 	const bool protectedItem = !p_root || p_isEngineItem;
 
@@ -1044,7 +1045,14 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 						{
 							using namespace OvWindowing::Dialogs;
 
-							MessageBox errorMessage("Wow!", "Crazy boy!", MessageBox::EMessageType::ERROR, MessageBox::EButtonLayout::OK);
+							// That's an interesting message, I have no idea
+							// how we can reach this point...
+							MessageBox errorMessage(
+								"Wow!",
+								"Crazy boy!",
+								MessageBox::EMessageType::ERROR,
+								MessageBox::EButtonLayout::OK
+							);
 						}
 					}
 				};
@@ -1064,8 +1072,11 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 						{
 							bool isEngineFile = p_data.first.at(0) == ':';
 
-							if (isEngineFile) /* Copy dd file from Engine resources */
+							// Copy dd file from Engine resources
+							if (isEngineFile)
+							{
 								std::filesystem::copy_file(prevPath, newPath);
+							}
 							else
 							{
 								RenameAsset(prevPath, newPath);
@@ -1077,17 +1088,20 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 							ParseFolder(treeNode, std::filesystem::directory_entry(correctPath), p_isEngineItem);
 
 							if (!isEngineFile)
+							{
 								p_data.second->Destroy();
+							}
 						}
-						else if (prevPath == newPath)
-						{
-							// Ignore
-						}
-						else
+						else if (prevPath != newPath)
 						{
 							using namespace OvWindowing::Dialogs;
 
-							MessageBox errorMessage("File already exists", "You can't move this file to this location because the name is already taken", MessageBox::EMessageType::ERROR, MessageBox::EButtonLayout::OK);
+							MessageBox errorMessage(
+								"File already exists",
+								"You can't move this file to this location because the name is already taken",
+								MessageBox::EMessageType::ERROR,
+								MessageBox::EButtonLayout::OK
+							);
 						}
 					}
 				};
@@ -1117,7 +1131,12 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				{
 					using namespace OvWindowing::Dialogs;
 
-					MessageBox errorMessage("Folder already exists", "You can't rename this folder because the given name is already taken", MessageBox::EMessageType::ERROR, MessageBox::EButtonLayout::OK);
+					MessageBox errorMessage(
+						"Folder already exists",
+						"You can't rename this folder because the given name is already taken",
+						MessageBox::EMessageType::ERROR,
+						MessageBox::EButtonLayout::OK
+					);
 				}
 			};
 
@@ -1179,7 +1198,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				if (!std::filesystem::exists(p_newPath))
 				{
 					RenameAsset(p_prev, p_newPath);
-					std::string elementName = OvTools::Utils::PathParser::GetElementName(p_newPath);
+					const std::string elementName = OvTools::Utils::PathParser::GetElementName(p_newPath);
 					ddSource.data.first = OvTools::Utils::PathParser::GetContainingFolder(ddSource.data.first) + elementName;
 
 					if (!p_scriptFolder)

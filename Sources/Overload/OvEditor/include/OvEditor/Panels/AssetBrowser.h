@@ -7,12 +7,13 @@
 #pragma once
 
 #include <filesystem>
-#include <unordered_map>
 #include <queue>
+#include <unordered_map>
 
+#include <OvRendering/Resources/Loaders/TextureLoader.h>
 #include <OvUI/Panels/PanelWindow.h>
 #include <OvUI/Widgets/Layout/TreeNode.h>
-#include <OvRendering/Resources/Loaders/TextureLoader.h>
+#include <OvUI/Widgets/Layout/Group.h>
 
 namespace OvEditor::Panels
 {

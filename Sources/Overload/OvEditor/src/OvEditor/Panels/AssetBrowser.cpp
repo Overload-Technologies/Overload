@@ -7,22 +7,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <OvUI/Widgets/Texts/TextClickable.h>
-#include <OvUI/Widgets/Visual/Image.h>
-#include <OvUI/Widgets/Visual/Separator.h>
-#include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Layout/Group.h>
-#include <OvUI/Plugins/DDSource.h>
-#include <OvUI/Plugins/DDTarget.h>
-#include <OvUI/Plugins/ContextualMenu.h>
-
-#include <OvWindowing/Dialogs/MessageBox.h>
-#include <OvWindowing/Dialogs/SaveFileDialog.h>
-#include <OvWindowing/Dialogs/OpenFileDialog.h>
-#include <OvTools/Utils/SystemCalls.h>
-#include <OvTools/Utils/PathParser.h>
-#include <OvTools/Utils/String.h>
-
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
@@ -30,12 +14,29 @@
 
 #include <OvDebug/Logger.h>
 
-#include "OvEditor/Panels/AssetBrowser.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Panels/MaterialEditor.h"
-#include "OvEditor/Panels/AssetProperties.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Core/EditorResources.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/EditorResources.h>
+#include <OvEditor/Panels/AssetBrowser.h>
+#include <OvEditor/Panels/AssetProperties.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/MaterialEditor.h>
+
+#include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/String.h>
+#include <OvTools/Utils/SystemCalls.h>
+
+#include <OvUI/Plugins/ContextualMenu.h>
+#include <OvUI/Plugins/DDSource.h>
+#include <OvUI/Plugins/DDTarget.h>
+#include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/Texts/TextClickable.h>
+#include <OvUI/Widgets/Visual/Image.h>
+#include <OvUI/Widgets/Visual/Separator.h>
+
+#include <OvWindowing/Dialogs/MessageBox.h>
+#include <OvWindowing/Dialogs/OpenFileDialog.h>
+#include <OvWindowing/Dialogs/SaveFileDialog.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;

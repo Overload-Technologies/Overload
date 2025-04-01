@@ -15,6 +15,7 @@
 #include <OvUI/Panels/PanelWindow.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Buttons/Button.h>
 
 #include <OvRendering/Resources/Model.h>
 #include <OvRendering/Resources/Texture.h>

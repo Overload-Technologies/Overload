@@ -216,6 +216,88 @@ namespace
 	public:
 		FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
 
+		void CreateNewShader(const std::string& p_shaderName, const std::string_view p_shaderType)
+		{
+			size_t fails = 0;
+			std::string finalPath;
+
+			do
+			{
+				finalPath = filePath + '\\' + (!fails ? p_shaderName : p_shaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
+				++fails;
+			} while (std::filesystem::exists(finalPath));
+
+			if (p_shaderType == "?")
+			{
+				std::ofstream outfile(finalPath);
+			}
+			else
+			{
+				std::filesystem::copy_file(
+					std::filesystem::path(EDITOR_CONTEXT(engineAssetsPath)) /
+					"Shaders" /
+					std::format("{}.ovfx", p_shaderType),
+					finalPath
+				);
+			}
+
+			ItemAddedEvent.Invoke(finalPath);
+			Close();
+		}
+
+		void CreateNewShaderCallback(OvUI::Widgets::InputFields::InputText& p_inputText, const std::string& p_shaderType)
+		{
+			p_inputText.EnterPressedEvent += std::bind(
+				&FolderContextualMenu::CreateNewShader,
+				this, std::placeholders::_1,
+				p_shaderType
+			);
+		}
+
+		void CreateNewMaterial(const std::string& p_materialName, const std::string_view p_materialType)
+		{
+			size_t fails = 0;
+			std::string finalPath;
+
+			do
+			{
+				finalPath = filePath + (!fails ? p_materialName : p_materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
+				++fails;
+			} while (std::filesystem::exists(finalPath));
+
+			{
+				std::ofstream outfile(finalPath);
+				outfile << std::format(
+					"<root><shader>{}</shader></root>",
+					p_materialType == "?" ?
+					p_materialType :
+					std::format(":Shaders\\{}.ovfx", p_materialType)
+				) << std::endl;
+			}
+
+			ItemAddedEvent.Invoke(finalPath);
+
+			if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
+			{
+				auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+				materialEditor.SetTarget(*instance);
+				materialEditor.Open();
+				materialEditor.Focus();
+				materialEditor.Preview();
+			}
+
+			Close();
+		}
+
+		void CreateNewMaterialCallback(OvUI::Widgets::InputFields::InputText& p_inputText, const std::string& p_materialType)
+		{
+			p_inputText.EnterPressedEvent += std::bind(
+				&FolderContextualMenu::CreateNewMaterial,
+				this, std::placeholders::_1,
+				p_materialType
+			);
+		}
+
 		virtual void CreateList() override
 		{
 			auto& showInExplorer = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Show in explorer");
@@ -325,25 +407,6 @@ namespace
 					Close();
 				};
 
-				createEmptyShader.EnterPressedEvent += [this](std::string newShaderName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-					Close();
-				};
-
 				createPartialShader.EnterPressedEvent += [this](std::string newShaderName)
 				{
 					size_t fails = 0;
@@ -363,219 +426,17 @@ namespace
 					Close();
 				};
 
-				createStandardShader.EnterPressedEvent += [this](std::string newShaderName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
+				CreateNewShaderCallback(createEmptyShader, "?");
+				CreateNewShaderCallback(createStandardShader, "Standard");
+				CreateNewShaderCallback(createStandardPBRShader, "StandardPBR");
+				CreateNewShaderCallback(createUnlitShader, "Unlit");
+				CreateNewShaderCallback(createLambertShader, "Lambert");
 
-					do
-					{
-						finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Standard.ovfx", finalPath);
-					ItemAddedEvent.Invoke(finalPath);
-					Close();
-				};
-
-				createStandardPBRShader.EnterPressedEvent += [this](std::string newShaderName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\StandardPBR.ovfx", finalPath);
-					ItemAddedEvent.Invoke(finalPath);
-					Close();
-				};
-
-				createUnlitShader.EnterPressedEvent += [this](std::string newShaderName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Unlit.ovfx", finalPath);
-					ItemAddedEvent.Invoke(finalPath);
-					Close();
-				};
-
-				createLambertShader.EnterPressedEvent += [this](std::string newShaderName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + '\\' + (!fails ? newShaderName : newShaderName + " (" + std::to_string(fails) + ')') + ".ovfx";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					std::filesystem::copy_file(EDITOR_CONTEXT(engineAssetsPath) + "Shaders\\Lambert.ovfx", finalPath);
-					ItemAddedEvent.Invoke(finalPath);
-					Close();
-				};
-
-				createEmptyMaterial.EnterPressedEvent += [this](std::string materialName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-						outfile << "<root><shader>?</shader></root>" << std::endl; // Empty material content
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-
-					if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-					{
-						auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-						materialEditor.SetTarget(*instance);
-						materialEditor.Open();
-						materialEditor.Focus();
-						materialEditor.Preview();
-					}
-
-					Close();
-				};
-
-				createStandardMaterial.EnterPressedEvent += [this](std::string materialName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-						outfile << "<root><shader>:Shaders\\Standard.ovfx</shader></root>" << std::endl; // Empty standard material content
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-
-					if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-					{
-						auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-						materialEditor.SetTarget(*instance);
-						materialEditor.Open();
-						materialEditor.Focus();
-						materialEditor.Preview();
-					}
-
-					Close();
-				};
-
-				createStandardPBRMaterial.EnterPressedEvent += [this](std::string materialName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-						outfile << "<root><shader>:Shaders\\StandardPBR.ovfx</shader></root>" << std::endl; // Empty standard material content
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-
-					if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-					{
-						auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-						materialEditor.SetTarget(*instance);
-						materialEditor.Open();
-						materialEditor.Focus();
-						materialEditor.Preview();
-					}
-
-					Close();
-				};
-
-				createUnlitMaterial.EnterPressedEvent += [this](std::string materialName)
-				{
-					const std::string newSceneName = "Material";
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-						outfile << "<root><shader>:Shaders\\Unlit.ovfx</shader></root>" << std::endl; // Empty unlit material content
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-
-					if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-					{
-						auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-						materialEditor.SetTarget(*instance);
-						materialEditor.Open();
-						materialEditor.Focus();
-						materialEditor.Preview();
-					}
-
-					Close();
-				};
-
-				createLambertMaterial.EnterPressedEvent += [this](std::string materialName)
-				{
-					size_t fails = 0;
-					std::string finalPath;
-
-					do
-					{
-						finalPath = filePath + (!fails ? materialName : materialName + " (" + std::to_string(fails) + ')') + ".ovmat";
-						++fails;
-					} while (std::filesystem::exists(finalPath));
-
-					{
-						std::ofstream outfile(finalPath);
-						outfile << "<root><shader>:Shaders\\Lambert.ovfx</shader></root>" << std::endl; // Empty unlit material content
-					}
-
-					ItemAddedEvent.Invoke(finalPath);
-
-					if (auto instance = EDITOR_CONTEXT(materialManager)[EDITOR_EXEC(GetResourcePath(finalPath))])
-					{
-						auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-						materialEditor.SetTarget(*instance);
-						materialEditor.Open();
-						materialEditor.Focus();
-						materialEditor.Preview();
-					}
-					Close();
-				};
+				CreateNewMaterialCallback(createEmptyMaterial, "?");
+				CreateNewMaterialCallback(createStandardMaterial, "Standard");
+				CreateNewMaterialCallback(createStandardPBRMaterial, "StandardPBR");
+				CreateNewMaterialCallback(createUnlitMaterial, "Unlit");
+				CreateNewMaterialCallback(createLambertMaterial, "Lambert");
 
 				BrowserItemContextualMenu::CreateList();
 			}

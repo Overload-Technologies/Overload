@@ -6,12 +6,13 @@
 
 #include <filesystem>
 
-#include <OvTools/Utils/String.h>
+#include <OvEditor/Core/Application.h>
+#include <OvEditor/Core/ProjectHub.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvRendering/Utils/Defines.h>
 
-#include "OvEditor/Core/Application.h"
-#include "OvEditor/Core/ProjectHub.h"
+#include <OvTools/Utils/String.h>
 
 #undef APIENTRY
 #include "Windows.h"
@@ -44,6 +45,8 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 int main(int argc, char** argv)
 {
 	UpdateWorkingDirectory(argv[0]);
+
+	OvEditor::Settings::EditorSettings::Load();
 
 	bool ready = false;
 	std::string projectPath;

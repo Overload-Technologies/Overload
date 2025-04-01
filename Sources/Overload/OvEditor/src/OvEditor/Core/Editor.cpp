@@ -36,7 +36,6 @@ OvEditor::Core::Editor::Editor(Context& p_context) :
 	m_panelsManager(m_canvas),
 	m_editorActions(m_context, m_panelsManager)
 {
-	Settings::EditorSettings::Load();
 	SetupUI();
 
 	m_context.sceneManager.LoadDefaultScene();

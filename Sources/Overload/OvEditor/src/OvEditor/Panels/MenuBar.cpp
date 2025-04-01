@@ -23,6 +23,7 @@
 #include <OvUI/Widgets/Sliders/SliderFloat.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
 
 #include "OvEditor/Panels/MenuBar.h"
 #include "OvEditor/Panels/SceneView.h"
@@ -69,6 +70,24 @@ void OvEditor::Panels::MenuBar::HandleShortcuts(float p_deltaTime)
 
 void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 {
+	auto& themeButton = m_settingsMenu->CreateWidget<MenuList>("Editor Theme");
+	themeButton.CreateWidget<Texts::Text>("Some themes may require a restart");
+
+	auto& colorTheme = themeButton.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::ColorTheme.Get()));
+	colorTheme.choices = {
+		{ static_cast<int>(OvUI::Styling::EStyle::IM_CLASSIC_STYLE), "ImGui Classic"},
+		{ static_cast<int>(OvUI::Styling::EStyle::IM_DARK_STYLE), "ImGui Dark"},
+		{ static_cast<int>(OvUI::Styling::EStyle::IM_LIGHT_STYLE), "ImGui Light"},
+		{ static_cast<int>(OvUI::Styling::EStyle::DUNE_DARK), "Dune Dark"},
+		{ static_cast<int>(OvUI::Styling::EStyle::DEFAULT_DARK), "Alternative Dark"},
+		{ static_cast<int>(OvUI::Styling::EStyle::EVEN_DARKER), "Even Darker"}
+	};
+	colorTheme.ValueChangedEvent += [this](int p_value)
+	{
+		Settings::EditorSettings::ColorTheme = p_value;
+		EDITOR_CONTEXT(uiManager)->ApplyStyle(static_cast<OvUI::Styling::EStyle>(p_value));
+	};
+
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);
 	m_settingsMenu->CreateWidget<MenuItem>("Vertical Synchronization", "", true, true).ValueChangedEvent += [this](bool p_value) { EDITOR_CONTEXT(device)->SetVsync(p_value); };
 	auto& cameraSpeedMenu = m_settingsMenu->CreateWidget<MenuList>("Camera Speed");

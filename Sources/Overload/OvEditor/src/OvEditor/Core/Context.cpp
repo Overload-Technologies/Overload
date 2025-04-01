@@ -6,6 +6,7 @@
 
 #include <filesystem>
 
+#include <OvEditor/Settings/EditorSettings.h>
 #include <OvRendering/Entities/Light.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvTools/Utils/SystemCalls.h>
@@ -113,7 +114,9 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 
 	std::filesystem::create_directories(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\");
 
-	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(), OvUI::Styling::EStyle::ALTERNATIVE_DARK);
+	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(),
+		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
+	);
 	uiManager->LoadFont("Ruda_Big", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 16);
 	uiManager->LoadFont("Ruda_Small", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 12);
 	uiManager->LoadFont("Ruda_Medium", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 14);

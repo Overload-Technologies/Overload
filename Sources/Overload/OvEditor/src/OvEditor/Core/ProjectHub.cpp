@@ -9,22 +9,23 @@
 #include <filesystem>
 #include <fstream>
 
-#include "OvEditor/Core/ProjectHub.h"
-
-#include <OvUI/Widgets/Texts/Text.h>
-#include <OvUI/Widgets/Visual/Separator.h>
-#include <OvUI/Widgets/Layout/Columns.h>
-#include <OvUI/Widgets/Layout/Spacing.h>
-#include <OvUI/Widgets/Layout/Group.h>
-#include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/InputFields/InputText.h>
+#include <OvEditor/Core/ProjectHub.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SystemCalls.h>
 
-#include <OvWindowing/Dialogs/SaveFileDialog.h>
-#include <OvWindowing/Dialogs/OpenFileDialog.h>
+#include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
+#include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/Layout/Spacing.h>
+#include <OvUI/Widgets/Texts/Text.h>
+#include <OvUI/Widgets/Visual/Separator.h>
+
 #include <OvWindowing/Dialogs/MessageBox.h>
+#include <OvWindowing/Dialogs/OpenFileDialog.h>
+#include <OvWindowing/Dialogs/SaveFileDialog.h>
 
 #define PROJECTS_FILE std::string(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\projects.ini")
 
@@ -296,7 +297,9 @@ void OvEditor::Core::ProjectHub::SetupContext()
 	/* Graphics context creation */
 	m_driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ false });
 
-	m_uiManager = std::make_unique<OvUI::Core::UIManager>(m_window->GetGlfwWindow(), OvUI::Styling::EStyle::ALTERNATIVE_DARK);
+	m_uiManager = std::make_unique<OvUI::Core::UIManager>(m_window->GetGlfwWindow(),
+		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
+	);
 	m_uiManager->LoadFont("Ruda_Big", "Data\\Editor\\Fonts\\Ruda-Bold.ttf", 18);
 	m_uiManager->UseFont("Ruda_Big");
 	m_uiManager->EnableEditorLayoutSave(false);

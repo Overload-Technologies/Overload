@@ -1,7 +1,7 @@
 project "OvEditor"
 	language "C++"
 	cppdialect "C++20"
-	files { "**.h", "**.inl","**.cpp", "**.lua", "**.rc" }
+	files { "**.h", "**.inl","**.cpp", "**.lua", "**.rc", "**.ini" }
 	includedirs { "include", dependdir .. "glfw/include", dependdir .. "stb_image/include", dependdir .. "lua/include", dependdir .. "bullet3/include", dependdir .. "glew/include", dependdir .. "irrklang/include",
 	"%{wks.location}/OvAnalytics/include", "%{wks.location}/OvAudio/include", "%{wks.location}/OvCore/include",
 	"%{wks.location}/OvDebug/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvPhysics/include",

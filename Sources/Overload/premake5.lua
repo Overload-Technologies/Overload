@@ -25,8 +25,8 @@ builddir = "%{wks.location}/../../Build/"
 resdir = "%{wks.location}/../../Resources/"
 
 group "Dependencies"
-    include "../ImGui"
-    include "../tinyxml2"
+    include "../../Dependencies/ImGui"
+    include "../../Dependencies/tinyxml2"
 group ""
 
 group "Overload SDK"

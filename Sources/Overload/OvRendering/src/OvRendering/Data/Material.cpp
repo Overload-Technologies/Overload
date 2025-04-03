@@ -4,13 +4,57 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Data/Material.h"
-#include "OvRendering/HAL/UniformBuffer.h"
-#include "OvRendering/HAL/TextureHandle.h"
-#include "OvRendering/Resources/Texture.h"
+#include <OvDebug/Assertion.h>
+#include <OvDebug/Logger.h>
+
+#include <OvRendering/Data/Material.h>
+#include <OvRendering/HAL/UniformBuffer.h>
+#include <OvRendering/HAL/TextureHandle.h>
+#include <OvRendering/Resources/Texture.h>
+
 #include <OvTools/Utils/OptRef.h>
 
-//TODO: Add constructor with a shader reference
+namespace
+{
+	OvRendering::Data::MaterialPropertyType UniformToPropertyValue(const std::any& p_uniformValue)
+	{
+		using namespace OvMaths;
+		using namespace OvRendering;
+
+		auto as = [&]<typename T>() -> std::optional<T> {
+			return
+				p_uniformValue.type() == typeid(T) ?
+				std::optional<T>{std::any_cast<T>(p_uniformValue)} :
+				std::nullopt;
+		};
+
+		if (auto value = as.operator()<int>()) return *value;
+		if (auto value = as.operator()<float>()) return *value;
+		if (auto value = as.operator()<FVector2>()) return *value;
+		if (auto value = as.operator()<FVector3>()) return *value;
+		if (auto value = as.operator()<FVector4>()) return *value;
+		if (auto value = as.operator()<FMatrix4>()) return *value;
+		if (auto value = as.operator()<HAL::TextureHandle*>()) return *value;
+		if (auto value = as.operator()<Resources::Texture*>()) return *value;
+
+		return std::monostate{};
+	}
+
+	void BindTexture(
+		OvRendering::HAL::ShaderProgram& p_shader,
+		const std::string& p_uniformName,
+		OvRendering::HAL::TextureHandle* p_texture,
+		OvRendering::HAL::TextureHandle* p_fallback,
+		int& p_textureSlot
+	)
+	{
+		if (auto target = p_texture ? p_texture : p_fallback)
+		{
+			target->Bind(p_textureSlot);
+			p_shader.SetUniform<int>(p_uniformName, p_textureSlot++);
+		}
+	}
+}
 
 OvRendering::Data::Material::Material(OvRendering::Resources::Shader* p_shader)
 {
@@ -23,8 +67,6 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 
 	if (m_shader)
 	{
-		// TODO: Move that line to Engine Material
-		// OvRendering::HAL::UniformBuffer::BindBlockToShader(*m_shader, "EngineUBO");
 		FillUniform();
 	}
 	else
@@ -39,91 +81,151 @@ void OvRendering::Data::Material::FillUniform()
 
 	for (const auto& uniform : m_shader->GetProgram().GetUniforms())
 	{
-		m_properties.emplace(uniform.name, MaterialProperty{ uniform.defaultValue, false });
+		m_properties.emplace(uniform.name, MaterialProperty{
+			.value = UniformToPropertyValue(uniform.defaultValue),
+			.singleUse = false
+		});
 	}
 }
 
-void OvRendering::Data::Material::Bind(OvRendering::Resources::Texture* p_emptyTexture)
+void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture)
 {
-	if (HasShader())
+	using namespace OvMaths;
+	using enum OvRendering::Settings::EUniformType;
+
+	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
+
+	auto& program = m_shader->GetProgram();
+	program.Bind();
+
+	int textureSlot = 0;
+
+	for (auto& [name, prop] : m_properties)
 	{
-		using namespace OvMaths;
-		using namespace OvRendering::Resources;
+		const auto uniformData = program.GetUniformInfo(name);
 
-		m_shader->GetProgram().Bind();
-
-		int textureSlot = 0;
-
-		for (auto& [name, prop] : m_properties)
+		// Skip this property if the current program isn't using its associated uniform
+		if (!uniformData)
 		{
-			auto& value = prop.value;
+			continue;
+		}
 
-			const auto uniformData = m_shader->GetProgram().GetUniformInfo(name);
+		auto& value = prop.value;
+		auto uniformType = uniformData->type;
 
-			if (uniformData)
+		// Visitor to handle each variant type
+		auto visitor = [&](auto&& arg) {
+			using PropertyType = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::same_as<PropertyType, bool>)
 			{
-				switch (uniformData->type)
+				if (uniformType == BOOL)
 				{
-				case OvRendering::Settings::EUniformType::BOOL:			if (value.type() == typeid(bool))		m_shader->GetProgram().SetUniform<int>(name, std::any_cast<bool>(value));			break;
-				case OvRendering::Settings::EUniformType::INT:			if (value.type() == typeid(int))		m_shader->GetProgram().SetUniform<int>(name, std::any_cast<int>(value));			break;
-				case OvRendering::Settings::EUniformType::FLOAT:		if (value.type() == typeid(float))		m_shader->GetProgram().SetUniform<float>(name, std::any_cast<float>(value));		break;
-				case OvRendering::Settings::EUniformType::FLOAT_VEC2:	if (value.type() == typeid(FVector2))	m_shader->GetProgram().SetUniform<FVector2>(name, std::any_cast<FVector2>(value));		break;
-				case OvRendering::Settings::EUniformType::FLOAT_VEC3:	if (value.type() == typeid(FVector3))	m_shader->GetProgram().SetUniform<FVector3>(name, std::any_cast<FVector3>(value));		break;
-				case OvRendering::Settings::EUniformType::FLOAT_VEC4:	if (value.type() == typeid(FVector4))	m_shader->GetProgram().SetUniform<FVector4>(name, std::any_cast<FVector4>(value));		break;
-				case OvRendering::Settings::EUniformType::FLOAT_MAT4:	if (value.type() == typeid(FMatrix4))	m_shader->GetProgram().SetUniform<FMatrix4>(name, std::any_cast<FMatrix4>(value));		break;
-				case OvRendering::Settings::EUniformType::SAMPLER_2D:
-				{
-					if (value.type() == typeid(HAL::TextureHandle))
-					{
-						auto tex = std::any_cast<HAL::TextureHandle>(value);
-						tex.Bind(textureSlot);
-						m_shader->GetProgram().SetUniform<int>(uniformData->name, textureSlot++);
-					}
-					else if (value.type() == typeid(HAL::Texture))
-					{
-						auto tex = std::any_cast<HAL::Texture>(value);
-						tex.Bind(textureSlot);
-						m_shader->GetProgram().SetUniform<int>(uniformData->name, textureSlot++);
-					}
-					else if (value.type() == typeid(Resources::Texture*))
-					{
-						if (auto tex = std::any_cast<Resources::Texture*>(value); tex)
-						{
-							tex->GetTexture().Bind(textureSlot);
-							m_shader->GetProgram().SetUniform<int>(uniformData->name, textureSlot++);
-						}
-						else if (p_emptyTexture)
-						{
-							p_emptyTexture->GetTexture().Bind(textureSlot);
-							m_shader->GetProgram().SetUniform<int>(uniformData->name, textureSlot++);
-						}
-					}
-					else if (value.type() == typeid(OvTools::Utils::OptRef<HAL::Texture>))
-					{
-						if (const auto tex = std::any_cast<OvTools::Utils::OptRef<HAL::Texture>>(value); tex)
-						{
-							tex->Bind(textureSlot);
-							m_shader->GetProgram().SetUniform<int>(uniformData->name, textureSlot++);
-						}
-					}
-				}
-				}
-
-				if (prop.singleUse)
-				{
-					value = uniformData->defaultValue;
+					program.SetUniform<int>(name, arg);
 				}
 			}
+			else if constexpr (std::same_as<PropertyType, int>)
+			{
+				if (uniformType == INT)
+				{
+					program.SetUniform<int>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, float>)
+			{
+				if (uniformType == FLOAT)
+				{
+					program.SetUniform<float>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, FVector2>)
+			{
+				if (uniformType == FLOAT_VEC2)
+				{
+					program.SetUniform<FVector2>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, FVector3>)
+			{
+				if (uniformType == FLOAT_VEC3)
+				{
+					program.SetUniform<FVector3>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, FVector4>)
+			{
+				if (uniformType == FLOAT_VEC4)
+				{
+					program.SetUniform<FVector4>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, FMatrix4>)
+			{
+				if (uniformType == FLOAT_MAT4)
+				{
+					program.SetUniform<FMatrix4>(name, arg);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, HAL::TextureHandle*>)
+			{
+				if (uniformType == SAMPLER_2D)
+				{
+					BindTexture(program, name, arg, p_emptyTexture, textureSlot);
+				}
+			}
+			else if constexpr (std::same_as<PropertyType, Resources::Texture*>)
+			{
+				if (uniformType == SAMPLER_2D)
+				{
+					BindTexture(program, name, arg ? &arg->GetTexture() : nullptr, p_emptyTexture, textureSlot);
+				}
+			}
+		};
+
+		std::visit(visitor, value);
+
+		if (prop.singleUse)
+		{
+			value = UniformToPropertyValue(uniformData->defaultValue);
 		}
 	}
 }
 
-void OvRendering::Data::Material::UnBind() const
+void OvRendering::Data::Material::Unbind() const
 {
-	if (HasShader())
+	OVASSERT(IsValid(), "Attempting to unbind an invalid material.");
+	m_shader->GetProgram().Unbind();
+}
+
+void OvRendering::Data::Material::SetProperty(const std::string p_name, const MaterialPropertyType& p_value, bool p_singleUse)
+{
+	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
+
+	if (m_properties.find(p_name) != m_properties.end())
 	{
-		m_shader->GetProgram().Unbind();
+		const auto property = MaterialProperty{
+			p_value,
+			p_singleUse
+		};
+
+		m_properties[p_name] = property;
 	}
+	else
+	{
+		OVLOG_ERROR("Material Set failed: Uniform not found");
+	}
+}
+
+OvTools::Utils::OptRef<const OvRendering::Data::MaterialProperty> OvRendering::Data::Material::GetProperty(const std::string p_key) const
+{
+	OVASSERT(IsValid(), "Attempting to GetProperty on an invalid material.");
+
+	if (m_properties.find(p_key) != m_properties.end())
+	{
+		return m_properties.at(p_key);
+	}
+
+	return std::nullopt;
 }
 
 OvRendering::Resources::Shader*& OvRendering::Data::Material::GetShader()

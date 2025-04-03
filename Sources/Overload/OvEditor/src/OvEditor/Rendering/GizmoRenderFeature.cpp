@@ -34,13 +34,13 @@ OvEditor::Rendering::GizmoRenderFeature::GizmoRenderFeature(OvRendering::Core::C
 	/* Gizmo Arrow Material */
 	m_gizmoArrowMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));
 	m_gizmoArrowMaterial.SetGPUInstances(3);
-	m_gizmoArrowMaterial.Set("u_IsBall", false);
-	m_gizmoArrowMaterial.Set("u_IsPickable", false);
+	m_gizmoArrowMaterial.SetProperty("u_IsBall", false);
+	m_gizmoArrowMaterial.SetProperty("u_IsPickable", false);
 
 	/* Gizmo Ball Material */
 	m_gizmoBallMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));
-	m_gizmoBallMaterial.Set("u_IsBall", true);
-	m_gizmoBallMaterial.Set("u_IsPickable", false);
+	m_gizmoBallMaterial.SetProperty("u_IsBall", true);
+	m_gizmoBallMaterial.SetProperty("u_IsPickable", false);
 }
 
 std::string GetArrowModelName(OvEditor::Core::EGizmoOperation p_operation)
@@ -93,7 +93,7 @@ void OvEditor::Rendering::GizmoRenderFeature::DrawGizmo(
 	if (auto arrowModel = EDITOR_CONTEXT(editorResources)->GetModel(arrowModelName))
 	{
 		const auto axisIndex = GetAxisIndexFromDirection(p_highlightedDirection);
-		m_gizmoArrowMaterial.Set("u_HighlightedAxis", axisIndex);
+		m_gizmoArrowMaterial.SetProperty("u_HighlightedAxis", axisIndex);
 
 		m_renderer.GetFeature<DebugModelRenderFeature>()
 		.DrawModelWithSingleMaterial(

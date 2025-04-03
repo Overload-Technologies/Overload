@@ -29,13 +29,13 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 	/* Gizmo Pickable Material */
 	m_gizmoPickingMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));
 	m_gizmoPickingMaterial.SetGPUInstances(3);
-	m_gizmoPickingMaterial.Set("u_IsBall", false);
-	m_gizmoPickingMaterial.Set("u_IsPickable", true);
+	m_gizmoPickingMaterial.SetProperty("u_IsBall", false);
+	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
 
 	/* Picking Material */
 	m_actorPickingMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_actorPickingMaterial.Set("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.0f));
-	m_actorPickingMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_actorPickingMaterial.SetProperty("u_Diffuse", OvMaths::FVector4{ 1.f, 1.f, 1.f, 1.0f });
+	m_actorPickingMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 	m_actorPickingMaterial.SetFrontfaceCulling(false);
 	m_actorPickingMaterial.SetBackfaceCulling(false);
 }
@@ -128,7 +128,7 @@ void PreparePickingMaterial(OvCore::ECS::Actor& p_actor, OvCore::Resources::Mate
 	auto bytes = reinterpret_cast<uint8_t*>(&actorID);
 	auto color = OvMaths::FVector4{ bytes[0] / 255.0f, bytes[1] / 255.0f, bytes[2] / 255.0f, 1.0f };
 
-	p_material.Set("u_Diffuse", color);
+	p_material.SetProperty("u_Diffuse", color);
 }
 
 void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
@@ -210,7 +210,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableLights(
 	{
 		m_renderer.Clear(false, true, false);
 
-		m_lightMaterial.Set<float>("u_Scale", Settings::EditorSettings::LightBillboardScale * 0.1f);
+		m_lightMaterial.SetProperty("u_Scale", Settings::EditorSettings::LightBillboardScale * 0.1f);
 
 		for (auto light : p_scene.GetFastAccessComponents().lights)
 		{

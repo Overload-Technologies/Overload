@@ -849,12 +849,22 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	{
 		if (auto texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().GetResource(p_previousName, false))
 		{
-			for (auto[name, instance] : OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().GetResources())
+			for (auto [name, instance] : OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().GetResources())
+			{
 				if (instance)
-					for (auto&[name, prop] : instance->GetProperties())
-						if (prop.value.has_value() && prop.value.type() == typeid(OvRendering::Resources::Texture*))
-							if (std::any_cast<OvRendering::Resources::Texture*>(prop.value) == texture)
+				{
+					for (auto& [name, prop] : instance->GetProperties())
+					{
+						if (const auto pval = std::get_if<OvRendering::Resources::Texture*>(&prop.value); pval && *pval)
+						{
+							if (*pval == texture)
+							{
 								prop.value = static_cast<OvRendering::Resources::Texture*>(nullptr);
+							}
+						}
+					}
+				}
+			}
 
 			auto& assetView = EDITOR_PANEL(Panels::AssetView, "Asset View");
 			auto assetViewRes = assetView.GetResource();

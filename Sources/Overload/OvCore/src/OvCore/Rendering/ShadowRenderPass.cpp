@@ -58,7 +58,7 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 					light.UpdateShadowData(frameDescriptor.camera.value());
 					const auto& lightSpaceMatrix = light.GetLightSpaceMatrix();
 					const auto& shadowBuffer = light.GetShadowBuffer();
-					m_shadowMaterial.Set("_LightSpaceMatrix", lightSpaceMatrix);
+					m_shadowMaterial.SetProperty("_LightSpaceMatrix", lightSpaceMatrix);
 					shadowBuffer.Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
@@ -108,7 +108,7 @@ void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
 							drawable.material = m_shadowMaterial;
 							drawable.stateMask = m_shadowMaterial.GenerateStateMask();
 
-							drawable.material.value().Set("_ModelMatrix", modelMatrix);
+							drawable.material.value().SetProperty("_ModelMatrix", modelMatrix);
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}

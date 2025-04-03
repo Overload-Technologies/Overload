@@ -3,6 +3,7 @@ project "tinyxml2"
 	language "C++"
 	cppdialect "C++20"
 	files { "**.h", "**.cpp", "**.lua" }
+	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")

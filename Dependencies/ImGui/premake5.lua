@@ -3,7 +3,7 @@ project "ImGui"
 	language "C++"
 	cppdialect "C++20"
 	files { "**.h", "**.cpp", "**.lua" }
-	includedirs { dependdir .. "glfw/include", dependdir .. "glew/include" }
+	includedirs { "include", dependdir .. "glfw/include", dependdir .. "glew/include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")

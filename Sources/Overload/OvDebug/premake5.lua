@@ -3,7 +3,10 @@ project "OvDebug"
 	language "C++"
 	cppdialect "C++20"
 	files { "**.h", "**.inl", "**.cpp", "**.lua" }
-	includedirs { "include", "%{wks.location}/OvTools/include" }
+	includedirs {
+		"%{wks.location}/OvTools/include",
+		"include"
+	}
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")

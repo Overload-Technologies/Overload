@@ -4,7 +4,8 @@
 * @licence: MIT
 */
 
-#include <OvUI/ImGui/imgui.h>
+#include <imgui.h>
+
 #include <OvUI/Styling/TStyle.h>
 
 template<>

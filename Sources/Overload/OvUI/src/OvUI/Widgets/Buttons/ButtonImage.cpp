@@ -4,9 +4,11 @@
 * @licence: MIT
 */
 
+#include <imgui.h>
+#include <imgui_internal.h>
+
 #include "OvUI/Widgets/Buttons/ButtonImage.h"
 #include "OvUI/Internal/Converter.h"
-#include "OvUI/ImGui/imgui_internal.h"
 
 OvUI::Widgets::Buttons::ButtonImage::ButtonImage(uint32_t p_textureID, const OvMaths::FVector2 & p_size) :
 	textureID{ p_textureID }, size(p_size)

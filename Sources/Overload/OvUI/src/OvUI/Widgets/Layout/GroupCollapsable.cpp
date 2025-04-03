@@ -4,8 +4,10 @@
 * @licence: MIT
 */
 
+#include <imgui.h>
+#include <imgui_internal.h>
+
 #include "OvUI/Widgets/Layout/GroupCollapsable.h"
-#include "OvUI/ImGui/imgui_internal.h"
 
 OvUI::Widgets::Layout::GroupCollapsable::GroupCollapsable(const std::string & p_name) :
 	name(p_name)

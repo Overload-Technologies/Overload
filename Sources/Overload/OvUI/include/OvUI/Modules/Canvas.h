@@ -8,13 +8,14 @@
 
 #include <algorithm>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <OvTools/Eventing/Event.h>
 
 #include "OvUI/API/IDrawable.h"
 #include "OvUI/Panels/APanel.h"
-#include "OvUI/ImGui/imgui.h"
-#include "OvUI/ImGui/imgui_impl_glfw.h"
-#include "OvUI/ImGui/imgui_impl_opengl3.h"
 
 namespace OvUI::Modules
 {

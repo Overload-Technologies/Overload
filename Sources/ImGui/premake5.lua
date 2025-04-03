@@ -1,9 +1,9 @@
-project "OvUI"
+project "ImGui"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
-	files { "**.h", "**.inl", "**.cpp", "**.lua" }
-	includedirs { "include", dependdir .. "glfw/include", dependdir .. "glew/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include", "%{wks.location}/../ImGui/" }
+	files { "**.h", "**.cpp", "**.lua" }
+	includedirs { dependdir .. "glfw/include", dependdir .. "glew/include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")

@@ -14,6 +14,8 @@
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 
+#include <OvRendering/HAL/Profiling.h>
+
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
 	m_actorPickingFramebuffer("ActorPicking")
@@ -78,6 +80,8 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Rendering::Picki
 void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
 	// TODO: Make sure we only renderer when the view is hovered and not being resized
+
+	OvGpuZone("PickingRenderPass");
 
 	using namespace OvCore::Rendering;
 

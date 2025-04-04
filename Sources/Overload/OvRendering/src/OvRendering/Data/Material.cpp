@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include "OvRendering/Data/Material.h"
 #include "OvRendering/HAL/UniformBuffer.h"
 #include "OvRendering/HAL/TextureHandle.h"
@@ -45,6 +47,8 @@ void OvRendering::Data::Material::FillUniform()
 
 void OvRendering::Data::Material::Bind(OvRendering::Resources::Texture* p_emptyTexture)
 {
+	ZoneScoped;
+
 	if (HasShader())
 	{
 		using namespace OvMaths;

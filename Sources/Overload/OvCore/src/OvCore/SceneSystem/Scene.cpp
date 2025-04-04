@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <string>
 
+#include <tracy/Tracy.hpp>
+
 #include <OvCore/SceneSystem/Scene.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
@@ -64,18 +66,21 @@ bool OvCore::SceneSystem::Scene::IsPlaying() const
 
 void OvCore::SceneSystem::Scene::Update(float p_deltaTime)
 {
+	ZoneScoped;
 	auto actors = m_actors;
 	std::for_each(actors.begin(), actors.end(), std::bind(std::mem_fn(&ECS::Actor::OnUpdate), std::placeholders::_1, p_deltaTime));
 }
 
 void OvCore::SceneSystem::Scene::FixedUpdate(float p_deltaTime)
 {
+	ZoneScoped;
 	auto actors = m_actors;
 	std::for_each(actors.begin(), actors.end(), std::bind(std::mem_fn(&ECS::Actor::OnFixedUpdate), std::placeholders::_1, p_deltaTime));
 }
 
 void OvCore::SceneSystem::Scene::LateUpdate(float p_deltaTime)
 {
+	ZoneScoped;
 	auto actors = m_actors;
 	std::for_each(actors.begin(), actors.end(), std::bind(std::mem_fn(&ECS::Actor::OnLateUpdate), std::placeholders::_1, p_deltaTime));
 }

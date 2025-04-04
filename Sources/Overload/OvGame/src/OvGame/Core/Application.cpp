@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvTools/Time/Clock.h>
 
 #include "OvGame/Core/Application.h"
@@ -29,6 +31,7 @@ void OvGame::Core::Application::Run()
 		m_game.PostUpdate();
 
 		clock.Update();
+		FrameMark;
 	}
 }
 

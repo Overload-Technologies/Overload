@@ -25,7 +25,17 @@ OvGame::Debug::FrameInfo::FrameInfo(OvWindowing::Window& p_window) :
 
 void OvGame::Debug::FrameInfo::Update(const OvRendering::Data::FrameInfo& p_frameInfo)
 {
-	const auto loc = std::locale("");
+	// Workaround for Tracy memory profiler.
+	// When using a non-default locale, std::format
+	// will call delete on a non-allocated object,
+	// resulting in a instrumentation error, interrupting
+	// Tracy profiler's execution.
+#if defined(TRACY_MEMORY_ENABLE)
+	const std::locale loc{ };
+#else
+	const std::locale loc{ "" };
+#endif
+
 	m_batchText.content = std::format(loc, "Batches: {:L}", p_frameInfo.batchCount);
 	m_instanceText.content = std::format(loc, "Instances: {:L}", p_frameInfo.instanceCount);
 	m_polyText.content = std::format(loc, "Polygons: {:L}", p_frameInfo.polyCount);

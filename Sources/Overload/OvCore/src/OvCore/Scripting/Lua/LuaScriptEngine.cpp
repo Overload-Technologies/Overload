@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 

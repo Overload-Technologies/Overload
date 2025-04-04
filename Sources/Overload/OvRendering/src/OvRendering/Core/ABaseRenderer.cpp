@@ -6,6 +6,8 @@
 
 #include <functional>
 
+#include <tracy/Tracy.hpp>
+
 #include "OvRendering/Core/ABaseRenderer.h"
 #include "OvRendering/Resources/Loaders/TextureLoader.h"
 #include <OvRendering/HAL/TextureHandle.h>
@@ -46,6 +48,8 @@ OvRendering::Core::ABaseRenderer::~ABaseRenderer()
 
 void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
+	ZoneScopedN("ABaseRenderer::BeginFrame");
+
 	OVASSERT(!s_isDrawing, "Cannot call BeginFrame() when previous frame hasn't finished.");
 	OVASSERT(p_frameDescriptor.IsValid(), "Invalid FrameDescriptor!");
 
@@ -74,6 +78,8 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 
 void OvRendering::Core::ABaseRenderer::EndFrame()
 {
+	ZoneScopedN("ABaseRenderer::EndFrame");
+
 	OVASSERT(s_isDrawing, "Cannot call EndFrame() before calling BeginFrame()");
 
 	if (m_frameDescriptor.outputBuffer)
@@ -113,6 +119,8 @@ void OvRendering::Core::ABaseRenderer::Clear(
 	const OvMaths::FVector4& p_color
 )
 {
+	ZoneScopedN("ABaseRenderer::Clear");
+
 	m_driver.Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer, p_color);
 }
 
@@ -124,6 +132,8 @@ void OvRendering::Core::ABaseRenderer::Blit(
 	OvRendering::Settings::EBlitFlags p_flags
 )
 {
+	ZoneScopedN("ABaseRenderer::Blit");
+
 	OVASSERT(m_unitQuad != nullptr, "Invalid unit quad mesh, cannot blit!");
 
 	auto [srcWidth, srcHeight] = p_src.GetSize();
@@ -175,6 +185,8 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
+	ZoneScopedN("ABaseRenderer::DrawEntity");
+
 	auto material = p_drawable.material;
 	auto mesh = p_drawable.mesh;
 

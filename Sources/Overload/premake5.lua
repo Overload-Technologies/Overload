@@ -16,7 +16,15 @@ workspace "Overload"
 	configurations { "Debug", "Release" }
 	platforms { "x64" }
 	startproject "OvEditor"
-	defines { "LUA_SCRIPTING", "GRAPHICS_API_OPENGL", "OVERLOAD_VERSION=\"" .. version .. "\"" }
+	defines {
+		"LUA_SCRIPTING",
+		"GRAPHICS_API_OPENGL",
+		"OVERLOAD_VERSION=\"" .. version .. "\"",
+		"TRACY_ENABLE"
+	}
+
+	-- Disable "Hot Reload": Doesn't work with Tracy.
+	editandcontinue "Off"
 
 outputdir = "%{wks.location}/../../Bin/"
 objoutdir = "%{wks.location}/../../Bin-Int/"
@@ -27,6 +35,7 @@ resdir = "%{wks.location}/../../Resources/"
 group "Dependencies"
 	include "../../Dependencies/ImGui"
 	include "../../Dependencies/tinyxml2"
+	include "../../Dependencies/tracy"
 group ""
 
 group "Dependencies/Prebuilt"

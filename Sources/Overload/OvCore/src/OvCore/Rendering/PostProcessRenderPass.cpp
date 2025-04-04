@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/Rendering/PostProcessRenderPass.h>
 #include <OvCore/Global/ServiceLocator.h>
@@ -53,6 +55,8 @@ OvTools::Utils::OptRef<const OvCore::Rendering::PostProcess::PostProcessStack> F
 
 void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
+	ZoneScopedN("PostProcessRenderPass::Draw");
+
 	auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 	auto& scene = sceneDescriptor.scene;
 

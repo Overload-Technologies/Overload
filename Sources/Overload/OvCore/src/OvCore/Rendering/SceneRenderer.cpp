@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvAnalytics/Profiling/ProfilerSpy.h>
 
 #include <OvRendering/Data/Frustum.h>
@@ -61,6 +63,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		ZoneScopedN("OpaqueRenderPass::Draw");
+
 		PrepareStencilBuffer(p_pso);
 
 		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
@@ -81,6 +85,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		ZoneScopedN("TransparentRenderPass::Draw");
+
 		PrepareStencilBuffer(p_pso);
 
 		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
@@ -101,6 +107,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		ZoneScopedN("UIRenderPass::Draw");
+
 		PrepareStencilBuffer(p_pso);
 
 		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
@@ -146,6 +154,8 @@ OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const Ov
 
 void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
 {
+	ZoneScopedN("SceneRenderer::BeginFrame");
+
 	OVASSERT(HasDescriptor<SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
 
 	auto& sceneDescriptor = GetDescriptor<SceneDescriptor>();
@@ -188,6 +198,8 @@ void OvCore::Rendering::SceneRenderer::DrawModelWithSingleMaterial(OvRendering::
 
 OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer::ParseScene()
 {
+	ZoneScopedN("SceneRenderer::ParseScene");
+
 	using namespace OvCore::ECS::Components;
 
 	OpaqueDrawables opaques;
@@ -239,6 +251,7 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 					if (frustum)
 					{
+						ZoneScopedN("SceneRenderer::<frustum_culling>");
 						PROFILER_SPY("Frustum Culling");
 						meshes = frustum.value().GetMeshesInFrustum(*model, modelBoundingSphere, transform, cullingOptions);
 					}

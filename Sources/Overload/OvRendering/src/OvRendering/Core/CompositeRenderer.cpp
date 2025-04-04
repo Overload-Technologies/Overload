@@ -6,6 +6,8 @@
 
 #include <functional>
 
+#include <tracy/Tracy.hpp>
+
 #include "OvRendering/Core/CompositeRenderer.h"
 
 OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_driver)
@@ -36,6 +38,8 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 
 void OvRendering::Core::CompositeRenderer::DrawFrame()
 {
+	ZoneScopedN("CompositeRenderer::DrawFrame");
+
 	auto pso = CreatePipelineState();
 
 	for (const auto& [_, pass] : m_passes)
@@ -52,6 +56,8 @@ void OvRendering::Core::CompositeRenderer::DrawFrame()
 
 void OvRendering::Core::CompositeRenderer::EndFrame()
 {
+	ZoneScopedN("CompositeRenderer::EndFrame");
+
 	for (const auto& [_, pass] : m_passes)
 	{
 		if (pass.second->IsEnabled())
@@ -77,6 +83,8 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
+	ZoneScopedN("CompositeRenderer::DrawEntity");
+
 	for (const auto& [_, feature] : m_features)
 	{
 		if (feature->IsEnabled())

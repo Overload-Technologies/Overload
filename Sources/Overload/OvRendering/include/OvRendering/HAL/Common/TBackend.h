@@ -36,6 +36,12 @@ namespace OvRendering::HAL
 		std::optional<Data::PipelineState> Init(bool p_debug);
 
 		/**
+		* Notifies the backend that the current frame is finished.
+		* This can be used for synchronization purposes, profiling, etc.
+		*/
+		void NotifyFrameFinished();
+
+		/**
 		* Clears the specified buffers.
 		* @param p_colorBuffer Clears the color buffer if true.
 		* @param p_depthBuffer Clears the depth buffer if true.

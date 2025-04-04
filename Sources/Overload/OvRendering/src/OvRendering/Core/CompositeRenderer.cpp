@@ -8,7 +8,8 @@
 
 #include <tracy/Tracy.hpp>
 
-#include "OvRendering/Core/CompositeRenderer.h"
+#include <OvRendering/Core/CompositeRenderer.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_driver)
 	: ABaseRenderer(p_driver)
@@ -17,6 +18,9 @@ OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_drive
 
 void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
+	ZoneScoped;
+	OvGpuZone("BeginFrame");
+
 	ABaseRenderer::BeginFrame(p_frameDescriptor);
 
 	for (const auto& [_, feature] : m_features)
@@ -38,7 +42,8 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 
 void OvRendering::Core::CompositeRenderer::DrawFrame()
 {
-	ZoneScopedN("CompositeRenderer::DrawFrame");
+	ZoneScoped;
+	OvGpuZone("DrawFrame");
 
 	auto pso = CreatePipelineState();
 
@@ -56,7 +61,8 @@ void OvRendering::Core::CompositeRenderer::DrawFrame()
 
 void OvRendering::Core::CompositeRenderer::EndFrame()
 {
-	ZoneScopedN("CompositeRenderer::EndFrame");
+	ZoneScoped;
+	OvGpuZone("EndFrame");
 
 	for (const auto& [_, pass] : m_passes)
 	{
@@ -83,7 +89,7 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
-	ZoneScopedN("CompositeRenderer::DrawEntity");
+	ZoneScoped;
 
 	for (const auto& [_, feature] : m_features)
 	{

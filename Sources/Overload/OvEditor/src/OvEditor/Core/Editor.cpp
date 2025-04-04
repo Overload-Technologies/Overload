@@ -267,5 +267,6 @@ void OvEditor::Core::Editor::PostUpdate()
 
 	m_context.window->SwapBuffers();
 	m_context.inputManager->ClearEvents();
+	m_context.driver->NotifyFrameFinished();
 	++m_elapsedFrames;
 }

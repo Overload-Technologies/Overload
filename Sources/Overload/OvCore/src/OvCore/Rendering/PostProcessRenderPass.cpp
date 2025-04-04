@@ -12,6 +12,8 @@
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/SceneRenderer.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
+
+#include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Core/CompositeRenderer.h>
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
@@ -55,7 +57,8 @@ OvTools::Utils::OptRef<const OvCore::Rendering::PostProcess::PostProcessStack> F
 
 void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
-	ZoneScopedN("PostProcessRenderPass::Draw");
+	ZoneScoped;
+	OvGpuZone("PostProcessRenderPass");
 
 	auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 	auto& scene = sceneDescriptor.scene;

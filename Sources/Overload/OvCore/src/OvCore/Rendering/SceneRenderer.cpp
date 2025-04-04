@@ -8,20 +8,21 @@
 
 #include <OvAnalytics/Profiling/ProfilerSpy.h>
 
+#include <OvCore/ECS/Components/CModelRenderer.h>
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/EngineBufferRenderFeature.h>
+#include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvCore/Rendering/PostProcessRenderPass.h>
+#include <OvCore/Rendering/SceneRenderer.h>
+#include <OvCore/Rendering/ShadowRenderFeature.h>
+#include <OvCore/Rendering/ShadowRenderPass.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Features/LightingRenderFeature.h>
+#include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
-
-#include "OvCore/Rendering/SceneRenderer.h"
-#include "OvCore/Rendering/EngineBufferRenderFeature.h"
-#include "OvCore/Rendering/EngineDrawableDescriptor.h"
-#include "OvCore/Rendering/ShadowRenderFeature.h"
-#include "OvCore/Rendering/ShadowRenderPass.h"
-#include "OvCore/Rendering/PostProcessRenderPass.h"
-#include "OvCore/ECS/Components/CModelRenderer.h"
-#include "OvCore/ECS/Components/CMaterialRenderer.h"
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/ResourceManagement/ShaderManager.h"
 
 struct SceneRenderPassDescriptor
 {
@@ -63,7 +64,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScopedN("OpaqueRenderPass::Draw");
+		ZoneScoped;
+		OvGpuZone("OpaqueRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -85,7 +87,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScopedN("TransparentRenderPass::Draw");
+		ZoneScoped;
+		OvGpuZone("TransparentRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -107,7 +110,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScopedN("UIRenderPass::Draw");
+		ZoneScoped;
+		OvGpuZone("UIRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -154,7 +158,7 @@ OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const Ov
 
 void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
 {
-	ZoneScopedN("SceneRenderer::BeginFrame");
+	ZoneScoped;
 
 	OVASSERT(HasDescriptor<SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
 
@@ -198,7 +202,7 @@ void OvCore::Rendering::SceneRenderer::DrawModelWithSingleMaterial(OvRendering::
 
 OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer::ParseScene()
 {
-	ZoneScopedN("SceneRenderer::ParseScene");
+	ZoneScoped;
 
 	using namespace OvCore::ECS::Components;
 
@@ -251,7 +255,6 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 					if (frustum)
 					{
-						ZoneScopedN("SceneRenderer::<frustum_culling>");
 						PROFILER_SPY("Frustum Culling");
 						meshes = frustum.value().GetMeshesInFrustum(*model, modelBoundingSphere, transform, cullingOptions);
 					}

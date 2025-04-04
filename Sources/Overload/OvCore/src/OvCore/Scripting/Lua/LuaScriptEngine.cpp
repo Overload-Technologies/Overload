@@ -225,97 +225,83 @@ bool OvCore::Scripting::LuaScriptEngineBase::IsOk() const
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnAwake(OvCore::ECS::Components::Behaviour& p_target)
 {
-	ZoneScopedN("LuaScriptEngine::OnAwake");
 	ExecuteLuaFunction(p_target, "OnAwake");
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnStart(OvCore::ECS::Components::Behaviour& p_target)
 {
-	ZoneScopedN("LuaScriptEngine::OnStart");
 	ExecuteLuaFunction(p_target, "OnStart");
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnEnable(OvCore::ECS::Components::Behaviour& p_target)
 {
-	ZoneScopedN("LuaScriptEngine::OnEnable");
 	ExecuteLuaFunction(p_target, "OnEnable");
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnDisable(OvCore::ECS::Components::Behaviour& p_target)
 {
-	ZoneScopedN("LuaScriptEngine::OnDisable");
 	ExecuteLuaFunction(p_target, "OnDisable");
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnDestroy(OvCore::ECS::Components::Behaviour& p_target)
 {
-	ZoneScopedN("LuaScriptEngine::OnDestroy");
 	ExecuteLuaFunction(p_target, "OnDestroy");
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnUpdate(OvCore::ECS::Components::Behaviour& p_target, float p_deltaTime)
 {
-	ZoneScopedN("LuaScriptEngine::OnUpdate");
 	ExecuteLuaFunction(p_target, "OnUpdate", p_deltaTime);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnFixedUpdate(OvCore::ECS::Components::Behaviour& p_target, float p_deltaTime)
 {
-	ZoneScopedN("LuaScriptEngine::OnFixedUpdate");
 	ExecuteLuaFunction(p_target, "OnFixedUpdate", p_deltaTime);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnLateUpdate(OvCore::ECS::Components::Behaviour& p_target, float p_deltaTime)
 {
-	ZoneScopedN("LuaScriptEngine::OnLateUpdate");
 	ExecuteLuaFunction(p_target, "OnLateUpdate", p_deltaTime);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnCollisionEnter(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnCollisionEnter");
 	ExecuteLuaFunction(p_target, "OnCollisionEnter", p_otherObject);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnCollisionStay(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnCollisionStay");
 	ExecuteLuaFunction(p_target, "OnCollisionStay", p_otherObject);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnCollisionExit(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnCollisionExit");
 	ExecuteLuaFunction(p_target, "OnCollisionExit", p_otherObject);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnTriggerEnter(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnTriggerEnter");
 	ExecuteLuaFunction(p_target, "OnTriggerEnter", p_otherObject);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnTriggerStay(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnTriggerStay");
 	ExecuteLuaFunction(p_target, "OnTriggerStay", p_otherObject);
 }
 
 template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnTriggerExit(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
-	ZoneScopedN("LuaScriptEngine::OnTriggerExit");
 	ExecuteLuaFunction(p_target, "OnTriggerExit", p_otherObject);
 }

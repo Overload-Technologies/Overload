@@ -76,6 +76,11 @@ void OvEditor::Core::Editor::SetupUI()
 
 	m_canvas.MakeDockspace(true);
 	m_context.uiManager->SetCanvas(m_canvas);
+
+	if (!Settings::EditorSettings::LatestLayout.Get().empty())
+	{
+		m_context.uiManager->SetIniLayout(Settings::EditorSettings::LatestLayout.Get());
+	}
 }
 
 void OvEditor::Core::Editor::PreUpdate()

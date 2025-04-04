@@ -70,6 +70,23 @@ namespace OvEditor::Core
 		void ResetLayout();
 
 		/**
+		* Save the editor layout to the given configuration file
+		* @param p_filePath
+		*/
+		void SaveLayout(const std::filesystem::path& p_filePath);
+
+		/**
+		 * Save the current editor layout to the last used configuration file
+		 */
+		void SaveCurrentLayout();
+
+		/**
+		 * Set and load the editor layout from the given configuration file
+		 * @param p_filePath
+		 */
+		void SetLayout(const std::filesystem::path& p_filePath);
+
+		/**
 		* Defines the scene view camera speed
 		* @param p_speed
 		*/

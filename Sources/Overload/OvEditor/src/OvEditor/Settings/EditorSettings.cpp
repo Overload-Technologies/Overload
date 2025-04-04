@@ -43,6 +43,7 @@ void OvEditor::Settings::EditorSettings::Save()
 	iniFile.Add("rotation_snap_unit", RotationSnapUnit.Get());
 	iniFile.Add("scaling_snap_unit", ScalingSnapUnit.Get());
 	iniFile.Add("color_theme", ColorTheme.Get());
+	iniFile.Add("latest_layout", LatestLayout.Get());
 	iniFile.Rewrite();
 }
 
@@ -59,4 +60,5 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<float>(iniFile, "rotation_snap_unit", RotationSnapUnit);
 	LoadIniEntry<float>(iniFile, "scaling_snap_unit", ScalingSnapUnit);
 	LoadIniEntry<int>(iniFile, "color_theme", ColorTheme);
+	LoadIniEntry<std::string>(iniFile, "latest_layout", LatestLayout);
 }

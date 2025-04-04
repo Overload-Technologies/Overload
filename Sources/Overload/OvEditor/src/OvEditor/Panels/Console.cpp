@@ -13,6 +13,7 @@
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
+#include "OvEditor/Settings/EditorSettings.h"
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -100,6 +101,11 @@ void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData & p_logD
 	consoleItem1.enabled = IsAllowedByFilter(p_logData.logLevel);
 
 	m_logTextWidgets[&consoleItem1] = p_logData.logLevel;
+
+	if (m_logGroup->GetWidgets().size() > Settings::EditorSettings::ConsoleMaxLogs)
+	{
+		m_logGroup->RemoveWidget(*m_logGroup->GetWidgets().front().first);
+	}
 }
 
 void OvEditor::Panels::Console::ClearOnPlay()

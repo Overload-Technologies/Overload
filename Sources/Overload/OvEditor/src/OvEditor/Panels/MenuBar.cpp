@@ -165,6 +165,11 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	debuggingMenu.CreateWidget<MenuItem>("Debug Frustum Culling", "", true, Settings::EditorSettings::DebugFrustumCulling).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::DebugFrustumCulling = p_value; };
 	debuggingMenu.CreateWidget<MenuItem>("Editor Frustum Geometry Culling", "", true, Settings::EditorSettings::EditorFrustumGeometryCulling).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::EditorFrustumGeometryCulling = p_value; };
 	debuggingMenu.CreateWidget<MenuItem>("Editor Frustum Light Culling", "", true, Settings::EditorSettings::EditorFrustumLightCulling).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::EditorFrustumLightCulling = p_value; };
+	
+	auto& consoleSettingsMenu = m_settingsMenu->CreateWidget<MenuList>("Console Settings");
+	auto& consoleMaxLogsSlider = consoleSettingsMenu.CreateWidget<OvUI::Widgets::Sliders::SliderInt>(1, 1000, 500, OvUI::Widgets::Sliders::ESliderOrientation::HORIZONTAL, "Max Logs");
+	consoleMaxLogsSlider.ValueChangedEvent += [this](int p_value) { Settings::EditorSettings::ConsoleMaxLogs = p_value; };
+
 }
 
 void OvEditor::Panels::MenuBar::CreateFileMenu()

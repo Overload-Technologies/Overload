@@ -20,7 +20,8 @@ workspace "Overload"
 		"LUA_SCRIPTING",
 		"GRAPHICS_API_OPENGL",
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
-		"TRACY_ENABLE"
+		"TRACY_ENABLE",
+		"TRACY_MEMORY_ENABLE"
 	}
 
 	-- Disable "Hot Reload": Doesn't work with Tracy.

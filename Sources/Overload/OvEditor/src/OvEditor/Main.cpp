@@ -6,18 +6,28 @@
 
 #include <filesystem>
 
+#include <tracy/Tracy.hpp>
+
+
 #include <OvEditor/Core/Application.h>
 #include <OvEditor/Core/ProjectHub.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvRendering/Utils/Defines.h>
-
 #include <OvTools/Utils/String.h>
 
 #undef APIENTRY
 #include "Windows.h"
 
 FORCE_DEDICATED_GPU
+
+#if defined(TRACY_MEMORY_ENABLE)
+	#include <OvCore/Helpers/TracyMemoryAllocators.h>
+	TRACY_CUSTOM_NEW_ALLOCATOR
+	TRACY_CUSTOM_DELETE_ALLOCATOR
+	TRACY_CUSTOM_NEW_ARRAY_ALLOCATOR
+	TRACY_CUSTOM_DELETE_ARRAY_ALLOCATOR
+#endif
 
 /**
 * When Overload is launched from a project file, we should consider the executable path as

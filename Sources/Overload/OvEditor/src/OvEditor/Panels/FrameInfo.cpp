@@ -52,7 +52,17 @@ void OvEditor::Panels::FrameInfo::Update(OvTools::Utils::OptRef<AView> p_targetV
 
 	auto& frameInfo = p_targetView ? GetFrameInfoFromView(p_targetView.value()) : kEmptyFrameInfo;
 
-	const auto loc = std::locale("");
+	// Workaround for Tracy memory profiler.
+	// When using a non-default locale, std::format
+	// will call delete on a non-allocated object,
+	// resulting in a instrumentation error, interrupting
+	// Tracy profiler's execution.
+#if defined(TRACY_MEMORY_ENABLE)
+	const std::locale loc{ };
+#else
+	const std::locale loc{ "" };
+#endif
+
 	m_batchCountText.content = std::format(loc, "Batches: {:L}", frameInfo.batchCount);
 	m_instanceCountText.content = std::format(loc, "Instances: {:L}", frameInfo.instanceCount);
 	m_polyCountText.content = std::format(loc, "Polygons: {:L}", frameInfo.polyCount);

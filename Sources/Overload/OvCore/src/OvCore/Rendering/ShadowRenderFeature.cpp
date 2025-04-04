@@ -4,8 +4,12 @@
 * @licence: MIT
 */
 
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/ShadowRenderFeature.h>
+
+#include <OvDebug/Logger.h>
+
 #include <OvRendering/Features/LightingRenderFeature.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
@@ -38,8 +42,8 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 					if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
 					{
 						const auto shadowTex = light.GetShadowBuffer().GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::DEPTH);
-						material.Set("_ShadowMap", shadowTex, true); // Single use material property
-						material.Set("_LightSpaceMatrix", light.GetLightSpaceMatrix());
+						material.SetProperty("_ShadowMap", &shadowTex.value(), true); // Single use material property
+						material.SetProperty("_LightSpaceMatrix", light.GetLightSpaceMatrix());
 						++lightIndex;
 					}
 				}

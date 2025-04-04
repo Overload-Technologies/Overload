@@ -137,7 +137,7 @@ void OvRendering::Core::ABaseRenderer::Blit(
 	{
 		const auto colorTex = p_src.GetAttachment<HAL::Texture>(Settings::EFramebufferAttachment::COLOR);
 		OVASSERT(colorTex.has_value(), "Invalid color attachment");
-		p_material.Set("_InputTexture", colorTex);
+		p_material.SetProperty("_InputTexture", &colorTex.value());
 	}
 
 	OvRendering::Entities::Drawable blit;
@@ -204,8 +204,8 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 			}
 		}
 
-		material->Bind(m_emptyTexture);
+		material->Bind(&m_emptyTexture->GetTexture());
 		m_driver.Draw(p_pso, mesh.value(), p_drawable.primitiveMode, gpuInstances);
-		material->UnBind();
+		material->Unbind();
 	}
 }

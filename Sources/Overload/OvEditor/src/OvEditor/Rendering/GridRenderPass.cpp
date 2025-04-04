@@ -41,7 +41,7 @@ void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState 
 		OvMaths::FMatrix4::Translation({ gridDescriptor.viewPosition.x, 0.0f, gridDescriptor.viewPosition.z }) *
 		OvMaths::FMatrix4::Scaling({ gridSize * 2.0f, 1.f, gridSize * 2.0f });
 
-	m_gridMaterial.Set("u_Color", gridDescriptor.gridColor);
+	m_gridMaterial.SetProperty("u_Color", gridDescriptor.gridColor);
 
 	// Stencil test to ensure the grid doesn't render over any other scene geometry
 	pso.stencilTest = true;

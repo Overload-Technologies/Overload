@@ -51,16 +51,16 @@ OvEditor::Panels::AssetView::AssetView
 	
 	/* Default Material */
 	m_defaultMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Standard.ovfx"]);
-	m_defaultMaterial.Set("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.f));
-	m_defaultMaterial.Set("u_Shininess", 100.0f);
-	m_defaultMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_defaultMaterial.SetProperty("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.f));
+	m_defaultMaterial.SetProperty("u_Shininess", 100.0f);
+	m_defaultMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 
 	/* Texture Material */
 	m_textureMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_textureMaterial.Set("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.f));
+	m_textureMaterial.SetProperty("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.f));
 	m_textureMaterial.SetBackfaceCulling(false);
 	m_textureMaterial.SetBlendable(true);
-	m_textureMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_textureMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 
 	m_image->AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [this](auto p_data)
 	{
@@ -118,7 +118,7 @@ void OvEditor::Panels::AssetView::SetTexture(OvRendering::Resources::Texture& p_
 	m_assetActor->transform.SetLocalRotation(OvMaths::FQuaternion({ -90.0f, 0.0f, 0.0f }));
 	m_assetActor->transform.SetLocalScale(OvMaths::FVector3::One * 3.0f);
 	m_modelRenderer->SetModel(EDITOR_CONTEXT(editorResources)->GetModel("Plane"));
-	m_textureMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", &p_texture);
+	m_textureMaterial.SetProperty("u_DiffuseMap", &p_texture);
 	m_materialRenderer->FillWithMaterial(m_textureMaterial);
 
 	m_cameraController.MoveToTarget(*m_assetActor);

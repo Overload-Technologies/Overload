@@ -7,8 +7,10 @@
 #include <filesystem>
 
 #include <OvCore/Global/ServiceLocator.h>
-#include <OvCore/Scripting/ScriptEngine.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
+#include <OvCore/Scripting/ScriptEngine.h>
+
+#include <OvDebug/Logger.h>
 
 #include <OvGame/Core/Context.h>
 

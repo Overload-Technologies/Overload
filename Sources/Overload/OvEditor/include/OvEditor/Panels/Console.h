@@ -57,6 +57,11 @@ namespace OvEditor::Panels
 		*/
 		bool IsAllowedByFilter(OvDebug::ELogLevel p_logLevel);
 
+		/**
+		* Truncate the logs if the number of logs is greater than the max logs
+		*/
+		void TruncateLogs();
+
 	private:
 		void SetShowDefaultLogs(bool p_value);
 		void SetShowInfoLogs(bool p_value);

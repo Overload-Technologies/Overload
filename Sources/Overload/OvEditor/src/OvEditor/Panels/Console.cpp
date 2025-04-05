@@ -104,11 +104,6 @@ void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData & p_logD
 	m_logTextWidgets[&consoleItem1] = p_logData.logLevel;
 
 	TruncateLogs();
-
-	if (m_logGroup->GetWidgets().size() > Settings::EditorSettings::ConsoleMaxLogs)
-	{
-		m_logGroup->RemoveWidget(*m_logGroup->GetWidgets().front().first);
-	}
 }
 
 void OvEditor::Panels::Console::ClearOnPlay()

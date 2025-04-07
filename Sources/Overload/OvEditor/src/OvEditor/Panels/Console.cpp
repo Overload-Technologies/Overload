@@ -6,15 +6,14 @@
 
 #include <algorithm>
 
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Panels/Console.h"
-#include "OvEditor/Settings/EditorSettings.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/Console.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
-
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;

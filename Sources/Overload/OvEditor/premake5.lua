@@ -31,6 +31,8 @@ project "OvEditor"
 		"xcopy \"%{resdir}Editor\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Editor\" /y /i /r /e /q",
 		"xcopy \"%{prj.location}\\Layout.ini\" \"%{builddir}%{cfg.buildcfg}\\Config\\\" /y /i",
 
+		"xcopy \"%{wks.location}\\..\\..\\Tools\\tracy-profiler.exe\" \"%{builddir}%{cfg.buildcfg}\\Tools\\\" /y /i",
+
 		"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\\"",
 		"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\\"",
 

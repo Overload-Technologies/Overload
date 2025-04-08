@@ -21,6 +21,7 @@ workspace "Overload"
 		"GRAPHICS_API_OPENGL",
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
 		"TRACY_ENABLE",
+		"TRACY_ON_DEMAND",
 		"TRACY_MEMORY_ENABLE"
 	}
 

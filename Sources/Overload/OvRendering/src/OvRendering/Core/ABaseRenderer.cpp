@@ -6,11 +6,11 @@
 
 #include <functional>
 
-#include <tracy/Tracy.hpp>
-
-#include "OvRendering/Core/ABaseRenderer.h"
-#include "OvRendering/Resources/Loaders/TextureLoader.h"
+#include <OvRendering/Core/ABaseRenderer.h>
 #include <OvRendering/HAL/TextureHandle.h>
+#include <OvRendering/Resources/Loaders/TextureLoader.h>
+
+#include <OvTools/Profiling/CPUProfiling.h>
 
 std::atomic_bool OvRendering::Core::ABaseRenderer::s_isDrawing{ false };
 
@@ -48,7 +48,7 @@ OvRendering::Core::ABaseRenderer::~ABaseRenderer()
 
 void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
-	ZoneScoped;
+	CPUZone;
 
 	OVASSERT(!s_isDrawing, "Cannot call BeginFrame() when previous frame hasn't finished.");
 	OVASSERT(p_frameDescriptor.IsValid(), "Invalid FrameDescriptor!");
@@ -78,7 +78,7 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 
 void OvRendering::Core::ABaseRenderer::EndFrame()
 {
-	ZoneScoped;
+	CPUZone;
 
 	OVASSERT(s_isDrawing, "Cannot call EndFrame() before calling BeginFrame()");
 
@@ -119,7 +119,7 @@ void OvRendering::Core::ABaseRenderer::Clear(
 	const OvMaths::FVector4& p_color
 )
 {
-	ZoneScoped;
+	CPUZone;
 	m_driver.Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer, p_color);
 }
 
@@ -131,7 +131,7 @@ void OvRendering::Core::ABaseRenderer::Blit(
 	OvRendering::Settings::EBlitFlags p_flags
 )
 {
-	ZoneScoped;
+	CPUZone;
 
 	OVASSERT(m_unitQuad != nullptr, "Invalid unit quad mesh, cannot blit!");
 
@@ -184,7 +184,7 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
-	ZoneScoped;
+	CPUZone;
 
 	auto material = p_drawable.material;
 	auto mesh = p_drawable.mesh;

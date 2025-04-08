@@ -4,11 +4,10 @@
 * @licence: MIT
 */
 
-#include <tracy/Tracy.hpp>
-
 #include <OvEditor/Core/Application.h>
 
 #include <OvTools/Time/Clock.h>
+#include <OvTools/Profiling/CPUProfiling.h>
 
 OvEditor::Core::Application::Application(const std::string& p_projectPath, const std::string& p_projectName) :
 	m_context(p_projectPath, p_projectName),
@@ -31,7 +30,7 @@ void OvEditor::Core::Application::Run()
 		m_editor.PostUpdate();
 
 		clock.Update();
-		FrameMark;
+		FrameEnd;
 	}
 }
 

@@ -50,7 +50,6 @@ group "Dependencies/Prebuilt"
 group ""
 
 group "Overload SDK"
-	include "OvAnalytics"
 	include "OvAudio"
 	include "OvCore"
 	include "OvDebug"

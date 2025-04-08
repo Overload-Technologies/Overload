@@ -48,7 +48,7 @@ namespace OvRendering::Context
 		/**
 		* Notifies the driver that the frame is finished
 		*/
-		void NotifyFrameFinished();
+		void OnFrameCompleted();
 
 		/**
 		* Set the viewport

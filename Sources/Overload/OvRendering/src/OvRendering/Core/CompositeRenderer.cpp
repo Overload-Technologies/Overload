@@ -6,10 +6,10 @@
 
 #include <functional>
 
-#include <tracy/Tracy.hpp>
-
 #include <OvRendering/Core/CompositeRenderer.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Profiling/GPUProfiling.h>
+
+#include <OvTools/Profiling/CPUProfiling.h>
 
 OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_driver)
 	: ABaseRenderer(p_driver)
@@ -18,8 +18,8 @@ OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_drive
 
 void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
-	ZoneScoped;
-	OvGpuZone("BeginFrame");
+	CPUZone;
+	GPUZone("BeginFrame");
 
 	ABaseRenderer::BeginFrame(p_frameDescriptor);
 
@@ -42,8 +42,8 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 
 void OvRendering::Core::CompositeRenderer::DrawFrame()
 {
-	ZoneScoped;
-	OvGpuZone("DrawFrame");
+	CPUZone;
+	GPUZone("DrawFrame");
 
 	auto pso = CreatePipelineState();
 
@@ -61,8 +61,8 @@ void OvRendering::Core::CompositeRenderer::DrawFrame()
 
 void OvRendering::Core::CompositeRenderer::EndFrame()
 {
-	ZoneScoped;
-	OvGpuZone("EndFrame");
+	CPUZone;
+	GPUZone("EndFrame");
 
 	for (const auto& [_, pass] : m_passes)
 	{
@@ -89,7 +89,7 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
-	ZoneScoped;
+	CPUZone;
 
 	for (const auto& [_, feature] : m_features)
 	{

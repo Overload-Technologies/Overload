@@ -19,6 +19,12 @@
 
 namespace OvEditor::Panels
 {
+	struct FramerateStats
+	{
+		uint32_t elapsedFrames = 0;
+		float elapsedTime = 0.0f;
+	};
+
 	class FrameInfo : public OvUI::Panels::PanelWindow
 	{
 	public:
@@ -37,10 +43,13 @@ namespace OvEditor::Panels
 		/**
 		* Update frame info information
 		* @param p_targetView
+		* @param p_deltaTime
 		*/
-		void Update(OvTools::Utils::OptRef<AView> p_targetView);
+		void Update(OvTools::Utils::OptRef<AView> p_targetView, float p_deltaTime);
 
 	private:
+		FramerateStats m_framerateStats;
+		OvUI::Widgets::Texts::Text& m_fpsText;
 		OvUI::Widgets::Texts::Text& m_viewNameText;
 		OvUI::Widgets::Visual::Separator& m_separator;
 		OvUI::Widgets::Texts::Text& m_batchCountText;

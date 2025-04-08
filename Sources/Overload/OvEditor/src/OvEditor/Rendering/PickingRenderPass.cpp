@@ -4,17 +4,17 @@
 * @licence: MIT
 */
 
-#include <OvEditor/Core/EditorActions.h>
-#include <OvEditor/Rendering/DebugModelRenderFeature.h>
-#include <OvEditor/Rendering/PickingRenderPass.h>
-#include <OvEditor/Rendering/DebugSceneRenderer.h>
-#include <OvEditor/Settings/EditorSettings.h>
-
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 
-#include <OvRendering/HAL/Profiling.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Rendering/DebugModelRenderFeature.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvEditor/Settings/EditorSettings.h>
+
+#include <OvRendering/Profiling/GPUProfiling.h>
 
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
@@ -81,7 +81,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 {
 	// TODO: Make sure we only renderer when the view is hovered and not being resized
 
-	OvGpuZone("PickingRenderPass");
+	GPUZone("PickingRenderPass");
 
 	using namespace OvCore::Rendering;
 

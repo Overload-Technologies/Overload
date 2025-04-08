@@ -39,7 +39,7 @@ namespace OvRendering::HAL
 		* Notifies the backend that the current frame is finished.
 		* This can be used for synchronization purposes, profiling, etc.
 		*/
-		void NotifyFrameFinished();
+		void OnFrameCompleted();
 
 		/**
 		* Clears the specified buffers.

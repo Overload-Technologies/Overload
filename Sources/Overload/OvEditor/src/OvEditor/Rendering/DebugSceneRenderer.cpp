@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
-
 #include <OvCore/ECS/Components/CCamera.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
@@ -32,7 +30,7 @@
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Profiling/GPUProfiling.h>
 
 using namespace OvMaths;
 using namespace OvRendering::Resources;
@@ -85,7 +83,7 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		OvGpuZone("DebugCamerasRenderPass");
+		GPUZone("DebugCamerasRenderPass");
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
@@ -123,7 +121,7 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		OvGpuZone("DebugLightsRenderPass");
+		GPUZone("DebugLightsRenderPass");
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
@@ -173,7 +171,7 @@ protected:
 
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		OvGpuZone("DebugActorRenderPass");
+		GPUZone("DebugActorRenderPass");
 
 		auto& debugSceneDescriptor = m_renderer.GetDescriptor<OvEditor::Rendering::DebugSceneRenderer::DebugSceneDescriptor>();
 

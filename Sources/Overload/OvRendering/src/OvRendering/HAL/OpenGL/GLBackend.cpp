@@ -237,7 +237,7 @@ namespace OvRendering::HAL
 	}
 
 	template<>
-	void GLBackend::NotifyFrameFinished()
+	void GLBackend::OnFrameCompleted()
 	{
 		TracyGpuCollect;
 	}

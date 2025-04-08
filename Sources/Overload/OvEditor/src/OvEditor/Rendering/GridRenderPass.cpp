@@ -13,7 +13,7 @@
 #include <OvEditor/Rendering/GridRenderPass.h>
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Profiling/GPUProfiling.h>
 
 OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
@@ -28,7 +28,7 @@ OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::Composite
 
 void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
-	OvGpuZone("GridRenderPass");
+	GPUZone("GridRenderPass");
 
 	OVASSERT(m_renderer.HasDescriptor<GridDescriptor>(), "Cannot find GridDescriptor attached to this renderer");
 	OVASSERT(m_renderer.HasFeature<OvRendering::Features::DebugShapeRenderFeature>(), "Cannot find DebugShapeRenderFeature attached to this renderer");

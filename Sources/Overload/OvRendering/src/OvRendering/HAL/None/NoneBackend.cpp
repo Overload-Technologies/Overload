@@ -26,7 +26,7 @@ namespace OvRendering::HAL
 	}
 
 	template<>
-	void NoneBackend::NotifyFrameFinished()
+	void NoneBackend::OnFrameCompleted()
 	{}
 
 	template<>

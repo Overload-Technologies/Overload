@@ -4,19 +4,11 @@
 * @licence: MIT
 */
 
+#include <OvGame/Core/Application.h>
 #include <OvRendering/Utils/Defines.h>
-
-#include "OvGame/Core/Application.h"
+#include <OvTools/Profiling/MemoryProfiling.h>
 
 FORCE_DEDICATED_GPU
-
-#if defined(TRACY_MEMORY_ENABLE)
-	#include <OvCore/Helpers/TracyMemoryAllocators.h>
-	TRACY_CUSTOM_NEW_ALLOCATOR
-	TRACY_CUSTOM_DELETE_ALLOCATOR
-	TRACY_CUSTOM_NEW_ARRAY_ALLOCATOR
-	TRACY_CUSTOM_DELETE_ARRAY_ALLOCATOR
-#endif
 
 #ifdef _DEBUG
 int main()

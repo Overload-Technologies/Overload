@@ -12,7 +12,7 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 #include <OvRendering/Features/LightingRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Profiling/GPUProfiling.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
 
@@ -29,7 +29,7 @@ OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::Composi
 
 void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
-	OvGpuZone("ShadowRenderPass");
+	GPUZone("ShadowRenderPass");
 
 	using namespace OvCore::Rendering;
 

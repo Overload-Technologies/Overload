@@ -4,10 +4,6 @@
 * @licence: MIT
 */
 
-#include <tracy/Tracy.hpp>
-
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
-
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
@@ -21,8 +17,10 @@
 
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Features/LightingRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Profiling/GPUProfiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
+
+#include <OvTools/Profiling/CPUProfiling.h>
 
 struct SceneRenderPassDescriptor
 {
@@ -64,8 +62,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScoped;
-		OvGpuZone("OpaqueRenderPass");
+		CPUZone;
+		GPUZone("OpaqueRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -87,8 +85,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScoped;
-		OvGpuZone("TransparentRenderPass");
+		CPUZone;
+		GPUZone("TransparentRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -110,8 +108,8 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		ZoneScoped;
-		OvGpuZone("UIRenderPass");
+		CPUZone;
+		GPUZone("UIRenderPass");
 
 		PrepareStencilBuffer(p_pso);
 
@@ -158,7 +156,7 @@ OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const Ov
 
 void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
 {
-	ZoneScoped;
+	CPUZone;
 
 	OVASSERT(HasDescriptor<SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
 
@@ -202,7 +200,7 @@ void OvCore::Rendering::SceneRenderer::DrawModelWithSingleMaterial(OvRendering::
 
 OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer::ParseScene()
 {
-	ZoneScoped;
+	CPUZone;
 
 	using namespace OvCore::ECS::Components;
 
@@ -255,7 +253,7 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 					if (frustum)
 					{
-						PROFILER_SPY("Frustum Culling");
+						CPUZoneN("Frustum Culling");
 						meshes = frustum.value().GetMeshesInFrustum(*model, modelBoundingSphere, transform, cullingOptions);
 					}
 					else

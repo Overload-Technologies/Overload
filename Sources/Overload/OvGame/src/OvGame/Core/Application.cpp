@@ -4,11 +4,10 @@
 * @licence: MIT
 */
 
-#include <tracy/Tracy.hpp>
+#include <OvGame/Core/Application.h>
 
 #include <OvTools/Time/Clock.h>
-
-#include "OvGame/Core/Application.h"
+#include <OvTools/Profiling/CPUProfiling.h>
 
 OvGame::Core::Application::Application() :
 	m_game(m_context)
@@ -31,7 +30,7 @@ void OvGame::Core::Application::Run()
 		m_game.PostUpdate();
 
 		clock.Update();
-		FrameMark;
+		FrameEnd;
 	}
 }
 

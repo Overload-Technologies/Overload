@@ -46,9 +46,9 @@ OvRendering::Context::Driver::~Driver()
 {
 }
 
-void OvRendering::Context::Driver::NotifyFrameFinished()
+void OvRendering::Context::Driver::OnFrameCompleted()
 {
-	m_gfxBackend->NotifyFrameFinished();
+	m_gfxBackend->OnFrameCompleted();
 }
 
 void OvRendering::Context::Driver::SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height)

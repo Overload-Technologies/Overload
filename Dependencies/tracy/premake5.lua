@@ -6,6 +6,9 @@ project "tracy"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")
+	defines { "_CRT_SECURE_NO_WARNINGS" }
+	disablewarnings { "4996" } -- Ignore deprecated functions warnings
+	linkoptions { "/ignore:4006" } -- Ignore "symbol already defined" warnings
 	
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

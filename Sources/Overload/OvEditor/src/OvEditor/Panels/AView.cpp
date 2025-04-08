@@ -76,6 +76,7 @@ void OvEditor::Panels::AView::Render()
 		DrawFrame();
 		m_renderer->EndFrame();
 		FrameMarkEnd(name.c_str());
+		EDITOR_CONTEXT(driver)->OnFrameCompleted();
 	}
 }
 

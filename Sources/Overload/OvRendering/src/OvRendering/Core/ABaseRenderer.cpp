@@ -89,8 +89,6 @@ void OvRendering::Core::ABaseRenderer::EndFrame()
 
 	m_isDrawing = false;
 	s_isDrawing.store(false);
-
-	m_driver.OnFrameCompleted();
 }
 
 const OvRendering::Data::FrameDescriptor& OvRendering::Core::ABaseRenderer::GetFrameDescriptor() const

@@ -10,7 +10,7 @@
 
 // Platform-specific aligned allocations
 #if defined(_WIN32)
-#include <new>
+#include <malloc.h>
 #define CUSTOM_ALIGNED_ALLOC(alignment, size) _aligned_malloc(size, alignment)
 #define CUSTOM_ALIGNED_FREE(ptr) _aligned_free(ptr)
 #else
@@ -59,10 +59,8 @@ void operator delete[](void* ptr, std::size_t count) noexcept
 	free(ptr);
 }
 
-// C++17 aligned new/delete variants
 void* operator new(std::size_t count, std::align_val_t alignment)
 {
-	// Ensure size is a multiple of alignment for some platforms that require it
 	size_t alignedSize = (count + static_cast<size_t>(alignment) - 1) & ~(static_cast<size_t>(alignment) - 1);
 	auto ptr = CUSTOM_ALIGNED_ALLOC(static_cast<size_t>(alignment), alignedSize);
 	TracyAlloc(ptr, count);
@@ -75,10 +73,8 @@ void operator delete(void* ptr, std::align_val_t) noexcept
 	CUSTOM_ALIGNED_FREE(ptr);
 }
 
-// C++17 aligned array new/delete variants
 void* operator new[](std::size_t count, std::align_val_t alignment)
 {
-	// Ensure size is a multiple of alignment for some platforms that require it
 	size_t alignedSize = (count + static_cast<size_t>(alignment) - 1) & ~(static_cast<size_t>(alignment) - 1);
 	auto ptr = CUSTOM_ALIGNED_ALLOC(static_cast<size_t>(alignment), alignedSize);
 	TracyAlloc(ptr, count);
@@ -91,7 +87,6 @@ void operator delete[](void* ptr, std::align_val_t) noexcept
 	CUSTOM_ALIGNED_FREE(ptr);
 }
 
-// C++17 sized-and-aligned delete variants
 void operator delete(void* ptr, std::size_t count, std::align_val_t) noexcept
 {
 	TracyFree(ptr);

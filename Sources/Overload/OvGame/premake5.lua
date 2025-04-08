@@ -15,7 +15,7 @@ project "OvGame"
 		"assimp-vc143-mt.lib", "Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "glfw3dll.lib", "irrKlang.lib", "liblua53.lib", "opengl32.lib", "dbghelp.lib",
 		"ImGui", "tinyxml2", "tracy",
 		"OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
-    }
+	}
 
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")

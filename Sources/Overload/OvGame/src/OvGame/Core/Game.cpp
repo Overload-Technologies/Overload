@@ -4,10 +4,11 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Logger.h>
 #include <OvGame/Core/Game.h>
 #include <OvUI/Widgets/Texts/Text.h>
-#include <OvTools/Profiling/CPUProfiling.h>
 
 #ifdef _DEBUG
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
@@ -42,7 +43,7 @@ OvGame::Core::Game::~Game()
 
 void OvGame::Core::Game::PreUpdate()
 {
-	CPUZone;
+	ZoneScoped;
 
 	m_context.device->PollEvents();
 }
@@ -52,7 +53,7 @@ void RenderCurrentScene(
 	const OvGame::Core::Context& p_context
 )
 {
-	CPUZone;
+	ZoneScoped;
 
 	if (auto currentScene = p_context.sceneManager.GetCurrentScene())
 	{
@@ -91,7 +92,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 	{
 		{
 			#ifdef _DEBUG
-			CPUZoneN("Physics Update");
+			ZoneScopedN("Physics Update");
 			#endif
 
 			if (m_context.physicsEngine->Update(p_deltaTime))
@@ -100,7 +101,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 		{
 			#ifdef _DEBUG
-			CPUZoneN("Scene Update");
+			ZoneScopedN("Scene Update");
 			#endif
 			currentScene->Update(p_deltaTime);
 			currentScene->LateUpdate(p_deltaTime);
@@ -108,7 +109,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 		{
 			#ifdef _DEBUG
-			CPUZoneN("Audio Update");
+			ZoneScopedN("Audio Update");
 			#endif
 			m_context.audioEngine->Update();
 		}
@@ -138,7 +139,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 void OvGame::Core::Game::PostUpdate()
 {
-	CPUZone;
+	ZoneScoped;
 
 	m_context.window->SwapBuffers();
 	m_context.inputManager->ClearEvents();

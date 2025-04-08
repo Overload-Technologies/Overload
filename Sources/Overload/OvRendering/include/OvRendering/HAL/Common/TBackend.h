@@ -36,6 +36,11 @@ namespace OvRendering::HAL
 		std::optional<Data::PipelineState> Init(bool p_debug);
 
 		/**
+		* Notifies the backend that a frame is about to be rendered.
+		*/
+		void OnFrameStarted();
+
+		/**
 		* Notifies the backend that the current frame is finished.
 		* This can be used for synchronization purposes, profiling, etc.
 		*/

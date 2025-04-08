@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/Rendering/PostProcessRenderPass.h>
 #include <OvCore/Global/ServiceLocator.h>
@@ -12,9 +14,7 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 #include <OvRendering/Core/CompositeRenderer.h>
-#include <OvRendering/Profiling/GPUProfiling.h>
-
-#include <OvTools/Profiling/CPUProfiling.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
@@ -57,8 +57,8 @@ OvTools::Utils::OptRef<const OvCore::Rendering::PostProcess::PostProcessStack> F
 
 void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
-	CPUZone;
-	GPUZone("PostProcessRenderPass");
+	ZoneScoped;
+	TracyGpuZone("PostProcessRenderPass");
 
 	auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 	auto& scene = sceneDescriptor.scene;

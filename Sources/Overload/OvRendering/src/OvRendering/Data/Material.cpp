@@ -10,7 +10,7 @@
 #include "OvRendering/Resources/Texture.h"
 #include <OvTools/Utils/OptRef.h>
 
-#include <OvTools/Profiling/CPUProfiling.h>
+#include <tracy/Tracy.hpp>
 
 //TODO: Add constructor with a shader reference
 
@@ -47,7 +47,7 @@ void OvRendering::Data::Material::FillUniform()
 
 void OvRendering::Data::Material::Bind(OvRendering::Resources::Texture* p_emptyTexture)
 {
-	CPUZone;
+	ZoneScoped;
 
 	if (HasShader())
 	{

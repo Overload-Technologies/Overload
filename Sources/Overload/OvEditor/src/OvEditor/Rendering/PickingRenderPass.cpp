@@ -14,7 +14,7 @@
 #include <OvEditor/Rendering/PickingRenderPass.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
-#include <OvRendering/Profiling/GPUProfiling.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
@@ -81,7 +81,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 {
 	// TODO: Make sure we only renderer when the view is hovered and not being resized
 
-	GPUZone("PickingRenderPass");
+	TracyGpuZone("PickingRenderPass");
 
 	using namespace OvCore::Rendering;
 

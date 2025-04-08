@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <OvPhysics/Core/PhysicsEngine.h>
+#include <tracy/Tracy.hpp>
 
 #include <OvEditor/Core/Editor.h>
 #include <OvEditor/Panels/AssetBrowser.h>
@@ -23,8 +23,7 @@
 #include <OvEditor/Panels/TextureDebugger.h>
 #include <OvEditor/Panels/Toolbar.h>
 #include <OvEditor/Settings/EditorSettings.h>
-
-#include <OvTools/Profiling/CPUProfiling.h>
+#include <OvPhysics/Core/PhysicsEngine.h>
 
 using namespace OvCore::ResourceManagement;
 using namespace OvEditor::Panels;
@@ -79,7 +78,7 @@ void OvEditor::Core::Editor::SetupUI()
 
 void OvEditor::Core::Editor::PreUpdate()
 {
-	CPUZoneN("Editor Pre-Update");
+	ZoneScopedN("Editor Pre-Update");
 	m_context.device->PollEvents();
 }
 
@@ -110,7 +109,7 @@ void OvEditor::Core::Editor::UpdateCurrentEditorMode(float p_deltaTime)
 		UpdateEditMode(p_deltaTime);
 
 	{
-		CPUZoneN("Scene garbage collection");
+		ZoneScopedN("Scene garbage collection");
 		m_context.sceneManager.GetCurrentScene()->CollectGarbages();
 		m_context.sceneManager.Update();
 	}
@@ -122,28 +121,28 @@ void OvEditor::Core::Editor::UpdatePlayMode(float p_deltaTime)
 	bool simulationApplied = false;
 
 	{
-		CPUZoneN("Physics Update");
+		ZoneScopedN("Physics Update");
 		simulationApplied = m_context.physicsEngine->Update(p_deltaTime);
 	}
 
 	if (simulationApplied)
 	{
-		CPUZoneN("Fixed Update");
+		ZoneScopedN("Fixed Update");
 		currentScene->FixedUpdate(p_deltaTime);
 	}
 
 	{
-		CPUZoneN("Update");
+		ZoneScopedN("Update");
 		currentScene->Update(p_deltaTime);
 	}
 
 	{
-		CPUZoneN("Late Update");
+		ZoneScopedN("Late Update");
 		currentScene->LateUpdate(p_deltaTime);
 	}
 
 	{
-		CPUZoneN("Audio Update");
+		ZoneScopedN("Audio Update");
 		m_context.audioEngine->Update();
 	}
 
@@ -185,13 +184,13 @@ void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 
 	if (frameInfo.IsOpened())
 	{
-		CPUZoneN("Frame Info Update");
+		ZoneScopedN("Frame Info Update");
 		frameInfo.Update(m_lastFocusedView, p_deltaTime);
 	}
 
 	if (textureDebugger.IsOpened())
 	{
-		CPUZoneN("Texture Debugger Update");
+		ZoneScopedN("Texture Debugger Update");
 		textureDebugger.Update(p_deltaTime);
 	}
 }
@@ -203,7 +202,7 @@ void OvEditor::Core::Editor::RenderViews(float p_deltaTime)
 	auto& gameView = m_panelsManager.GetPanelAs<OvEditor::Panels::GameView>("Game View");
 
 	{
-		CPUZoneN("Editor Views Update");
+		ZoneScopedN("Editor Views Update");
 
 		if (assetView.IsOpened())
 		{
@@ -223,33 +222,33 @@ void OvEditor::Core::Editor::RenderViews(float p_deltaTime)
 
 	if (assetView.IsOpened() && assetView.IsVisible())
 	{
-		CPUZoneN("Asset View Rendering");
+		ZoneScopedN("Asset View Rendering");
 		assetView.Render();
 	}
 
 	if (gameView.IsOpened() && gameView.IsVisible())
 	{
-		CPUZoneN("Game View Rendering");
+		ZoneScopedN("Game View Rendering");
 		gameView.Render();
 	}
 
 	if (sceneView.IsOpened() && sceneView.IsVisible())
 	{
-		CPUZoneN("Scene View Rendering");
+		ZoneScopedN("Scene View Rendering");
 		sceneView.Render();
 	}
 }
 
 void OvEditor::Core::Editor::RenderEditorUI(float p_deltaTime)
 {
-	CPUZoneN("Editor UI Rendering");
+	ZoneScopedN("Editor UI Rendering");
 
 	EDITOR_CONTEXT(uiManager)->Render();
 }
 
 void OvEditor::Core::Editor::PostUpdate()
 {
-	CPUZoneN("Editor Post-Update");
+	ZoneScopedN("Editor Post-Update");
 
 	m_context.window->SwapBuffers();
 	m_context.inputManager->ClearEvents();

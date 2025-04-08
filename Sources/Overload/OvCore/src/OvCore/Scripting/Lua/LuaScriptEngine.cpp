@@ -4,14 +4,13 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
-
 #include <OvCore/Scripting/ScriptEngine.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/ECS/Actor.h>
-
-#include <OvTools/Profiling/CPUProfiling.h>
 
 void BindLuaActor(sol::state& p_state);
 void BindLuaComponents(sol::state& p_state);

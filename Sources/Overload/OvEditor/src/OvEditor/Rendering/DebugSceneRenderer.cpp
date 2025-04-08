@@ -30,7 +30,7 @@
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
-#include <OvRendering/Profiling/GPUProfiling.h>
+#include <OvRendering/HAL/Profiling.h>
 
 using namespace OvMaths;
 using namespace OvRendering::Resources;
@@ -83,7 +83,7 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		GPUZone("DebugCamerasRenderPass");
+		TracyGpuZone("DebugCamerasRenderPass");
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
@@ -121,7 +121,7 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		GPUZone("DebugLightsRenderPass");
+		TracyGpuZone("DebugLightsRenderPass");
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
@@ -171,7 +171,7 @@ protected:
 
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
-		GPUZone("DebugActorRenderPass");
+		TracyGpuZone("DebugActorRenderPass");
 
 		auto& debugSceneDescriptor = m_renderer.GetDescriptor<OvEditor::Rendering::DebugSceneRenderer::DebugSceneDescriptor>();
 

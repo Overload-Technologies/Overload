@@ -8,7 +8,7 @@
 
 #if defined(GRAPHICS_API_OPENGL)
 #include <tracy/TracyOpenGL.hpp>
-#define GPUZone(...) TracyGpuZone(__VA_ARGS__)
 #else
-#define GPUZone(...) (void)0
+#undef TRACY_ENABLE // Disable tracy GPU profiling if not using OpenGL
+#include <tracy/TracyOpenGL.hpp>
 #endif // defined(GRAPHICS_API_OPENGL)

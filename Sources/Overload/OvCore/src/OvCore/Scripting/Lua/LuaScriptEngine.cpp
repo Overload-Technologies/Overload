@@ -16,12 +16,14 @@ void BindLuaActor(sol::state& p_state);
 void BindLuaComponents(sol::state& p_state);
 void BindLuaGlobal(sol::state& p_state);
 void BindLuaMath(sol::state& p_state);
+void BindLuaProfiler(sol::state& p_state);
 
 constexpr auto luaBindings = std::array{
 	BindLuaActor,
 	BindLuaComponents,
 	BindLuaGlobal,
-	BindLuaMath
+	BindLuaMath,
+	BindLuaProfiler
 };
 
 template<typename... Args>

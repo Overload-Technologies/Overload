@@ -48,6 +48,7 @@ group "Dependencies/Prebuilt"
 	include "../../Dependencies/irrKlang"
 	include "../../Dependencies/lua"
 	include "../../Dependencies/stb_image"
+	include "../../Dependencies/sol"
 group ""
 
 group "Overload SDK"

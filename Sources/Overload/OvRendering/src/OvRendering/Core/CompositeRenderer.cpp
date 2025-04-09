@@ -6,7 +6,10 @@
 
 #include <functional>
 
-#include "OvRendering/Core/CompositeRenderer.h"
+#include <tracy/Tracy.hpp>
+
+#include <OvRendering/Core/CompositeRenderer.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_driver)
 	: ABaseRenderer(p_driver)
@@ -15,6 +18,9 @@ OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_drive
 
 void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
+	ZoneScoped;
+	TracyGpuZone("BeginFrame");
+
 	ABaseRenderer::BeginFrame(p_frameDescriptor);
 
 	for (const auto& [_, feature] : m_features)
@@ -36,6 +42,9 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 
 void OvRendering::Core::CompositeRenderer::DrawFrame()
 {
+	ZoneScoped;
+	TracyGpuZone("DrawFrame");
+
 	auto pso = CreatePipelineState();
 
 	for (const auto& [_, pass] : m_passes)
@@ -52,6 +61,9 @@ void OvRendering::Core::CompositeRenderer::DrawFrame()
 
 void OvRendering::Core::CompositeRenderer::EndFrame()
 {
+	ZoneScoped;
+	TracyGpuZone("EndFrame");
+
 	for (const auto& [_, pass] : m_passes)
 	{
 		if (pass.second->IsEnabled())
@@ -77,6 +89,8 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	const Entities::Drawable& p_drawable
 )
 {
+	ZoneScoped;
+
 	for (const auto& [_, feature] : m_features)
 	{
 		if (feature->IsEnabled())

@@ -328,6 +328,11 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 	}
 }
 
+void OvEditor::Core::EditorActions::OpenProfiler()
+{
+	OvTools::Utils::SystemCalls::OpenFile("Tools/tracy-profiler.exe");
+}
+
 void OvEditor::Core::EditorActions::DelayAction(std::function<void()> p_action, uint32_t p_frames)
 {
 	m_delayedActions.emplace_back(p_frames + 1, p_action);

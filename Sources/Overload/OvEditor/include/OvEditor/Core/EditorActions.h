@@ -360,6 +360,13 @@ namespace OvEditor::Core
 		void BuildAtLocation(const std::string& p_configuration, const std::string p_buildPath, bool p_autoRun = false);
 		#pragma endregion
 
+		#pragma region PROFILNIG
+		/**
+		* Open the profiler
+		*/
+		void OpenProfiler();
+		#pragma endregion
+
 		#pragma region ACTION_SYSTEM
 		/**
 		* Prepare an action for a future call

@@ -6,8 +6,6 @@
 
 #pragma once
 
-
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
 #include <OvEditor/Core/Context.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/PanelsManager.h>

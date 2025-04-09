@@ -4,14 +4,16 @@
 * @licence: MIT
 */
 
-#include <OvRendering/Features/DebugShapeRenderFeature.h>
 
 #include <OvDebug/Assertion.h>
 
-#include "OvEditor/Rendering/DebugModelRenderFeature.h"
-#include "OvEditor/Core/EditorResources.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Rendering/GridRenderPass.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/EditorResources.h>
+#include <OvEditor/Rendering/DebugModelRenderFeature.h>
+#include <OvEditor/Rendering/GridRenderPass.h>
+
+#include <OvRendering/Features/DebugShapeRenderFeature.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
@@ -26,6 +28,8 @@ OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::Composite
 
 void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
+	TracyGpuZone("GridRenderPass");
+
 	OVASSERT(m_renderer.HasDescriptor<GridDescriptor>(), "Cannot find GridDescriptor attached to this renderer");
 	OVASSERT(m_renderer.HasFeature<OvRendering::Features::DebugShapeRenderFeature>(), "Cannot find DebugShapeRenderFeature attached to this renderer");
 	OVASSERT(m_renderer.HasFeature<OvEditor::Rendering::DebugModelRenderFeature>(), "Cannot find DebugModelRenderFeature attached to this renderer");

@@ -45,6 +45,7 @@ OvEditor::Panels::MenuBar::MenuBar()
 	CreateWindowMenu();
 	CreateActorsMenu();
 	CreateResourcesMenu();
+	CreateToolsMenu();
 	CreateSettingsMenu();
 	CreateLayoutMenu();
 	CreateHelpMenu();
@@ -216,6 +217,12 @@ void OvEditor::Panels::MenuBar::CreateResourcesMenu()
 	auto& resourcesMenu = CreateWidget<MenuList>("Resources");
 	resourcesMenu.CreateWidget<MenuItem>("Compile shaders").ClickedEvent += EDITOR_BIND(CompileShaders);
 	resourcesMenu.CreateWidget<MenuItem>("Save materials").ClickedEvent += EDITOR_BIND(SaveMaterials);
+}
+
+void OvEditor::Panels::MenuBar::CreateToolsMenu()
+{
+	auto& toolsMenu = CreateWidget<MenuList>("Tools");
+	toolsMenu.CreateWidget<MenuItem>("Open Profiler").ClickedEvent += EDITOR_BIND(OpenProfiler);
 }
 
 void OvEditor::Panels::MenuBar::CreateSettingsMenu()

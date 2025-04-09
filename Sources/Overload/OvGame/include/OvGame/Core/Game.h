@@ -6,18 +6,19 @@
 
 #pragma once
 
-#include <OvUI/Modules/Canvas.h>
 #include <OvCore/ECS/Components/CCamera.h>
 #include <OvCore/Rendering/SceneRenderer.h>
 
-#include "OvGame/Core/Context.h"
-#include "OvGame/Utils/FPSCounter.h"
+#include <OvGame/Core/Context.h>
 
 #ifdef _DEBUG
-#include "OvGame/Debug/DriverInfo.h"
-#include "OvGame/Debug/GameProfiler.h"
-#include "OvGame/Debug/FrameInfo.h"
+#include <OvGame/Debug/DriverInfo.h>
+#include <OvGame/Debug/FrameInfo.h>
 #endif
+
+#include <OvGame/Utils/FPSCounter.h>
+
+#include <OvUI/Modules/Canvas.h>
 
 namespace OvGame::Core
 {
@@ -65,7 +66,6 @@ namespace OvGame::Core
 
 		#ifdef _DEBUG
 		OvGame::Debug::DriverInfo	m_driverInfo;
-		OvGame::Debug::GameProfiler m_gameProfiler;
 		OvGame::Debug::FrameInfo	m_frameInfo;
 		#endif
 

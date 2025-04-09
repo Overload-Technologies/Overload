@@ -4,9 +4,9 @@
 * @licence: MIT
 */
 
+#include <OvGame/Core/Application.h>
 #include <OvRendering/Utils/Defines.h>
-
-#include "OvGame/Core/Application.h"
+#include <OvTools/Profiling/TracyAllocators.h>
 
 FORCE_DEDICATED_GPU
 

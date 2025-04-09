@@ -4,10 +4,13 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/AView.h>
 #include <OvEditor/Settings/EditorSettings.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvEditor::Panels::AView::AView
 (
@@ -57,6 +60,8 @@ void OvEditor::Panels::AView::Render()
 
 	if (winWidth > 0 && winHeight > 0 && camera && scene)
 	{
+		FrameMarkStart(name.c_str());
+
 		m_framebuffer.Resize(winWidth, winHeight);
 
 		InitFrame();
@@ -70,6 +75,8 @@ void OvEditor::Panels::AView::Render()
 		m_renderer->BeginFrame(frameDescriptor);
 		DrawFrame();
 		m_renderer->EndFrame();
+		FrameMarkEnd(name.c_str());
+		EDITOR_CONTEXT(driver)->OnFrameCompleted();
 	}
 }
 

@@ -9,28 +9,35 @@
 #include <any>
 #include <map>
 #include <optional>
+#include <variant>
 
-#include "OvRendering/Resources/Shader.h"
-#include "OvRendering/Resources/Texture.h"
-#include "OvRendering/Data/StateMask.h"
+#include <OvRendering/Data/StateMask.h>
+#include <OvRendering/HAL/TextureHandle.h>
+#include <OvRendering/Resources/Shader.h>
+#include <OvRendering/Resources/Texture.h>
 
 namespace OvRendering::Data
 {
+	using MaterialPropertyType = std::variant<
+		std::monostate,
+		bool,
+		int,
+		float,
+		OvMaths::FVector2,
+		OvMaths::FVector3,
+		OvMaths::FVector4,
+		OvMaths::FMatrix4,
+		OvRendering::HAL::TextureHandle*,	// Texture handle
+		OvRendering::Resources::Texture*	// Texture asset (serializable)
+	>;
+
 	/**
 	* Represents a material property to be used as a shader uniform
 	*/
 	struct MaterialProperty
 	{
-		std::any value;
+		MaterialPropertyType value;
 		bool singleUse;
-
-		// Conversion constructor to initialize directly from std::any
-		MaterialProperty& operator=(const std::any& p_value)
-		{
-			value = p_value;
-			singleUse = false; // Reset singleUse to default when assigning new value
-			return *this;
-		}
 	};
 
 	/**
@@ -62,26 +69,26 @@ namespace OvRendering::Data
 		* Bind the material and send its uniform data to the GPU
 		* @param p_emptyTexture (The texture to use if a texture uniform is null)
 		*/
-		void Bind(OvRendering::Resources::Texture* p_emptyTexture = nullptr);
+		void Bind(OvRendering::HAL::Texture* p_emptyTexture = nullptr);
 
 		/**
 		* Unbind the material
 		*/
-		void UnBind() const;
+		void Unbind() const;
 
 		/**
-		* Set a shader uniform value
-		* @param p_key
+		* Sets a material property value
+		* @param p_name
 		* @param p_value
 		* @param p_singleUse (automatically consume the value after the first use)
 		*/
-		template<typename T> void Set(const std::string p_key, const T& p_value, bool p_singleUse = false);
+		void SetProperty(const std::string p_name, const MaterialPropertyType& p_value, bool p_singleUse = false);
 
 		/**
-		* Set a shader uniform value
-		* @param p_key
+		* Gets a material property
+		* @param p_name
 		*/
-		template<typename T> const T& Get(const std::string p_key) const;
+		OvTools::Utils::OptRef<const MaterialProperty> GetProperty(const std::string p_name) const;
 
 		/**
 		* Returns the attached shader
@@ -236,5 +243,3 @@ namespace OvRendering::Data
 		int m_gpuInstances = 1;
 	};
 }
-
-#include "OvRendering/Data/Material.inl"

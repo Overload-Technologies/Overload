@@ -93,11 +93,14 @@ float GetActorFocusDist(OvCore::ECS::Actor& p_actor)
 
 void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 {
+	// Even if the mouse is not hovering the view, we need to handle the mouse released event.
+	// This is to prevent the camera to be stuck in orbitting or panning mode when a mouse button
+	// is released outside the view.
+	HandleMouseReleased();
+
 	if (m_view.IsHovered())
 	{
-		UpdateMouseState();
-
-		ImGui::GetIO().DisableMouseUpdate = m_rightMousePressed || m_middleMousePressed;
+		HandleMousePressed();
 
 		if (!ImGui::IsAnyItemActive())
 		{
@@ -384,30 +387,37 @@ void OvEditor::Core::CameraController::HandleCameraFPSKeyboard(float p_deltaTime
 	m_camera.SetPosition(m_camera.GetPosition() + m_currentMovementSpeed);
 }
 
-void OvEditor::Core::CameraController::UpdateMouseState()
+void OvEditor::Core::CameraController::HandleMousePressed()
 {
 	if (m_inputManager.IsMouseButtonPressed(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
-		m_leftMousePressed = true;
-
-	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
 	{
-		m_leftMousePressed = false;
-		m_firstMouse = true;
+		m_leftMousePressed = true;
 	}
 
 	if (m_inputManager.IsMouseButtonPressed(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
-		m_middleMousePressed = true;
-
-	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
 	{
-		m_middleMousePressed = false;
-		m_firstMouse = true;
+		m_middleMousePressed = true;
 	}
 
 	if (m_inputManager.IsMouseButtonPressed(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
 	{
 		m_rightMousePressed = true;
 		m_window.SetCursorMode(OvWindowing::Cursor::ECursorMode::DISABLED);
+	}
+}
+
+void OvEditor::Core::CameraController::HandleMouseReleased()
+{
+	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
+	{
+		m_leftMousePressed = false;
+		m_firstMouse = true;
+	}
+
+	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
+	{
+		m_middleMousePressed = false;
+		m_firstMouse = true;
 	}
 
 	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))

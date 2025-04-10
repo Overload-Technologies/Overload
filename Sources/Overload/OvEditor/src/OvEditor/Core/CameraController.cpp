@@ -340,7 +340,16 @@ void OvEditor::Core::CameraController::HandleCameraOrbit(
 
 void OvEditor::Core::CameraController::HandleCameraZoom()
 {
-	m_camera.SetPosition(m_camera.GetPosition() + m_camera.transform->GetWorldForward() * ImGui::GetIO().MouseWheel);
+	constexpr float kUnitsPerScroll = 1.0f;
+
+	const auto verticalScroll = static_cast<float>(
+		m_inputManager.GetMouseScroll().second
+	);
+
+	m_camera.SetPosition(
+		m_camera.GetPosition() +
+		m_camera.transform->GetWorldForward() * kUnitsPerScroll * verticalScroll
+	);
 }
 
 void OvEditor::Core::CameraController::HandleCameraFPSMouse(const OvMaths::FVector2& p_mouseOffset, bool p_firstMouse)

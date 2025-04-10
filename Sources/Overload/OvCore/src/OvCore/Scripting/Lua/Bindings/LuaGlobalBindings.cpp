@@ -198,6 +198,10 @@ void BindLuaGlobal(sol::state& p_luaState)
 			const auto mousePos = OVSERVICE(InputManager).GetMousePosition();
 			return FVector3(static_cast<float>(mousePos.first), static_cast<float>(mousePos.second));
 		},
+		"GetMouseScroll", []() {
+			const auto scroll = OVSERVICE(InputManager).GetMouseScroll();
+			return FVector2(static_cast<float>(scroll.first), static_cast<float>(scroll.second));
+		},
 		"LockMouse", []() { return OVSERVICE(Window).SetCursorMode(Cursor::ECursorMode::DISABLED); },
 		"UnlockMouse", []() { return OVSERVICE(Window).SetCursorMode(Cursor::ECursorMode::NORMAL); }
 	);

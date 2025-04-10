@@ -86,6 +86,17 @@ void OvEditor::Core::Editor::PreUpdate()
 
 void OvEditor::Core::Editor::Update(float p_deltaTime)
 {
+	// Disable ImGui mouse update if the mouse cursor is disabled.
+	// i.e. when locked during gameplay, or when a view is being interacted
+	if (m_context.window->GetCursorMode() == OvWindowing::Cursor::ECursorMode::DISABLED)
+	{
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+	}
+	else
+	{
+		ImGui::GetIO().ConfigFlags &= ~(ImGuiConfigFlags_NoMouse);
+	}
+
 	HandleGlobalShortcuts();
 	UpdateCurrentEditorMode(p_deltaTime);
 	RenderViews(p_deltaTime);
@@ -147,8 +158,6 @@ void OvEditor::Core::Editor::UpdatePlayMode(float p_deltaTime)
 		PROFILER_SPY("Audio Update");
 		m_context.audioEngine->Update();
 	}
-
-	ImGui::GetIO().DisableMouseUpdate = m_context.window->GetCursorMode() == OvWindowing::Cursor::ECursorMode::DISABLED;
 
 	if (m_editorActions.GetCurrentEditorMode() == EditorActions::EEditorMode::FRAME_BY_FRAME)
 		m_editorActions.PauseGame();

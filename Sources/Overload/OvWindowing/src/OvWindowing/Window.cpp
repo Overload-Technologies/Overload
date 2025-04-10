@@ -38,6 +38,7 @@ OvWindowing::Window::Window(const Context::Device& p_device, const Settings::Win
 	/* Callback binding */
 	BindKeyCallback();
 	BindMouseCallback();
+	BindScrollCallback();
 	BindIconifyCallback();
 	BindCloseCallback();
 	BindResizeCallback();
@@ -372,6 +373,20 @@ void OvWindowing::Window::BindMouseCallback() const
 	glfwSetMouseButtonCallback(m_glfwWindow, mouseCallback);
 }
 
+void OvWindowing::Window::BindScrollCallback() const
+{
+	auto scrollCallback = [](GLFWwindow* p_window, double p_xOffset, double p_yOffset)
+	{
+		Window* windowInstance = FindInstance(p_window);
+
+		if (windowInstance)
+		{
+			windowInstance->MouseScrollEvent.Invoke(p_xOffset, p_yOffset);
+		}
+	};
+
+	glfwSetScrollCallback(m_glfwWindow, scrollCallback);
+}
 
 void OvWindowing::Window::BindResizeCallback() const
 {

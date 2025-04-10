@@ -37,12 +37,12 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 
 	if (m_shouldOpen)
 	{
-		ImGui::SetNextTreeNodeOpen(true);
+		ImGui::SetNextItemOpen(true);
 		m_shouldOpen = false;
 	}
 	else if (m_shouldClose)
 	{
-		ImGui::SetNextTreeNodeOpen(false);
+		ImGui::SetNextItemOpen(false);
 		m_shouldClose = false;
 	}
 

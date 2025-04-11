@@ -22,7 +22,7 @@
 #include "OvCore/ECS/Components/CPostProcessStack.h"
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 void BindLuaActor(sol::state& p_luaState)
 {

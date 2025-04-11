@@ -21,7 +21,7 @@
 
 #include <OvWindowing/Inputs/InputManager.h>
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 void BindLuaGlobal(sol::state& p_luaState)
 {

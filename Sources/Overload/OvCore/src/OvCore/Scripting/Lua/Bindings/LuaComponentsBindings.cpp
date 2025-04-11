@@ -22,7 +22,7 @@
 #include "OvCore/ECS/Components/CAudioListener.h"
 #include "OvCore/ECS/Components/CPostProcessStack.h"
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 void BindLuaComponents(sol::state& p_luaState)
 {

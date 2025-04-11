@@ -11,7 +11,7 @@
 
 #include <OvCore/Scripting/Common/TScriptEngine.h>
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 namespace OvCore::ECS::Components
 {

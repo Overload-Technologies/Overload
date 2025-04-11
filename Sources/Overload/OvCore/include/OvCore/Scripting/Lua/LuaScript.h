@@ -10,7 +10,7 @@
 
 #include <OvCore/Scripting/Common/TScript.h>
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 namespace OvCore::ECS
 {

@@ -1,7 +1,7 @@
 project "lua"
 	kind "StaticLib"
-	language "C++"
-	cppdialect "C++20"
+	language "C"
+	cdialect "C17"
 	files { "**.h", "**.c", "**.lua" }
 	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
@@ -10,8 +10,10 @@ project "lua"
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }
-		symbols "On"
+		optimize "On"
+		symbols "Off"
+		runtime "Debug" -- Ensures /MDd is used
 
 	filter { "configurations:Release" }
 		defines { "NDEBUG" }
-		optimize "On"
+		optimize "Speed"

@@ -35,7 +35,8 @@ project "OvGame"
 
 	filter { "configurations:Release" }
 		defines { "NDEBUG" }
-		optimize "On"
+		optimize "Speed"
+		flags { "LinkTimeOptimization" }
 		kind "WindowedApp"
 
 	filter { "system:windows" }

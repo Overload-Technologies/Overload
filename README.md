@@ -59,7 +59,7 @@ We designed theses libraries with reusability in mind. They are highly modular a
 - `OvDebug`: Logging and assertions
 - `OvTools`: Serialization, INI files, events, clock
 - `OvMaths`: Vectors, matrices, quaternions, transforms
-- `OvAudio`: Wraps irrKlang
+- `OvAudio`: Audio engine, built around [SoLoud](https://github.com/jarikomppa/soloud)
 - `OvPhysics`: Wraps Bullet3
 - `OvRendering`: Rendering engine using OpenGL
 - `OvWindowing`: GLFW and Windows API wrapper
@@ -79,7 +79,7 @@ Overload depends on a few third-party libraries:
 - GLFW (Windowing and inputs)
 - Assimp (3D model loader)
 - Bullet3 (Physics)
-- irrKlang (Audio)
+- SoLoud (Audio)
 - Tinyxml2 (XML serializer)
 - Sol2 (Lua binding)
 - ImGui (GUI)

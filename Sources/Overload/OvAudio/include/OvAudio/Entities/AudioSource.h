@@ -22,7 +22,7 @@ namespace OvAudio::Core { class AudioEngine; }
 namespace OvAudio::Entities
 {
 	/**
-	* Wrap Irrklang ISound
+	* An audio source is an entity that can play a sound in a 3D space.
 	*/
 	class AudioSource
 	{

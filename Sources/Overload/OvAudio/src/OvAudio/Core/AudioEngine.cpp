@@ -9,8 +9,6 @@
 #include <soloud.h>
 #include <soloud_wav.h>
 
-#include <irrklang/irrKlang.h>
-
 #include <OvAudio/Core/AudioEngine.h>
 #include <OvDebug/Logger.h>
 

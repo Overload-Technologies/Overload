@@ -35,7 +35,7 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 	style.Colors[ImGuiCol_ButtonActive]		= OvUI::Internal::Converter::ToImVec4(clickedBackgroundColor);
 	style.Colors[ImGuiCol_Text]				= OvUI::Internal::Converter::ToImVec4(textColor);
 
-	if (ImGui::ButtonEx((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size), disabled ? ImGuiButtonFlags_Disabled : 0))
+	if (ImGui::ButtonEx((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size), disabled ? ImGuiItemFlags_Disabled : 0))
 		ClickedEvent.Invoke();
 
 	style.Colors[ImGuiCol_Button]			= defaultIdleColor;

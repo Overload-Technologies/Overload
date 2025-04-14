@@ -14,6 +14,7 @@ OvWindowing::Inputs::InputManager::InputManager(Window& p_window) : m_window(p_w
 	m_keyReleasedListener = m_window.KeyReleasedEvent.AddListener(std::bind(&InputManager::OnKeyReleased, this, std::placeholders::_1));
 	m_mouseButtonPressedListener = m_window.MouseButtonPressedEvent.AddListener(std::bind(&InputManager::OnMouseButtonPressed, this, std::placeholders::_1));
 	m_mouseButtonReleasedListener = m_window.MouseButtonReleasedEvent.AddListener(std::bind(&InputManager::OnMouseButtonReleased, this, std::placeholders::_1));
+	m_mouseScrollListener = m_window.MouseScrollEvent.AddListener(std::bind(&InputManager::OnMouseScroll, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 OvWindowing::Inputs::InputManager::~InputManager()
@@ -22,6 +23,7 @@ OvWindowing::Inputs::InputManager::~InputManager()
 	m_window.KeyReleasedEvent.RemoveListener(m_keyReleasedListener);
 	m_window.MouseButtonPressedEvent.RemoveListener(m_mouseButtonPressedListener);
 	m_window.MouseButtonReleasedEvent.RemoveListener(m_mouseButtonReleasedListener);
+	m_window.MouseScrollEvent.RemoveListener(m_mouseScrollListener);
 }
 
 OvWindowing::Inputs::EKeyState OvWindowing::Inputs::InputManager::GetKeyState(EKey p_key) const
@@ -73,10 +75,16 @@ std::pair<double, double> OvWindowing::Inputs::InputManager::GetMousePosition() 
 	return result;
 }
 
+std::pair<double, double> OvWindowing::Inputs::InputManager::GetMouseScroll() const
+{
+	return m_scrollData;
+}
+
 void OvWindowing::Inputs::InputManager::ClearEvents()
 {
 	m_keyEvents.clear();
 	m_mouseButtonEvents.clear();
+	m_scrollData = { 0.0, 0.0 };
 }
 
 void OvWindowing::Inputs::InputManager::OnKeyPressed(int p_key)
@@ -97,4 +105,9 @@ void OvWindowing::Inputs::InputManager::OnMouseButtonPressed(int p_button)
 void OvWindowing::Inputs::InputManager::OnMouseButtonReleased(int p_button)
 {
 	m_mouseButtonEvents[static_cast<EMouseButton>(p_button)] = EMouseButtonState::MOUSE_UP;
+}
+
+void OvWindowing::Inputs::InputManager::OnMouseScroll(double p_xOffset, double p_yOffset)
+{
+	m_scrollData = { p_xOffset, p_yOffset };
 }

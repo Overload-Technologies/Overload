@@ -22,11 +22,12 @@ namespace OvWindowing
 	class Window
 	{
 	public:
-		/* Inputs relatives */
+		/* Inputs events */
 		OvTools::Eventing::Event<int> KeyPressedEvent;
 		OvTools::Eventing::Event<int> KeyReleasedEvent;
 		OvTools::Eventing::Event<int> MouseButtonPressedEvent;
 		OvTools::Eventing::Event<int> MouseButtonReleasedEvent;
+		OvTools::Eventing::Event<double, double> MouseScrollEvent;
 
 		/* Window events */
 		OvTools::Eventing::Event<uint16_t, uint16_t> ResizeEvent;
@@ -293,6 +294,7 @@ namespace OvWindowing
 		/* Callbacks binding */
 		void BindKeyCallback() const;
 		void BindMouseCallback() const;
+		void BindScrollCallback() const;
 		void BindResizeCallback() const;
 		void BindFramebufferResizeCallback() const;
 		void BindCursorMoveCallback() const;

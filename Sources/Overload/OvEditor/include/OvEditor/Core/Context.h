@@ -29,7 +29,6 @@
 
 #include <OvUI/Core/UIManager.h>
 #include <OvAudio/Core/AudioEngine.h>
-#include <OvAudio/Core/AudioPlayer.h>
 
 #include "OvEditor/Core/EditorResources.h"
 #include <OvEditor/Utils/TextureRegistry.h>
@@ -87,7 +86,6 @@ namespace OvEditor::Core
 		std::unique_ptr<OvUI::Core::UIManager> uiManager;
 		std::unique_ptr<OvPhysics::Core::PhysicsEngine> physicsEngine;
 		std::unique_ptr<OvAudio::Core::AudioEngine> audioEngine;
-		std::unique_ptr<OvAudio::Core::AudioPlayer> audioPlayer;
 		std::unique_ptr<OvEditor::Core::EditorResources> editorResources;
 
 		std::unique_ptr<OvCore::Scripting::ScriptEngine> scriptEngine;

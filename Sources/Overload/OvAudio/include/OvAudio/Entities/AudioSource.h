@@ -7,18 +7,17 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
-#include <irrklang/ik_ISoundEngine.h>
-#include <irrklang/ik_ISoundStopEventReceiver.h>
-
-#include <OvTools/Eventing/Event.h>
+#include <OvAudio/Data/SoundHandle.h>
+#include <OvAudio/Resources/Sound.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FTransform.h>
+#include <OvTools/Eventing/Event.h>
+#include <OvTools/Utils/OptRef.h>
+#include <OvTools/Utils/ReferenceOrValue.h>
 
-#include "OvAudio/Tracking/SoundTracker.h"
-#include "OvAudio/Resources/Sound.h"
-
-namespace OvAudio::Core { class AudioPlayer; }
+namespace OvAudio::Core { class AudioEngine; }
 
 namespace OvAudio::Entities
 {
@@ -30,16 +29,13 @@ namespace OvAudio::Entities
 	public:
 		/**
 		* AudioSource constructor (Internal transform management)
-		* @param p_audioPlayer
-		*/
-		AudioSource(Core::AudioPlayer& p_audioPlayer);
-
-		/**
-		* AudioSource constructor (External transform management)
-		* @param p_audioPlayer
+		* @param p_engine
 		* @param p_transform
 		*/
-		AudioSource(Core::AudioPlayer& p_audioPlayer, OvMaths::FTransform& p_transform);
+		AudioSource(
+			Core::AudioEngine& p_engine,
+			OvTools::Utils::OptRef<OvMaths::FTransform> p_transform = std::nullopt
+		);
 
 		/**
 		* AudioSource destructor
@@ -64,7 +60,7 @@ namespace OvAudio::Entities
 		/**
 		* Returns the currently tracked sound if any, or nullptr
 		*/
-		Tracking::SoundTracker* GetTrackedSound() const;
+		std::optional<Data::SoundHandle> GetSoundHandle() const;
 
 		/**
 		* Defines the audio source volume
@@ -163,17 +159,13 @@ namespace OvAudio::Entities
 		*/
 		void StopAndDestroyTrackedSound();
 
-	private:
-		void Setup();
-
 	public:
 		static OvTools::Eventing::Event<AudioSource&> CreatedEvent;
 		static OvTools::Eventing::Event<AudioSource&> DestroyedEvent;
 
 	private:
-		Core::AudioPlayer& m_audioPlayer;
-
-		std::unique_ptr<Tracking::SoundTracker> m_trackedSound;
+		Core::AudioEngine& m_engine;
+		std::optional<Data::SoundHandle> m_handle;
 
 		/* AudioSource settings */
 		float	m_volume				= 1.0f;
@@ -184,7 +176,6 @@ namespace OvAudio::Entities
 		float	m_attenuationThreshold	= 1.0f;
 
 		/* Transform stuff */
-		OvMaths::FTransform* const		m_transform;
-		const bool						m_internalTransform;
+		OvTools::Utils::ReferenceOrValue<OvMaths::FTransform> m_transform;
 	};
 }

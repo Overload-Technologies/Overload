@@ -28,6 +28,7 @@ group "Dependencies"
 	include "../../Dependencies/ImGui"
 	include "../../Dependencies/tinyxml2"
 	include "../../Dependencies/lua"
+	include "../../Dependencies/soloud"
 group ""
 
 group "Dependencies/Prebuilt"

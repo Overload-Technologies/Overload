@@ -6,6 +6,9 @@
 
 #include <algorithm>
 
+#include <soloud.h>
+#include <soloud_wav.h>
+
 #include <irrklang/irrKlang.h>
 
 #include <OvAudio/Core/AudioEngine.h>
@@ -13,7 +16,8 @@
 
 OvAudio::Core::AudioEngine::AudioEngine(const std::string & p_workingDirectory) : m_workingDirectory(p_workingDirectory)
 {
-	m_irrklangEngine = irrklang::createIrrKlangDevice();
+	m_soloudEngine = std::make_unique<SoLoud::Soloud>();
+	auto res = m_soloudEngine->init();
 
 	if (!IsValid())
 	{
@@ -34,13 +38,13 @@ OvAudio::Core::AudioEngine::~AudioEngine()
 {
 	if (IsValid())
 	{
-		m_irrklangEngine->drop();
+		m_soloudEngine->deinit();
 	}
 }
 
 bool OvAudio::Core::AudioEngine::IsValid() const
 {
-	return m_irrklangEngine != nullptr;
+	return m_soloudEngine.operator bool();
 }
 
 void OvAudio::Core::AudioEngine::Update()
@@ -57,26 +61,27 @@ void OvAudio::Core::AudioEngine::Update()
 	std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> listener = GetListenerInformation();
 	if (listener.has_value())
 	{
-		m_irrklangEngine->setListenerPosition
-		(
-			reinterpret_cast<const irrklang::vec3df&>(listener.value().first),
-			reinterpret_cast<const irrklang::vec3df&>(listener.value().second)
-		);
+		const auto& pos = listener.value().first;
+		const auto& at = listener.value().second;
+
+		m_soloudEngine->set3dListenerPosition(pos.x, pos.y, pos.z);
+		m_soloudEngine->set3dListenerAt(at.x, at.y, at.z);
 	}
 	else
 	{
-		m_irrklangEngine->setListenerPosition({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f });
+		m_soloudEngine->set3dListenerPosition(0.0f, 0.0f, 0.0f);
+		m_soloudEngine->set3dListenerAt(0.0f, 0.0f, -1.0f);
 	}
 }
 
 void OvAudio::Core::AudioEngine::Suspend()
 {
-	std::for_each(m_audioSources.begin(), m_audioSources.end(), [this](std::reference_wrapper<Entities::AudioSource> p_audioSource)
-	{
-		if (p_audioSource.get().IsTrackingSound() && !p_audioSource.get().GetTrackedSound()->GetTrack()->getIsPaused())
+	std::for_each(m_audioSources.begin(), m_audioSources.end(), [this](std::reference_wrapper<Entities::AudioSource> p_audioSource) {
+		auto& source = p_audioSource.get();
+		if (source.IsTrackingSound() && !m_soloudEngine->getPause(source.GetSoundHandle().value()))
 		{
 			m_suspendedAudioSources.push_back(p_audioSource);
-			p_audioSource.get().Pause();
+			source.Pause();
 		}
 	});
 
@@ -95,14 +100,50 @@ bool OvAudio::Core::AudioEngine::IsSuspended() const
 	return m_suspended;
 }
 
-const std::string& OvAudio::Core::AudioEngine::GetWorkingDirectory() const
+std::optional<OvAudio::Data::SoundHandle> OvAudio::Core::AudioEngine::PlaySound(const OvAudio::Resources::Sound& p_sound, bool p_autoPlay, bool p_looped, bool p_track)
 {
-	return m_workingDirectory;
+	if (!IsValid())
+	{
+		OVLOG_WARNING("Unable to play \"" + p_sound.path + "\". Audio engine is not valid");
+		return std::nullopt;
+	}
+
+	auto handle = m_soloudEngine->play(*p_sound.sound);
+
+	if (p_track)
+	{
+		if (m_soloudEngine->isValidVoiceHandle(handle))
+		{
+			return handle;
+		}
+		
+		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
+	}
+
+	return std::nullopt;
 }
 
-irrklang::ISoundEngine* OvAudio::Core::AudioEngine::GetIrrklangEngine() const
+std::optional<OvAudio::Data::SoundHandle> OvAudio::Core::AudioEngine::PlaySpatialSound(const OvAudio::Resources::Sound& p_sound, bool p_autoPlay, bool p_looped, const OvMaths::FVector3& p_position, bool p_track)
 {
-	return m_irrklangEngine;
+	if (!IsValid())
+	{
+		OVLOG_WARNING("Unable to play \"" + p_sound.path + "\". Audio engine is not valid");
+		return std::nullopt;
+	}
+
+	auto handle = m_soloudEngine->play3d(*p_sound.sound, p_position.x, p_position.y, p_position.z);
+
+	if (p_track)
+	{
+		if (m_soloudEngine->isValidVoiceHandle(handle))
+		{
+			return handle;
+		}
+
+		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
+	}
+
+	return std::nullopt;
 }
 
 std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> OvAudio::Core::AudioEngine::GetListenerInformation(bool p_considerDisabled) const
@@ -121,6 +162,12 @@ std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> OvAudio::Core::Au
 	}
 
 	return {};
+}
+
+SoLoud::Soloud& OvAudio::Core::AudioEngine::GetBackend() const
+{
+	// TODO: assert if no backend
+	return *m_soloudEngine;
 }
 
 void OvAudio::Core::AudioEngine::Consider(OvAudio::Entities::AudioSource & p_audioSource)

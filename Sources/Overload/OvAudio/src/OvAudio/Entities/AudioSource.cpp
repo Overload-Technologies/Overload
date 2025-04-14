@@ -4,31 +4,17 @@
 * @licence: MIT
 */
 
-#include <irrklang/ik_vec3d.h>
+#include <soloud.h>
 
-#include "OvAudio/Core/AudioPlayer.h"
-#include "OvAudio/Entities/AudioSource.h"
+#include <OvAudio/Core/AudioEngine.h>
+#include <OvAudio/Entities/AudioSource.h>
 
 OvTools::Eventing::Event<OvAudio::Entities::AudioSource&> OvAudio::Entities::AudioSource::CreatedEvent;
 OvTools::Eventing::Event<OvAudio::Entities::AudioSource&> OvAudio::Entities::AudioSource::DestroyedEvent;
 
-OvAudio::Entities::AudioSource::AudioSource(Core::AudioPlayer& p_audioPlayer) :
-	m_audioPlayer(p_audioPlayer),
-	m_transform(new OvMaths::FTransform()),
-	m_internalTransform(true)
-{
-	Setup();
-}
-
-OvAudio::Entities::AudioSource::AudioSource(Core::AudioPlayer& p_audioPlayer, OvMaths::FTransform& p_transform) :
-	m_audioPlayer(p_audioPlayer),
-	m_transform(&p_transform),
-	m_internalTransform(false)
-{
-	Setup();
-}
-
-void OvAudio::Entities::AudioSource::Setup()
+OvAudio::Entities::AudioSource::AudioSource(Core::AudioEngine& p_engine, OvTools::Utils::OptRef<OvMaths::FTransform> p_transform) :
+	m_engine(p_engine),
+	m_transform(p_transform)
 {
 	CreatedEvent.Invoke(*this);
 }
@@ -36,26 +22,27 @@ void OvAudio::Entities::AudioSource::Setup()
 OvAudio::Entities::AudioSource::~AudioSource()
 {
 	DestroyedEvent.Invoke(*this);
-
 	StopAndDestroyTrackedSound();
-
-	if (m_internalTransform)
-		delete m_transform;
 }
 
 void OvAudio::Entities::AudioSource::UpdateTrackedSoundPosition()
 {
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setPosition(reinterpret_cast<const irrklang::vec3df&>(m_transform->GetWorldPosition())); // FVector3 and vec3df have the same data layout
+	{
+		const auto worldPos = m_transform->GetWorldPosition();
+		m_engine.GetBackend().set3dSourcePosition(m_handle.value(), worldPos.x, worldPos.y, worldPos.z);
+	}
 }
 
 void OvAudio::Entities::AudioSource::ApplySourceSettingsToTrackedSound()
 {
-	m_trackedSound->GetTrack()->setVolume(m_volume);
-	m_trackedSound->GetTrack()->setPan(m_pan);
-	m_trackedSound->GetTrack()->setIsLooped(m_looped);
-	m_trackedSound->GetTrack()->setPlaybackSpeed(m_pitch);
-	m_trackedSound->GetTrack()->setMinDistance(m_attenuationThreshold);
+	// TODO: assert if no handle
+	auto& backend = m_engine.GetBackend();
+	backend.setVolume(m_handle.value(), m_volume);
+	backend.setPan(m_handle.value(), m_pan * -1.0f); // TODO: Check if pan should be negative here (wasn't with irrklang)
+	backend.setLooping(m_handle.value(), m_looped);
+	backend.setRelativePlaySpeed(m_handle.value(), m_pitch); // TODO: should we clamp pitch like with irrklang?
+	backend.set3dSourceMinMaxDistance(m_handle.value(), m_attenuationThreshold, std::numeric_limits<float>::infinity());
 }
 
 void OvAudio::Entities::AudioSource::SetSpatial(bool p_value)
@@ -68,12 +55,9 @@ void OvAudio::Entities::AudioSource::SetAttenuationThreshold(float p_distance)
 	m_attenuationThreshold = p_distance;
 
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setMinDistance(p_distance);
-}
-
-OvAudio::Tracking::SoundTracker* OvAudio::Entities::AudioSource::GetTrackedSound() const
-{
-	return m_trackedSound.get();
+	{
+		m_engine.GetBackend().set3dSourceMinMaxDistance(m_handle.value(), m_attenuationThreshold, std::numeric_limits<float>::infinity());
+	}
 }
 
 void OvAudio::Entities::AudioSource::SetVolume(float p_volume)
@@ -81,7 +65,9 @@ void OvAudio::Entities::AudioSource::SetVolume(float p_volume)
 	m_volume = p_volume;
 
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setVolume(p_volume);
+	{
+		m_engine.GetBackend().setVolume(m_handle.value(), m_volume);
+	}
 }
 
 void OvAudio::Entities::AudioSource::SetPan(float p_pan)
@@ -89,7 +75,9 @@ void OvAudio::Entities::AudioSource::SetPan(float p_pan)
 	m_pan = p_pan;
 
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setPan(p_pan * -1.0f);
+	{
+		m_engine.GetBackend().setPan(m_handle.value(), m_pan * -1.0f); // TODO: Check if pan should be negative here (wasn't with irrklang)
+	}
 }
 
 void OvAudio::Entities::AudioSource::SetLooped(bool p_looped)
@@ -97,7 +85,9 @@ void OvAudio::Entities::AudioSource::SetLooped(bool p_looped)
 	m_looped = p_looped;
 
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setIsLooped(p_looped);
+	{
+		m_engine.GetBackend().setLooping(m_handle.value(), m_looped);
+	}
 }
 
 void OvAudio::Entities::AudioSource::SetPitch(float p_pitch)
@@ -105,12 +95,20 @@ void OvAudio::Entities::AudioSource::SetPitch(float p_pitch)
 	m_pitch = p_pitch;
 
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setPlaybackSpeed(p_pitch < 0.01f ? 0.01f : p_pitch);
+	{
+		// m_trackedSound->GetTrack()->setPlaybackSpeed(p_pitch < 0.01f ? 0.01f : p_pitch);
+		m_engine.GetBackend().setRelativePlaySpeed(m_handle.value(), m_pitch); // TODO: should we clamp pitch like with irrklang?
+	}
 }
 
 bool OvAudio::Entities::AudioSource::IsTrackingSound() const
 {
-	return m_trackedSound.operator bool();
+	return m_handle.has_value();
+}
+
+std::optional<OvAudio::Data::SoundHandle> OvAudio::Entities::AudioSource::GetSoundHandle() const
+{
+	return m_handle.value();
 }
 
 bool OvAudio::Entities::AudioSource::IsSpatial() const
@@ -146,9 +144,12 @@ float OvAudio::Entities::AudioSource::GetPitch() const
 bool OvAudio::Entities::AudioSource::IsFinished() const
 {
 	if (IsTrackingSound())
-		return m_trackedSound->GetTrack()->isFinished();
-	else
+	{
+		return m_engine.GetBackend().isValidVoiceHandle(m_handle.value());
+	}
+	{
 		return true;
+	}
 }
 
 void OvAudio::Entities::AudioSource::Play(const Resources::Sound& p_sound)
@@ -157,45 +158,52 @@ void OvAudio::Entities::AudioSource::Play(const Resources::Sound& p_sound)
 	StopAndDestroyTrackedSound();
 	
 	/* Play the sound and store a tracker to the sound into memory */
-	if (m_spatial)
-		m_trackedSound = m_audioPlayer.PlaySpatialSound(p_sound, false, m_looped, m_transform->GetWorldPosition(), true);
-	else
-		m_trackedSound = m_audioPlayer.PlaySound(p_sound, false, m_looped, true);
+	m_handle =
+		m_spatial ?
+		m_engine.PlaySpatialSound(p_sound, false, m_looped, m_transform->GetWorldPosition(), true) :
+		m_engine.PlaySound(p_sound, false, m_looped, true);
 
 	/* If the sound tracker is non-null, apply AudioSource settings to the sound (Not every settings because some are already set with AudioPlayer::PlaySound method) */
 	if (IsTrackingSound())
 	{
-		m_trackedSound->GetTrack()->setVolume(m_volume);
-		m_trackedSound->GetTrack()->setPan(m_pan);
-		m_trackedSound->GetTrack()->setPlaybackSpeed(m_pitch);
-		m_trackedSound->GetTrack()->setMinDistance(m_attenuationThreshold);
-		m_trackedSound->GetTrack()->setIsPaused(false);
+		auto& backend = m_engine.GetBackend();
+		backend.setVolume(m_handle.value(), m_volume);
+		backend.setPan(m_handle.value(), m_pan * -1.0f); // TODO: Check if pan should be negative here (wasn't with irrklang)
+		backend.setRelativePlaySpeed(m_handle.value(), m_pitch); // TODO: should we clamp pitch like with irrklang?
+		backend.set3dSourceMinMaxDistance(m_handle.value(), m_attenuationThreshold, std::numeric_limits<float>::infinity());
+		backend.setPause(m_handle.value(), false);
 	}
 }
 
 void OvAudio::Entities::AudioSource::Resume()
 {
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setIsPaused(false);
+	{
+		m_engine.GetBackend().setPause(m_handle.value(), false);
+	}
 }
 
 void OvAudio::Entities::AudioSource::Pause()
 {
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->setIsPaused(true);
+	{
+		m_engine.GetBackend().setPause(m_handle.value(), true);
+	}
 }
 
 void OvAudio::Entities::AudioSource::Stop()
 {
 	if (IsTrackingSound())
-		m_trackedSound->GetTrack()->stop();
+	{
+		m_engine.GetBackend().stop(m_handle.value());
+	}
 }
 
 void OvAudio::Entities::AudioSource::StopAndDestroyTrackedSound()
 {
 	if (IsTrackingSound())
 	{
-		m_trackedSound->GetTrack()->stop();
-		m_trackedSound->GetTrack()->drop();
+		m_engine.GetBackend().stop(m_handle.value());
+		m_engine.GetBackend().destroyVoiceGroup(m_handle.value());
 	}
 }

@@ -4,18 +4,19 @@
 * @licence: MIT
 */
 
+#include <OvAudio/Core/AudioEngine.h>
+
+#include <OvCore/ECS/Components/CAudioSource.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/SceneSystem/SceneManager.h>
+
 #include <OvUI/Widgets/Plots/PlotLines.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
-#include <OvAudio/Core/AudioPlayer.h>
-
-#include "OvCore/ECS/Components/CAudioSource.h"
-#include "OvCore/ECS/Actor.h"
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/SceneSystem/SceneManager.h"
 
 OvCore::ECS::Components::CAudioSource::CAudioSource(ECS::Actor& p_owner) :
 	AComponent(p_owner),
-	m_audioSource(OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioPlayer>(), owner.transform.GetFTransform())
+	m_audioSource(OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>(), owner.transform.GetFTransform())
 {
 }
 

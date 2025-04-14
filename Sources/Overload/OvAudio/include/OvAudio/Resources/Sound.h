@@ -7,8 +7,12 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
-
+namespace SoLoud
+{
+	class Wav;
+}
 
 namespace OvAudio::Resources
 {
@@ -23,8 +27,10 @@ namespace OvAudio::Resources
 
 	private:
 		Sound(const std::string& p_path);
+		~Sound();
 
 	public:
 		const std::string path;
+		SoLoud::Wav* sound;
 	};
 }

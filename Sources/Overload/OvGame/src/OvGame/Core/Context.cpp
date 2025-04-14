@@ -120,7 +120,6 @@ OvGame::Core::Context::Context() :
 
 	/* Audio */
 	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>(projectAssetsPath);
-	audioPlayer = std::make_unique<OvAudio::Core::AudioPlayer>(*audioEngine);
 
 	/* Physics engine */
 	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, projectSettings.Get<float>("gravity"), 0.0f } });
@@ -140,7 +139,6 @@ OvGame::Core::Context::Context() :
 	ServiceLocator::Provide<OvWindowing::Window>(*window);
 	ServiceLocator::Provide<OvCore::SceneSystem::SceneManager>(sceneManager);
 	ServiceLocator::Provide<OvAudio::Core::AudioEngine>(*audioEngine);
-	ServiceLocator::Provide<OvAudio::Core::AudioPlayer>(*audioPlayer);
 	ServiceLocator::Provide<OvCore::Scripting::ScriptEngine>(*scriptEngine);
 
 	framebuffer = std::make_unique<OvRendering::HAL::Framebuffer>("Main");

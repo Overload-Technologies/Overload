@@ -166,6 +166,11 @@ void OvAudio::Entities::AudioSource::Play(const Resources::Sound& p_sound)
 		m_instance->SetAttenuationModel(
 			Settings::EAttenuationModel::EXPONENTIAL_DISTANCE // TODO: Expose attenuation model
 		);
+
+		// Potentially expensive? But necessary so that the settings set above are applied.
+		// Otherwise some spatialized sounds may play without attenuation until the next update.
+		// This isn't ideal, but I couldn't find a better way to do it (no `update3dAudio` for a single sound instance).
+		m_engine.GetBackend().update3dAudio();
 	}
 	else
 	{

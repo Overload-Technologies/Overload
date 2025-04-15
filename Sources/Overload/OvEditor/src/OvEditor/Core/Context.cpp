@@ -130,8 +130,7 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 		uiManager->ResetLayout("Config\\layout.ini");
 
 	/* Audio */
-	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>(projectAssetsPath);
-	audioPlayer = std::make_unique<OvAudio::Core::AudioPlayer>(*audioEngine);
+	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>();
 
 	/* Editor resources */
 	editorResources = std::make_unique<OvEditor::Core::EditorResources>(editorAssetsPath);
@@ -154,7 +153,6 @@ OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::st
 	ServiceLocator::Provide<OvWindowing::Window>(*window);
 	ServiceLocator::Provide<OvCore::SceneSystem::SceneManager>(sceneManager);
 	ServiceLocator::Provide<OvAudio::Core::AudioEngine>(*audioEngine);
-	ServiceLocator::Provide<OvAudio::Core::AudioPlayer>(*audioPlayer);
 	ServiceLocator::Provide<OvCore::Scripting::ScriptEngine>(*scriptEngine);
 	ServiceLocator::Provide<OvEditor::Utils::TextureRegistry>(*textureRegistry);
 

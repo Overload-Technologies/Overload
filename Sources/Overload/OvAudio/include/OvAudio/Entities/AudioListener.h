@@ -7,10 +7,10 @@
 #pragma once
 
 
-#include "OvMaths/FVector3.h"
-#include "OvMaths/FTransform.h"
+#include <OvAudio/Entities/AudioSource.h>
 
-#include "OvAudio/Entities/AudioSource.h"
+#include <OvMaths/FTransform.h>
+#include <OvMaths/FVector3.h>
 
 namespace OvAudio::Entities
 {
@@ -22,15 +22,10 @@ namespace OvAudio::Entities
 	{
 	public:
 		/**
-		* AudioListener constructor (Internal transform management)
-		*/
-		AudioListener();
-
-		/**
-		* AudioListener constructor (External transform management)
+		* AudioListener constructor
 		* @param p_transform
 		*/
-		AudioListener(OvMaths::FTransform& p_transform);
+		AudioListener(OvTools::Utils::OptRef<OvMaths::FTransform> p_transform = std::nullopt);
 
 		/**
 		* AudioListener destructor
@@ -54,13 +49,8 @@ namespace OvAudio::Entities
 		bool IsEnabled() const;
 
 	private:
-		void Setup();
-
-	private:
-		/* Transform stuff */
-		OvMaths::FTransform* const		m_transform;
-		const bool						m_internalTransform;
-		bool							m_enabled = true;
+		OvTools::Utils::ReferenceOrValue<OvMaths::FTransform> m_transform;
+		bool m_enabled = true;
 
 	public:
 		static OvTools::Eventing::Event<AudioListener&>	CreatedEvent;

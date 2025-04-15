@@ -230,7 +230,7 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetPan", &CAudioSource::GetPan,
 		"IsLooped", &CAudioSource::IsLooped,
 		"GetPitch", &CAudioSource::GetPitch,
-		"IsFinished", &CAudioSource::IsFinished,
+		"IsPlaying", &CAudioSource::IsPlaying,
 		"IsSpatial", &CAudioSource::IsSpatial,
 		"GetAttenuationThreshold", &CAudioSource::GetAttenuationThreshold,
 		"SetSound", &CAudioSource::SetSound,

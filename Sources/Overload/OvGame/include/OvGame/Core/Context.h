@@ -26,7 +26,6 @@
 #include <OvCore/Scripting/ScriptEngine.h>
 
 #include <OvAudio/Core/AudioEngine.h>
-#include <OvAudio/Core/AudioPlayer.h>
 
 #include <OvTools/Filesystem/IniFile.h>
 
@@ -60,7 +59,6 @@ namespace OvGame::Core
 		std::unique_ptr<OvUI::Core::UIManager> uiManager;
 		std::unique_ptr<OvPhysics::Core::PhysicsEngine> physicsEngine;
 		std::unique_ptr<OvAudio::Core::AudioEngine> audioEngine;
-		std::unique_ptr<OvAudio::Core::AudioPlayer> audioPlayer;
 		std::unique_ptr<OvCore::Scripting::ScriptEngine> scriptEngine;
 		std::unique_ptr<OvRendering::HAL::Framebuffer> framebuffer;
 

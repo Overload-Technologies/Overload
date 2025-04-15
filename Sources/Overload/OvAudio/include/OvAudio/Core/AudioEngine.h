@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <OvAudio/Data/SoundHandle.h>
+#include <OvAudio/Data/SoundRegistry.h>
 #include <OvAudio/Entities/AudioSource.h>
 #include <OvAudio/Entities/AudioListener.h>
 
@@ -21,8 +22,8 @@ namespace SoLoud
 namespace OvAudio::Core
 {
 	/**
-	* Handle the creation of the Audio context
-	* Will take care of the consideration of AudioSources and AudioListeners
+	* AudioEngine is the main class of the audio system.
+	* It's responsible for initializing the audio backend and managing the audio sources and listeners.
 	*/
 	class AudioEngine
 	{
@@ -30,7 +31,7 @@ namespace OvAudio::Core
 		/**
 		* Constructor of the AudioEngine
 		*/
-		AudioEngine(const std::string& p_workingDirectory);
+		AudioEngine();
 
 		/**
 		* Destructor of the AudioEngine
@@ -63,30 +64,20 @@ namespace OvAudio::Core
 		bool IsSuspended() const;
 
 		/**
-		* Play a sound in 2D and return a SoundTracker if tracking is asked
+		* Play a sound in and return a SoundInstance if tracking is asked
 		* @param p_sound
-		* @param p_autoPlay
-		* @param p_looped
-		* @param p_track
+		* @param p_position (if set, the sound will be spatialized)
 		*/
-		std::optional<Data::SoundHandle> PlaySound(const Resources::Sound& p_sound, bool p_autoPlay = true, bool p_looped = false, bool p_track = false);
+		OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> Play(
+			const Resources::Sound& p_sound,
+			OvTools::Utils::OptRef<const OvMaths::FVector3> p_position = std::nullopt
+		);
 
 		/**
-		* Play a sound in 3D and return a SoundTracker if tracking is asked
-		* @param p_sound
-		* @param p_autoPlay
-		* @param p_looped
-		* @param p_position
-		* @param p_track
+		* Returns the main listener
+		* @param p_includeDisabled
 		*/
-		std::optional<Data::SoundHandle> PlaySpatialSound(const Resources::Sound& p_sound, bool p_autoPlay = true, bool p_looped = false, const OvMaths::FVector3& p_position = { 0.0f, 0.0f, 0.0f }, bool p_track = false);
-
-		/**
-		* Returns the current listener informations :
-		* Format: std::tuple<Active, Position, Direction>
-		* @parma p_considerDisabled
-		*/
-		std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> GetListenerInformation(bool p_considerDisabled = false) const;
+		OvTools::Utils::OptRef<OvAudio::Entities::AudioListener> FindMainListener(bool p_includeDisabled = false) const;
 
 		/**
 		* Returns a reference to the backend engine
@@ -101,13 +92,14 @@ namespace OvAudio::Core
 		void Unconsider(Entities::AudioListener& p_audioListener);
 
 	private:
-		const std::string m_workingDirectory;
 		bool m_suspended = false;
 
 		std::vector<std::reference_wrapper<Entities::AudioSource>> m_audioSources;
 		std::vector<std::reference_wrapper<Entities::AudioSource>> m_suspendedAudioSources;
 		std::vector<std::reference_wrapper<Entities::AudioListener>> m_audioListeners;
+
+		Data::SoundRegistry m_soundRegistry;
 		
-		std::unique_ptr<SoLoud::Soloud> m_soloudEngine;
+		std::unique_ptr<SoLoud::Soloud> m_backend;
 	};
 }

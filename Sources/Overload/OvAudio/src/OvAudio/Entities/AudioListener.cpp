@@ -4,23 +4,15 @@
 * @licence: MIT
 */
 
-#include "OvAudio/Entities/AudioListener.h"
+#include <OvAudio/Entities/AudioListener.h>
 
 OvTools::Eventing::Event<OvAudio::Entities::AudioListener&>	OvAudio::Entities::AudioListener::CreatedEvent;
 OvTools::Eventing::Event<OvAudio::Entities::AudioListener&>	OvAudio::Entities::AudioListener::DestroyedEvent;
 
-OvAudio::Entities::AudioListener::AudioListener() :
-	m_transform(new OvMaths::FTransform()),
-	m_internalTransform(true)
+OvAudio::Entities::AudioListener::AudioListener(OvTools::Utils::OptRef<OvMaths::FTransform> p_transform) :
+	m_transform(p_transform)
 {
-	Setup();
-}
-
-OvAudio::Entities::AudioListener::AudioListener(OvMaths::FTransform& p_transform) :
-	m_transform(&p_transform),
-	m_internalTransform(false)
-{
-	Setup();
+	CreatedEvent.Invoke(*this);
 }
 
 OvAudio::Entities::AudioListener::~AudioListener()
@@ -30,7 +22,7 @@ OvAudio::Entities::AudioListener::~AudioListener()
 
 OvMaths::FTransform& OvAudio::Entities::AudioListener::GetTransform()
 {
-	return *m_transform;
+	return m_transform;
 }
 
 void OvAudio::Entities::AudioListener::SetEnabled(bool p_enable)
@@ -41,9 +33,4 @@ void OvAudio::Entities::AudioListener::SetEnabled(bool p_enable)
 bool OvAudio::Entities::AudioListener::IsEnabled() const
 {
 	return m_enabled;
-}
-
-void OvAudio::Entities::AudioListener::Setup()
-{
-	CreatedEvent.Invoke(*this);
 }

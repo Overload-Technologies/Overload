@@ -95,9 +95,9 @@ float OvCore::ECS::Components::CAudioSource::GetPitch() const
 	return m_audioSource.GetPitch();
 }
 
-bool OvCore::ECS::Components::CAudioSource::IsFinished() const
+bool OvCore::ECS::Components::CAudioSource::IsPlaying() const
 {
-	return m_audioSource.IsFinished();
+	return m_audioSource.IsPlaying();
 }
 
 bool OvCore::ECS::Components::CAudioSource::IsSpatial() const
@@ -190,9 +190,11 @@ void OvCore::ECS::Components::CAudioSource::OnInspector(OvUI::Internal::WidgetCo
 
 		OvMaths::FVector3 listenerPosition(0.0f, 0.0f, 0.0f);
 		bool playMode = OvCore::Global::ServiceLocator::Get<SceneSystem::SceneManager>().GetCurrentScene()->IsPlaying();
-		auto listenerInfo = OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>().GetListenerInformation(!playMode);
-		if (listenerInfo.has_value())
-			listenerPosition = listenerInfo.value().first;
+		auto mainListener = OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>().FindMainListener(!playMode);
+		if (mainListener)
+		{
+			listenerPosition = mainListener->GetTransform().GetWorldPosition();
+		}
 
 		float distanceToListener = OvMaths::FVector3::Distance(listenerPosition, owner.transform.GetWorldPosition());
 

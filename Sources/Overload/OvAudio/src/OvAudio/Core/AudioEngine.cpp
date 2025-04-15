@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <ranges>
 
 #include <soloud.h>
 #include <soloud_wav.h>
@@ -12,37 +13,38 @@
 #include <OvAudio/Core/AudioEngine.h>
 #include <OvDebug/Logger.h>
 
-OvAudio::Core::AudioEngine::AudioEngine(const std::string & p_workingDirectory) : m_workingDirectory(p_workingDirectory)
+OvAudio::Core::AudioEngine::AudioEngine()
 {
-	m_soloudEngine = std::make_unique<SoLoud::Soloud>();
-	auto res = m_soloudEngine->init();
+	m_backend = std::make_unique<SoLoud::Soloud>();
 
-	if (!IsValid())
+	// If initialization failed
+	if (m_backend->init() != SoLoud::SOLOUD_ERRORS::SO_NO_ERROR)
 	{
-		OVLOG_WARNING("Failed to create the audio engine. Playback requests will be ignored.");
+		OVLOG_ERROR("Failed to initialize the audio engine. Playback requests will be ignored.");
+		m_backend.reset();
 		return;
 	}
 
-	using AudioSourceReceiver	= void(AudioEngine::*)(OvAudio::Entities::AudioSource&);
+	using AudioSourceReceiver = void(AudioEngine::*)(OvAudio::Entities::AudioSource&);
 	using AudioListenerReceiver = void(AudioEngine::*)(OvAudio::Entities::AudioListener&);
 
-	Entities::AudioSource::CreatedEvent		+= std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
-	Entities::AudioSource::DestroyedEvent	+= std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
-	Entities::AudioListener::CreatedEvent	+= std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
-	Entities::AudioListener::DestroyedEvent	+= std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
+	Entities::AudioSource::CreatedEvent += std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
+	Entities::AudioSource::DestroyedEvent += std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
+	Entities::AudioListener::CreatedEvent += std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
+	Entities::AudioListener::DestroyedEvent += std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
 }
 
 OvAudio::Core::AudioEngine::~AudioEngine()
 {
 	if (IsValid())
 	{
-		m_soloudEngine->deinit();
+		m_backend->deinit();
 	}
 }
 
 bool OvAudio::Core::AudioEngine::IsValid() const
 {
-	return m_soloudEngine.operator bool();
+	return m_backend.operator bool();
 }
 
 void OvAudio::Core::AudioEngine::Update()
@@ -52,43 +54,65 @@ void OvAudio::Core::AudioEngine::Update()
 		return;
 	}
 
-	/* Update tracked sounds */
-	std::for_each(m_audioSources.begin(), m_audioSources.end(), std::mem_fn(&Entities::AudioSource::UpdateTrackedSoundPosition));
+	for (const auto& audioSourceRef : m_audioSources)
+	{
+		auto& source = audioSourceRef.get();
 
-	/* Defines the listener position using the last listener created (If any) */
-	std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> listener = GetListenerInformation();
+		if (source.IsPlaying())
+		{
+			const auto handle = source.GetSoundInstance()->GetHandle();
+			const auto& transform = source.GetTransform();
+			const auto& worldPos = transform.GetWorldPosition();
+			m_backend->set3dSourcePosition(handle, worldPos.x, worldPos.y, worldPos.z);
+		}
+	}
+
+	// Defines the listener position using the last listener created (If any)
+	const auto listener = FindMainListener();
+
 	if (listener.has_value())
 	{
-		const auto& pos = listener.value().first;
-		const auto& at = listener.value().second;
-
-		m_soloudEngine->set3dListenerPosition(pos.x, pos.y, pos.z);
-		m_soloudEngine->set3dListenerAt(at.x, at.y, at.z);
+		const auto& transform = listener->GetTransform();
+		const auto& pos = transform.GetWorldPosition();
+		const auto at = transform.GetWorldForward() * -1.0f;
+		m_backend->set3dListenerPosition(pos.x, pos.y, pos.z);
+		m_backend->set3dListenerAt(at.x, at.y, at.z);
 	}
 	else
 	{
-		m_soloudEngine->set3dListenerPosition(0.0f, 0.0f, 0.0f);
-		m_soloudEngine->set3dListenerAt(0.0f, 0.0f, -1.0f);
+		m_backend->set3dListenerPosition(0.0f, 0.0f, 0.0f);
+		m_backend->set3dListenerAt(0.0f, 0.0f, -1.0f);
 	}
+
+	m_backend->update3dAudio();
 }
 
 void OvAudio::Core::AudioEngine::Suspend()
 {
-	std::for_each(m_audioSources.begin(), m_audioSources.end(), [this](std::reference_wrapper<Entities::AudioSource> p_audioSource) {
-		auto& source = p_audioSource.get();
-		if (source.IsTrackingSound() && !m_soloudEngine->getPause(source.GetSoundHandle().value()))
+	for (auto& audioSourceRef : m_audioSources)
+	{
+		auto& source = audioSourceRef.get();
+		if (source.IsPlaying() && source.GetSoundInstance()->IsPlaying())
 		{
-			m_suspendedAudioSources.push_back(p_audioSource);
+			m_suspendedAudioSources.push_back(audioSourceRef);
 			source.Pause();
 		}
-	});
+	}
 
 	m_suspended = true;
 }
 
 void OvAudio::Core::AudioEngine::Unsuspend()
 {
-	std::for_each(m_suspendedAudioSources.begin(), m_suspendedAudioSources.end(), std::mem_fn(&Entities::AudioSource::Resume));
+	for (auto& audioSourceRef : m_audioSources)
+	{
+		auto& source = audioSourceRef.get();
+		if (source.IsPlaying() && !source.GetSoundInstance()->IsPlaying())
+		{
+			source.Resume();
+		}
+	}
+
 	m_suspendedAudioSources.clear();
 	m_suspended = false;
 }
@@ -98,7 +122,10 @@ bool OvAudio::Core::AudioEngine::IsSuspended() const
 	return m_suspended;
 }
 
-std::optional<OvAudio::Data::SoundHandle> OvAudio::Core::AudioEngine::PlaySound(const OvAudio::Resources::Sound& p_sound, bool p_autoPlay, bool p_looped, bool p_track)
+OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play(
+	const Resources::Sound& p_sound,
+	OvTools::Utils::OptRef<const OvMaths::FVector3> p_position
+)
 {
 	if (!IsValid())
 	{
@@ -106,66 +133,37 @@ std::optional<OvAudio::Data::SoundHandle> OvAudio::Core::AudioEngine::PlaySound(
 		return std::nullopt;
 	}
 
-	auto handle = m_soloudEngine->play(*p_sound.sound);
+	auto handle =
+		p_position.has_value() ?
+		m_backend->play3d(*p_sound.sound, p_position->x, p_position->y, p_position->z) :
+		m_backend->play(*p_sound.sound);
 
-	if (p_track)
+	if (!m_backend->isValidVoiceHandle(handle))
 	{
-		if (m_soloudEngine->isValidVoiceHandle(handle))
-		{
-			return handle;
-		}
-		
 		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
+		std::nullopt;
+	}
+
+	return m_soundRegistry.CreateInstance(*m_backend, handle);
+}
+
+OvTools::Utils::OptRef<OvAudio::Entities::AudioListener> OvAudio::Core::AudioEngine::FindMainListener(bool p_includeDisabled) const
+{
+	for (auto& listener : m_audioListeners | std::views::reverse)
+	{
+		if (p_includeDisabled || listener.get().IsEnabled())
+		{
+			return listener.get();
+		}
 	}
 
 	return std::nullopt;
-}
-
-std::optional<OvAudio::Data::SoundHandle> OvAudio::Core::AudioEngine::PlaySpatialSound(const OvAudio::Resources::Sound& p_sound, bool p_autoPlay, bool p_looped, const OvMaths::FVector3& p_position, bool p_track)
-{
-	if (!IsValid())
-	{
-		OVLOG_WARNING("Unable to play \"" + p_sound.path + "\". Audio engine is not valid");
-		return std::nullopt;
-	}
-
-	auto handle = m_soloudEngine->play3d(*p_sound.sound, p_position.x, p_position.y, p_position.z);
-
-	if (p_track)
-	{
-		if (m_soloudEngine->isValidVoiceHandle(handle))
-		{
-			return handle;
-		}
-
-		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
-	}
-
-	return std::nullopt;
-}
-
-std::optional<std::pair<OvMaths::FVector3, OvMaths::FVector3>> OvAudio::Core::AudioEngine::GetListenerInformation(bool p_considerDisabled) const
-{
-	for (auto listener : m_audioListeners)
-	{
-		if (listener.get().IsEnabled() || p_considerDisabled)
-		{
-			auto& transform = m_audioListeners.back().get().GetTransform();
-			return
-			{{
-				transform.GetWorldPosition(),
-				transform.GetWorldForward() * -1.0f
-			}};
-		}
-	}
-
-	return {};
 }
 
 SoLoud::Soloud& OvAudio::Core::AudioEngine::GetBackend() const
 {
 	// TODO: assert if no backend
-	return *m_soloudEngine;
+	return *m_backend;
 }
 
 void OvAudio::Core::AudioEngine::Consider(OvAudio::Entities::AudioSource & p_audioSource)

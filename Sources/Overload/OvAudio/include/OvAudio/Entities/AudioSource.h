@@ -10,6 +10,7 @@
 #include <optional>
 
 #include <OvAudio/Data/SoundHandle.h>
+#include <OvAudio/Data/SoundInstance.h>
 #include <OvAudio/Resources/Sound.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FTransform.h>
@@ -43,9 +44,9 @@ namespace OvAudio::Entities
 		~AudioSource();
 
 		/**
-		* Apply the AudioSource position to the tracked sound
+		* Returns the AudioSource transform
 		*/
-		void UpdateTrackedSoundPosition();
+		const OvMaths::FTransform& GetTransform();
 
 		/**
 		* Apply every AudioSource settings to the currently tracked sound
@@ -55,12 +56,12 @@ namespace OvAudio::Entities
 		/**
 		* Returns true if a sound is currently being tracked
 		*/
-		bool IsTrackingSound() const;
+		bool IsPlaying() const;
 
 		/**
 		* Returns the currently tracked sound if any, or nullptr
 		*/
-		std::optional<Data::SoundHandle> GetSoundHandle() const;
+		OvTools::Utils::OptRef<Data::SoundInstance> GetSoundInstance() const;
 
 		/**
 		* Defines the audio source volume
@@ -119,11 +120,6 @@ namespace OvAudio::Entities
 		float GetPitch() const;
 
 		/**
-		* Returns true if the audio source sound has finished
-		*/
-		bool IsFinished() const;
-
-		/**
 		* Returns true if the audio source is spatialized
 		*/
 		bool IsSpatial() const;
@@ -154,28 +150,21 @@ namespace OvAudio::Entities
 		*/
 		void Stop();
 
-		/**
-		* Stop the audio source and destroy the tracked sound
-		*/
-		void StopAndDestroyTrackedSound();
-
 	public:
 		static OvTools::Eventing::Event<AudioSource&> CreatedEvent;
 		static OvTools::Eventing::Event<AudioSource&> DestroyedEvent;
 
 	private:
 		Core::AudioEngine& m_engine;
-		std::optional<Data::SoundHandle> m_handle;
-
-		/* AudioSource settings */
-		float	m_volume				= 1.0f;
-		float	m_pan					= 0.0f;
-		bool	m_looped				= false;
-		float	m_pitch					= 1.0f;
-		bool	m_spatial				= false;
-		float	m_attenuationThreshold	= 1.0f;
-
-		/* Transform stuff */
 		OvTools::Utils::ReferenceOrValue<OvMaths::FTransform> m_transform;
+		OvTools::Utils::OptRef<Data::SoundInstance> m_instance;
+
+		// Sound settings
+		bool m_spatial = false;
+		float m_volume = 1.0f;
+		float m_pan = 0.0f;
+		bool m_looped = false;
+		float m_pitch = 1.0f;
+		float m_attenuationThreshold = 1.0f;
 	};
 }

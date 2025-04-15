@@ -119,7 +119,7 @@ OvGame::Core::Context::Context() :
 	uiManager->EnableDocking(false);
 
 	/* Audio */
-	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>(projectAssetsPath);
+	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>();
 
 	/* Physics engine */
 	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, projectSettings.Get<float>("gravity"), 0.0f } });

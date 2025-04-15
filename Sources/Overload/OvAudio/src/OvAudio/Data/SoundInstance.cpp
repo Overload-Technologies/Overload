@@ -74,10 +74,15 @@ void OvAudio::Data::SoundInstance::SetAttenuationModel(OvAudio::Settings::EAtten
 
 void OvAudio::Data::SoundInstance::SetAttenuationThreshold(float p_distance)
 {
+	// Matches irrKlang default value for compatibility.
+	// Don't change this value if you don't know what you are doing:
+	// This value causes the sound to stop attenuating after it reaches the max distance.
+	constexpr float kMaxDistance = 1000000000.0f;
+
 	if (m_spatial)
 	{
 		Validate();
-		m_backend.set3dSourceMinMaxDistance(m_handle, p_distance, 1000.0f); // TODO: expose max distance
+		m_backend.set3dSourceMinMaxDistance(m_handle, p_distance, kMaxDistance);
 	}
 }
 

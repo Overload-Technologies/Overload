@@ -63,13 +63,33 @@ namespace OvAudio::Core
 		bool IsSuspended() const;
 
 		/**
-		* Play a sound in and return a SoundInstance if successful
+		* Play a 2D sound in and return a SoundInstance if successful
 		* @param p_sound
-		* @param p_position (if set, the sound will be spatialized)
+		* @param p_pan
+		* @param p_volume
+		* @param p_startPaused
 		*/
-		std::shared_ptr<OvAudio::Data::SoundInstance> Play(
+		std::shared_ptr<OvAudio::Data::SoundInstance> Play2D(
 			const Resources::Sound& p_sound,
-			OvTools::Utils::OptRef<const OvMaths::FVector3> p_position = std::nullopt
+			float p_pan,
+			std::optional<float> p_volume = std::nullopt,
+			bool p_startPaused = false
+		);
+
+		/**
+		* Play a 3D (spatial) sound and return a SoundInstance if successful
+		* @param p_sound
+		* @param p_position
+		* @param p_velocity
+		* @param p_volume
+		* @param p_startPaused
+		*/
+		std::shared_ptr<OvAudio::Data::SoundInstance> Play3D(
+			const Resources::Sound& p_sound,
+			const OvMaths::FVector3& p_position,
+			const OvMaths::FVector3& p_velocity,
+			std::optional<float> p_volume = std::nullopt,
+			bool p_startPaused = false
 		);
 
 		/**

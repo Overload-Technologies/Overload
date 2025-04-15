@@ -54,7 +54,7 @@ bool OvAudio::Entities::AudioSource::IsPlaying() const
 void OvAudio::Entities::AudioSource::SetSpatial(bool p_value)
 {
 	m_spatial = p_value;
-	// TODO: Cannot currently change the spatialization of a sound instance
+	// TODO: Cannot currently change the spatialization mode of a sound instance
 }
 
 void OvAudio::Entities::AudioSource::SetAttenuationThreshold(float p_distance)
@@ -103,8 +103,6 @@ void OvAudio::Entities::AudioSource::SetPitch(float p_pitch)
 
 	if (HasSound())
 	{
-		// TODO: Check if we should clamp pitch like with irrklang?
-		// m_trackedSound->GetTrack()->setPlaybackSpeed(p_pitch < 0.01f ? 0.01f : p_pitch);
 		m_instance->SetPitch(p_pitch);
 	}
 }
@@ -152,36 +150,38 @@ float OvAudio::Entities::AudioSource::GetPitch() const
 
 void OvAudio::Entities::AudioSource::Play(const Resources::Sound& p_sound)
 {
-	// Stops and destroys the previous sound (If any)
 	Stop();
 
-	// Play a sound and stores the instance
 	if (m_spatial)
 	{
-		m_instance = m_engine.Play(p_sound, m_transform->GetWorldPosition());
+		m_instance = m_engine.Play3D(
+			p_sound,
+			m_transform->GetWorldPosition(),
+			OvMaths::FVector3::Zero, // TODO: Add support for non-zero velocity
+			m_volume,
+			true
+		);
+
+		m_instance->SetAttenuationThreshold(m_attenuationThreshold);
+		m_instance->SetAttenuationModel(
+			Settings::EAttenuationModel::EXPONENTIAL_DISTANCE // TODO: Expose attenuation model
+		);
 	}
 	else
 	{
-		m_instance = m_engine.Play(p_sound);
+		m_instance = m_engine.Play2D(p_sound, m_pan, m_volume, true);
 	}
 
-	// Overrides sound settings with whatever is set in the AudioSource
-	m_instance->SetVolume(m_volume);
-	m_instance->SetPan(m_pan);
 	m_instance->SetLooped(m_looped);
 	m_instance->SetPitch(m_pitch);
-	m_instance->SetAttenuationThreshold(m_attenuationThreshold);
-
-	// TODO: Remove that? Or expose this setting?
-	m_engine.GetBackend().set3dSourceAttenuation(m_instance->GetHandle(), SoLoud::AudioSource::ATTENUATION_MODELS::EXPONENTIAL_DISTANCE, 1.0f);
-
+	m_instance->Play();
 }
 
 void OvAudio::Entities::AudioSource::Resume()
 {
 	if (HasSound())
 	{
-		m_instance->SetPause(false);
+		m_instance->Play();
 	}
 }
 
@@ -189,7 +189,7 @@ void OvAudio::Entities::AudioSource::Pause()
 {
 	if (HasSound())
 	{
-		m_instance->SetPause(true);
+		m_instance->Pause();
 	}
 }
 
@@ -203,7 +203,7 @@ void OvAudio::Entities::AudioSource::Stop()
 
 void OvAudio::Entities::AudioSource::Update()
 {
-	if (m_spatial && HasSound())
+	if (HasSound() && m_instance->IsSpatial())
 	{
 		m_instance->SetSpatialParameters(
 			m_transform->GetWorldPosition(),

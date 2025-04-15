@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <format>
 #include <ranges>
 
 #include <soloud.h>
@@ -114,29 +115,55 @@ bool OvAudio::Core::AudioEngine::IsSuspended() const
 	return m_suspended;
 }
 
-std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play(
+std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play2D(const Resources::Sound& p_sound, float p_pan, std::optional<float> p_volume, bool p_startPaused)
+{
+	if (!IsValid())
+	{
+		OVLOG_WARNING(std::format("Unable to play {}. Audio engine is not valid", p_sound.path));
+		return {};
+	}
+
+	const auto handle = m_backend->play(
+		*p_sound.sound,
+		p_volume.value_or(-1.0f),
+		p_pan,
+		p_startPaused
+	);
+
+	return std::make_shared<Data::SoundInstance>(
+		*m_backend,
+		handle,
+		false
+	);
+}
+
+std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play3D(
 	const Resources::Sound& p_sound,
-	OvTools::Utils::OptRef<const OvMaths::FVector3> p_position
+	const OvMaths::FVector3& p_position,
+	const OvMaths::FVector3& p_velocity,
+	std::optional<float> p_volume,
+	bool p_startPaused
 )
 {
 	if (!IsValid())
 	{
-		OVLOG_WARNING("Unable to play \"" + p_sound.path + "\". Audio engine is not valid");
+		OVLOG_WARNING(std::format("Unable to play {}. Audio engine is not valid", p_sound.path));
 		return {};
 	}
 
-	auto handle =
-		p_position.has_value() ?
-		m_backend->play3d(*p_sound.sound, p_position->x, p_position->y, p_position->z) :
-		m_backend->play(*p_sound.sound);
+	const auto handle = m_backend->play3d(
+		*p_sound.sound,
+		p_position.x, p_position.y, p_position.z,
+		p_velocity.x, p_velocity.y, p_velocity.z,
+		p_volume.value_or(-1.0f),
+		p_startPaused
+	);
 
-	if (!m_backend->isValidVoiceHandle(handle))
-	{
-		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
-		return {};
-	}
-
-	return std::make_shared<Data::SoundInstance>(*m_backend, handle);
+	return std::make_shared<Data::SoundInstance>(
+		*m_backend,
+		handle,
+		true
+	);
 }
 
 OvTools::Utils::OptRef<OvAudio::Entities::AudioListener> OvAudio::Core::AudioEngine::FindMainListener(bool p_includeDisabled) const

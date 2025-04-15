@@ -1,16 +1,16 @@
-project "ImGui"
+project "glad"
 	kind "StaticLib"
-	language "C++"
-	cppdialect "C++20"
-	files { "**.h", "**.cpp", "**.lua" }
-	includedirs { "include", dependdir .. "glfw/include", dependdir .. "glad/include" }
+	language "C"
+	cdialect "C17"
+	files { "**.h", "**.c", "**.lua" }
+	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }
-		symbols "On"
+		optimize "On"
 
 	filter { "configurations:Release" }
 		defines { "NDEBUG" }

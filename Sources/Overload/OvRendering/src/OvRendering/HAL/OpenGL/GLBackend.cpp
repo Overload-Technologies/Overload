@@ -6,7 +6,9 @@
 
 #pragma once
 
-#include <GL/glew.h>
+#include <format>
+
+#include <glad.h>
 
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
@@ -208,15 +210,15 @@ namespace OvRendering::HAL
 	template<>
 	std::optional<Data::PipelineState> GLBackend::Init(bool debug)
 	{
-		const GLenum error = glewInit();
+		const int error = gladLoadGL();
 
-		if (error != GLEW_OK)
+		if (error == 0)
 		{
-			std::string message = "Error Init GLEW: ";
-			std::string glewError = reinterpret_cast<const char*>(glewGetErrorString(error));
-			OVLOG_ERROR(message + glewError);
+			OVLOG_ERROR("GLAD failed to initialize");
 			return std::nullopt;
 		}
+
+		OVLOG_INFO(std::format("OpenGL initialized: {}.{}", GL_MAJOR_VERSION, GL_MINOR_VERSION));
 
 		if (debug)
 		{

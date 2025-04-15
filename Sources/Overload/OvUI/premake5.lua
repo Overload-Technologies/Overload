@@ -4,7 +4,7 @@ project "OvUI"
 	cppdialect "C++20"
 	files { "**.h", "**.inl", "**.cpp", "**.lua" }
 	includedirs {
-		dependdir .. "glfw/include", dependdir .. "glew/include", dependdir .. "ImGui/include",
+		dependdir .. "glfw/include", dependdir .. "glad/include", dependdir .. "ImGui/include",
 		"%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include",
 		"include"
 	}

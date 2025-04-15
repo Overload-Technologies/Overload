@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvDebug/Assertion.h>
 #include <OvRendering/HAL/OpenGL/GLBuffer.h>
@@ -28,7 +28,7 @@ template<>
 uint64_t OvRendering::HAL::GLBuffer::Allocate(uint64_t p_size, Settings::EAccessSpecifier p_usage)
 {
 	OVASSERT(IsValid(), "Cannot allocate memory for an invalid buffer");
-	glNamedBufferDataEXT(m_buffer.id, p_size, nullptr, EnumToValue<GLenum>(p_usage));
+	glNamedBufferData(m_buffer.id, p_size, nullptr, EnumToValue<GLenum>(p_usage));
 	return m_buffer.allocatedBytes = p_size;
 }
 

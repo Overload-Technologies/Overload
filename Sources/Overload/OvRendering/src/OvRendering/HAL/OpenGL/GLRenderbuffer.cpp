@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvDebug/Assertion.h>
 #include <OvRendering/HAL/OpenGL/GLRenderbuffer.h>
@@ -47,7 +47,7 @@ void OvRendering::HAL::GLRenderbuffer::Allocate(uint16_t p_width, uint16_t p_hei
 	m_context.height = p_height;
 	m_context.format = p_format;
 
-	glNamedRenderbufferStorageEXT(m_context.id, EnumToValue<GLenum>(m_context.format), m_context.width, m_context.height);
+	glNamedRenderbufferStorage(m_context.id, EnumToValue<GLenum>(m_context.format), m_context.width, m_context.height);
 
 	m_context.allocated = true;
 }

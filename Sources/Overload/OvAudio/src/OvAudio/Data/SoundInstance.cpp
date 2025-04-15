@@ -11,17 +11,28 @@
 #include <OvDebug/Assertion.h>
 #include <OvTools/Utils/EnumMapper.h>
 
+using SoLoudAttenuationType = std::underlying_type<SoLoud::AudioSource::ATTENUATION_MODELS>::type;
+
 template <>
-struct OvTools::Utils::MappingFor<OvAudio::Settings::EAttenuationModel, unsigned int>
+struct OvTools::Utils::MappingFor<OvAudio::Settings::EAttenuationModel, SoLoudAttenuationType>
 {
+	using enum SoLoud::AudioSource::ATTENUATION_MODELS;
 	using EnumType = OvAudio::Settings::EAttenuationModel;
 	using type = std::tuple<
-		EnumValuePair<EnumType::NONE, SoLoud::AudioSource::ATTENUATION_MODELS::NO_ATTENUATION>,
-		EnumValuePair<EnumType::INVERSE_DISTANCE, SoLoud::AudioSource::ATTENUATION_MODELS::INVERSE_DISTANCE>,
-		EnumValuePair<EnumType::LINEAR_DISTANCE, SoLoud::AudioSource::ATTENUATION_MODELS::LINEAR_DISTANCE>,
-		EnumValuePair<EnumType::EXPONENTIAL_DISTANCE, SoLoud::AudioSource::ATTENUATION_MODELS::EXPONENTIAL_DISTANCE>
+		EnumValuePair<EnumType::NONE, NO_ATTENUATION>,
+		EnumValuePair<EnumType::INVERSE_DISTANCE, INVERSE_DISTANCE>,
+		EnumValuePair<EnumType::LINEAR_DISTANCE, LINEAR_DISTANCE>,
+		EnumValuePair<EnumType::EXPONENTIAL_DISTANCE, EXPONENTIAL_DISTANCE>
 	>;
 };
+
+namespace
+{
+	constexpr SoLoudAttenuationType GetAttenuationModelValue(OvAudio::Settings::EAttenuationModel p_model)
+	{
+		return OvTools::Utils::ToValueImpl<OvAudio::Settings::EAttenuationModel, SoLoudAttenuationType>(p_model);
+	}
+}
 
 OvAudio::Data::SoundInstance::SoundInstance(SoLoud::Soloud& p_backend, SoundHandle p_handle, bool p_spatial) :
 	m_backend(p_backend),
@@ -66,7 +77,7 @@ void OvAudio::Data::SoundInstance::SetAttenuationModel(OvAudio::Settings::EAtten
 		Validate();
 		m_backend.set3dSourceAttenuation(
 			m_handle,
-			ToValueImpl<Settings::EAttenuationModel, unsigned int>(p_model),
+			GetAttenuationModelValue(p_model),
 			p_factor
 		);
 	}

@@ -54,17 +54,9 @@ void OvAudio::Core::AudioEngine::Update()
 		return;
 	}
 
-	for (const auto& audioSourceRef : m_audioSources)
+	for (const auto& source : m_audioSources)
 	{
-		auto& source = audioSourceRef.get();
-
-		if (source.IsPlaying())
-		{
-			const auto handle = source.GetSoundInstance()->GetHandle();
-			const auto& transform = source.GetTransform();
-			const auto& worldPos = transform.GetWorldPosition();
-			m_backend->set3dSourcePosition(handle, worldPos.x, worldPos.y, worldPos.z);
-		}
+		source.get().Update();
 	}
 
 	// Defines the listener position using the last listener created (If any)
@@ -92,7 +84,7 @@ void OvAudio::Core::AudioEngine::Suspend()
 	for (auto& audioSourceRef : m_audioSources)
 	{
 		auto& source = audioSourceRef.get();
-		if (source.IsPlaying() && source.GetSoundInstance()->IsPlaying())
+		if (source.HasSound() && !source.IsPaused())
 		{
 			m_suspendedAudioSources.push_back(audioSourceRef);
 			source.Pause();
@@ -107,7 +99,7 @@ void OvAudio::Core::AudioEngine::Unsuspend()
 	for (auto& audioSourceRef : m_audioSources)
 	{
 		auto& source = audioSourceRef.get();
-		if (source.IsPlaying() && !source.GetSoundInstance()->IsPlaying())
+		if (source.HasSound() && source.IsPaused())
 		{
 			source.Resume();
 		}
@@ -122,7 +114,7 @@ bool OvAudio::Core::AudioEngine::IsSuspended() const
 	return m_suspended;
 }
 
-OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play(
+std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play(
 	const Resources::Sound& p_sound,
 	OvTools::Utils::OptRef<const OvMaths::FVector3> p_position
 )
@@ -130,7 +122,7 @@ OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine:
 	if (!IsValid())
 	{
 		OVLOG_WARNING("Unable to play \"" + p_sound.path + "\". Audio engine is not valid");
-		return std::nullopt;
+		return {};
 	}
 
 	auto handle =
@@ -141,10 +133,10 @@ OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine:
 	if (!m_backend->isValidVoiceHandle(handle))
 	{
 		OVLOG_ERROR("Unable to play \"" + p_sound.path + "\"");
-		std::nullopt;
+		return {};
 	}
 
-	return m_soundRegistry.CreateInstance(*m_backend, handle);
+	return std::make_shared<Data::SoundInstance>(*m_backend, handle);
 }
 
 OvTools::Utils::OptRef<OvAudio::Entities::AudioListener> OvAudio::Core::AudioEngine::FindMainListener(bool p_includeDisabled) const

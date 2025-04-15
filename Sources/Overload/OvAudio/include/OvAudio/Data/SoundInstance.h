@@ -7,6 +7,7 @@
 #pragma once
 
 #include <OvAudio/Data/SoundHandle.h>
+#include <OvMaths/FVector3.h>
 
 namespace SoLoud { class Soloud; }
 
@@ -69,12 +70,30 @@ namespace OvAudio::Data
 		/**
 		* Returns true if the sound instance is currently playing
 		*/
-		bool IsPlaying() const;
+		bool IsValid() const;
+
+		/**
+		* Returns true if the sound instance is currently paused
+		*/
+		bool IsPaused() const;
 
 		/**
 		* Returns the handle of the sound instance
 		*/
 		SoundHandle GetHandle() const;
+
+		/**
+		* Updates the position of the sound
+		* @param p_position
+		* @param p_velocity
+		*/
+		void SetSpatialParameters(
+			const OvMaths::FVector3& p_position,
+			const OvMaths::FVector3& p_velocity
+		) const;
+
+	private:
+		void Validate() const;
 
 	private:
 		SoLoud::Soloud& m_backend;

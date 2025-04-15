@@ -10,7 +10,6 @@
 #include <vector>
 
 #include <OvAudio/Data/SoundHandle.h>
-#include <OvAudio/Data/SoundRegistry.h>
 #include <OvAudio/Entities/AudioSource.h>
 #include <OvAudio/Entities/AudioListener.h>
 
@@ -64,11 +63,11 @@ namespace OvAudio::Core
 		bool IsSuspended() const;
 
 		/**
-		* Play a sound in and return a SoundInstance if tracking is asked
+		* Play a sound in and return a SoundInstance if successful
 		* @param p_sound
 		* @param p_position (if set, the sound will be spatialized)
 		*/
-		OvTools::Utils::OptRef<OvAudio::Data::SoundInstance> Play(
+		std::shared_ptr<OvAudio::Data::SoundInstance> Play(
 			const Resources::Sound& p_sound,
 			OvTools::Utils::OptRef<const OvMaths::FVector3> p_position = std::nullopt
 		);
@@ -98,8 +97,6 @@ namespace OvAudio::Core
 		std::vector<std::reference_wrapper<Entities::AudioSource>> m_suspendedAudioSources;
 		std::vector<std::reference_wrapper<Entities::AudioListener>> m_audioListeners;
 
-		Data::SoundRegistry m_soundRegistry;
-		
 		std::unique_ptr<SoLoud::Soloud> m_backend;
 	};
 }

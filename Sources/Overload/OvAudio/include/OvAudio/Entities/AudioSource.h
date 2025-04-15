@@ -54,14 +54,24 @@ namespace OvAudio::Entities
 		void ApplySourceSettingsToTrackedSound();
 
 		/**
-		* Returns true if a sound is currently being tracked
+		* Returns true if the audio source has a sound instance
+		*/
+		bool HasSound() const;
+
+		/**
+		* Returns true if the audio source is currently playing
 		*/
 		bool IsPlaying() const;
 
 		/**
+		* Retrurns true if the audio source is currently paused
+		*/
+		bool IsPaused() const;
+
+		/**
 		* Returns the currently tracked sound if any, or nullptr
 		*/
-		OvTools::Utils::OptRef<Data::SoundInstance> GetSoundInstance() const;
+		std::weak_ptr<Data::SoundInstance> GetSoundInstance() const;
 
 		/**
 		* Defines the audio source volume
@@ -150,6 +160,11 @@ namespace OvAudio::Entities
 		*/
 		void Stop();
 
+		/**
+		* Update the audio source
+		*/
+		void Update();
+
 	public:
 		static OvTools::Eventing::Event<AudioSource&> CreatedEvent;
 		static OvTools::Eventing::Event<AudioSource&> DestroyedEvent;
@@ -157,7 +172,7 @@ namespace OvAudio::Entities
 	private:
 		Core::AudioEngine& m_engine;
 		OvTools::Utils::ReferenceOrValue<OvMaths::FTransform> m_transform;
-		OvTools::Utils::OptRef<Data::SoundInstance> m_instance;
+		std::shared_ptr<Data::SoundInstance> m_instance;
 
 		// Sound settings
 		bool m_spatial = false;

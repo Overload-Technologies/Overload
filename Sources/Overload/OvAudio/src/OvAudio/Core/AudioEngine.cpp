@@ -12,6 +12,7 @@
 #include <soloud_wav.h>
 
 #include <OvAudio/Core/AudioEngine.h>
+#include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
 OvAudio::Core::AudioEngine::AudioEngine()
@@ -124,7 +125,7 @@ std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play2D
 	}
 
 	const auto handle = m_backend->play(
-		*p_sound.sound,
+		*p_sound.audioData,
 		p_volume.value_or(-1.0f),
 		p_pan,
 		p_startPaused
@@ -152,7 +153,7 @@ std::shared_ptr<OvAudio::Data::SoundInstance> OvAudio::Core::AudioEngine::Play3D
 	}
 
 	const auto handle = m_backend->play3d(
-		*p_sound.sound,
+		*p_sound.audioData,
 		p_position.x, p_position.y, p_position.z,
 		p_velocity.x, p_velocity.y, p_velocity.z,
 		p_volume.value_or(-1.0f),
@@ -181,7 +182,7 @@ OvTools::Utils::OptRef<OvAudio::Entities::AudioListener> OvAudio::Core::AudioEng
 
 SoLoud::Soloud& OvAudio::Core::AudioEngine::GetBackend() const
 {
-	// TODO: assert if no backend
+	OVASSERT(IsValid(), "Audio engine is not valid");
 	return *m_backend;
 }
 

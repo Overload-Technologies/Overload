@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvDebug/Logger.h>
 #include <OvRendering/HAL/OpenGL/GLShaderStage.h>

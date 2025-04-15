@@ -75,7 +75,7 @@ Overload applications use the Overload SDK to operate.
 
 ## Dependencies
 Overload depends on a few third-party libraries:
-- OpenGL with GLEW (Graphics API)
+- OpenGL with GLAD (Graphics API)
 - GLFW (Windowing and inputs)
 - Assimp (3D model loader)
 - Bullet3 (Physics)

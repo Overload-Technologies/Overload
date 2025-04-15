@@ -8,11 +8,11 @@
 
 /**
 * Although this is intended as a Null implementation, certain components of the engine rely on OpenGL,
-* such as resource creation, binding, and the user interface. Consequently, GLEW must be initialized to
-* support these functionalities. This implementation exclusively initializes GLEW without making any
+* such as resource creation, binding, and the user interface. Consequently, GLAD must be initialized to
+* support these functionalities. This implementation exclusively initializes GLAD without making any
 * additional calls.
 */
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvRendering/HAL/None/NoneBackend.h>
 
@@ -21,7 +21,7 @@ namespace OvRendering::HAL
 	template<>
 	std::optional<OvRendering::Data::PipelineState> NoneBackend::Init(bool debug)
 	{
-		glewInit(); // <-- initialize GLEW; see comment above the GLEW include directive for more details.
+		gladLoadGL(); // <-- initialize GLAD; see comment above the GLAD include directive for more details.
 		return OvRendering::Data::PipelineState{};
 	}
 

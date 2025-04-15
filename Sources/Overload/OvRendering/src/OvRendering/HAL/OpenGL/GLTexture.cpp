@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvRendering/HAL/OpenGL/GLTexture.h>
 #include <OvRendering/HAL/OpenGL/GLTypes.h>
@@ -78,9 +78,8 @@ void OvRendering::HAL::GLTexture::Allocate(const Settings::TextureDesc& p_desc)
 	}
 	else
 	{
-		glTextureStorage2DEXT(
+		glTextureStorage2D(
 			m_context.id,
-			GL_TEXTURE_2D,
 			desc.useMipMaps ? CalculateMipMapLevels(desc.width, desc.height) : 1,
 			EnumToValue<GLenum>(desc.internalFormat),
 			desc.width,
@@ -91,10 +90,10 @@ void OvRendering::HAL::GLTexture::Allocate(const Settings::TextureDesc& p_desc)
 	// Once the texture is allocated, we don't need to set the parameters again
 	if (!m_textureContext.allocated)
 	{
-		glTextureParameteriEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, EnumToValue<GLenum>(p_desc.horizontalWrap));
-		glTextureParameteriEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, EnumToValue<GLenum>(p_desc.verticalWrap));
-		glTextureParameteriEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, EnumToValue<GLenum>(p_desc.minFilter));
-		glTextureParameteriEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, EnumToValue<GLenum>(p_desc.magFilter));
+		glTextureParameteri(m_context.id, GL_TEXTURE_WRAP_S, EnumToValue<GLenum>(p_desc.horizontalWrap));
+		glTextureParameteri(m_context.id, GL_TEXTURE_WRAP_T, EnumToValue<GLenum>(p_desc.verticalWrap));
+		glTextureParameteri(m_context.id, GL_TEXTURE_MIN_FILTER, EnumToValue<GLenum>(p_desc.minFilter));
+		glTextureParameteri(m_context.id, GL_TEXTURE_MAG_FILTER, EnumToValue<GLenum>(p_desc.magFilter));
 	}
 
 	m_textureContext.allocated = true;
@@ -126,9 +125,8 @@ void OvRendering::HAL::GLTexture::Upload(const void* p_data, Settings::EFormat p
 	}
 	else
 	{
-		glTextureSubImage2DEXT(
+		glTextureSubImage2D(
 			m_context.id,
-			GL_TEXTURE_2D,
 			0,
 			0,
 			0,
@@ -173,7 +171,7 @@ void OvRendering::HAL::GLTexture::GenerateMipmaps() const
 	
 	if (IsValidMipMapFilter(m_textureContext.desc.minFilter))
 	{
-		glGenerateTextureMipmapEXT(m_context.id, GL_TEXTURE_2D);
+		glGenerateTextureMipmap(m_context.id);
 	}
 	else
 	{
@@ -186,7 +184,7 @@ template<>
 void OvRendering::HAL::GLTexture::SetBorderColor(const OvMaths::FVector4& p_color)
 {
 	OVASSERT(IsValid(), "Cannot set border color for a texture before it has been allocated");
-	glTextureParameterfvEXT(m_context.id, GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &p_color.x);
+	glTextureParameterfv(m_context.id, GL_TEXTURE_BORDER_COLOR, &p_color.x);
 }
 
 template<>

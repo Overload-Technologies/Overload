@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvRendering/Settings/ECullFace.h>
 #include <OvRendering/Settings/ETextureFilteringMode.h>
@@ -188,7 +188,6 @@ struct OvTools::Utils::MappingFor<OvRendering::Settings::EPixelDataFormat, GLenu
 {
 	using EnumType = OvRendering::Settings::EPixelDataFormat;
 	using type = std::tuple<
-		EnumValuePair<EnumType::COLOR_INDEX, GL_COLOR_INDEX>,
 		EnumValuePair<EnumType::STENCIL_INDEX, GL_STENCIL_INDEX>,
 		EnumValuePair<EnumType::DEPTH_COMPONENT, GL_DEPTH_COMPONENT>,
 		EnumValuePair<EnumType::RED, GL_RED>,
@@ -198,9 +197,7 @@ struct OvTools::Utils::MappingFor<OvRendering::Settings::EPixelDataFormat, GLenu
 		EnumValuePair<EnumType::RGB, GL_RGB>,
 		EnumValuePair<EnumType::BGR, GL_BGR>,
 		EnumValuePair<EnumType::RGBA, GL_RGBA>,
-		EnumValuePair<EnumType::BGRA, GL_BGRA>,
-		EnumValuePair<EnumType::LUMINANCE, GL_LUMINANCE>,
-		EnumValuePair<EnumType::LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA>
+		EnumValuePair<EnumType::BGRA, GL_BGRA>
 	>;
 };
 
@@ -211,7 +208,6 @@ struct OvTools::Utils::MappingFor<OvRendering::Settings::EPixelDataType, GLenum>
 	using type = std::tuple<
 		EnumValuePair<EnumType::BYTE, GL_BYTE>,
 		EnumValuePair<EnumType::UNSIGNED_BYTE, GL_UNSIGNED_BYTE>,
-		EnumValuePair<EnumType::BITMAP, GL_BITMAP>,
 		EnumValuePair<EnumType::SHORT, GL_SHORT>,
 		EnumValuePair<EnumType::UNSIGNED_SHORT, GL_UNSIGNED_SHORT>,
 		EnumValuePair<EnumType::INT, GL_INT>,

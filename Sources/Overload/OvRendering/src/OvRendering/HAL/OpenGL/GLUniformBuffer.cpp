@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <GL/glew.h>
+#include <glad.h>
 
 #include <OvRendering/HAL/OpenGL/GLUniformBuffer.h>
 

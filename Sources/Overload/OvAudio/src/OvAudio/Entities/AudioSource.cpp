@@ -162,24 +162,30 @@ void OvAudio::Entities::AudioSource::Play(const Resources::Sound& p_sound)
 			true
 		);
 
-		m_instance->SetAttenuationThreshold(m_attenuationThreshold);
-		m_instance->SetAttenuationModel(
-			Settings::EAttenuationModel::EXPONENTIAL_DISTANCE // TODO: Expose attenuation model
-		);
+		if (m_instance)
+		{
+			m_instance->SetAttenuationThreshold(m_attenuationThreshold);
+			m_instance->SetAttenuationModel(
+				Settings::EAttenuationModel::EXPONENTIAL_DISTANCE // TODO: Expose attenuation model
+			);
 
-		// Potentially expensive? But necessary so that the settings set above are applied.
-		// Otherwise some spatialized sounds may play without attenuation until the next update.
-		// This isn't ideal, but I couldn't find a better way to do it (no `update3dAudio` for a single sound instance).
-		m_engine.GetBackend().update3dAudio();
+			// Potentially expensive? But necessary so that the settings set above are applied.
+			// Otherwise some spatialized sounds may play without attenuation until the next update.
+			// This isn't ideal, but I couldn't find a better way to do it (no `update3dAudio` for a single sound instance).
+			m_engine.GetBackend().update3dAudio();
+		}
 	}
 	else
 	{
 		m_instance = m_engine.Play2D(p_sound, m_pan, m_volume, true);
 	}
 
-	m_instance->SetLooped(m_looped);
-	m_instance->SetPitch(m_pitch);
-	m_instance->Play();
+	if (m_instance)
+	{
+		m_instance->SetLooped(m_looped);
+		m_instance->SetPitch(m_pitch);
+		m_instance->Play();
+	}
 }
 
 void OvAudio::Entities::AudioSource::Resume()

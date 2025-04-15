@@ -10,10 +10,10 @@ project "OvGame"
 		"include"
 	}
 
-	libdirs { dependdir .. "glfw/lib", dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib", dependdir .. "glew/lib", dependdir .. "assimp/lib", dependdir .. "irrKlang/lib" }
+	libdirs {  dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib", dependdir .. "glew/lib", dependdir .. "assimp/lib", dependdir .. "irrKlang/lib" }
 	links {
-		"assimp-vc143-mt.lib", "Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "glfw3dll.lib", "irrKlang.lib", "opengl32.lib",
-		"ImGui", "tinyxml2", "lua",
+		"assimp-vc143-mt.lib", "Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "irrKlang.lib", "opengl32.lib",
+		"ImGui", "tinyxml2", "lua", "glfw",
 		"OvAnalytics", "OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
     }
 

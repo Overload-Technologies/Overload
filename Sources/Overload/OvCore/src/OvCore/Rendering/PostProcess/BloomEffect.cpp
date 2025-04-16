@@ -49,7 +49,7 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
 
 	// Step 1: Extract bright spots from the source
-	m_brightnessMaterial.Set("_Threshold", bloomSettings.threshold, true);
+	m_brightnessMaterial.SetProperty("_Threshold", bloomSettings.threshold, true);
 	m_renderer.Blit(p_pso, p_src, m_bloomPingPong[0], m_brightnessMaterial);
 
 	// Step 2: Apply gaussian blur on bright spots (horizontal and vertical)
@@ -60,9 +60,9 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 		auto& currentSrc = horizontal ? m_bloomPingPong[0] : m_bloomPingPong[1];
 		auto& currentDst = horizontal ? m_bloomPingPong[1] : m_bloomPingPong[0];
 
-		m_blurMaterial.Set("_Horizontal", horizontal ? true : false, true);
-		m_blurMaterial.Set("_BlurSize", bloomSettings.radius, true);
-		m_blurMaterial.Set("_KernelSize", bloomSettings.kernelSize, true);
+		m_blurMaterial.SetProperty("_Horizontal", horizontal ? true : false, true);
+		m_blurMaterial.SetProperty("_BlurSize", bloomSettings.radius, true);
+		m_blurMaterial.SetProperty("_KernelSize", bloomSettings.kernelSize, true);
 		m_renderer.Blit(p_pso, currentSrc, currentDst, m_blurMaterial);
 
 		horizontal = !horizontal;
@@ -70,7 +70,7 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 
 	// Step 3: Combine bloom with original framebuffer
 	const auto bloomTex = m_bloomPingPong[0].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
-	m_bloomMaterial.Set("_BloomTexture", bloomTex, true);
-	m_bloomMaterial.Set("_BloomIntensity", bloomSettings.intensity, true);
+	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value(), true);
+	m_bloomMaterial.SetProperty("_BloomIntensity", bloomSettings.intensity, true);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);
 }

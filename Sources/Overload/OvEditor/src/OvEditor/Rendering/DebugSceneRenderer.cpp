@@ -78,8 +78,8 @@ public:
 	DebugCamerasRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
 	{
 		m_cameraMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Lambert.ovfx"]);
-		m_cameraMaterial.Set("u_Diffuse", FVector4(0.0f, 0.3f, 0.7f, 1.0f));
-		m_cameraMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+		m_cameraMaterial.SetProperty("u_Diffuse", FVector4{ 0.0f, 0.3f, 0.7f, 1.0f });
+		m_cameraMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 	}
 
 protected:
@@ -112,7 +112,7 @@ public:
 	DebugLightsRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
 	{
 		m_lightMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Billboard"));
-		m_lightMaterial.Set("u_Diffuse", FVector4(1.f, 1.f, 0.5f, 0.5f));
+		m_lightMaterial.SetProperty("u_Diffuse", FVector4{ 1.f, 1.f, 0.5f, 0.5f });
 		m_lightMaterial.SetBackfaceCulling(false);
 		m_lightMaterial.SetBlendable(true);
 		m_lightMaterial.SetDepthTest(false);
@@ -123,7 +123,7 @@ protected:
 	{
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
-		m_lightMaterial.Set<float>("u_Scale", OvEditor::Settings::EditorSettings::LightBillboardScale * 0.1f);
+		m_lightMaterial.SetProperty("u_Scale", OvEditor::Settings::EditorSettings::LightBillboardScale * 0.1f);
 
 		for (auto light : sceneDescriptor.scene.GetFastAccessComponents().lights)
 		{
@@ -142,8 +142,8 @@ protected:
 					nullptr;
 
 				const auto& lightColor = light->GetColor();
-				m_lightMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", lightTexture);
-				m_lightMaterial.Set<OvMaths::FVector4>("u_Diffuse", OvMaths::FVector4(lightColor.x, lightColor.y, lightColor.z, 0.75f));
+				m_lightMaterial.SetProperty("u_DiffuseMap", lightTexture);
+				m_lightMaterial.SetProperty("u_Diffuse", OvMaths::FVector4(lightColor.x, lightColor.y, lightColor.z, 0.75f));
 
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_lightMaterial, modelMatrix);

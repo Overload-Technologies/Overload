@@ -24,11 +24,11 @@ OvEditor::Rendering::OutlineRenderFeature::OutlineRenderFeature(OvRendering::Cor
 	m_stencilFillMaterial.SetBackfaceCulling(true);
 	m_stencilFillMaterial.SetDepthTest(false);
 	m_stencilFillMaterial.SetColorWriting(false);
-	m_stencilFillMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_stencilFillMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 
 	/* Outline Material */
 	m_outlineMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_outlineMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_outlineMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 	m_outlineMaterial.SetDepthTest(false);
 }
 
@@ -73,7 +73,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawOutlinePass(OvCore::ECS::Act
 	pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(p_thickness);
 
 	// Prepare the outline material
-	m_outlineMaterial.Set("u_Diffuse", p_color);
+	m_outlineMaterial.SetProperty("u_Diffuse", p_color);
 
 	DrawActorOutline(pso, p_actor);
 }

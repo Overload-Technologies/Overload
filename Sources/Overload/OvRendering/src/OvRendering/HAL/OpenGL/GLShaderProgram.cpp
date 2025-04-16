@@ -23,10 +23,9 @@ namespace
 }
 
 template<>
-OvRendering::HAL::GLShaderProgram::TShaderProgram() : m_context{
-	.id = glCreateProgram()
-}
+OvRendering::HAL::GLShaderProgram::TShaderProgram() : m_context{ .id = glCreateProgram() }
 {
+
 }
 
 template<>
@@ -113,7 +112,6 @@ OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::GLShaderProgram::Li
 	};
 }
 
-
 #define DECLARE_GET_UNIFORM_FUNCTION(type, glType, func) \
 template<> \
 template<> \
@@ -194,27 +192,30 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 
 		if (!IsEngineUBOMember(name))
 		{
-			std::any defaultValue;
+			const std::any uniformValue = [&]() -> std::any {
+				switch (uniformType)
+				{
+					using enum Settings::EUniformType;
+					case BOOL: return GetUniform<int>(name);
+					case INT: return GetUniform<int>(name);
+					case FLOAT: return GetUniform<float>(name);
+					case FLOAT_VEC2: return GetUniform<OvMaths::FVector2>(name);
+					case FLOAT_VEC3: return GetUniform<OvMaths::FVector3>(name);
+					case FLOAT_VEC4: return GetUniform<OvMaths::FVector4>(name);
+					case FLOAT_MAT4: return GetUniform<OvMaths::FMatrix4>(name);
+					case SAMPLER_2D: return std::make_any<Resources::Texture*>(nullptr);
+					default: return std::nullopt;
+				}
+			}();
 
-			switch (uniformType)
-			{
-			case Settings::EUniformType::BOOL: defaultValue = GetUniform<int>(name); break;
-			case Settings::EUniformType::INT: defaultValue = GetUniform<int>(name); break;
-			case Settings::EUniformType::FLOAT: defaultValue = GetUniform<float>(name); break;
-			case Settings::EUniformType::FLOAT_VEC2: defaultValue = GetUniform<OvMaths::FVector2>(name); break;
-			case Settings::EUniformType::FLOAT_VEC3: defaultValue = GetUniform<OvMaths::FVector3>(name); break;
-			case Settings::EUniformType::FLOAT_VEC4: defaultValue = GetUniform<OvMaths::FVector4>(name); break;
-			case Settings::EUniformType::FLOAT_MAT4: defaultValue = GetUniform<OvMaths::FMatrix4>(name); break;
-			case Settings::EUniformType::SAMPLER_2D: defaultValue = std::make_any<Resources::Texture*>(nullptr); break;
-			}
-
-			if (defaultValue.has_value())
+			// Only add the uniform if it has a value (unsupported uniform types will be ignored)
+			if (uniformValue.has_value())
 			{
 				m_context.uniforms.push_back(Settings::UniformInfo{
 					.type = uniformType,
 					.name = name,
 					.location = m_context.GetUniformLocation(name),
-					.defaultValue = defaultValue
+					.defaultValue = uniformValue
 				});
 			}
 		}

@@ -26,6 +26,13 @@ namespace OvRendering::Resources::Loaders
 		ShaderLoader() = delete;
 
 		/**
+		* Enable or disable logging for errors and success
+		* @param p_logErrors
+		* @param p_logSuccess
+		*/
+		static void SetLoggingSettings(bool p_logErrors, bool p_logSuccess);
+
+		/**
 		* Create a shader
 		* @param p_filePath
 		* @param p_pathParser

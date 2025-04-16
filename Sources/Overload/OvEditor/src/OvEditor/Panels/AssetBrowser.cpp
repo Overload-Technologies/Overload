@@ -622,6 +622,7 @@ namespace
 			{
 				auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
+				OvRendering::Resources::Loaders::ShaderLoader::SetLoggingSettings(true, true);
 				if (shaderManager.IsResourceRegistered(resourcePath))
 				{
 					// Trying to recompile
@@ -636,6 +637,7 @@ namespace
 						OVLOG_INFO("[COMPILE] \"" + filePath + "\": Success!");
 					}
 				}
+				OvRendering::Resources::Loaders::ShaderLoader::SetLoggingSettings(false, false);
 			};
 		}
 	};

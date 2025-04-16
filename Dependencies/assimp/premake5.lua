@@ -12,7 +12,8 @@
 --  2.2 Copy the "include/assimp/revision.h.in" file to "include/assimp/revision.h" and replace the placeholders with the proper version numbers.
 --	2.3 Copy the "contrib/zlib/zconf.h.in" file to "contrib/zlib/zconf.h" and edit it to your liking.
 --
--- 3. Edit the 'files { ... }' and 'defines { ... }' depending on which importers/exporters you need. By default I enabled COLLADA, OBJ, FBX and ASSBIN (assimp binary, good for caching)
+-- 3. Edit the 'files { ... }' and 'defines { ... }' depending on which importers/exporters you need. By default, Overload uses OBJ and FBX.
+-- 4. (optional) remove the unused dependencies from `contrib/` and unused importers/exporters from `code/AssetLib/`
 
 project 'assimp'
 	kind 'StaticLib'
@@ -28,7 +29,6 @@ project 'assimp'
 		'contrib/',
 		'contrib/irrXML/',
 		'contrib/unzip/',
-		'contrib/rapidjson/include/',
 		'contrib/pugixml/src/',
 		'contrib/zlib/',
 		'contrib/utf8cpp/source',
@@ -37,30 +37,26 @@ project 'assimp'
 	}
 
 	files {
+		-- Premake5 file
+		"Premake5.lua",
+
 		-- Headers (not required to build, but useful for IDEs)
 		'include/**',
 
 		-- Dependencies
 		'contrib/unzip/**',
-		'contrib/irrXML/**',
 		'contrib/zlib/*',
+
 		-- Common
 		'code/Common/**',
 		'code/PostProcessing/**',
 		'code/Material/**',
 		'code/CApi/**',
 		'code/Geometry/**',
-		-- Importers
-		'code/AssetLib/IQM/**',
-		'code/AssetLib/Assbin/**',
 
-		'code/AssetLib/Collada/**',
+		-- Importers
 		'code/AssetLib/Obj/**',
-		-- 'code/AssetLib/Blender/**', 'contrib/poly2tri/poly2tri/**',
 		'code/AssetLib/FBX/**',
-		-- 'code/glTF2/**',
-		-- 'code/glTF/**',
-		'code/Assbin/**' -- Very fast format to parse/write, useful for caching
 	}
 	-- Importers
 	defines {
@@ -71,19 +67,20 @@ project 'assimp'
 		'ASSIMP_BUILD_NO_AMF_IMPORTER',
 		'ASSIMP_BUILD_NO_ASE_IMPORTER',
 		'ASSIMP_BUILD_NO_USD_IMPORTER',
-		-- 'ASSIMP_BUILD_NO_ASSBIN_IMPORTER'
+		'ASSIMP_BUILD_NO_ASSBIN_IMPORTER',
 		'ASSIMP_BUILD_NO_B3D_IMPORTER',
 		'ASSIMP_BUILD_NO_BLEND_IMPORTER',
 		'ASSIMP_BUILD_NO_BVH_IMPORTER',
 		'ASSIMP_BUILD_NO_C4D_IMPORTER',
 		'ASSIMP_BUILD_NO_COB_IMPORTER',
-		-- 'ASSIMP_BUILD_NO_COLLADA_IMPORTER',
+		'ASSIMP_BUILD_NO_COLLADA_IMPORTER',
 		'ASSIMP_BUILD_NO_CSM_IMPORTER',
 		'ASSIMP_BUILD_NO_DXF_IMPORTER',
 		-- 'ASSIMP_BUILD_NO_FBX_IMPORTER',
 		'ASSIMP_BUILD_NO_GLTF_IMPORTER',
 		'ASSIMP_BUILD_NO_HMP_IMPORTER',
 		'ASSIMP_BUILD_NO_IFC_IMPORTER',
+		'ASSIMP_BUILD_NO_IQM_IMPORTER',
 		'ASSIMP_BUILD_NO_IRR_IMPORTER',
 		'ASSIMP_BUILD_NO_IRRMESH_IMPORTER',
 		'ASSIMP_BUILD_NO_LWO_IMPORTER',
@@ -125,7 +122,7 @@ project 'assimp'
 		'ASSIMP_BUILD_NO_PLY_EXPORTER',
 		'ASSIMP_BUILD_NO_3DS_EXPORTER',
 		'ASSIMP_BUILD_NO_GLTF_EXPORTER',
-		-- 'ASSIMP_BUILD_NO_ASSBIN_EXPORTER',
+		'ASSIMP_BUILD_NO_ASSBIN_EXPORTER',
 		'ASSIMP_BUILD_NO_ASSXML_EXPORTER',
 		'ASSIMP_BUILD_NO_X3D_EXPORTER',
 		'ASSIMP_BUILD_NO_FBX_EXPORTER',

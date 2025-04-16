@@ -1,8 +1,8 @@
 -- How to use:
 -- 0. Get assimp from https://github.com/assimp/assimp
--- 1. Copy the code/ contrib/ and include/ folders and add this Premake5.lua file to the root of the assimp folder. The folder structure should look like this:
+-- 1. Copy the code/ contrib/ and include/ folders and add this premake5.lua file to the root of the assimp folder. The folder structure should look like this:
 --
---		Premake5.lua
+--		premake5.lua
 --		code/
 --		contrib/
 --		include/

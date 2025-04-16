@@ -35,7 +35,7 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	if (metaFile.GetOrDefault("TRANSFORM_UV_COORDS",		false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::TRANSFORM_UV_COORDS;
 	if (metaFile.GetOrDefault("FIND_INSTANCES",				true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FIND_INSTANCES;
 	if (metaFile.GetOrDefault("OPTIMIZE_MESHES",			true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::OPTIMIZE_MESHES;
-	if (metaFile.GetOrDefault("OPTIMIZE_GRAPH",				true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::OPTIMIZE_GRAPH;
+	if (metaFile.GetOrDefault("OPTIMIZE_GRAPH",				false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::OPTIMIZE_GRAPH;
 	if (metaFile.GetOrDefault("FLIP_UVS",					false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FLIP_UVS;
 	if (metaFile.GetOrDefault("FLIP_WINDING_ORDER",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FLIP_WINDING_ORDER;
 	if (metaFile.GetOrDefault("SPLIT_BY_BONE_COUNT",		false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::SPLIT_BY_BONE_COUNT;

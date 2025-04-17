@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <numeric>
 #include <optional>
 #include <ranges>
 #include <span>
@@ -26,6 +27,16 @@
 
 namespace
 {
+	namespace Grammar
+	{
+		constexpr std::string_view kFeatureToken = "#feature";
+		constexpr std::string_view kVertexShaderToken = "#shader vertex";
+		constexpr std::string_view kFragmentShaderToken = "#shader fragment";
+		constexpr std::string_view kIncludeToken = "#include";
+		constexpr std::string_view kDefineToken = "#define";
+		constexpr std::string_view kVersionToken = "#version";
+	}
+
 	struct ShaderInputInfo
 	{
 		std::string path;
@@ -81,28 +92,31 @@ namespace
 		return std::filesystem::path{ p_path }.stem().string();
 	}
 
+	std::string Trim(const std::string_view p_str)
+	{
+		auto view =
+			p_str |
+			std::views::drop_while(isspace) |
+			std::views::reverse |
+			std::views::drop_while(isspace) |
+			std::views::reverse;
+
+		return std::string{ view.begin(), view.end() };
+	}
+
 	std::string FeatureSetToString(const OvRendering::Resources::Shader::FeatureSet& features)
 	{
-		if (features.size() == 0)
+		if (!features.empty())
 		{
-			return {};
+			return std::format("({})", std::accumulate(
+				std::next(features.begin()), features.end(), *features.begin(),
+				[](const auto& a, const auto& b) {
+					return std::format("{}|{}", a, b);
+				}
+			));
 		}
 
-		std::string result = " (";
-
-		bool first = true;
-		for (const auto& feature : features)
-		{
-			if (!first)
-			{
-				result += "|";
-			}
-			result += feature;
-			first = false;
-		}
-
-		result += ")";
-		return result;
+		return std::string{};
 	}
 
 	std::string EnableFeaturesInShaderCode(const std::string& shaderCode, const OvRendering::Resources::Shader::FeatureSet& features)
@@ -116,11 +130,11 @@ namespace
 		std::string definesStr;
 		for (const auto& feature : features)
 		{
-			definesStr += "#define " + feature + "\n";
+			definesStr += std::format("{} {}\n", Grammar::kDefineToken, feature);
 		}
 
 		// Find insertion point after version directive if it exists
-		const size_t versionPos = shaderCode.find("#version");
+		const size_t versionPos = shaderCode.find(Grammar::kVersionToken);
 		if (versionPos == std::string::npos)
 		{
 			// No version directive, prepend defines
@@ -144,15 +158,15 @@ namespace
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
 		const ShaderInputInfo& p_shaderInputInfo,
 		std::span<const ShaderStageDesc> p_stages,
-		const OvRendering::Resources::Shader::FeatureSet& p_features = {},
-		bool p_noLogging = false
+		const OvRendering::Resources::Shader::FeatureSet& p_features,
+		bool p_disableLogging = false
 	)
 	{
 		// Process and compile all shader stages
 		std::vector<ProcessedShaderStage> processedStages;
 		processedStages.reserve(p_stages.size());
 
-		bool allCompiled = true;
+		bool compilationFailed = false;
 
 		for (const auto& stageInput : p_stages)
 		{
@@ -162,7 +176,7 @@ namespace
 
 			if (const auto result = processedStage.stage.Compile(); !result.success)
 			{
-				if (!p_noLogging && __LOGGING_SETTINGS.compilationErrors)
+				if (!p_disableLogging && __LOGGING_SETTINGS.compilationErrors)
 				{
 					OVLOG_ERROR(std::format(
 						"[Shader Compile] {}{}: {}",
@@ -175,9 +189,9 @@ namespace
 					));
 				}
 
-				allCompiled = false;
+				compilationFailed = true;
 			}
-			else if (!p_noLogging && __LOGGING_SETTINGS.compilationSuccess)
+			else if (!p_disableLogging && __LOGGING_SETTINGS.compilationSuccess)
 			{
 				OVLOG_INFO(std::format(
 					"[Shader Compile] {}{}: Compilation successful.",
@@ -190,7 +204,7 @@ namespace
 			}
 		}
 
-		if (!allCompiled)
+		if (compilationFailed)
 		{
 			return nullptr;
 		}
@@ -215,7 +229,7 @@ namespace
 
 		if (linkResult.success)
 		{
-			if (!p_noLogging && __LOGGING_SETTINGS.linkingSuccess)
+			if (!p_disableLogging && __LOGGING_SETTINGS.linkingSuccess)
 			{
 				OVLOG_INFO(std::format(
 					"[Shader Linking] {}{}: {}",
@@ -224,11 +238,12 @@ namespace
 					"Linking successful."
 				));
 			}
+
 			return program;
 		}
 		else
 		{
-			if (!p_noLogging && __LOGGING_SETTINGS.linkingErrors)
+			if (!p_disableLogging && __LOGGING_SETTINGS.linkingErrors)
 			{
 				OVLOG_INFO(std::format(
 					"[Shader Linking] {}{}: {}",
@@ -237,6 +252,7 @@ namespace
 					linkResult.message
 				));
 			}
+
 			return nullptr;
 		}
 	}
@@ -284,23 +300,17 @@ void main()
 		return std::move(program);
 	}
 
-	bool ParseIncludeDirective(const std::string& line, std::string& includeFilePath)
+	std::optional<std::string> ParseIncludeDirective(const std::string_view line)
 	{
-		// Find the position of the opening and closing quotes
-		size_t start = line.find("\"");
-		size_t end = line.find("\"", start + 1);
+		const auto start = line.find('"');
+		const auto end = line.find('"', start + 1);
 
-		// Check if both quotes are found
-		if (start != std::string::npos && end != std::string::npos && end > start)
+		if (start != std::string_view::npos && end != std::string_view::npos && end > start)
 		{
-			// Extract the included file path
-			includeFilePath = line.substr(start + 1, end - start - 1);
-			return true;
+			return std::make_optional<std::string>(line.substr(start + 1, end - start - 1));
 		}
-		else
-		{
-			return false;
-		}
+
+		return std::nullopt;
 	}
 
 	ShaderLoadResult LoadShader(const ShaderInputInfo& p_shaderInputInfo, const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
@@ -318,14 +328,15 @@ void main()
 
 		while (std::getline(file, line))
 		{
-			if (line.find("#include") != std::string::npos)
+			const std::string trimmedLine = Trim(line);
+
+			if (trimmedLine.starts_with(Grammar::kIncludeToken))
 			{
 				// If the line contains #include, process the included file
-				std::string includeFilePath;
-				if (ParseIncludeDirective(line, includeFilePath))
+				if (const auto includeFilePath = ParseIncludeDirective(line))
 				{
 					// Recursively load the included file
-					const std::string realIncludeFilePath = p_pathParser ? p_pathParser(includeFilePath) : includeFilePath;
+					const std::string realIncludeFilePath = p_pathParser ? p_pathParser(includeFilePath.value()) : includeFilePath.value();
 					const auto result = LoadShader(p_shaderInputInfo, realIncludeFilePath, p_pathParser);
 					buffer << result.source << std::endl;
 				}
@@ -334,7 +345,8 @@ void main()
 					OVLOG_ERROR(std::format("[Shader Loading] Invalid #include directive in file: \"{}\"", p_filePath));
 				}
 			}
-			else {
+			else
+			{
 				// If the line does not contain #include, just append it to the buffer
 				buffer << line << std::endl;
 			}
@@ -359,25 +371,15 @@ void main()
 
 		while (std::getline(stream, line))
 		{
-			// Pratical so we can use "starts_with" to check for custom directives
-			auto view =
-				line |
-				std::views::drop_while(isspace) |
-				std::views::reverse |
-				std::views::drop_while(isspace) |
-				std::views::reverse;
+			const std::string trimmedLine = Trim(line);
 
-			const auto trimmedLine = std::string{ view.begin(), view.end()};
-
-			constexpr std::string_view kFeatureToken = "#feature";
-
-			if (trimmedLine.starts_with(kFeatureToken))
+			if (trimmedLine.starts_with(Grammar::kFeatureToken))
 			{
 				std::string featureName;
 				featureName.reserve(16); // Reserve some arbitrary space for the feature name
 
 				for (auto& c : trimmedLine |
-					std::views::drop(kFeatureToken.size()) |
+					std::views::drop(Grammar::kFeatureToken.size()) |
 					std::views::drop_while(isspace) |
 					std::views::take_while([](char c) { return !isspace(c); }))
 				{
@@ -386,11 +388,11 @@ void main()
 
 				features.insert(featureName);
 			}
-			else if (trimmedLine.starts_with("#shader vertex"))
+			else if (trimmedLine.starts_with(Grammar::kVertexShaderToken))
 			{
 				currentType = EShaderType::VERTEX;
 			}
-			else if (trimmedLine.starts_with("#shader fragment"))
+			else if (trimmedLine.starts_with(Grammar::kFragmentShaderToken))
 			{
 				currentType = EShaderType::FRAGMENT;
 			}

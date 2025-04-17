@@ -16,13 +16,13 @@
 #include <sstream>
 #include <unordered_set>
 
-#include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
+#include <OvDebug/Logger.h>
 
-#include <OvRendering/Resources/Loaders/ShaderLoader.h>
-#include <OvRendering/Resources/Shader.h>
 #include <OvRendering/HAL/ShaderProgram.h>
 #include <OvRendering/HAL/ShaderStage.h>
+#include <OvRendering/Resources/Loaders/ShaderLoader.h>
+#include <OvRendering/Resources/Shader.h>
 #include <OvRendering/Utils/ShaderUtil.h>
 
 namespace

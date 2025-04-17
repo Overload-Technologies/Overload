@@ -59,7 +59,7 @@ namespace OvRendering::Resources::Loaders
 		* Create a shader from source
 		* @param p_vertexShader
 		* @param p_fragmentShader
-		* @note Doesn't support path parsing/resolving
+		* @note Doesn't support parsing (no include, no features)
 		*/
 		static Shader* CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader);
 

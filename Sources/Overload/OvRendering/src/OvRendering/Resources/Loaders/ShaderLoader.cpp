@@ -10,6 +10,7 @@
 #include <format>
 #include <fstream>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <sstream>
 #include <unordered_set>
@@ -347,38 +348,63 @@ void main()
 
 	ShaderParseResult ParseShader(const ShaderLoadResult& p_shaderLoadResult)
 	{
+		using namespace OvRendering::Settings;
+
 		std::istringstream stream(p_shaderLoadResult.source); // Add this line to create a stringstream from shaderCode
 		std::string line;
-		std::unordered_map<OvRendering::Settings::EShaderType, std::stringstream> ss;
+		std::unordered_map<EShaderType, std::stringstream> shaderSources;
 		OvRendering::Resources::Shader::FeatureSet features;
 
-		auto type = OvRendering::Settings::EShaderType::NONE;
+		auto currentType = EShaderType::NONE;
 
 		while (std::getline(stream, line))
 		{
-			if (line.starts_with("#feature"))
+			// Pratical so we can use "starts_with" to check for custom directives
+			auto view =
+				line |
+				std::views::drop_while(isspace) |
+				std::views::reverse |
+				std::views::drop_while(isspace) |
+				std::views::reverse;
+
+			const auto trimmedLine = std::string{ view.begin(), view.end()};
+
+			constexpr std::string_view kFeatureToken = "#feature";
+
+			if (trimmedLine.starts_with(kFeatureToken))
 			{
-				const std::string featureName = line.substr(line.find(' ') + 1);
+				std::string featureName;
+				featureName.reserve(16); // Reserve some arbitrary space for the feature name
+
+				for (auto& c : trimmedLine |
+					std::views::drop(kFeatureToken.size()) |
+					std::views::drop_while(isspace) |
+					std::views::take_while([](char c) { return !isspace(c); }))
+				{
+					featureName += c;
+				}
+
 				features.insert(featureName);
 			}
-			else if (line.find("#shader") != std::string::npos)
+			else if (trimmedLine.starts_with("#shader vertex"))
 			{
-				if (line.find("vertex") != std::string::npos)
-					type = OvRendering::Settings::EShaderType::VERTEX;
-				else if (line.find("fragment") != std::string::npos)
-					type = OvRendering::Settings::EShaderType::FRAGMENT;
+				currentType = EShaderType::VERTEX;
 			}
-			else if (type != OvRendering::Settings::EShaderType::NONE)
+			else if (trimmedLine.starts_with("#shader fragment"))
 			{
-				ss[type] << line << '\n';
+				currentType = EShaderType::FRAGMENT;
+			}
+			else if (currentType != EShaderType::NONE)
+			{
+				shaderSources[currentType] << line << '\n';
 			}
 		}
 
-		return {
-			p_shaderLoadResult.inputInfo,
-			ss[OvRendering::Settings::EShaderType::VERTEX].str(),
-			ss[OvRendering::Settings::EShaderType::FRAGMENT].str(),
-			features
+		return ShaderParseResult{
+			.inputInfo = p_shaderLoadResult.inputInfo,
+			.vertexShader = shaderSources[EShaderType::VERTEX].str(),
+			.fragmentShader = shaderSources[EShaderType::FRAGMENT].str(),
+			.features = features
 		};
 	}
 

@@ -623,14 +623,9 @@ namespace
 				auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
 				const auto previousLoggingSettings = ShaderLoader::GetLoggingSettings();
-
-				ShaderLoader::SetLoggingSettings(ShaderLoader::LoggingSettings{
-					.summary = true,
-					.linkingErrors = true,
-					.linkingSuccess = false,
-					.compilationErrors = true,
-					.compilationSuccess = false
-				});
+				auto newLoggingSettings = previousLoggingSettings;
+				newLoggingSettings.summary = true; // Force enable summary logging
+				ShaderLoader::SetLoggingSettings(newLoggingSettings);
 
 				if (shaderManager.IsResourceRegistered(resourcePath))
 				{

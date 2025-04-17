@@ -25,25 +25,31 @@
 
 namespace
 {
-	std::filesystem::path __FILE_TRACE;
+	struct ShaderInputInfo
+	{
+		std::string path;
+		std::string name;
+	};
 
 	OvRendering::Resources::Loaders::ShaderLoader::LoggingSettings __LOGGING_SETTINGS{
 		.summary = false,
-		.linkingErrors = false,
+		.linkingErrors = true,
 		.linkingSuccess = false,
-		.compilationErrors = false,
+		.compilationErrors = true,
 		.compilationSuccess = false,
 	};
 
 	// Load a shader, including any included files
 	struct ShaderLoadResult
 	{
+		const ShaderInputInfo inputInfo;
 		const std::string source;
 	};
 
 	// Parse the shader source code and extract the vertex and fragment shaders, as well as features
 	struct ShaderParseResult
 	{
+		const ShaderInputInfo inputInfo;
 		const std::string vertexShader;
 		const std::string fragmentShader;
 		const OvRendering::Resources::Shader::FeatureSet features;
@@ -52,6 +58,7 @@ namespace
 	// Compile the shader and create a program for each combination of features
 	struct ShaderAssembleResult
 	{
+		const ShaderInputInfo inputInfo;
 		const uint32_t failures; // How many variants failed to compile
 		OvRendering::Resources::Shader::ProgramVariants variants;
 	};
@@ -68,27 +75,32 @@ namespace
 		std::optional<OvRendering::Settings::ShaderCompilationResult> compilationResult;
 	};
 
-	inline std::string GetCurrentFileName()
+	std::string GetShaderNameFromPath(const std::string& p_path)
 	{
-		return __FILE_TRACE.stem().string();
+		return std::filesystem::path{ p_path }.stem().string();
 	}
 
 	std::string FeatureSetToString(const OvRendering::Resources::Shader::FeatureSet& features)
 	{
-		std::string result = std::format("(features[{}] {{", features.size());
+		if (features.size() == 0)
+		{
+			return {};
+		}
+
+		std::string result = " (";
 
 		bool first = true;
 		for (const auto& feature : features)
 		{
 			if (!first)
 			{
-				result += ", ";
+				result += "|";
 			}
 			result += feature;
 			first = false;
 		}
 
-		result += "})";
+		result += ")";
 		return result;
 	}
 
@@ -129,25 +141,12 @@ namespace
 	}
 
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
+		const ShaderInputInfo& p_shaderInputInfo,
 		std::span<const ShaderStageDesc> p_stages,
 		const OvRendering::Resources::Shader::FeatureSet& p_features = {},
 		bool p_noLogging = false
 	)
 	{
-		// Lambda for logging messages if enabled
-		auto log = [&p_noLogging, &p_features](bool condition, const std::string& type, const std::string& message = "Success!") {
-			if (!p_noLogging && condition)
-			{
-				OVLOG_INFO(std::format(
-					"[{}] \"{}\" {}: {}",
-					type,
-					GetCurrentFileName(),
-					FeatureSetToString(p_features),
-					message
-				));
-			}
-		};
-
 		// Process and compile all shader stages
 		std::vector<ProcessedShaderStage> processedStages;
 		processedStages.reserve(p_stages.size());
@@ -162,21 +161,31 @@ namespace
 
 			if (const auto result = processedStage.stage.Compile(); !result.success)
 			{
-				const std::string shaderTypeStr = OvRendering::Utils::GetShaderTypeName(stageInput.type);
+				if (!p_noLogging && __LOGGING_SETTINGS.compilationErrors)
+				{
+					OVLOG_ERROR(std::format(
+						"[Shader Compile] {}{}: {}",
+						std::format("{}/{}",
+							p_shaderInputInfo.name,
+							OvRendering::Utils::GetShaderTypeName(stageInput.type)
+						),
+						FeatureSetToString(p_features),
+						result.message
+					));
+				}
 
-				log(
-					__LOGGING_SETTINGS.compilationErrors,
-					shaderTypeStr + " Shader Compile",
-					result.message
-				);
 				allCompiled = false;
 			}
-			else
+			else if (!p_noLogging && __LOGGING_SETTINGS.compilationSuccess)
 			{
-				log(
-					__LOGGING_SETTINGS.compilationSuccess,
-					OvRendering::Utils::GetShaderTypeName(stageInput.type) + " Shader Compile"
-				);
+				OVLOG_INFO(std::format(
+					"[Shader Compile] {}{}: Compilation successful.",
+					std::format("{}/{}",
+						p_shaderInputInfo.name,
+						OvRendering::Utils::GetShaderTypeName(stageInput.type)
+					),
+					FeatureSetToString(p_features)
+				));
 			}
 		}
 
@@ -205,19 +214,35 @@ namespace
 
 		if (linkResult.success)
 		{
-			log(__LOGGING_SETTINGS.linkingSuccess, "Shader Linking");
+			if (!p_noLogging && __LOGGING_SETTINGS.linkingSuccess)
+			{
+				OVLOG_INFO(std::format(
+					"[Shader Linking] {}{}: {}",
+					p_shaderInputInfo.name,
+					FeatureSetToString(p_features),
+					"Linking successful."
+				));
+			}
 			return program;
 		}
 		else
 		{
-			log(__LOGGING_SETTINGS.linkingErrors, "Shader Linking", linkResult.message);
+			if (!p_noLogging && __LOGGING_SETTINGS.linkingErrors)
+			{
+				OVLOG_INFO(std::format(
+					"[Shader Linking] {}{}: {}",
+					p_shaderInputInfo.name,
+					FeatureSetToString(p_features),
+					linkResult.message
+				));
+			}
 			return nullptr;
 		}
 	}
 
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateDefaultProgram()
 	{
-		const std::string vertex =R"(
+		const std::string vertex = R"(
 #version 450 core
 
 layout(location = 0) in vec3 geo_Pos;
@@ -245,6 +270,10 @@ void main()
 		};
 
 		auto program = CreateProgram(
+			ShaderInputInfo{
+				.path = "N/A",
+				.name = "DefaultProgram"
+			},
 			shaders,
 			{},
 			true // Force no logging for default program (we expect it to succeed, otherwise we have a problem)
@@ -273,13 +302,13 @@ void main()
 		}
 	}
 
-	ShaderLoadResult LoadShader(const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
+	ShaderLoadResult LoadShader(const ShaderInputInfo& p_shaderInputInfo, const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
 	{
 		std::ifstream file(p_filePath);
 
 		if (!file.is_open())
 		{
-			OVLOG_ERROR(std::format("Error: Could not open shader file: \"{}\"", p_filePath));
+			OVLOG_ERROR(std::format("[Shader Loading] Could not open shader file: \"{}\"", p_filePath));
 			return {};
 		}
 
@@ -296,7 +325,7 @@ void main()
 				{
 					// Recursively load the included file
 					const std::string realIncludeFilePath = p_pathParser ? p_pathParser(includeFilePath) : includeFilePath;
-					const auto result = LoadShader(realIncludeFilePath, p_pathParser);
+					const auto result = LoadShader(p_shaderInputInfo, realIncludeFilePath, p_pathParser);
 					buffer << result.source << std::endl;
 				}
 				else
@@ -311,7 +340,8 @@ void main()
 		}
 
 		return {
-			buffer.str()
+			.inputInfo = p_shaderInputInfo,
+			.source = buffer.str()
 		};
 	}
 
@@ -344,8 +374,8 @@ void main()
 			}
 		}
 
-		return
-		{
+		return {
+			p_shaderLoadResult.inputInfo,
 			ss[OvRendering::Settings::EShaderType::VERTEX].str(),
 			ss[OvRendering::Settings::EShaderType::FRAGMENT].str(),
 			features
@@ -378,6 +408,7 @@ void main()
 			});
 
 			auto program = CreateProgram(
+				p_parseResult.inputInfo,
 				stages,
 				featureSet
 			);
@@ -406,18 +437,23 @@ void main()
 			if (__LOGGING_SETTINGS.summary)
 			{
 				OVLOG_ERROR(std::format(
-					"[Shader Compilation] \"{}\" Failed! {} variants failed to compile",
-					GetCurrentFileName(),
+					"[Shader Assembling] {}: {} variant(s) failed to compile.",
+					p_parseResult.inputInfo.name,
 					failures
 				));
 			}
 		}
 		else if (__LOGGING_SETTINGS.summary)
 		{
-			OVLOG_INFO(std::format("[Shader Compilation] \"{}\" Compiled ({} variants)", GetCurrentFileName(), variantCount));
+			OVLOG_INFO(std::format(
+				"[Shader Assembling] {}: {} variant(s) assembled.",
+				p_parseResult.inputInfo.name,
+				variantCount
+			));
 		}
 
 		return ShaderAssembleResult{
+			p_parseResult.inputInfo,
 			failures,
 			std::move(variants)
 		};
@@ -428,7 +464,12 @@ void main()
 		OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser
 	)
 	{
-		const auto shaderLoadResult = LoadShader(p_filePath, p_pathParser);
+		const auto shaderInputInfo = ShaderInputInfo{
+			.path = p_filePath,
+			.name = GetShaderNameFromPath(p_filePath)
+		};
+
+		const auto shaderLoadResult = LoadShader(shaderInputInfo, p_filePath, p_pathParser);
 		const auto shaderParseResult = ParseShader(shaderLoadResult);
 		return AssembleShader(shaderParseResult);
 	}
@@ -439,6 +480,10 @@ void main()
 	)
 	{
 		const ShaderParseResult shaderParseResult{
+			.inputInfo = {
+				.path = "N/A",
+				.name = "{C++ embedded shader}"
+			},
 			.vertexShader = p_vertexShader,
 			.fragmentShader = p_fragmentShader,
 			.features = {} // No support for features in embedded shaders
@@ -462,26 +507,18 @@ namespace OvRendering::Resources::Loaders
 
 	Shader* ShaderLoader::Create(const std::string& p_filePath, FilePathParserCallback p_pathParser)
 	{
-		__FILE_TRACE = p_filePath;
-
 		auto result = CompileShaderFromFile(p_filePath, p_pathParser);
-
 		return new Shader(p_filePath, std::move(result.variants));
 	}
 
 	Shader* ShaderLoader::CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader)
 	{
-		__FILE_TRACE = "{C++ embedded shader}";
-
 		auto result = CompileShaderFromSources(p_vertexShader, p_fragmentShader);
-
 		return new Shader({}, std::move(result.variants));
 	}
 
 	void ShaderLoader::Recompile(Shader& p_shader, const std::string& p_filePath, FilePathParserCallback p_pathParser)
 	{
-		__FILE_TRACE = p_filePath;
-
 		auto result = CompileShaderFromFile(p_filePath, p_pathParser);
 
 		if (result.failures == 0)
@@ -491,9 +528,8 @@ namespace OvRendering::Resources::Loaders
 		else
 		{
 			OVLOG_ERROR(std::format(
-				"[RECOMPILE] \"{}\" Failed! Previous shader kept.",
-				GetCurrentFileName(),
-				result.failures
+				"[Shader Reload] {}: reloading failed, previous shader programs kept.",
+				result.inputInfo.name
 			));
 		}
 	}

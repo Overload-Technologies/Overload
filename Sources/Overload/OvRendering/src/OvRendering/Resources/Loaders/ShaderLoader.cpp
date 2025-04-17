@@ -87,11 +87,6 @@ namespace
 		std::optional<OvRendering::Settings::ShaderCompilationResult> compilationResult;
 	};
 
-	std::string GetShaderNameFromPath(const std::string& p_path)
-	{
-		return std::filesystem::path{ p_path }.stem().string();
-	}
-
 	std::string Trim(const std::string_view p_str)
 	{
 		auto view =
@@ -494,7 +489,7 @@ void main()
 	{
 		const auto shaderInputInfo = ShaderInputInfo{
 			.path = p_filePath,
-			.name = GetShaderNameFromPath(p_filePath)
+			.name = std::filesystem::path{ p_filePath }.stem().string()
 		};
 
 		const auto shaderLoadResult = LoadShader(shaderInputInfo, p_filePath, p_pathParser);

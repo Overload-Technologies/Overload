@@ -53,7 +53,6 @@ namespace
 	struct ShaderAssembleResult
 	{
 		const uint32_t failures; // How many variants failed to compile
-		const OvRendering::Resources::Shader::FeatureSet features;
 		OvRendering::Resources::Shader::ProgramVariants variants;
 	};
 
@@ -438,7 +437,6 @@ void main()
 
 		return ShaderAssembleResult{
 			failures,
-			p_parseResult.features, // TODO: Exclude features that failed to compile
 			std::move(variants)
 		};
 	}
@@ -486,11 +484,7 @@ namespace OvRendering::Resources::Loaders
 
 		auto result = CompileShaderFromFile(p_filePath, p_pathParser);
 
-		return new Shader(
-			p_filePath,
-			result.features,
-			std::move(result.variants)
-		);
+		return new Shader(p_filePath, std::move(result.variants));
 	}
 
 	Shader* ShaderLoader::CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader)
@@ -499,11 +493,7 @@ namespace OvRendering::Resources::Loaders
 
 		auto result = CompileShaderFromSources(p_vertexShader, p_fragmentShader);
 
-		return new Shader(
-			"",
-			result.features,
-			std::move(result.variants)
-		);
+		return new Shader({}, std::move(result.variants));
 	}
 
 	void ShaderLoader::Recompile(Shader& p_shader, const std::string& p_filePath, FilePathParserCallback p_pathParser)
@@ -514,10 +504,7 @@ namespace OvRendering::Resources::Loaders
 
 		if (result.failures == 0)
 		{
-			p_shader.SetPrograms(
-				result.features,
-				std::move(result.variants)
-			);
+			p_shader.SetPrograms(std::move(result.variants));
 		}
 		else
 		{

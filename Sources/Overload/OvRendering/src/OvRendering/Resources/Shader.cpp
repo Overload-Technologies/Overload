@@ -47,18 +47,29 @@ OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetProgram(cons
 	}
 }
 
+const OvRendering::Resources::Shader::FeatureSet& OvRendering::Resources::Shader::GetFeatures() const
+{
+	return m_features;
+}
+
 OvRendering::Resources::Shader::Shader(
 	const std::string p_path,
-	const FeatureSet& p_features,
 	ProgramVariants&& p_program
 ) : path(p_path)
 {
-	SetPrograms(p_features, std::move(p_program));
+	SetPrograms(std::move(p_program));
 }
 
-void OvRendering::Resources::Shader::SetPrograms(const FeatureSet& p_features, ProgramVariants&& p_programs)
+void OvRendering::Resources::Shader::SetPrograms(ProgramVariants&& p_programs)
 {
 	ValidateProgramRegistry(p_programs);
-	m_features = p_features;
 	m_programs = std::move(p_programs);
+
+	m_features.clear();
+
+	// Find all features based on the compiled programs
+	for (const auto& [key, _] : m_programs)
+	{
+		m_features.insert(key.begin(), key.end());
+	}
 }

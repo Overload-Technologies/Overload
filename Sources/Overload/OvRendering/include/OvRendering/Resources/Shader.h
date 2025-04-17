@@ -51,15 +51,19 @@ namespace OvRendering::Resources
 		*/
 		HAL::ShaderProgram& GetProgram(const FeatureSet& p_featureSet = {});
 
+		/**
+		* Returns supported features
+		*/
+		const FeatureSet& GetFeatures() const;
+
 	private:
 		Shader(
 			const std::string p_path,
-			const FeatureSet& p_features,
 			ProgramVariants&& p_programs
 		);
 
 		~Shader() = default;
-		void SetPrograms(const FeatureSet& p_features, ProgramVariants&& p_programs);
+		void SetPrograms(ProgramVariants&& p_programs);
 
 	public:
 		const std::string path;

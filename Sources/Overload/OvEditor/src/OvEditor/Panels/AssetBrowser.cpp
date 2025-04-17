@@ -618,11 +618,20 @@ namespace
 
 			auto& compileAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Compile");
 
-			compileAction.ClickedEvent += [this]
-			{
+			compileAction.ClickedEvent += [this] {
+				using namespace OvRendering::Resources::Loaders;
 				auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath, m_protected));
-				OvRendering::Resources::Loaders::ShaderLoader::SetLoggingSettings(true, true);
+				const auto previousLoggingSettings = ShaderLoader::GetLoggingSettings();
+
+				ShaderLoader::SetLoggingSettings(ShaderLoader::LoggingSettings{
+					.summary = true,
+					.linkingErrors = true,
+					.linkingSuccess = false,
+					.compilationErrors = true,
+					.compilationSuccess = false
+				});
+
 				if (shaderManager.IsResourceRegistered(resourcePath))
 				{
 					// Trying to recompile
@@ -631,13 +640,10 @@ namespace
 				else
 				{
 					// Trying to compile
-					auto shader = OVSERVICE(OvCore::ResourceManagement::ShaderManager)[resourcePath];
-					if (shader)
-					{
-						OVLOG_INFO("[COMPILE] \"" + filePath + "\": Success!");
-					}
+					OVSERVICE(OvCore::ResourceManagement::ShaderManager).LoadResource(resourcePath);
 				}
-				OvRendering::Resources::Loaders::ShaderLoader::SetLoggingSettings(false, false);
+
+				ShaderLoader::SetLoggingSettings(previousLoggingSettings);
 			};
 		}
 	};

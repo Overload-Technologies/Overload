@@ -18,6 +18,18 @@ namespace OvRendering::Resources::Loaders
 	class ShaderLoader
 	{
 	public:
+		/**
+		* Logging settings for the ShaderLoader
+		*/
+		struct LoggingSettings
+		{
+			bool summary : 1;
+			bool linkingErrors : 1;
+			bool linkingSuccess : 1;
+			bool compilationErrors : 1;
+			bool compilationSuccess : 1;
+		};
+
 		using FilePathParserCallback = std::function<std::string(const std::string&)>;
 
 		/**
@@ -26,11 +38,15 @@ namespace OvRendering::Resources::Loaders
 		ShaderLoader() = delete;
 
 		/**
-		* Enable or disable logging for errors and success
-		* @param p_logErrors
-		* @param p_logSuccess
+		* Returns the current logging settings
 		*/
-		static void SetLoggingSettings(bool p_logErrors, bool p_logSuccess);
+		static LoggingSettings GetLoggingSettings();
+
+		/**
+		* Enable or disable logging for errors and success
+		* @param p_settings
+		*/
+		static void SetLoggingSettings(LoggingSettings p_settings);
 
 		/**
 		* Create a shader

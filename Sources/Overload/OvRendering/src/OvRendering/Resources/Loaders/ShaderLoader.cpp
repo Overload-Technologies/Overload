@@ -51,14 +51,12 @@ namespace
 		.compilationSuccess = false,
 	};
 
-	// Load a shader, including any included files
 	struct ShaderLoadResult
 	{
 		const ShaderInputInfo inputInfo;
 		const std::string source;
 	};
 
-	// Parse the shader source code and extract the vertex and fragment shaders, as well as features
 	struct ShaderParseResult
 	{
 		const ShaderInputInfo inputInfo;
@@ -67,7 +65,6 @@ namespace
 		const OvRendering::Resources::Shader::FeatureSet features;
 	};
 
-	// Compile the shader and create a program for each combination of features
 	struct ShaderAssembleResult
 	{
 		const ShaderInputInfo inputInfo;
@@ -308,7 +305,14 @@ void main()
 		return std::nullopt;
 	}
 
-	ShaderLoadResult LoadShader(const ShaderInputInfo& p_shaderInputInfo, const std::string& p_filePath, OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser)
+	/**
+	* Loads a shader file (ovfx) and its included files (ovfxh) recursively.
+	*/
+	ShaderLoadResult LoadShader(
+		const ShaderInputInfo& p_shaderInputInfo,
+		const std::string& p_filePath,
+		OvRendering::Resources::Loaders::ShaderLoader::FilePathParserCallback p_pathParser
+	)
 	{
 		std::ifstream file(p_filePath);
 
@@ -353,6 +357,9 @@ void main()
 		};
 	}
 
+	/**
+	* Parse the laoded shader code and extract the vertex and fragment shaders, as well as features
+	*/
 	ShaderParseResult ParseShader(const ShaderLoadResult& p_shaderLoadResult)
 	{
 		using namespace OvRendering::Settings;
@@ -405,6 +412,9 @@ void main()
 		};
 	}
 
+	/**
+	* Compile and create programs for each shader variant, and assemble them for a shader to use.
+	*/
 	ShaderAssembleResult AssembleShader(const ShaderParseResult& p_parseResult)
 	{
 		const auto variantCount = (size_t{ 1UL } << p_parseResult.features.size());
@@ -446,7 +456,7 @@ void main()
 			}
 		}
 
-		// If no default program was created, we create a default one
+		// If no default program was created, we create a default one (fallback)
 		if (!variants.contains({}))
 		{
 			variants.emplace(

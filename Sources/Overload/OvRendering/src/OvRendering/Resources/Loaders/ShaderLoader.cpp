@@ -75,7 +75,7 @@ namespace
 
 	std::string FeatureSetToString(const OvRendering::Resources::Shader::FeatureSet& features)
 	{
-		std::string result = std::format("<features[{}] {{", features.size());
+		std::string result = std::format("(features[{}] {{", features.size());
 
 		bool first = true;
 		for (const auto& feature : features)
@@ -88,50 +88,44 @@ namespace
 			first = false;
 		}
 
-		result += "}>";
+		result += "})";
 		return result;
 	}
 
 	std::string EnableFeaturesInShaderCode(const std::string& shaderCode, const OvRendering::Resources::Shader::FeatureSet& features)
 	{
-		std::string modifiedShaderCode = shaderCode;
-
-		// Find the version directive
-		size_t versionPos = modifiedShaderCode.find("#version");
-
-		if (versionPos != std::string::npos)
+		if (features.empty())
 		{
-			// Find the end of the version line
-			size_t endOfLine = modifiedShaderCode.find("\n", versionPos);
-
-			if (endOfLine != std::string::npos)
-			{
-				// Position to insert defines is after the newline character
-				size_t insertPos = endOfLine + 1;
-
-				// Prepare the defines string
-				std::string definesStr;
-				for (const auto& feature : features)
-				{
-					definesStr += "#define " + feature + "\n";
-				}
-
-				// Insert defines after the version line
-				modifiedShaderCode.insert(insertPos, definesStr);
-			}
-		}
-		else
-		{
-			// If no version directive found, add defines at the beginning
-			std::string definesStr;
-			for (const auto& feature : features)
-			{
-				definesStr += "#define " + feature + "\n";
-			}
-			modifiedShaderCode = definesStr + modifiedShaderCode;
+			return shaderCode;
 		}
 
-		return modifiedShaderCode;
+		// Create the defines string once
+		std::string definesStr;
+		for (const auto& feature : features)
+		{
+			definesStr += "#define " + feature + "\n";
+		}
+
+		// Find insertion point after version directive if it exists
+		const size_t versionPos = shaderCode.find("#version");
+		if (versionPos == std::string::npos)
+		{
+			// No version directive, prepend defines
+			return definesStr + shaderCode;
+		}
+
+		// Find end of version line
+		const size_t endOfLine = shaderCode.find('\n', versionPos);
+		if (endOfLine == std::string::npos)
+		{
+			// Version directive is on the last line (unusual case)
+			return shaderCode + "\n" + definesStr;
+		}
+
+		// Insert defines after version line
+		std::string result = shaderCode;
+		result.insert(endOfLine + 1, definesStr);
+		return result;
 	}
 
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
@@ -140,97 +134,85 @@ namespace
 		bool p_noLogging = false
 	)
 	{
-		using namespace OvRendering::HAL;
-		using namespace OvRendering::Resources;
-		using namespace OvRendering::Settings;
+		// Lambda for logging messages if enabled
+		auto log = [&p_noLogging, &p_features](bool condition, const std::string& type, const std::string& message = "Success!") {
+			if (!p_noLogging && condition)
+			{
+				OVLOG_INFO(std::format(
+					"[{}] \"{}\" {}: {}",
+					type,
+					GetCurrentFileName(),
+					FeatureSetToString(p_features),
+					message
+				));
+			}
+		};
 
+		// Process and compile all shader stages
 		std::vector<ProcessedShaderStage> processedStages;
 		processedStages.reserve(p_stages.size());
 
-		uint32_t errorCount = 0;
+		bool allCompiled = true;
 
-		for (auto& stageInput : p_stages)
+		for (const auto& stageInput : p_stages)
 		{
 			const auto& processedStage = processedStages.emplace_back(stageInput.type);
 			const auto source = EnableFeaturesInShaderCode(stageInput.source, p_features);
 			processedStage.stage.Upload(source);
-			const auto compilationResult = processedStage.stage.Compile();
-			if (!compilationResult.success)
+
+			if (const auto result = processedStage.stage.Compile(); !result.success)
 			{
-				std::string shaderTypeStr = OvRendering::Utils::GetShaderTypeName(stageInput.type);
+				const std::string shaderTypeStr = OvRendering::Utils::GetShaderTypeName(stageInput.type);
 
-				for (char& c : shaderTypeStr)
-				{
-					c = std::toupper(c);
-				}
-
-				if (!p_noLogging && __LOGGING_SETTINGS.compilationErrors)
-				{
-					OVLOG_ERROR(std::format(
-						"[{} COMPILE] \"{}\" {}: {}",
-						shaderTypeStr,
-						GetCurrentFileName(),
-						FeatureSetToString(p_features),
-						compilationResult.message)
-					);
-				}
-
-				++errorCount;
+				log(
+					__LOGGING_SETTINGS.compilationErrors,
+					shaderTypeStr + " Shader Compile",
+					result.message
+				);
+				allCompiled = false;
 			}
 			else
 			{
-				if (!p_noLogging && __LOGGING_SETTINGS.compilationSuccess)
-				{
-					OVLOG_INFO(std::format(
-						"[{} COMPILE] \"{}\" {}: Success!",
-						OvRendering::Utils::GetShaderTypeName(stageInput.type),
-						GetCurrentFileName(),
-						FeatureSetToString(p_features))
-					);
-				}
+				log(
+					__LOGGING_SETTINGS.compilationSuccess,
+					OvRendering::Utils::GetShaderTypeName(stageInput.type) + " Shader Compile"
+				);
 			}
 		}
 
-		if (errorCount == 0)
+		if (!allCompiled)
 		{
-			auto program = std::make_unique<ShaderProgram>();
-
-			for (const auto& processedStage : processedStages)
-			{
-				program->Attach(processedStage.stage);
-			}
-
-			const auto linkResult = program->Link();
-
-			for (const auto& processedStage : processedStages)
-			{
-				program->Detach(processedStage.stage);
-			}
-
-			if (linkResult.success)
-			{
-				if (!p_noLogging && __LOGGING_SETTINGS.linkingSuccess)
-				{
-					OVLOG_INFO(std::format(
-						"[LINK] \"{}\" {}: Success!",
-						GetCurrentFileName(),
-						FeatureSetToString(p_features)
-					));
-				}
-				return program;
-			}
-			else if (!p_noLogging && __LOGGING_SETTINGS.linkingErrors)
-			{
-				OVLOG_ERROR(std::format(
-					"[LINK] \"{}\" {}: Failed: {}",
-					GetCurrentFileName(),
-					FeatureSetToString(p_features),
-					linkResult.message
-				));
-			}
+			return nullptr;
 		}
 
-		return nullptr;
+		// Link the program
+		auto program = std::make_unique<OvRendering::HAL::ShaderProgram>();
+
+		// Attach all stages
+		for (const auto& processedStage : processedStages)
+		{
+			program->Attach(processedStage.stage);
+		}
+
+		// Link and detach regardless of result
+		const auto linkResult = program->Link();
+
+		// Detach all stages
+		for (const auto& processedStage : processedStages)
+		{
+			program->Detach(processedStage.stage);
+		}
+
+		if (linkResult.success)
+		{
+			log(__LOGGING_SETTINGS.linkingSuccess, "Shader Linking");
+			return program;
+		}
+		else
+		{
+			log(__LOGGING_SETTINGS.linkingErrors, "Shader Linking", linkResult.message);
+			return nullptr;
+		}
 	}
 
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateDefaultProgram()
@@ -319,7 +301,7 @@ void main()
 				}
 				else
 				{
-					OVLOG_ERROR(std::format("Error: Invalid #include directive in file: \"{}\"", p_filePath));
+					OVLOG_ERROR(std::format("[Shader Loading] Invalid #include directive in file: \"{}\"", p_filePath));
 				}
 			}
 			else {
@@ -424,7 +406,7 @@ void main()
 			if (__LOGGING_SETTINGS.summary)
 			{
 				OVLOG_ERROR(std::format(
-					"[COMPILE] \"{}\" Failed! {} variants failed to compile",
+					"[Shader Compilation] \"{}\" Failed! {} variants failed to compile",
 					GetCurrentFileName(),
 					failures
 				));
@@ -432,7 +414,7 @@ void main()
 		}
 		else if (__LOGGING_SETTINGS.summary)
 		{
-			OVLOG_INFO(std::format("[COMPILE] \"{}\" Compiled ({} variants)", GetCurrentFileName(), variantCount));
+			OVLOG_INFO(std::format("[Shader Compilation] \"{}\" Compiled ({} variants)", GetCurrentFileName(), variantCount));
 		}
 
 		return ShaderAssembleResult{

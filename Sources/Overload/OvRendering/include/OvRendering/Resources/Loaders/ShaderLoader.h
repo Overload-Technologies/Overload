@@ -23,11 +23,11 @@ namespace OvRendering::Resources::Loaders
 		*/
 		struct LoggingSettings
 		{
-			const bool summary : 1;
-			const bool linkingErrors : 1;
-			const bool linkingSuccess : 1;
-			const bool compilationErrors : 1;
-			const bool compilationSuccess : 1;
+			bool summary : 1;
+			bool linkingErrors : 1;
+			bool linkingSuccess : 1;
+			bool compilationErrors : 1;
+			bool compilationSuccess : 1;
 		};
 
 		using FilePathParserCallback = std::function<std::string(const std::string&)>;

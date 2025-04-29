@@ -6,8 +6,9 @@
 
 #include <algorithm>
 
-#include "OvEditor/Panels/Console.h"
-#include "OvEditor/Core/EditorActions.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/Console.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
@@ -100,6 +101,8 @@ void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData & p_logD
 	consoleItem1.enabled = IsAllowedByFilter(p_logData.logLevel);
 
 	m_logTextWidgets[&consoleItem1] = p_logData.logLevel;
+
+	TruncateLogs();
 }
 
 void OvEditor::Panels::Console::ClearOnPlay()
@@ -155,4 +158,12 @@ void OvEditor::Panels::Console::SetShowErrorLogs(bool p_value)
 {
 	m_showErrorLog = p_value;
 	FilterLogs();
+}
+
+void OvEditor::Panels::Console::TruncateLogs()
+{
+	while (m_logGroup->GetWidgets().size() > Settings::EditorSettings::ConsoleMaxLogs)
+	{
+		m_logGroup->RemoveWidget(*m_logGroup->GetWidgets().front().first);
+	}
 }

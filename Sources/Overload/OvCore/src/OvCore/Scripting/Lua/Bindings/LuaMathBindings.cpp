@@ -12,7 +12,7 @@
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FQuaternion.h>
 
-#include <sol.hpp>
+#include <sol/sol.hpp>
 
 void BindLuaMath(sol::state& p_luaState)
 {

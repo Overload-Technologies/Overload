@@ -12,7 +12,7 @@ project "OvGame"
 
 	libdirs { dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib" }
 	links {
-		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "opengl32.lib", "dbghelp.lib",
+		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "opengl32.lib", "dbghelp.lib",
 		"ImGui", "tinyxml2", "lua", "glad", "glfw", "assimp", "tracy", "soloud",
 		"OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
     }

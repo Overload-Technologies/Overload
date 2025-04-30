@@ -180,8 +180,6 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<bool>("vsync", true);
 	projectSettings.Add<bool>("multisampling", true);
 	projectSettings.Add<int>("samples", 4);
-	projectSettings.Add<int>("opengl_major", 4);
-	projectSettings.Add<int>("opengl_minor", 5);
 	projectSettings.Add<bool>("dev_build", true);
 }
 
@@ -197,8 +195,6 @@ bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
 		projectSettings.IsKeyExisting("vsync") &&
 		projectSettings.IsKeyExisting("multisampling") &&
 		projectSettings.IsKeyExisting("samples") &&
-		projectSettings.IsKeyExisting("opengl_major") &&
-		projectSettings.IsKeyExisting("opengl_minor") &&
 		projectSettings.IsKeyExisting("dev_build");
 }
 

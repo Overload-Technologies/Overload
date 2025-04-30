@@ -61,8 +61,6 @@ OvGame::Core::Context::Context() :
 
 	/* Settings */
 	OvWindowing::Settings::DeviceSettings deviceSettings;
-	projectSettings.TryGet("opengl_major", deviceSettings.contextMajorVersion);
-	projectSettings.TryGet("opengl_minor", deviceSettings.contextMinorVersion);
 	projectSettings.TryGet("samples", deviceSettings.samples);
 
 	OvWindowing::Settings::WindowSettings windowSettings;

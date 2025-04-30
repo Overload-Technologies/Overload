@@ -5,33 +5,35 @@
 */
 
 #include <filesystem>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+
+#include <tinyxml2.h>
 
 #include <OvDebug/Logger.h>
 
-#include <OvCore/ECS/Components/CPhysicalBox.h>
-#include <OvCore/ECS/Components/CPhysicalSphere.h>
-#include <OvCore/ECS/Components/CPhysicalCapsule.h>
-#include <OvCore/ECS/Components/CModelRenderer.h>
-#include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CAudioSource.h>
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CModelRenderer.h>
+#include <OvCore/ECS/Components/CPhysicalBox.h>
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>
+#include <OvCore/ECS/Components/CPhysicalSphere.h>
 
-#include <OvWindowing/Dialogs/OpenFileDialog.h>
-#include <OvWindowing/Dialogs/SaveFileDialog.h>
-#include <OvWindowing/Dialogs/MessageBox.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/GameView.h>
+#include <OvEditor/Panels/Inspector.h>
+#include <OvEditor/Panels/MaterialEditor.h>
+#include <OvEditor/Panels/ProjectSettings.h>
+#include <OvEditor/Panels/SceneView.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
 
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Panels/SceneView.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Panels/GameView.h"
-#include "OvEditor/Panels/Inspector.h"
-#include "OvEditor/Panels/ProjectSettings.h"
-#include "OvEditor/Panels/MaterialEditor.h"
+#include <OvWindowing/Dialogs/OpenFileDialog.h>
+#include <OvWindowing/Dialogs/MessageBox.h>
+#include <OvWindowing/Dialogs/SaveFileDialog.h>
 
 OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& p_panelsManager) :
 	m_context(p_context), 
@@ -44,6 +46,10 @@ OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& 
 		std::string titleExtra = " - " + (p_newPath.empty() ? "Untitled Scene" : GetResourcePath(p_newPath));
 		m_context.window->SetTitle(m_context.windowSettings.title + titleExtra);
 	};
+}
+
+OvEditor::Core::EditorActions::~EditorActions()
+{
 }
 
 void OvEditor::Core::EditorActions::LoadEmptyScene()
@@ -433,10 +439,10 @@ void OvEditor::Core::EditorActions::StartPlaying()
 		if (m_context.scriptEngine->IsOk())
 		{
 			PlayEvent.Invoke();
-			m_sceneBackup.Clear();
-			tinyxml2::XMLNode* node = m_sceneBackup.NewElement("root");
-			m_sceneBackup.InsertFirstChild(node);
-			m_context.sceneManager.GetCurrentScene()->OnSerialize(m_sceneBackup, node);
+			m_sceneBackup = std::make_unique<tinyxml2::XMLDocument>();
+			tinyxml2::XMLNode* node = m_sceneBackup->NewElement("root");
+			m_sceneBackup->InsertFirstChild(node);
+			m_context.sceneManager.GetCurrentScene()->OnSerialize(*m_sceneBackup, node);
 			m_panelsManager.GetPanelAs<OvEditor::Panels::GameView>("Game View").Focus();
 			m_context.sceneManager.GetCurrentScene()->Play();
 			SetEditorMode(EEditorMode::PLAY);
@@ -469,10 +475,12 @@ void OvEditor::Core::EditorActions::StopPlaying()
 		if (auto targetActor = EDITOR_PANEL(Panels::Inspector, "Inspector").GetTargetActor())
 			focusedActorID = targetActor->GetID();
 
-		m_context.sceneManager.LoadSceneFromMemory(m_sceneBackup);
+		OVASSERT(m_sceneBackup.operator bool(), "No scene backup to restore");
+
+		m_context.sceneManager.LoadSceneFromMemory(*m_sceneBackup);
 		if (loadedFromDisk)
 			m_context.sceneManager.StoreCurrentSceneSourcePath(sceneSourcePath); // To bo able to save or reload the scene whereas the scene is loaded from memory (Supposed to have no path)
-		m_sceneBackup.Clear();
+		m_sceneBackup.reset();
 		EDITOR_PANEL(Panels::SceneView, "Scene View").Focus();
 		if (auto actorInstance = m_context.sceneManager.GetCurrentScene()->FindActorByID(focusedActorID))
 			EDITOR_PANEL(Panels::Inspector, "Inspector").FocusActor(*actorInstance);

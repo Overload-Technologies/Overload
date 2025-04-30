@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <tinyxml2.h>
+
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvTools/Utils/PathParser.h>

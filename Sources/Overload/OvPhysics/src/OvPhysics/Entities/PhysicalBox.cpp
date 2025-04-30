@@ -4,8 +4,10 @@
 * @licence: MIT
 */
 
-#include "OvPhysics/Entities/PhysicalBox.h"
-#include "OvPhysics/Tools/Conversion.h"
+#include <bullet/btBulletCollisionCommon.h>
+
+#include <OvPhysics/Entities/PhysicalBox.h>
+#include <OvPhysics/Tools/Conversion.h>
 
 OvPhysics::Entities::PhysicalBox::PhysicalBox(const OvMaths::FVector3& p_size) : PhysicalObject()
 {

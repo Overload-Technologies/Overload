@@ -6,16 +6,16 @@
 
 #include <algorithm>
 
-#include "OvPhysics/Core/PhysicsEngine.h"
-#include "OvPhysics/Tools/Conversion.h"
-#include "OvPhysics/Entities/PhysicalObject.h"
-
 #include <OvDebug/Logger.h>
+
+#include <OvPhysics/Core/PhysicsEngine.h>
+#include <OvPhysics/Entities/PhysicalObject.h>
+#include <OvPhysics/Tools/Conversion.h>
 
 using namespace OvPhysics::Tools;
 using namespace OvPhysics::Entities;
 
-std::map< std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
+std::map<std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
 
 OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & p_settings)
 {

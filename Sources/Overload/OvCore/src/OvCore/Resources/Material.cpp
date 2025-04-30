@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tinyxml2.h>
+
 #include <OvCore/Resources/Material.h>
 
 void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)

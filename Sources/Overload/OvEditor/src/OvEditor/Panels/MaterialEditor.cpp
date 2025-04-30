@@ -113,6 +113,7 @@ OvEditor::Panels::MaterialEditor::MaterialEditor
 	CreateShaderSelector();
 	CreateMaterialSettings();
 	CreateShaderSettings();
+	CreateFeatureSettings();
 
 	m_settings->enabled = false;
 	m_shaderSettings->enabled = false;
@@ -197,6 +198,7 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 	if (m_shaderSettings->enabled)
 	{
 		GenerateShaderSettingsContent();
+		GenerateMaterialFeaturesContent();
 	}
 	else
 	{
@@ -264,6 +266,13 @@ void OvEditor::Panels::MaterialEditor::CreateShaderSettings()
 	m_shaderSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Shader Settings");
 	m_shaderSettingsColumns = &m_shaderSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_shaderSettingsColumns->widths[0] = 150;
+}
+
+void OvEditor::Panels::MaterialEditor::CreateFeatureSettings()
+{
+	m_featureSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Feature Settings");
+	m_featureSettingsColumns = &m_featureSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	m_featureSettingsColumns->widths[0] = 150;
 }
 
 std::string UniformFormat(const std::string& p_string)
@@ -413,4 +422,37 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Shadow Receiving", std::bind(&OvCore::Resources::Material::IsShadowReceiver, m_target), std::bind(&OvCore::Resources::Material::SetReceiveShadows, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "User Interface", std::bind(&OvCore::Resources::Material::IsUserInterface, m_target), std::bind(&OvCore::Resources::Material::SetUserInterface, m_target, std::placeholders::_1));
 	GUIDrawer::DrawScalar<int>(*m_materialSettingsColumns, "GPU Instances", std::bind(&OvCore::Resources::Material::GetGPUInstances, m_target), std::bind(&OvCore::Resources::Material::SetGPUInstances, m_target, std::placeholders::_1), 1.0f, 0, 100000);
+}
+
+void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
+{
+	m_featureSettingsColumns->RemoveAllWidgets();
+
+	if (m_target && m_target->GetShader())
+	{
+		auto shader = m_target->GetShader();
+
+		auto& features = shader->GetFeatures();
+		for (const auto& feature : features)
+		{
+			// bool enabled = m_target->HasFeature(feature);
+			GUIDrawer::DrawBoolean(
+				*m_featureSettingsColumns,
+				feature,
+				[this, feature]() -> bool {
+					return m_target->HasFeature(feature);
+				},
+				[this, feature](bool p_enabled) {
+					if (p_enabled)
+					{
+						m_target->AddFeature(feature);
+					}
+					else
+					{
+						m_target->RemoveFeature(feature);
+					}
+				}
+			);
+		}
+	}
 }

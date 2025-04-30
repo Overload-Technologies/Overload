@@ -226,9 +226,33 @@ namespace OvRendering::Data
 		*/
 		PropertyMap& GetProperties();
 
+		/**
+		* Returns the feature set of this material
+		*/
+		Resources::Shader::FeatureSet& GetFeatures();
+
+		/**
+		* Adds a feature to the material
+		* @param p_feature
+		*/
+		void AddFeature(const std::string& p_feature);
+
+		/**
+		* Removes a feature from the material
+		* @param p_feature
+		*/
+		void RemoveFeature(const std::string& p_feature);
+
+		/**
+		* Returns true if the material has a feature
+		* @param p_feature
+		*/
+		bool HasFeature(const std::string& p_feature) const;
+
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
+		Resources::Shader::FeatureSet m_features;
 
 		bool m_userInterface = false;
 		bool m_blendable = false;

@@ -99,7 +99,7 @@ void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture
 
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
-	auto& program = m_shader->GetProgram();
+	auto& program = m_shader->GetProgram(m_features);
 	program.Bind();
 
 	int textureSlot = 0;
@@ -364,4 +364,24 @@ const OvRendering::Data::StateMask OvRendering::Data::Material::GenerateStateMas
 OvRendering::Data::Material::PropertyMap& OvRendering::Data::Material::GetProperties()
 {
 	return m_properties;
+}
+
+OvRendering::Resources::Shader::FeatureSet& OvRendering::Data::Material::GetFeatures()
+{
+	return m_features;
+}
+
+void OvRendering::Data::Material::AddFeature(const std::string& p_feature)
+{
+	m_features.insert(p_feature);
+}
+
+void OvRendering::Data::Material::RemoveFeature(const std::string& p_feature)
+{
+	m_features.erase(p_feature);
+}
+
+bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
+{
+	return m_features.contains(p_feature);
 }

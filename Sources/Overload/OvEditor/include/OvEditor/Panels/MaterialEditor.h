@@ -72,9 +72,11 @@ namespace OvEditor::Panels
 		void CreateShaderSelector();
 		void CreateMaterialSettings();
 		void CreateShaderSettings();
+		void CreateFeatureSettings();
 
 		void GenerateShaderSettingsContent();
 		void GenerateMaterialSettingsContent();
+		void GenerateMaterialFeaturesContent();
 
 	private:
 		OvCore::Resources::Material* m_target		= nullptr;
@@ -88,9 +90,11 @@ namespace OvEditor::Panels
 
 		OvUI::Widgets::Layout::Group* m_settings			= nullptr;
 		OvUI::Widgets::Layout::Group* m_materialSettings	= nullptr;
-		OvUI::Widgets::Layout::Group* m_shaderSettings		= nullptr;
+		OvUI::Widgets::Layout::Group* m_shaderSettings = nullptr;
+		OvUI::Widgets::Layout::Group* m_featureSettings = nullptr;
 
 		OvUI::Widgets::Layout::Columns<2>* m_shaderSettingsColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_materialSettingsColumns = nullptr;
+		OvUI::Widgets::Layout::Columns<2>* m_featureSettingsColumns = nullptr;
 	};
 }

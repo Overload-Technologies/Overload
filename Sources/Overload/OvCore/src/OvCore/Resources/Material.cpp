@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <sstream>
+
 #include <OvCore/Resources/Material.h>
 
 void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -103,6 +105,20 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 			std::visit(visitor, value);
 		}
 	}
+
+	std::string features;
+
+	for (auto it = m_features.begin(); it != m_features.end(); ++it)
+	{
+		features += *it;
+
+		if (std::next(it) != m_features.end())
+		{
+			features += ",";
+		}
+	}
+
+	Serializer::SerializeString(p_doc, p_node, "features", features);
 }
 
 void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -168,6 +184,19 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 					}
 				}
 			}
+		}
+	}
+
+	const auto features = Serializer::DeserializeString(p_doc, p_node, "features");
+
+	// Parse features (comma-separated)
+	std::string feature;
+	std::istringstream featureStream(features);
+	while (std::getline(featureStream, feature, ','))
+	{
+		if (!feature.empty())
+		{
+			AddFeature(feature);
 		}
 	}
 }

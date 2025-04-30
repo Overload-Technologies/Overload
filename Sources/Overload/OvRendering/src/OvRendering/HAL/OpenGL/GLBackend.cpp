@@ -8,6 +8,9 @@
 
 #include <GL/glew.h>
 
+// Needs to be included after OpenGL headers
+#include <tracy/TracyOpenGL.hpp>
+
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 #include <OvRendering/HAL/OpenGL/GLBackend.h>
@@ -218,6 +221,8 @@ namespace OvRendering::HAL
 			return std::nullopt;
 		}
 
+		TracyGpuContext;
+
 		if (debug)
 		{
 			glEnable(GL_DEBUG_OUTPUT);
@@ -232,10 +237,15 @@ namespace OvRendering::HAL
 	}
 
 	template<>
+	void GLBackend::OnFrameCompleted()
+	{
+		TracyGpuCollect;
+	}
+
+	template<>
 	void GLBackend::Clear(bool p_colorBuffer, bool p_depthBuffer, bool p_stencilBuffer)
 	{
 		GLbitfield clearMask = 0;
-
 		if (p_colorBuffer) clearMask |= GL_COLOR_BUFFER_BIT;
 		if (p_depthBuffer) clearMask |= GL_DEPTH_BUFFER_BIT;
 		if (p_stencilBuffer) clearMask |= GL_STENCIL_BUFFER_BIT;

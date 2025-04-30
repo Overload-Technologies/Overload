@@ -4,27 +4,26 @@
 * @licence: MIT
 */
 
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
-#include <OvPhysics/Core/PhysicsEngine.h>
+#include <tracy/Tracy.hpp>
 
-#include "OvEditor/Core/Editor.h"
-#include "OvEditor/Panels/MenuBar.h"
-#include "OvEditor/Panels/AssetBrowser.h"
-#include "OvEditor/Panels/HardwareInfo.h"
-#include "OvEditor/Panels/Profiler.h"
-#include "OvEditor/Panels/FrameInfo.h"
-#include "OvEditor/Panels/Console.h"
-#include "OvEditor/Panels/Inspector.h"
-#include "OvEditor/Panels/Hierarchy.h"
-#include "OvEditor/Panels/SceneView.h"
-#include "OvEditor/Panels/GameView.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Panels/Toolbar.h"
-#include "OvEditor/Panels/MaterialEditor.h"
-#include "OvEditor/Panels/ProjectSettings.h"
-#include "OvEditor/Panels/AssetProperties.h"
+#include <OvEditor/Core/Editor.h>
+#include <OvEditor/Panels/AssetBrowser.h>
+#include <OvEditor/Panels/AssetProperties.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/Console.h>
+#include <OvEditor/Panels/FrameInfo.h>
+#include <OvEditor/Panels/GameView.h>
+#include <OvEditor/Panels/HardwareInfo.h>
+#include <OvEditor/Panels/Hierarchy.h>
+#include <OvEditor/Panels/Inspector.h>
+#include <OvEditor/Panels/MaterialEditor.h>
+#include <OvEditor/Panels/MenuBar.h>
+#include <OvEditor/Panels/ProjectSettings.h>
+#include <OvEditor/Panels/SceneView.h>
 #include <OvEditor/Panels/TextureDebugger.h>
-#include "OvEditor/Settings/EditorSettings.h"
+#include <OvEditor/Panels/Toolbar.h>
+#include <OvEditor/Settings/EditorSettings.h>
+#include <OvPhysics/Core/PhysicsEngine.h>
 
 using namespace OvCore::ResourceManagement;
 using namespace OvEditor::Panels;
@@ -56,8 +55,7 @@ void OvEditor::Core::Editor::SetupUI()
 
 	m_panelsManager.CreatePanel<Panels::MenuBar>("Menu Bar");
 	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings, m_context.engineAssetsPath, m_context.projectAssetsPath, m_context.projectScriptsPath);
-	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings, 0.2f, 50);
-	m_panelsManager.CreatePanel<Panels::Profiler>("Profiler", true, settings, 0.25f);
+	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings);
 	m_panelsManager.CreatePanel<Panels::FrameInfo>("Frame Info", true, settings);
 	m_panelsManager.CreatePanel<Panels::Console>("Console", true, settings);
 	m_panelsManager.CreatePanel<Panels::AssetView>("Asset View", false, settings);
@@ -80,7 +78,7 @@ void OvEditor::Core::Editor::SetupUI()
 
 void OvEditor::Core::Editor::PreUpdate()
 {
-	PROFILER_SPY("Editor Pre-Update");
+	ZoneScopedN("Editor Pre-Update");
 	m_context.device->PollEvents();
 }
 
@@ -122,7 +120,7 @@ void OvEditor::Core::Editor::UpdateCurrentEditorMode(float p_deltaTime)
 		UpdateEditMode(p_deltaTime);
 
 	{
-		PROFILER_SPY("Scene garbage collection");
+		ZoneScopedN("Scene garbage collection");
 		m_context.sceneManager.GetCurrentScene()->CollectGarbages();
 		m_context.sceneManager.Update();
 	}
@@ -134,28 +132,28 @@ void OvEditor::Core::Editor::UpdatePlayMode(float p_deltaTime)
 	bool simulationApplied = false;
 
 	{
-		PROFILER_SPY("Physics Update");
+		ZoneScopedN("Physics Update");
 		simulationApplied = m_context.physicsEngine->Update(p_deltaTime);
 	}
 
 	if (simulationApplied)
 	{
-		PROFILER_SPY("FixedUpdate");
+		ZoneScopedN("Fixed Update");
 		currentScene->FixedUpdate(p_deltaTime);
 	}
 
 	{
-		PROFILER_SPY("Update");
+		ZoneScopedN("Update");
 		currentScene->Update(p_deltaTime);
 	}
 
 	{
-		PROFILER_SPY("LateUpdate");
+		ZoneScopedN("Late Update");
 		currentScene->LateUpdate(p_deltaTime);
 	}
 
 	{
-		PROFILER_SPY("Audio Update");
+		ZoneScopedN("Audio Update");
 		m_context.audioEngine->Update();
 	}
 
@@ -175,7 +173,6 @@ void OvEditor::Core::Editor::UpdateEditMode(float p_deltaTime)
 void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 {
 	auto& menuBar = m_panelsManager.GetPanelAs<OvEditor::Panels::MenuBar>("Menu Bar");
-	auto& profiler = m_panelsManager.GetPanelAs<OvEditor::Panels::Profiler>("Profiler");
 	auto& frameInfo = m_panelsManager.GetPanelAs<OvEditor::Panels::FrameInfo>("Frame Info");
 	auto& hardwareInfo = m_panelsManager.GetPanelAs<OvEditor::Panels::HardwareInfo>("Hardware Info");
 	auto& sceneView = m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View");
@@ -196,25 +193,13 @@ void OvEditor::Core::Editor::UpdateEditorPanels(float p_deltaTime)
 
 	if (frameInfo.IsOpened())
 	{
-		PROFILER_SPY("Frame Info Update");
-		frameInfo.Update(m_lastFocusedView);
-	}
-
-	if (profiler.IsOpened())
-	{
-		PROFILER_SPY("Profiler Update");
-		profiler.Update(p_deltaTime);
-	}
-
-	if (hardwareInfo.IsOpened())
-	{
-		PROFILER_SPY("Hardware Info Update");
-		hardwareInfo.Update(p_deltaTime);
+		ZoneScopedN("Frame Info Update");
+		frameInfo.Update(m_lastFocusedView, p_deltaTime);
 	}
 
 	if (textureDebugger.IsOpened())
 	{
-		PROFILER_SPY("Texture Debugger Update");
+		ZoneScopedN("Texture Debugger Update");
 		textureDebugger.Update(p_deltaTime);
 	}
 }
@@ -226,7 +211,7 @@ void OvEditor::Core::Editor::RenderViews(float p_deltaTime)
 	auto& gameView = m_panelsManager.GetPanelAs<OvEditor::Panels::GameView>("Game View");
 
 	{
-		PROFILER_SPY("Editor Views Update");
+		ZoneScopedN("Editor Views Update");
 
 		if (assetView.IsOpened())
 		{
@@ -246,35 +231,36 @@ void OvEditor::Core::Editor::RenderViews(float p_deltaTime)
 
 	if (assetView.IsOpened() && assetView.IsVisible())
 	{
-		PROFILER_SPY("Asset View Rendering");
+		ZoneScopedN("Asset View Rendering");
 		assetView.Render();
 	}
 
 	if (gameView.IsOpened() && gameView.IsVisible())
 	{
-		PROFILER_SPY("Game View Rendering");
+		ZoneScopedN("Game View Rendering");
 		gameView.Render();
 	}
 
 	if (sceneView.IsOpened() && sceneView.IsVisible())
 	{
-		PROFILER_SPY("Scene View Rendering");
+		ZoneScopedN("Scene View Rendering");
 		sceneView.Render();
 	}
 }
 
 void OvEditor::Core::Editor::RenderEditorUI(float p_deltaTime)
 {
-	PROFILER_SPY("Editor UI Rendering");
+	ZoneScopedN("Editor UI Rendering");
 
 	EDITOR_CONTEXT(uiManager)->Render();
 }
 
 void OvEditor::Core::Editor::PostUpdate()
 {
-	PROFILER_SPY("Editor Post-Update");
+	ZoneScopedN("Editor Post-Update");
 
 	m_context.window->SwapBuffers();
 	m_context.inputManager->ClearEvents();
+	m_context.driver->OnFrameCompleted();
 	++m_elapsedFrames;
 }

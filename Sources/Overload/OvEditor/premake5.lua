@@ -10,9 +10,9 @@ project "OvEditor"
 		"include"
 	}
 
-	libdirs { dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib", dependdir .. "glew/lib", dependdir .. "irrKlang/lib" }
+	libdirs { dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib", dependdir .. "glew/lib" }
 	links {
-		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "irrKlang.lib", "opengl32.lib", "dbghelp.lib",
+		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "opengl32.lib", "dbghelp.lib",
 		"ImGui", "tinyxml2", "lua", "glfw", "assimp", "tracy", "soloud",
 		"OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
     }

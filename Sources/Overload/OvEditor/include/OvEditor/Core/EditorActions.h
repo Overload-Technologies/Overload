@@ -9,11 +9,10 @@
 #include <tinyxml2.h>
 
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Core/PanelsManager.h>
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvTools/Utils/PathParser.h>
-
-#include "OvEditor/Core/Context.h"
-#include "OvEditor/Core/PanelsManager.h"
 
 #define EDITOR_EXEC(action)					OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().action
 #define EDITOR_BIND(method, ...)			std::bind(&OvEditor::Core::EditorActions::method, &OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>(), ##__VA_ARGS__)

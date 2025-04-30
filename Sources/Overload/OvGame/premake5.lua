@@ -12,9 +12,9 @@ project "OvGame"
 
 	libdirs {  dependdir .. "bullet3/lib/%{cfg.buildcfg}", dependdir .. "lua/lib", dependdir .. "glew/lib", dependdir .. "irrKlang/lib" }
 	links {
-		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "irrKlang.lib", "opengl32.lib",
+		"Bullet3Collision.lib", "Bullet3Common.lib", "Bullet3Dynamics.lib", "Bullet3Geometry.lib", "BulletCollision.lib", "BulletDynamics.lib", "BulletSoftBody.lib", "LinearMath.lib", "glew32.lib", "irrKlang.lib", "opengl32.lib", "dbghelp.lib",
 		"ImGui", "tinyxml2", "lua", "glfw", "assimp", "tracy",
-		"OvAnalytics", "OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
+		"OvAudio", "OvCore", "OvDebug", "OvMaths", "OvPhysics", "OvRendering", "OvTools", "OvUI", "OvWindowing"
     }
 
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")

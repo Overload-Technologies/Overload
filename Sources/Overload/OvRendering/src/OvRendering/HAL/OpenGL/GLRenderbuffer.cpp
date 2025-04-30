@@ -13,7 +13,7 @@
 template<>
 OvRendering::HAL::GLRenderbuffer::TRenderbuffer()
 {
-	glGenRenderbuffers(1, &m_context.id);
+	glCreateRenderbuffers(1, &m_context.id);
 }
 
 template<>

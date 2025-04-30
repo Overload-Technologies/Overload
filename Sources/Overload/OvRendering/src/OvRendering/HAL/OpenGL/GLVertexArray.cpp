@@ -44,7 +44,7 @@ namespace
 template<>
 OvRendering::HAL::GLVertexArray::TVertexArray()
 {
-	glGenVertexArrays(1, &m_context.id);
+	glCreateVertexArrays(1, &m_context.id);
 }
 
 template<>

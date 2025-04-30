@@ -35,7 +35,7 @@ namespace
 template<>
 OvRendering::HAL::GLTexture::TTexture(std::string_view p_debugName)
 {
-	glGenTextures(1, &m_context.id);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_context.id);
 	m_textureContext.debugName = p_debugName;
 	CreationEvent.Invoke(*this);
 }

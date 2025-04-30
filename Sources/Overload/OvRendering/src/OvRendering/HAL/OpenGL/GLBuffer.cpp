@@ -15,7 +15,7 @@ OvRendering::HAL::GLBuffer::TBuffer(Settings::EBufferType p_type) : m_buffer{
 	.type = p_type
 }
 {
-	glGenBuffers(1, &m_buffer.id);
+	glCreateBuffers(1, &m_buffer.id);
 }
 
 template<>

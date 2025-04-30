@@ -46,7 +46,7 @@ template<>
 OvRendering::HAL::GLFramebuffer::TFramebuffer(std::string_view p_debugName) :
 	m_context{ .debugName = std::string{p_debugName} }
 {
-	glGenFramebuffers(1, &m_context.id);
+	glCreateFramebuffers(1, &m_context.id);
 }
 
 template<>

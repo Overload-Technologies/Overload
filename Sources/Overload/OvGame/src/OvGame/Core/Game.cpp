@@ -4,12 +4,11 @@
 * @licence: MIT
 */
 
-#include "OvGame/Core/Game.h"
+#include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
+#include <OvGame/Core/Game.h>
 #include <OvUI/Widgets/Texts/Text.h>
-
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
 
 #ifdef _DEBUG
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
@@ -22,7 +21,6 @@ OvGame::Core::Game::Game(Context & p_context) :
 	#ifdef _DEBUG
 	,
 	m_driverInfo(*m_context.driver, *m_context.window),
-	m_gameProfiler(*p_context.window, 0.25f),
 	m_frameInfo(*m_context.window)
 	#endif
 {
@@ -30,7 +28,6 @@ OvGame::Core::Game::Game(Context & p_context) :
 	m_canvas.AddPanel(m_fpsCounter);
 	#ifdef _DEBUG
 	m_canvas.AddPanel(m_driverInfo);
-	m_canvas.AddPanel(m_gameProfiler);
 	m_canvas.AddPanel(m_frameInfo);
 	m_sceneRenderer.AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
 	#endif
@@ -46,9 +43,8 @@ OvGame::Core::Game::~Game()
 
 void OvGame::Core::Game::PreUpdate()
 {
-	#ifdef _DEBUG
-	PROFILER_SPY("Pre-Update");
-	#endif
+	ZoneScoped;
+
 	m_context.device->PollEvents();
 }
 
@@ -57,9 +53,7 @@ void RenderCurrentScene(
 	const OvGame::Core::Context& p_context
 )
 {
-#ifdef _DEBUG
-	PROFILER_SPY("Render Current Scene");
-#endif
+	ZoneScoped;
 
 	if (auto currentScene = p_context.sceneManager.GetCurrentScene())
 	{
@@ -98,7 +92,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 	{
 		{
 			#ifdef _DEBUG
-			PROFILER_SPY("Physics Update");
+			ZoneScopedN("Physics Update");
 			#endif
 
 			if (m_context.physicsEngine->Update(p_deltaTime))
@@ -107,7 +101,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 		{
 			#ifdef _DEBUG
-			PROFILER_SPY("Scene Update");
+			ZoneScopedN("Scene Update");
 			#endif
 			currentScene->Update(p_deltaTime);
 			currentScene->LateUpdate(p_deltaTime);
@@ -115,7 +109,7 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 		{
 			#ifdef _DEBUG
-			PROFILER_SPY("Audio Update");
+			ZoneScopedN("Audio Update");
 			#endif
 			m_context.audioEngine->Update();
 		}
@@ -135,7 +129,6 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 	{
 		m_fpsCounter.Update(p_deltaTime);
 		#ifdef _DEBUG
-		m_gameProfiler.Update(p_deltaTime);
 		auto& frameInfoRenderFeature = m_sceneRenderer.GetFeature<OvRendering::Features::FrameInfoRenderFeature>();
 		auto& frameInfo = frameInfoRenderFeature.GetFrameInfo();
 		m_frameInfo.Update(frameInfo);
@@ -146,9 +139,9 @@ void OvGame::Core::Game::Update(float p_deltaTime)
 
 void OvGame::Core::Game::PostUpdate()
 {
-	#ifdef _DEBUG
-	PROFILER_SPY("Post-Update");
-	#endif
+	ZoneScoped;
+
 	m_context.window->SwapBuffers();
 	m_context.inputManager->ClearEvents();
+	m_context.driver->OnFrameCompleted();
 }

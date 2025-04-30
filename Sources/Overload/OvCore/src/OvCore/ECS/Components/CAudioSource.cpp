@@ -4,18 +4,19 @@
 * @licence: MIT
 */
 
+#include <OvAudio/Core/AudioEngine.h>
+
+#include <OvCore/ECS/Components/CAudioSource.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/SceneSystem/SceneManager.h>
+
 #include <OvUI/Widgets/Plots/PlotLines.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
-#include <OvAudio/Core/AudioPlayer.h>
-
-#include "OvCore/ECS/Components/CAudioSource.h"
-#include "OvCore/ECS/Actor.h"
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/SceneSystem/SceneManager.h"
 
 OvCore::ECS::Components::CAudioSource::CAudioSource(ECS::Actor& p_owner) :
 	AComponent(p_owner),
-	m_audioSource(OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioPlayer>(), owner.transform.GetFTransform())
+	m_audioSource(OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>(), owner.transform.GetFTransform())
 {
 }
 
@@ -94,9 +95,9 @@ float OvCore::ECS::Components::CAudioSource::GetPitch() const
 	return m_audioSource.GetPitch();
 }
 
-bool OvCore::ECS::Components::CAudioSource::IsFinished() const
+bool OvCore::ECS::Components::CAudioSource::IsPlaying() const
 {
-	return m_audioSource.IsFinished();
+	return m_audioSource.IsPlaying();
 }
 
 bool OvCore::ECS::Components::CAudioSource::IsSpatial() const
@@ -189,9 +190,11 @@ void OvCore::ECS::Components::CAudioSource::OnInspector(OvUI::Internal::WidgetCo
 
 		OvMaths::FVector3 listenerPosition(0.0f, 0.0f, 0.0f);
 		bool playMode = OvCore::Global::ServiceLocator::Get<SceneSystem::SceneManager>().GetCurrentScene()->IsPlaying();
-		auto listenerInfo = OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>().GetListenerInformation(!playMode);
-		if (listenerInfo.has_value())
-			listenerPosition = listenerInfo.value().first;
+		auto mainListener = OvCore::Global::ServiceLocator::Get<OvAudio::Core::AudioEngine>().FindMainListener(!playMode);
+		if (mainListener)
+		{
+			listenerPosition = mainListener->GetTransform().GetWorldPosition();
+		}
 
 		float distanceToListener = OvMaths::FVector3::Distance(listenerPosition, owner.transform.GetWorldPosition());
 

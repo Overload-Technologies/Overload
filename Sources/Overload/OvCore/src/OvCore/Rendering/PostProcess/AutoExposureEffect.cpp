@@ -55,7 +55,7 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 
 	// Luminance calculation
 	m_luminanceBuffer.Resize(kLuminanceBufferResolution, kLuminanceBufferResolution);
-	m_luminanceMaterial.Set("_CenterWeightBias", autoExposureSettings.centerWeightBias, true);
+	m_luminanceMaterial.SetProperty("_CenterWeightBias", autoExposureSettings.centerWeightBias, true);
 	m_renderer.Blit(p_pso, p_src, m_luminanceBuffer, m_luminanceMaterial,
 		OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC);
 	const auto luminanceTex = m_luminanceBuffer.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
@@ -76,18 +76,18 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	m_exposurePingPongIndex = (m_exposurePingPongIndex + 1) % 2;
 
 	// Exposure adaptation
-	m_exposureMaterial.Set("_LuminanceTexture", luminanceTex, true);
-	m_exposureMaterial.Set("_MinLuminanceEV", autoExposureSettings.minLuminanceEV, true);
-	m_exposureMaterial.Set("_MaxLuminanceEV", autoExposureSettings.maxLuminanceEV, true);
-	m_exposureMaterial.Set("_ExposureCompensationEV", autoExposureSettings.exposureCompensationEV, true);
-	m_exposureMaterial.Set("_ElapsedTime", elapsedTime, true);
-	m_exposureMaterial.Set("_Progressive", static_cast<int>(autoExposureSettings.progressive), true);
-	m_exposureMaterial.Set("_SpeedUp", autoExposureSettings.speedUp, true);
-	m_exposureMaterial.Set("_SpeedDown", autoExposureSettings.speedDown, true);
+	m_exposureMaterial.SetProperty("_LuminanceTexture", &luminanceTex.value(), true);
+	m_exposureMaterial.SetProperty("_MinLuminanceEV", autoExposureSettings.minLuminanceEV, true);
+	m_exposureMaterial.SetProperty("_MaxLuminanceEV", autoExposureSettings.maxLuminanceEV, true);
+	m_exposureMaterial.SetProperty("_ExposureCompensationEV", autoExposureSettings.exposureCompensationEV, true);
+	m_exposureMaterial.SetProperty("_ElapsedTime", elapsedTime, true);
+	m_exposureMaterial.SetProperty("_Progressive", static_cast<int>(autoExposureSettings.progressive), true);
+	m_exposureMaterial.SetProperty("_SpeedUp", autoExposureSettings.speedUp, true);
+	m_exposureMaterial.SetProperty("_SpeedDown", autoExposureSettings.speedDown, true);
 	m_renderer.Blit(p_pso, previousExposure, currentExposure, m_exposureMaterial);
 
 	// Apply the exposure to the final image
 	const auto exposureTex = currentExposure.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
-	m_compensationMaterial.Set("_ExposureTexture", exposureTex, true);
+	m_compensationMaterial.SetProperty("_ExposureTexture", &exposureTex.value(), true);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_compensationMaterial);
 }

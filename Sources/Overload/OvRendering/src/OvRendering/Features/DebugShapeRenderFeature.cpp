@@ -80,7 +80,7 @@ void OvRendering::Features::DebugShapeRenderFeature::OnBeginFrame(const Data::Fr
 		p_frameDescriptor.camera->GetProjectionMatrix() *
 		p_frameDescriptor.camera->GetViewMatrix();
 
-	m_lineMaterial->Set("viewProjection", viewProjection);
+	m_lineMaterial->SetProperty("viewProjection", viewProjection);
 }
 
 void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
@@ -93,9 +93,9 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
 {
 	m_lineMaterial->SetBackfaceCulling(false);
 	m_lineMaterial->SetFrontfaceCulling(false);
-	m_lineMaterial->Set("start", p_start);
-	m_lineMaterial->Set("end", p_end);
-	m_lineMaterial->Set("color", p_color);
+	m_lineMaterial->SetProperty("start", p_start);
+	m_lineMaterial->SetProperty("end", p_end);
+	m_lineMaterial->SetProperty("color", p_color);
 
 
 	p_pso.rasterizationMode = Settings::ERasterizationMode::LINE;

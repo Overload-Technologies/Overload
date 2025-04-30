@@ -7,39 +7,36 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
-#include <irrklang/ik_ISoundEngine.h>
-#include <irrklang/ik_ISoundStopEventReceiver.h>
-
-#include <OvTools/Eventing/Event.h>
+#include <OvAudio/Data/SoundHandle.h>
+#include <OvAudio/Data/SoundInstance.h>
+#include <OvAudio/Resources/Sound.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FTransform.h>
+#include <OvTools/Eventing/Event.h>
+#include <OvTools/Utils/OptRef.h>
+#include <OvTools/Utils/ReferenceOrValue.h>
 
-#include "OvAudio/Tracking/SoundTracker.h"
-#include "OvAudio/Resources/Sound.h"
-
-namespace OvAudio::Core { class AudioPlayer; }
+namespace OvAudio::Core { class AudioEngine; }
 
 namespace OvAudio::Entities
 {
 	/**
-	* Wrap Irrklang ISound
+	* An audio source is an entity that can play a sound in a 3D space.
 	*/
 	class AudioSource
 	{
 	public:
 		/**
 		* AudioSource constructor (Internal transform management)
-		* @param p_audioPlayer
-		*/
-		AudioSource(Core::AudioPlayer& p_audioPlayer);
-
-		/**
-		* AudioSource constructor (External transform management)
-		* @param p_audioPlayer
+		* @param p_engine
 		* @param p_transform
 		*/
-		AudioSource(Core::AudioPlayer& p_audioPlayer, OvMaths::FTransform& p_transform);
+		AudioSource(
+			Core::AudioEngine& p_engine,
+			OvTools::Utils::OptRef<OvMaths::FTransform> p_transform = std::nullopt
+		);
 
 		/**
 		* AudioSource destructor
@@ -47,9 +44,9 @@ namespace OvAudio::Entities
 		~AudioSource();
 
 		/**
-		* Apply the AudioSource position to the tracked sound
+		* Returns the AudioSource transform
 		*/
-		void UpdateTrackedSoundPosition();
+		const OvMaths::FTransform& GetTransform();
 
 		/**
 		* Apply every AudioSource settings to the currently tracked sound
@@ -57,14 +54,24 @@ namespace OvAudio::Entities
 		void ApplySourceSettingsToTrackedSound();
 
 		/**
-		* Returns true if a sound is currently being tracked
+		* Returns true if the audio source has a sound instance
 		*/
-		bool IsTrackingSound() const;
+		bool HasSound() const;
+
+		/**
+		* Returns true if the audio source is currently playing
+		*/
+		bool IsPlaying() const;
+
+		/**
+		* Retrurns true if the audio source is currently paused
+		*/
+		bool IsPaused() const;
 
 		/**
 		* Returns the currently tracked sound if any, or nullptr
 		*/
-		Tracking::SoundTracker* GetTrackedSound() const;
+		std::weak_ptr<Data::SoundInstance> GetSoundInstance() const;
 
 		/**
 		* Defines the audio source volume
@@ -123,11 +130,6 @@ namespace OvAudio::Entities
 		float GetPitch() const;
 
 		/**
-		* Returns true if the audio source sound has finished
-		*/
-		bool IsFinished() const;
-
-		/**
 		* Returns true if the audio source is spatialized
 		*/
 		bool IsSpatial() const;
@@ -159,32 +161,25 @@ namespace OvAudio::Entities
 		void Stop();
 
 		/**
-		* Stop the audio source and destroy the tracked sound
+		* Update the audio source
 		*/
-		void StopAndDestroyTrackedSound();
-
-	private:
-		void Setup();
+		void Update();
 
 	public:
 		static OvTools::Eventing::Event<AudioSource&> CreatedEvent;
 		static OvTools::Eventing::Event<AudioSource&> DestroyedEvent;
 
 	private:
-		Core::AudioPlayer& m_audioPlayer;
+		Core::AudioEngine& m_engine;
+		OvTools::Utils::ReferenceOrValue<OvMaths::FTransform> m_transform;
+		std::shared_ptr<Data::SoundInstance> m_instance;
 
-		std::unique_ptr<Tracking::SoundTracker> m_trackedSound;
-
-		/* AudioSource settings */
-		float	m_volume				= 1.0f;
-		float	m_pan					= 0.0f;
-		bool	m_looped				= false;
-		float	m_pitch					= 1.0f;
-		bool	m_spatial				= false;
-		float	m_attenuationThreshold	= 1.0f;
-
-		/* Transform stuff */
-		OvMaths::FTransform* const		m_transform;
-		const bool						m_internalTransform;
+		// Sound settings
+		bool m_spatial = false;
+		float m_volume = 1.0f;
+		float m_pan = 0.0f;
+		bool m_looped = false;
+		float m_pitch = 1.0f;
+		float m_attenuationThreshold = 1.0f;
 	};
 }

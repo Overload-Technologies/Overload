@@ -26,6 +26,10 @@ namespace OvRendering::HAL
 	}
 
 	template<>
+	void NoneBackend::OnFrameCompleted()
+	{}
+
+	template<>
 	void NoneBackend::Clear(bool p_colorBuffer, bool p_depthBuffer, bool p_stencilBuffer)
 	{}
 

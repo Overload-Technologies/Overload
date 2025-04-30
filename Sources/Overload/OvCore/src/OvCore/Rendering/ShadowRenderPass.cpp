@@ -4,14 +4,15 @@
 * @licence: MIT
 */
 
-#include "OvCore/Rendering/ShadowRenderPass.h"
-
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
-#include <OvCore/Rendering/EngineDrawableDescriptor.h>
-#include <OvCore/Rendering/EngineBufferRenderFeature.h>
-#include <OvRendering/Features/LightingRenderFeature.h>
-#include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/EngineBufferRenderFeature.h>
+#include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvCore/Rendering/ShadowRenderPass.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+
+#include <OvRendering/Features/LightingRenderFeature.h>
+#include <OvRendering/HAL/Profiling.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
 
@@ -28,6 +29,8 @@ OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::Composi
 
 void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
+	TracyGpuZone("ShadowRenderPass");
+
 	using namespace OvCore::Rendering;
 
 	OVASSERT(m_renderer.HasDescriptor<SceneRenderer::SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
@@ -58,7 +61,7 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 					light.UpdateShadowData(frameDescriptor.camera.value());
 					const auto& lightSpaceMatrix = light.GetLightSpaceMatrix();
 					const auto& shadowBuffer = light.GetShadowBuffer();
-					m_shadowMaterial.Set("_LightSpaceMatrix", lightSpaceMatrix);
+					m_shadowMaterial.SetProperty("_LightSpaceMatrix", lightSpaceMatrix);
 					shadowBuffer.Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
@@ -108,7 +111,7 @@ void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
 							drawable.material = m_shadowMaterial;
 							drawable.stateMask = m_shadowMaterial.GenerateStateMask();
 
-							drawable.material.value().Set("_ModelMatrix", modelMatrix);
+							drawable.material.value().SetProperty("_ModelMatrix", modelMatrix);
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}

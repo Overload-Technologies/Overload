@@ -4,13 +4,12 @@
 * @licence: MIT
 */
 
-#include "OvCore/Resources/Material.h"
+#include <OvCore/Resources/Material.h>
 
-void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
+void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	using namespace OvCore::Helpers;
 	using namespace OvRendering::Settings;
-	using namespace OvRendering::Resources;
 	using namespace OvMaths;
 
 	Serializer::SerializeShader(p_doc, p_node, "shader", m_shader);
@@ -33,54 +32,80 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument & p_doc, tin
 	tinyxml2::XMLNode* uniformsNode = p_doc.NewElement("uniforms");
 	p_node->InsertEndChild(uniformsNode);
 
-	for (const auto&[name, prop] : m_properties)
+	for (const auto& [name, prop] : m_properties)
 	{
 		auto& value = prop.value;
-
 		tinyxml2::XMLNode* uniform = p_doc.NewElement("uniform");
-		uniformsNode->InsertEndChild(uniform); // Instead of p_node, use uniformNode (To create)
+		uniformsNode->InsertEndChild(uniform);
 
 		const auto uniformInfo = m_shader->GetProgram().GetUniformInfo(name);
-
 		Serializer::SerializeString(p_doc, uniform, "name", name);
 
-		if (uniformInfo && value.has_value())
+		if (uniformInfo && !std::holds_alternative<std::monostate>(value))
 		{
-			switch (uniformInfo->type)
-			{
-			case EUniformType::BOOL:
-				if (value.type() == typeid(bool)) Serializer::SerializeInt(p_doc, uniform, "value", std::any_cast<bool>(value));
-				break;
+			auto visitor = [&](auto&& arg) {
+				using T = std::decay_t<decltype(arg)>;
+				using enum EUniformType;
+				const auto type = uniformInfo->type;
 
-			case EUniformType::INT:
-				if (value.type() == typeid(int)) Serializer::SerializeInt(p_doc, uniform, "value", std::any_cast<int>(value));
-				break;
+				if constexpr (std::same_as<T, bool>)
+				{
+					if (type == BOOL)
+					{
+						Serializer::SerializeInt(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, int>)
+				{
+					if (type == INT)
+					{
+						Serializer::SerializeInt(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, float>)
+				{
+					if (type == FLOAT)
+					{
+						Serializer::SerializeFloat(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, FVector2>)
+				{
+					if (type == FLOAT_VEC2)
+					{
+						Serializer::SerializeVec2(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, FVector3>)
+				{
+					if (type == FLOAT_VEC3)
+					{
+						Serializer::SerializeVec3(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, FVector4>)
+				{
+					if (type == FLOAT_VEC4)
+					{
+						Serializer::SerializeVec4(p_doc, uniform, "value", arg);
+					}
+				}
+				else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
+				{
+					if (type == SAMPLER_2D)
+					{
+						Serializer::SerializeTexture(p_doc, uniform, "value", arg);
+					}
+				}
+				// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
+			};
 
-			case EUniformType::FLOAT:
-				if (value.type() == typeid(float)) Serializer::SerializeFloat(p_doc, uniform, "value", std::any_cast<float>(value));
-				break;
-
-			case EUniformType::FLOAT_VEC2:
-				if (value.type() == typeid(FVector2)) Serializer::SerializeVec2(p_doc, uniform, "value", std::any_cast<FVector2>(value));
-				break;
-
-			case EUniformType::FLOAT_VEC3:
-				if (value.type() == typeid(FVector3)) Serializer::SerializeVec3(p_doc, uniform, "value", std::any_cast<FVector3>(value));
-				break;
-
-			case EUniformType::FLOAT_VEC4:
-				if (value.type() == typeid(FVector4)) Serializer::SerializeVec4(p_doc, uniform, "value", std::any_cast<FVector4>(value));
-				break;
-
-			case EUniformType::SAMPLER_2D:
-				if (value.type() == typeid(Texture*)) Serializer::SerializeTexture(p_doc, uniform, "value", std::any_cast<Texture*>(value));
-				break;
-			}
+			std::visit(visitor, value);
 		}
 	}
 }
 
-void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
+void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	using namespace OvCore::Helpers;
 
@@ -101,13 +126,13 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument & p_doc, t
 	}
 
 	/* We get the shader with Deserialize method */
-	OvRendering::Resources::Shader* deserializedShader = OvCore::Helpers::Serializer::DeserializeShader(p_doc, p_node, "shader");
+	const auto shader = Serializer::DeserializeShader(p_doc, p_node, "shader");
 
 	/* We verify that the shader is valid (Not null) */
-	if (deserializedShader)
+	if (shader)
 	{
 		/* If the shader is valid, we set it to the material (Modify m_shader pointer + Query + FillUniforms) */
-		SetShader(deserializedShader);
+		SetShader(shader);
 
 		tinyxml2::XMLNode* uniformsNode = p_node->FirstChildElement("uniforms"); // Access to "Uniforms" (Every uniform will be attached to "Uniforms")		
 
@@ -130,37 +155,15 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument & p_doc, t
 						/* Deserialization of the uniform value depending on the uniform type (Deserialization result to std::any) */
 						switch (uniformInfo->type)
 						{
-						case OvRendering::Settings::EUniformType::BOOL:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::INT:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeInt(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::FLOAT:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeFloat(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::FLOAT_VEC2:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeVec2(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::FLOAT_VEC3:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeVec3(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::FLOAT_VEC4:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeVec4(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::FLOAT_MAT4:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeMat4(p_doc, uniform, "value");
-							break;
-
-						case OvRendering::Settings::EUniformType::SAMPLER_2D:
-							m_properties[uniformInfo->name] = OvCore::Helpers::Serializer::DeserializeTexture(p_doc, uniform, "value");
-							break;
+							using enum OvRendering::Settings::EUniformType;
+							case BOOL: SetProperty(uniformInfo->name, Serializer::DeserializeBoolean(p_doc, uniform, "value")); break;
+							case INT: SetProperty(uniformInfo->name, Serializer::DeserializeInt(p_doc, uniform, "value")); break;
+							case FLOAT: SetProperty(uniformInfo->name, Serializer::DeserializeFloat(p_doc, uniform, "value")); break;
+							case FLOAT_VEC2: SetProperty(uniformInfo->name, Serializer::DeserializeVec2(p_doc, uniform, "value")); break;
+							case FLOAT_VEC3: SetProperty(uniformInfo->name, Serializer::DeserializeVec3(p_doc, uniform, "value")); break;
+							case FLOAT_VEC4: SetProperty(uniformInfo->name, Serializer::DeserializeVec4(p_doc, uniform, "value")); break;
+							case FLOAT_MAT4: SetProperty(uniformInfo->name, Serializer::DeserializeMat4(p_doc, uniform, "value")); break;
+							case SAMPLER_2D: SetProperty(uniformInfo->name, Serializer::DeserializeTexture(p_doc, uniform, "value")); break;
 						}
 					}
 				}

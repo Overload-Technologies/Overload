@@ -328,6 +328,11 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 	}
 }
 
+void OvEditor::Core::EditorActions::OpenProfiler()
+{
+	OvTools::Utils::SystemCalls::OpenFile("Tools/tracy-profiler.exe");
+}
+
 void OvEditor::Core::EditorActions::DelayAction(std::function<void()> p_action, uint32_t p_frames)
 {
 	m_delayedActions.emplace_back(p_frames + 1, p_action);
@@ -454,7 +459,6 @@ void OvEditor::Core::EditorActions::StopPlaying()
 {
 	if (m_editorMode != EEditorMode::EDIT)
 	{
-		ImGui::GetIO().DisableMouseUpdate = false;
 		m_context.window->SetCursorMode(OvWindowing::Cursor::ECursorMode::NORMAL);
 		SetEditorMode(EEditorMode::EDIT);
 		bool loadedFromDisk = m_context.sceneManager.IsCurrentSceneLoadedFromDisk();
@@ -849,12 +853,22 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	{
 		if (auto texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().GetResource(p_previousName, false))
 		{
-			for (auto[name, instance] : OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().GetResources())
+			for (auto [name, instance] : OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().GetResources())
+			{
 				if (instance)
-					for (auto&[name, prop] : instance->GetProperties())
-						if (prop.value.has_value() && prop.value.type() == typeid(OvRendering::Resources::Texture*))
-							if (std::any_cast<OvRendering::Resources::Texture*>(prop.value) == texture)
+				{
+					for (auto& [name, prop] : instance->GetProperties())
+					{
+						if (const auto pval = std::get_if<OvRendering::Resources::Texture*>(&prop.value); pval && *pval)
+						{
+							if (*pval == texture)
+							{
 								prop.value = static_cast<OvRendering::Resources::Texture*>(nullptr);
+							}
+						}
+					}
+				}
+			}
 
 			auto& assetView = EDITOR_PANEL(Panels::AssetView, "Asset View");
 			auto assetViewRes = assetView.GetResource();

@@ -31,7 +31,6 @@ namespace
 			OvRendering::Resources::Parsers::EModelParserFlags::TRIANGULATE |
 			OvRendering::Resources::Parsers::EModelParserFlags::GEN_SMOOTH_NORMALS |
 			OvRendering::Resources::Parsers::EModelParserFlags::OPTIMIZE_MESHES |
-			OvRendering::Resources::Parsers::EModelParserFlags::OPTIMIZE_GRAPH |
 			OvRendering::Resources::Parsers::EModelParserFlags::FIND_INSTANCES |
 			OvRendering::Resources::Parsers::EModelParserFlags::CALC_TANGENT_SPACE |
 			OvRendering::Resources::Parsers::EModelParserFlags::JOIN_IDENTICAL_VERTICES |

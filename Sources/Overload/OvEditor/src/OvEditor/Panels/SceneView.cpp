@@ -4,14 +4,14 @@
 * @licence: MIT
 */
 
-#include <OvUI/Plugins/DDTarget.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Panels/GameView.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
-#include "OvEditor/Rendering/DebugSceneRenderer.h"
-#include "OvEditor/Rendering/PickingRenderPass.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Panels/SceneView.h"
-#include "OvEditor/Panels/GameView.h"
-#include "OvEditor/Settings/EditorSettings.h"
+#include <OvUI/Plugins/DDTarget.h>
 
 OvEditor::Panels::SceneView::SceneView
 (
@@ -26,8 +26,8 @@ OvEditor::Panels::SceneView::SceneView
 	m_camera.SetFar(5000.0f);
 
 	m_fallbackMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_fallbackMaterial.Set<OvMaths::FVector4>("u_Diffuse", { 1.f, 0.f, 1.f, 1.0f });
-	m_fallbackMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+	m_fallbackMaterial.SetProperty("u_Diffuse", OvMaths::FVector4{ 1.f, 0.f, 1.f, 1.0f });
+	m_fallbackMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 
 	m_image->AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [this](auto p_data)
 	{

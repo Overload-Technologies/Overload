@@ -5,34 +5,32 @@
 */
 
 #include <OvCore/ECS/Components/CCamera.h>
-#include <OvCore/ECS/Components/CPhysicalBox.h>
-#include <OvCore/ECS/Components/CPhysicalSphere.h>
-#include <OvCore/ECS/Components/CPhysicalCapsule.h>
-#include <OvCore/ECS/Components/CMaterialRenderer.h>
-#include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CPhysicalBox.h>
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>
+#include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 
-#include <OvRendering/Features/DebugShapeRenderFeature.h>
-#include <OvRendering/Features/FrameInfoRenderFeature.h>
-
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
-
 #include <OvDebug/Assertion.h>
 
-#include "OvEditor/Rendering/DebugModelRenderFeature.h"
-#include "OvEditor/Rendering/DebugSceneRenderer.h"
-#include "OvEditor/Rendering/GridRenderPass.h"
-#include "OvEditor/Rendering/OutlineRenderFeature.h"
-#include "OvEditor/Rendering/GizmoRenderFeature.h"
-#include "OvEditor/Rendering/PickingRenderPass.h"
-#include "OvEditor/Core/EditorResources.h"
-#include "OvEditor/Panels/AView.h"
-#include "OvEditor/Panels/GameView.h"
-#include "OvEditor/Settings/EditorSettings.h"
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/EditorResources.h>
+#include <OvEditor/Panels/AView.h>
+#include <OvEditor/Panels/GameView.h>
+#include <OvEditor/Rendering/DebugModelRenderFeature.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Rendering/GizmoRenderFeature.h>
+#include <OvEditor/Rendering/GridRenderPass.h>
+#include <OvEditor/Rendering/OutlineRenderFeature.h>
+#include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
-#include "OvEditor/Core/EditorActions.h"
+#include <OvRendering/Features/DebugShapeRenderFeature.h>
+#include <OvRendering/Features/FrameInfoRenderFeature.h>
+#include <OvRendering/HAL/Profiling.h>
 
 using namespace OvMaths;
 using namespace OvRendering::Resources;
@@ -78,13 +76,15 @@ public:
 	DebugCamerasRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
 	{
 		m_cameraMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Lambert.ovfx"]);
-		m_cameraMaterial.Set("u_Diffuse", FVector4(0.0f, 0.3f, 0.7f, 1.0f));
-		m_cameraMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", nullptr);
+		m_cameraMaterial.SetProperty("u_Diffuse", FVector4{ 0.0f, 0.3f, 0.7f, 1.0f });
+		m_cameraMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
 	}
 
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		TracyGpuZone("DebugCamerasRenderPass");
+
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
 		for (auto camera : sceneDescriptor.scene.GetFastAccessComponents().cameras)
@@ -112,7 +112,7 @@ public:
 	DebugLightsRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
 	{
 		m_lightMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Billboard"));
-		m_lightMaterial.Set("u_Diffuse", FVector4(1.f, 1.f, 0.5f, 0.5f));
+		m_lightMaterial.SetProperty("u_Diffuse", FVector4{ 1.f, 1.f, 0.5f, 0.5f });
 		m_lightMaterial.SetBackfaceCulling(false);
 		m_lightMaterial.SetBlendable(true);
 		m_lightMaterial.SetDepthTest(false);
@@ -121,9 +121,11 @@ public:
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		TracyGpuZone("DebugLightsRenderPass");
+
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
-		m_lightMaterial.Set<float>("u_Scale", OvEditor::Settings::EditorSettings::LightBillboardScale * 0.1f);
+		m_lightMaterial.SetProperty("u_Scale", OvEditor::Settings::EditorSettings::LightBillboardScale * 0.1f);
 
 		for (auto light : sceneDescriptor.scene.GetFastAccessComponents().lights)
 		{
@@ -142,8 +144,8 @@ protected:
 					nullptr;
 
 				const auto& lightColor = light->GetColor();
-				m_lightMaterial.Set<OvRendering::Resources::Texture*>("u_DiffuseMap", lightTexture);
-				m_lightMaterial.Set<OvMaths::FVector4>("u_Diffuse", OvMaths::FVector4(lightColor.x, lightColor.y, lightColor.z, 0.75f));
+				m_lightMaterial.SetProperty("u_DiffuseMap", lightTexture);
+				m_lightMaterial.SetProperty("u_Diffuse", OvMaths::FVector4(lightColor.x, lightColor.y, lightColor.z, 0.75f));
 
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_lightMaterial, modelMatrix);
@@ -169,6 +171,8 @@ protected:
 
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
+		TracyGpuZone("DebugActorRenderPass");
+
 		auto& debugSceneDescriptor = m_renderer.GetDescriptor<OvEditor::Rendering::DebugSceneRenderer::DebugSceneDescriptor>();
 
 		if (debugSceneDescriptor.selectedActor)

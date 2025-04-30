@@ -4,7 +4,7 @@ project "OvRendering"
 	cppdialect "C++20"
 	files { "**.h", "**.inl", "**.cpp", "**.lua" }
 	includedirs {
-		dependdir .. "glad/include", dependdir .. "stb_image/include", dependdir .. "assimp/include",
+		dependdir .. "glad/include", dependdir .. "stb_image/include", dependdir .. "assimp/include", dependdir .. "tracy",
 		"%{wks.location}/OvDebug/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include",
 		"include"
 	}

@@ -4,7 +4,7 @@ project "OvAudio"
 	cppdialect "C++20"
 	files { "**.h", "**.inl", "**.cpp", "**.lua" }
 	includedirs {
-		dependdir .. "irrKlang/include",
+		dependdir .. "soloud/include",
 		"%{wks.location}/OvDebug/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include",
 		"include"
 	}

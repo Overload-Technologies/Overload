@@ -117,8 +117,8 @@ OvEditor::Panels::MaterialEditor::MaterialEditor
 	m_settings->enabled = false;
 	m_shaderSettings->enabled = false;
 
-	m_materialDroppedEvent	+= std::bind(&MaterialEditor::OnMaterialDropped, this);
-	m_shaderDroppedEvent	+= std::bind(&MaterialEditor::OnShaderDropped, this);
+	m_materialDroppedEvent += std::bind(&MaterialEditor::OnMaterialDropped, this);
+	m_shaderDroppedEvent += std::bind(&MaterialEditor::OnShaderDropped, this);
 }
 
 void OvEditor::Panels::MaterialEditor::Refresh()
@@ -312,7 +312,13 @@ void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
 
 	m_shaderSettingsColumns->RemoveAllWidgets(); // Ensure that the m_shaderSettingsColumns is empty
 
-	std::multimap<int, std::pair<std::string, std::any*>> sortedUniformsData;
+	std::multimap<
+		int,
+		std::pair<
+			std::string,
+			OvRendering::Data::MaterialPropertyType*
+		>
+	> sortedUniformsData;
 
 	for (auto&[name, value] : m_target->GetProperties())
 	{
@@ -333,38 +339,62 @@ void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
 			case EUniformType::BOOL:			orderID = 6; break;
 			}
 
-			sortedUniformsData.emplace(orderID, std::pair<std::string, std::any*>{ name, & value.value });
+			sortedUniformsData.emplace(orderID, std::pair<std::string, OvRendering::Data::MaterialPropertyType*>{ name, & value.value });
 		}
 	}
 
 	for (auto& [order, info] : sortedUniformsData)
 	{
 		auto uniformData = m_target->GetShader()->GetProgram().GetUniformInfo(info.first);
-		
+
 		if (uniformData)
 		{
 			const auto formattedType = UniformFormat(info.first);
-			switch (uniformData->type)
-			{
-			case EUniformType::BOOL:			GUIDrawer::DrawBoolean(*m_shaderSettingsColumns, formattedType, reinterpret_cast<bool&>(*info.second));																	break;
-			case EUniformType::INT:			GUIDrawer::DrawScalar<int>(*m_shaderSettingsColumns, formattedType, reinterpret_cast<int&>(*info.second));																break;
-			case EUniformType::FLOAT:		GUIDrawer::DrawScalar<float>(*m_shaderSettingsColumns, formattedType, reinterpret_cast<float&>(*info.second), 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);		break;
-			case EUniformType::FLOAT_VEC2:	GUIDrawer::DrawVec2(*m_shaderSettingsColumns, formattedType, reinterpret_cast<OvMaths::FVector2&>(*info.second), 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);	break;
-			case EUniformType::FLOAT_VEC3:	DrawHybridVec3(*m_shaderSettingsColumns, formattedType, reinterpret_cast<OvMaths::FVector3&>(*info.second), 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);			break;
-			case EUniformType::FLOAT_VEC4:	DrawHybridVec4(*m_shaderSettingsColumns, formattedType, reinterpret_cast<OvMaths::FVector4&>(*info.second), 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);			break;
-			case EUniformType::SAMPLER_2D:
+
+			// Create a visitor to handle each type in the variant
+			auto drawVisitor = [&](auto& arg) {
+				using T = std::decay_t<decltype(arg)>;
+
+				if constexpr (std::is_same_v<T, bool>)
 				{
-					try
-					{
-						auto& texture = std::any_cast<Texture*&>(*info.second);
-						GUIDrawer::DrawTexture(*m_shaderSettingsColumns, formattedType, texture);
-					}
-					catch (const std::bad_any_cast&)
-					{
-						// If the cast failed, it means that the uniform is not a texture (It's a texture handle)
-					}
+					if (uniformData->type == EUniformType::BOOL)
+						GUIDrawer::DrawBoolean(*m_shaderSettingsColumns, formattedType, arg);
 				}
-			}
+				else if constexpr (std::is_same_v<T, int>)
+				{
+					if (uniformData->type == EUniformType::INT)
+						GUIDrawer::DrawScalar<int>(*m_shaderSettingsColumns, formattedType, arg);
+				}
+				else if constexpr (std::is_same_v<T, float>)
+				{
+					if (uniformData->type == EUniformType::FLOAT)
+						GUIDrawer::DrawScalar<float>(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				}
+				else if constexpr (std::is_same_v<T, OvMaths::FVector2>)
+				{
+					if (uniformData->type == EUniformType::FLOAT_VEC2)
+						GUIDrawer::DrawVec2(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				}
+				else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
+				{
+					if (uniformData->type == EUniformType::FLOAT_VEC3)
+						DrawHybridVec3(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				}
+				else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
+				{
+					if (uniformData->type == EUniformType::FLOAT_VEC4)
+						DrawHybridVec4(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				}
+				else if constexpr (std::is_same_v<T, Texture*>)
+				{
+					if (uniformData->type == EUniformType::SAMPLER_2D)
+						GUIDrawer::DrawTexture(*m_shaderSettingsColumns, formattedType, arg);
+				}
+				// No UI for TextureHandle* since it's not handled in the original code
+				};
+
+			// Apply the visitor to the variant
+			std::visit(drawVisitor, *info.second);
 		}
 	}
 }

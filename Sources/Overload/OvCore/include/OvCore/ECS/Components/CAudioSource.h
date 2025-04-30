@@ -110,9 +110,9 @@ namespace OvCore::ECS::Components
 		float GetPitch() const;
 
 		/**
-		* Returns true if the audio source sound has finished
+		* Returns true if the audio source is currently playing
 		*/
-		bool IsFinished() const;
+		bool IsPlaying() const;
 
 		/**
 		* Returns true if the audio source is spatialized

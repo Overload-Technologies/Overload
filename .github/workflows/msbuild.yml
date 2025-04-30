@@ -2,9 +2,10 @@ name: MSBuild
 
 on:
   pull_request:
+    types: ready_for_review
   push:
     branches:
-      - develop
+      - main
 
 env:
   # Path to the solution file relative to the root of the project.

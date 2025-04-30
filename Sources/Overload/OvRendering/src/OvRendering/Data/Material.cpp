@@ -10,6 +10,8 @@
 #include "OvRendering/Resources/Texture.h"
 #include <OvTools/Utils/OptRef.h>
 
+#include <tracy/Tracy.hpp>
+
 //TODO: Add constructor with a shader reference
 
 OvRendering::Data::Material::Material(OvRendering::Resources::Shader* p_shader)
@@ -45,6 +47,8 @@ void OvRendering::Data::Material::FillUniform()
 
 void OvRendering::Data::Material::Bind(OvRendering::Resources::Texture* p_emptyTexture)
 {
+	ZoneScoped;
+
 	if (HasShader())
 	{
 		using namespace OvMaths;

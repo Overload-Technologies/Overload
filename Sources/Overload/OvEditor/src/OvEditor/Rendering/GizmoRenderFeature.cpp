@@ -15,8 +15,6 @@
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 
-#include <OvAnalytics/Profiling/ProfilerSpy.h>
-
 #include <OvDebug/Assertion.h>
 
 #include "OvEditor/Rendering/DebugModelRenderFeature.h"

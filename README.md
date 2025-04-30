@@ -55,7 +55,6 @@ Overload is divided into 12 modules: 10 libraries (SDK), and 2 executables (Appl
 ## Overload SDK
 The Overload SDK is the core of the engine. It is a set of libraries used by our applications: `OvGame` and `OvEditor`.
 We designed theses libraries with reusability in mind. They are highly modular and easy to extract from a game engine context.
-- `OvAnalytics`: Code and hardware profiling
 - `OvDebug`: Logging and assertions
 - `OvTools`: Serialization, INI files, events, clock
 - `OvMaths`: Vectors, matrices, quaternions, transforms

@@ -328,6 +328,11 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 	}
 }
 
+void OvEditor::Core::EditorActions::OpenProfiler()
+{
+	OvTools::Utils::SystemCalls::OpenFile("Tools/tracy-profiler.exe");
+}
+
 void OvEditor::Core::EditorActions::DelayAction(std::function<void()> p_action, uint32_t p_frames)
 {
 	m_delayedActions.emplace_back(p_frames + 1, p_action);
@@ -454,7 +459,6 @@ void OvEditor::Core::EditorActions::StopPlaying()
 {
 	if (m_editorMode != EEditorMode::EDIT)
 	{
-		ImGui::GetIO().DisableMouseUpdate = false;
 		m_context.window->SetCursorMode(OvWindowing::Cursor::ECursorMode::NORMAL);
 		SetEditorMode(EEditorMode::EDIT);
 		bool loadedFromDisk = m_context.sceneManager.IsCurrentSceneLoadedFromDisk();

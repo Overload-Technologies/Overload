@@ -6,13 +6,13 @@
 
 #pragma once
 
+#include <imgui.h>
+
 #include <string>
 
 #include <OvTools/Eventing/Event.h>
 
-#include "OvUI/ImGui/imgui.h"
-
-#include "OvUI/Plugins/IPlugin.h"
+#include <OvUI/Plugins/IPlugin.h>
 
 namespace OvUI::Plugins
 {

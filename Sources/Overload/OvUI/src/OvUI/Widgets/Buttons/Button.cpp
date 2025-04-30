@@ -4,9 +4,11 @@
 * @licence: MIT
 */
 
-#include "OvUI/Widgets/Buttons/Button.h"
-#include "OvUI/Internal/Converter.h"
-#include "OvUI/ImGui/imgui_internal.h"
+#include <imgui.h>
+#include <imgui_internal.h>
+
+#include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Internal/Converter.h>
 
 OvUI::Widgets::Buttons::Button::Button(const std::string& p_label, const OvMaths::FVector2& p_size, bool p_disabled) :
 	label(p_label), size(p_size), disabled(p_disabled)
@@ -33,7 +35,7 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 	style.Colors[ImGuiCol_ButtonActive]		= OvUI::Internal::Converter::ToImVec4(clickedBackgroundColor);
 	style.Colors[ImGuiCol_Text]				= OvUI::Internal::Converter::ToImVec4(textColor);
 
-	if (ImGui::ButtonEx((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size), disabled ? ImGuiButtonFlags_Disabled : 0))
+	if (ImGui::ButtonEx((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size), disabled ? ImGuiItemFlags_Disabled : 0))
 		ClickedEvent.Invoke();
 
 	style.Colors[ImGuiCol_Button]			= defaultIdleColor;

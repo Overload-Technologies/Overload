@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include <OvTools/Filesystem/tinyxml2.h>
+#include <tinyxml2.h>
 #include <OvWindowing/Dialogs/MessageBox.h>
 
 #include "OvCore/SceneSystem/SceneManager.h"

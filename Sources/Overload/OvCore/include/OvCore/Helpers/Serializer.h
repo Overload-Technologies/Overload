@@ -7,16 +7,14 @@
 #pragma once
 
 #include <string>
-
-#include <OvUI/Types/Color.h>
+#include <tinyxml2.h>
 
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FVector4.h>
 #include <OvMaths/FQuaternion.h>
-#include <OvTools/Filesystem/tinyxml2.h>
 
-
+#include <OvUI/Types/Color.h>
 
 /* Forward declaration */
 namespace OvRendering::Resources

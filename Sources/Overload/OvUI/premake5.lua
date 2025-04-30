@@ -3,7 +3,11 @@ project "OvUI"
 	language "C++"
 	cppdialect "C++20"
 	files { "**.h", "**.inl", "**.cpp", "**.lua" }
-	includedirs { "include", dependdir .. "glfw/include", dependdir .. "glew/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include" }
+	includedirs {
+		dependdir .. "glfw/include", dependdir .. "glew/include", dependdir .. "ImGui/include",
+		"%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include",
+		"include"
+	}
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	characterset ("MBCS")

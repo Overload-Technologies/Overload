@@ -12,6 +12,7 @@
 
 #include <OvRendering/Utils/Defines.h>
 
+#include <OvTools/Profiling/TracyAllocators.h>
 #include <OvTools/Utils/String.h>
 
 #undef APIENTRY

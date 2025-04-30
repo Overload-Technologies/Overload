@@ -8,11 +8,11 @@
 
 #include <unordered_map>
 
-#include "OvWindowing/Window.h"
-#include "OvWindowing/Inputs/EKey.h"
-#include "OvWindowing/Inputs/EKeyState.h"
-#include "OvWindowing/Inputs/EMouseButton.h"
-#include "OvWindowing/Inputs/EMouseButtonState.h"
+#include <OvWindowing/Inputs/EMouseButton.h>
+#include <OvWindowing/Inputs/EMouseButtonState.h>
+#include <OvWindowing/Inputs/EKey.h>
+#include <OvWindowing/Inputs/EKeyState.h>
+#include <OvWindowing/Window.h>
 
 namespace OvWindowing::Inputs
 {
@@ -75,6 +75,11 @@ namespace OvWindowing::Inputs
 		std::pair<double, double> GetMousePosition() const;
 
 		/**
+		* Returns the scroll data for the current frame
+		*/
+		std::pair<double, double> GetMouseScroll() const;
+
+		/**
 		* Clear any event occured
 		* @note Should be called at the end of every game tick
 		*/
@@ -85,6 +90,7 @@ namespace OvWindowing::Inputs
 		void OnKeyReleased(int p_key);
 		void OnMouseButtonPressed(int p_button);
 		void OnMouseButtonReleased(int p_button);
+		void OnMouseScroll(double p_xOffset, double p_yOffset);
 
 	private:
 		Window& m_window;
@@ -93,8 +99,10 @@ namespace OvWindowing::Inputs
 		OvTools::Eventing::ListenerID m_keyReleasedListener;
 		OvTools::Eventing::ListenerID m_mouseButtonPressedListener;
 		OvTools::Eventing::ListenerID m_mouseButtonReleasedListener;
+		OvTools::Eventing::ListenerID m_mouseScrollListener;
 
-		std::unordered_map<EKey, EKeyState>					m_keyEvents;
-		std::unordered_map<EMouseButton, EMouseButtonState>	m_mouseButtonEvents;
+		std::unordered_map<EKey, EKeyState> m_keyEvents;
+		std::unordered_map<EMouseButton, EMouseButtonState> m_mouseButtonEvents;
+		std::pair<double, double> m_scrollData;
 	};
 }

@@ -6,10 +6,13 @@
 
 #pragma once
 
-#include <OvTools/Filesystem/tinyxml2.h>
+#include <OvCore/Helpers/Serializer.h>
 
-
-#include "OvCore/Helpers/Serializer.h"
+namespace tinyxml2
+{
+	class XMLDocument;
+	class XMLNode;
+}
 
 namespace OvCore::API
 {

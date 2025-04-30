@@ -9,11 +9,39 @@
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 
-#include "OvRendering/Resources/Parsers/AssimpParser.h"
+#include <OvDebug/Logger.h>
+#include <OvRendering/Resources/Parsers/AssimpParser.h>
+
+namespace
+{
+	OvRendering::Resources::Parsers::EModelParserFlags FixFlags(OvRendering::Resources::Parsers::EModelParserFlags p_flags)
+	{
+		using enum OvRendering::Resources::Parsers::EModelParserFlags;
+
+		if (static_cast<bool>(p_flags & GEN_NORMALS) && static_cast<bool>(p_flags & GEN_SMOOTH_NORMALS))
+		{
+			p_flags &= ~GEN_NORMALS;
+			OVLOG_WARNING("AssimpParser: GEN_NORMALS and GEN_SMOOTH_NORMALS are mutually exclusive. GEN_NORMALS will be ignored.");
+		}
+
+		if (static_cast<bool>(p_flags & OPTIMIZE_GRAPH) && static_cast<bool>(p_flags & PRE_TRANSFORM_VERTICES))
+		{
+			p_flags &= ~OPTIMIZE_GRAPH;
+			OVLOG_WARNING("AssimpParser: OPTIMIZE_GRAPH and PRE_TRANSFORM_VERTICES are mutually exclusive. OPTIMIZE_GRAPH will be ignored.");
+		}
+
+		return p_flags;
+	}
+}
 
 bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(const std::string & p_fileName, std::vector<Mesh*>& p_meshes, std::vector<std::string>& p_materials, EModelParserFlags p_parserFlags)
 {
 	Assimp::Importer import;
+
+	// Fix the flags to avoid conflicts/invalid scenarios.
+	// This is a workaround, ideally the editor UI should not allow this to happen.
+	p_parserFlags = FixFlags(p_parserFlags); 
+
 	const aiScene* scene = import.ReadFile(p_fileName, static_cast<unsigned int>(p_parserFlags));
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

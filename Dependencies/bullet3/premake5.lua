@@ -1,0 +1,5 @@
+project "bullet3"
+	kind "SharedItems"
+	files { "**.h", "**.lua" }
+	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
+	characterset ("MBCS")

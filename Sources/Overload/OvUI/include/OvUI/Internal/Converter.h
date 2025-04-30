@@ -6,11 +6,12 @@
 
 #pragma once
 
+#include <imgui.h>
+
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector4.h>
 
-#include "OvUI/ImGui/imgui.h"
-#include "OvUI/Types/Color.h"
+#include <OvUI/Types/Color.h>
 
 namespace OvUI::Internal
 {

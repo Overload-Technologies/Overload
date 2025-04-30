@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
@@ -90,6 +92,8 @@ void OvRendering::Data::Material::FillUniform()
 
 void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture)
 {
+	ZoneScoped;
+
 	using namespace OvMaths;
 	using enum OvRendering::Settings::EUniformType;
 

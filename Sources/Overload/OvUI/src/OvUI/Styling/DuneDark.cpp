@@ -4,7 +4,8 @@
 * @licence: MIT
 */
 
-#include <OvUI/ImGui/imgui.h>
+#include <imgui.h>
+
 #include <OvUI/Styling/TStyle.h>
 
 template<>
@@ -62,7 +63,7 @@ ImGuiStyle OvUI::Styling::TStyle<OvUI::Styling::EStyle::DUNE_DARK>::GetStyle()
 	style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.40f, 0.39f, 0.38f, 0.63f);
 	style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.25f, 1.00f, 0.00f, 1.00f);
 	style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.25f, 1.00f, 0.00f, 0.43f);
-	style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
+	style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 
 	style.Colors[ImGuiCol_Tab] = style.Colors[ImGuiCol_TabUnfocused];
 

@@ -22,7 +22,8 @@ namespace OvRendering::Entities
 	{
 		OvTools::Utils::OptRef<OvRendering::Resources::IMesh> mesh;
 		OvTools::Utils::OptRef<OvRendering::Data::Material> material;
-		OvRendering::Data::StateMask stateMask;
-		OvRendering::Settings::EPrimitiveMode primitiveMode = OvRendering::Settings::EPrimitiveMode::TRIANGLES;
+		Data::StateMask stateMask;
+		Settings::EPrimitiveMode primitiveMode = OvRendering::Settings::EPrimitiveMode::TRIANGLES;
+		std::optional<Resources::Shader::FeatureSet> featureSetOverride = std::nullopt;
 	};
 }

@@ -90,7 +90,10 @@ void OvRendering::Data::Material::FillUniform()
 	}
 }
 
-void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture)
+void OvRendering::Data::Material::Bind(
+	OvRendering::HAL::Texture* p_emptyTexture,
+	OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride
+)
 {
 	ZoneScoped;
 
@@ -99,7 +102,10 @@ void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture
 
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
-	auto& program = m_shader->GetProgram(m_features);
+	auto& program = m_shader->GetProgram(
+		p_featureSetOverride.value_or(m_features)
+	);
+
 	program.Bind();
 
 	int textureSlot = 0;

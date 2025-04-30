@@ -68,8 +68,12 @@ namespace OvRendering::Data
 		/**
 		* Bind the material and send its uniform data to the GPU
 		* @param p_emptyTexture (The texture to use if a texture uniform is null)
+		* @param p_featureSetOverride
 		*/
-		void Bind(OvRendering::HAL::Texture* p_emptyTexture = nullptr);
+		void Bind(
+			HAL::Texture* p_emptyTexture = nullptr,
+			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride = std::nullopt
+		);
 
 		/**
 		* Unbind the material

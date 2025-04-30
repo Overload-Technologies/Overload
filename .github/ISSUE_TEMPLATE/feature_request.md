@@ -2,13 +2,12 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: Feature
 assignees: ''
 
 ---
 
-**Problem this feature should fix**
+## Problem this feature should fix
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-**Expected solution**
+## Expected solution
 A clear and concise description of what you want to happen.

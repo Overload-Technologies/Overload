@@ -1,24 +1,23 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report a bug you encountered
 title: ''
-labels: Bug
 assignees: ''
 
 ---
 
-**Description**
+## Description
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+## To Reproduce
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
-**Expected behavior**
+## Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
+## Screenshots
 If applicable, add screenshots to help explain your problem.

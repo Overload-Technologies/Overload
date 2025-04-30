@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <bullet/btBulletCollisionCommon.h>
-#include <bullet/btBulletDynamicsCommon.h>
-
 #include <map>
 #include <optional>
 #include <vector>
@@ -16,6 +13,15 @@
 #include <OvPhysics/Entities/PhysicalObject.h>
 #include <OvPhysics/Entities/RaycastHit.h>
 #include <OvPhysics/Settings/PhysicsSettings.h>
+
+class btDynamicsWorld;
+class btDispatcher;
+class btCollisionConfiguration;
+class btBroadphaseInterface;
+class btConstraintSolver;
+class btRigidBody;
+class btManifoldPoint;
+struct btCollisionObjectWrapper;
 
 namespace OvPhysics::Core
 {
@@ -31,6 +37,11 @@ namespace OvPhysics::Core
 		* @param p_settings
 		*/
 		PhysicsEngine(const Settings::PhysicsSettings& p_settings);
+
+		/**
+		* Destructor
+		*/
+		virtual ~PhysicsEngine() = default;
 
 		/**
 		* Simulate the physics. This method call is decomposed in 3 things:

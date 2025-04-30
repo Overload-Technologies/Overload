@@ -6,6 +6,9 @@
 
 #include <algorithm>
 
+#include <bullet/btBulletCollisionCommon.h>
+#include <bullet/btBulletDynamicsCommon.h>
+
 #include <OvDebug/Logger.h>
 
 #include <OvPhysics/Core/PhysicsEngine.h>

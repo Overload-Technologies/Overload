@@ -16,7 +16,6 @@ project "OvGame"
 
 	includedirs {
 		-- Dependencies
-		dependdir .. "bullet3/include",
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "lua/include",

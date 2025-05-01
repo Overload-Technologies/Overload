@@ -4,6 +4,9 @@
 * @licence: MIT
 */
 
+#include <format>
+#include <ranges>
+
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Assertion.h>
@@ -81,12 +84,15 @@ void OvRendering::Data::Material::FillUniform()
 {
 	m_properties.clear();
 
-	for (const auto& uniform : m_shader->GetProgram().GetUniforms())
+	for (const auto& program : m_shader->GetPrograms() | std::views::values)
 	{
-		m_properties.emplace(uniform.name, MaterialProperty{
-			.value = UniformToPropertyValue(uniform.defaultValue),
-			.singleUse = false
-		});
+		for (const auto& uniform : program->GetUniforms())
+		{
+			m_properties.emplace(uniform.name, MaterialProperty{
+				.value = UniformToPropertyValue(uniform.defaultValue),
+				.singleUse = false
+			});
+		}
 	}
 }
 

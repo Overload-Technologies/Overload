@@ -56,6 +56,11 @@ namespace OvRendering::Resources
 		*/
 		const FeatureSet& GetFeatures() const;
 
+		/**
+		* Return all programs
+		*/
+		const ProgramVariants& GetPrograms() const;
+
 	private:
 		Shader(
 			const std::string p_path,

@@ -40,64 +40,41 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 		tinyxml2::XMLNode* uniform = p_doc.NewElement("uniform");
 		uniformsNode->InsertEndChild(uniform);
 
-		const auto uniformInfo = m_shader->GetProgram().GetUniformInfo(name);
 		Serializer::SerializeString(p_doc, uniform, "name", name);
 
-		if (uniformInfo && !std::holds_alternative<std::monostate>(value))
+		if (!std::holds_alternative<std::monostate>(value))
 		{
 			auto visitor = [&](auto&& arg) {
 				using T = std::decay_t<decltype(arg)>;
 				using enum EUniformType;
-				const auto type = uniformInfo->type;
 
 				if constexpr (std::same_as<T, bool>)
 				{
-					if (type == BOOL)
-					{
-						Serializer::SerializeInt(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeInt(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, int>)
 				{
-					if (type == INT)
-					{
-						Serializer::SerializeInt(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeInt(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, float>)
 				{
-					if (type == FLOAT)
-					{
-						Serializer::SerializeFloat(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeFloat(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, FVector2>)
 				{
-					if (type == FLOAT_VEC2)
-					{
-						Serializer::SerializeVec2(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeVec2(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, FVector3>)
 				{
-					if (type == FLOAT_VEC3)
-					{
-						Serializer::SerializeVec3(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeVec3(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, FVector4>)
 				{
-					if (type == FLOAT_VEC4)
-					{
-						Serializer::SerializeVec4(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeVec4(p_doc, uniform, "value", arg);
 				}
 				else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
 				{
-					if (type == SAMPLER_2D)
-					{
-						Serializer::SerializeTexture(p_doc, uniform, "value", arg);
-					}
+					Serializer::SerializeTexture(p_doc, uniform, "value", arg);
 				}
 				// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
 			};
@@ -150,37 +127,59 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 		/* If the shader is valid, we set it to the material (Modify m_shader pointer + Query + FillUniforms) */
 		SetShader(shader);
 
-		tinyxml2::XMLNode* uniformsNode = p_node->FirstChildElement("uniforms"); // Access to "Uniforms" (Every uniform will be attached to "Uniforms")		
+		const auto uniformsNode = p_node->FirstChildElement("uniforms"); // Access to "Uniforms" (Every uniform will be attached to "Uniforms")		
 
 		if (uniformsNode)
 		{
-			/* We iterate over every <uniform>...</uniform> */
+			// Iterate over every <uniform>...</uniform>
 			for (auto uniform = uniformsNode->FirstChildElement("uniform"); uniform; uniform = uniform->NextSiblingElement("uniform"))
 			{
-				/* Verify that the uniform node contains a "name" element */
-				if (auto uniformNameElement = uniform->FirstChildElement("name"); uniformNameElement)
+				if (const auto uniformNameElement = uniform->FirstChildElement("name"))
 				{
-					const std::string uniformName = uniformNameElement->GetText();
+					const auto propName = uniformNameElement->GetText();
 
-					/* We collect information about the uniform (The uniform is identified in the shader by its name) */
-					const auto uniformInfo = m_shader->GetProgram().GetUniformInfo(uniformName);
-
-					/* We verify that the uniform is existant is the current shader */
-					if (uniformInfo)
+					// Make sure that there is a property with the same name.
+					// The type of the property value will be used to determine which type to deserialize.
+					// This means that the serialized data doesn't hold the type information, and if the
+					// type changes after serialization, it will not be deserialized correctly (skipped).
+					if (const auto prop = GetProperty(propName))
 					{
-						/* Deserialization of the uniform value depending on the uniform type (Deserialization result to std::any) */
-						switch (uniformInfo->type)
-						{
-							using enum OvRendering::Settings::EUniformType;
-							case BOOL: SetProperty(uniformInfo->name, Serializer::DeserializeBoolean(p_doc, uniform, "value")); break;
-							case INT: SetProperty(uniformInfo->name, Serializer::DeserializeInt(p_doc, uniform, "value")); break;
-							case FLOAT: SetProperty(uniformInfo->name, Serializer::DeserializeFloat(p_doc, uniform, "value")); break;
-							case FLOAT_VEC2: SetProperty(uniformInfo->name, Serializer::DeserializeVec2(p_doc, uniform, "value")); break;
-							case FLOAT_VEC3: SetProperty(uniformInfo->name, Serializer::DeserializeVec3(p_doc, uniform, "value")); break;
-							case FLOAT_VEC4: SetProperty(uniformInfo->name, Serializer::DeserializeVec4(p_doc, uniform, "value")); break;
-							case FLOAT_MAT4: SetProperty(uniformInfo->name, Serializer::DeserializeMat4(p_doc, uniform, "value")); break;
-							case SAMPLER_2D: SetProperty(uniformInfo->name, Serializer::DeserializeTexture(p_doc, uniform, "value")); break;
-						}
+						auto visitor = [&](auto&& arg) {
+							using T = std::decay_t<decltype(arg)>;
+							using namespace OvMaths;
+
+							if constexpr (std::same_as<T, bool>)
+							{
+								SetProperty(propName, Serializer::DeserializeBoolean(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, int>)
+							{
+								SetProperty(propName, Serializer::DeserializeInt(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, float>)
+							{
+								SetProperty(propName, Serializer::DeserializeFloat(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, FVector2>)
+							{
+								SetProperty(propName, Serializer::DeserializeVec2(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, FVector3>)
+							{
+								SetProperty(propName, Serializer::DeserializeVec3(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, FVector4>)
+							{
+								SetProperty(propName, Serializer::DeserializeVec4(p_doc, uniform, "value"));
+							}
+							else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
+							{
+								SetProperty(propName, Serializer::DeserializeTexture(p_doc, uniform, "value"));
+							}
+							// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
+						};
+
+						std::visit(visitor, prop->value);
 					}
 				}
 			}

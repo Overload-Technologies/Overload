@@ -24,78 +24,116 @@ using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
 using namespace OvCore::Helpers;
 
-void DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
+namespace
 {
-	OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
-
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
-	auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
-	xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
-	xyzWidget.lineBreak = false;
-
-	auto& rgbWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
-	auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-	rgbDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
-	rgbWidget.enabled = false;
-	rgbWidget.lineBreak = false;
-
-	auto& xyzButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
-	xyzButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	xyzButton.lineBreak = false;
-
-	auto& rgbButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGB");
-	rgbButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-
-	xyzButton.ClickedEvent += [&]
+	std::string FormatPropertyName(const std::string& p_string)
 	{
-		xyzWidget.enabled = true;
+		std::string result;
+		std::string formattedInput = p_string;
+
+		if (formattedInput.rfind("u_", 0) == 0 || formattedInput.rfind("U_", 0) == 0)
+		{
+			formattedInput = formattedInput.substr(2);
+		}
+
+		std::string capsChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+		bool first = true;
+		bool capsNext = false;
+
+		for (char c : formattedInput)
+		{
+			if (first || capsNext)
+			{
+				c = toupper(c);
+				first = false;
+				capsNext = false;
+			}
+
+			if (c == '_')
+			{
+				c = ' ';
+				capsNext = true;
+			}
+
+			if (std::find(capsChars.begin(), capsChars.end(), c) != capsChars.end())
+				result.push_back(' ');
+
+			result.push_back(c);
+		}
+
+		return result;
+	}
+
+	void DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
+	{
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
+
+		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+
+		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
+		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
+		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
+		xyzWidget.lineBreak = false;
+
+		auto& rgbWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
+		auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
+		rgbDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
 		rgbWidget.enabled = false;
-	};
+		rgbWidget.lineBreak = false;
 
-	rgbButton.ClickedEvent += [&]
+		auto& xyzButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
+		xyzButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+		xyzButton.lineBreak = false;
+
+		auto& rgbButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGB");
+		rgbButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+
+		xyzButton.ClickedEvent += [&] {
+			xyzWidget.enabled = true;
+			rgbWidget.enabled = false;
+		};
+
+		rgbButton.ClickedEvent += [&] {
+			xyzWidget.enabled = false;
+			rgbWidget.enabled = true;
+		};
+	}
+
+	void DrawHybridVec4(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector4& p_data, float p_step, float p_min, float p_max)
 	{
-		xyzWidget.enabled = false;
-		rgbWidget.enabled = true;
-	};
-}
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
-void DrawHybridVec4(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector4& p_data, float p_step, float p_min, float p_max)
-{
-	OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
+		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
 
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
+		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
+		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
+		xyzWidget.lineBreak = false;
 
-	auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
-	auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
-	xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
-	xyzWidget.lineBreak = false;
-
-	auto& rgbaWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
-	auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-	rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
-	rgbaWidget.enabled = false;
-	rgbaWidget.lineBreak = false;
-
-	auto& xyzwButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
-	xyzwButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	xyzwButton.lineBreak = false;
-
-	auto& rgbaButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGBA");
-	rgbaButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-
-	xyzwButton.ClickedEvent += [&]
-	{
-		xyzWidget.enabled = true;
+		auto& rgbaWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
+		auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
+		rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
 		rgbaWidget.enabled = false;
-	};
+		rgbaWidget.lineBreak = false;
 
-	rgbaButton.ClickedEvent += [&]
-	{
-		xyzWidget.enabled = false;
-		rgbaWidget.enabled = true;
-	};
+		auto& xyzwButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
+		xyzwButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+		xyzwButton.lineBreak = false;
+
+		auto& rgbaButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGBA");
+		rgbaButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+
+		xyzwButton.ClickedEvent += [&] {
+			xyzWidget.enabled = true;
+			rgbaWidget.enabled = false;
+		};
+
+		rgbaButton.ClickedEvent += [&] {
+			xyzWidget.enabled = false;
+			rgbaWidget.enabled = true;
+		};
+	}
 }
 
 OvEditor::Panels::MaterialEditor::MaterialEditor
@@ -275,45 +313,6 @@ void OvEditor::Panels::MaterialEditor::CreateFeatureSettings()
 	m_featureSettingsColumns->widths[0] = 150;
 }
 
-std::string UniformFormat(const std::string& p_string)
-{
-	std::string result;
-	std::string formattedInput = p_string;
-
-	if (formattedInput.rfind("u_", 0) == 0 || formattedInput.rfind("U_", 0) == 0)
-	{
-		formattedInput = formattedInput.substr(2);
-	}
-
-	std::string capsChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	
-	bool first = true;
-	bool capsNext = false;
-
-	for (char c : formattedInput)
-	{
-		if (first || capsNext)
-		{
-			c = toupper(c);
-			first = false;
-			capsNext = false;
-		}
-
-		if (c == '_')
-		{
-			c = ' ';
-			capsNext = true;
-		}
-
-		if (std::find(capsChars.begin(), capsChars.end(), c) != capsChars.end())
-			result.push_back(' ');
-
-		result.push_back(c);
-	}
-
-	return result;
-}
-
 void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
 {
 	using namespace OvRendering::Settings;
@@ -325,86 +324,81 @@ void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
 		int,
 		std::pair<
 			std::string,
-			OvRendering::Data::MaterialPropertyType*
+			std::reference_wrapper<OvRendering::Data::MaterialPropertyType>
 		>
-	> sortedUniformsData;
+	> sortedProperties;
 
-	for (auto&[name, value] : m_target->GetProperties())
+	auto typeIndexVisitor = [&](auto& arg) -> uint32_t {
+		using T = std::decay_t<decltype(arg)>;
+
+		if constexpr (std::is_same_v<T, Texture*>) return 0;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector4>) return 1;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector3>) return 2;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector2>) return 3;
+		else if constexpr (std::is_same_v<T, float>) return 4;
+		else if constexpr (std::is_same_v<T, int>) return 5;
+		if constexpr (std::is_same_v<T, bool>) return 6;
+		return ~static_cast<uint32_t>(0UL);
+	};
+
+	for (auto&[name, prop] : m_target->GetProperties())
 	{
-		int orderID = 0;
-
-		auto uniformData = m_target->GetShader()->GetProgram().GetUniformInfo(name);
-
-		if (uniformData && name.length() > 0 && name[0] != '_') // Uniforms starting with '_' are internal (private), so not exposed
+		if (name.length() > 0 && name[0] != '_') // Uniforms starting with '_' are internal (private), so not exposed
 		{
-			switch (uniformData->type)
-			{
-			case EUniformType::SAMPLER_2D:	orderID = 0; break;
-			case EUniformType::FLOAT_VEC4:	orderID = 1; break;
-			case EUniformType::FLOAT_VEC3:	orderID = 2; break;
-			case EUniformType::FLOAT_VEC2:	orderID = 3; break;
-			case EUniformType::FLOAT:		orderID = 4; break;
-			case EUniformType::INT:			orderID = 5; break;
-			case EUniformType::BOOL:			orderID = 6; break;
-			}
-
-			sortedUniformsData.emplace(orderID, std::pair<std::string, OvRendering::Data::MaterialPropertyType*>{ name, & value.value });
+			const auto index = std::visit(typeIndexVisitor, prop.value);
+			sortedProperties.emplace(
+				index,
+				std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{ 
+					name,
+					std::ref(prop.value)
+			});
 		}
 	}
 
-	for (auto& [order, info] : sortedUniformsData)
+	for (auto& [index, propInfo] : sortedProperties)
 	{
-		auto uniformData = m_target->GetShader()->GetProgram().GetUniformInfo(info.first);
+		const auto& name = propInfo.first;
+		auto& prop = propInfo.second.get();
 
-		if (uniformData)
-		{
-			const auto formattedType = UniformFormat(info.first);
+		const auto formattedType = FormatPropertyName(name);
 
-			// Create a visitor to handle each type in the variant
-			auto drawVisitor = [&](auto& arg) {
-				using T = std::decay_t<decltype(arg)>;
+		// Create a visitor to handle each type in the variant
+		auto drawVisitor = [&](auto& arg) {
+			using T = std::decay_t<decltype(arg)>;
 
-				if constexpr (std::is_same_v<T, bool>)
-				{
-					if (uniformData->type == EUniformType::BOOL)
-						GUIDrawer::DrawBoolean(*m_shaderSettingsColumns, formattedType, arg);
-				}
-				else if constexpr (std::is_same_v<T, int>)
-				{
-					if (uniformData->type == EUniformType::INT)
-						GUIDrawer::DrawScalar<int>(*m_shaderSettingsColumns, formattedType, arg);
-				}
-				else if constexpr (std::is_same_v<T, float>)
-				{
-					if (uniformData->type == EUniformType::FLOAT)
-						GUIDrawer::DrawScalar<float>(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-				}
-				else if constexpr (std::is_same_v<T, OvMaths::FVector2>)
-				{
-					if (uniformData->type == EUniformType::FLOAT_VEC2)
-						GUIDrawer::DrawVec2(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-				}
-				else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
-				{
-					if (uniformData->type == EUniformType::FLOAT_VEC3)
-						DrawHybridVec3(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-				}
-				else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
-				{
-					if (uniformData->type == EUniformType::FLOAT_VEC4)
-						DrawHybridVec4(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-				}
-				else if constexpr (std::is_same_v<T, Texture*>)
-				{
-					if (uniformData->type == EUniformType::SAMPLER_2D)
-						GUIDrawer::DrawTexture(*m_shaderSettingsColumns, formattedType, arg);
-				}
-				// No UI for TextureHandle* since it's not handled in the original code
-				};
+			if constexpr (std::is_same_v<T, bool>)
+			{
+				GUIDrawer::DrawBoolean(*m_shaderSettingsColumns, formattedType, arg);
+			}
+			else if constexpr (std::is_same_v<T, int>)
+			{
+				GUIDrawer::DrawScalar<int>(*m_shaderSettingsColumns, formattedType, arg);
+			}
+			else if constexpr (std::is_same_v<T, float>)
+			{
+				GUIDrawer::DrawScalar<float>(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector2>)
+			{
+				GUIDrawer::DrawVec2(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
+			{
+				DrawHybridVec3(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
+			{
+				DrawHybridVec4(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, Texture*>)
+			{
+				GUIDrawer::DrawTexture(*m_shaderSettingsColumns, formattedType, arg);
+			}
+			// No UI for TextureHandle* since it's not handled in the original code
+		};
 
-			// Apply the visitor to the variant
-			std::visit(drawVisitor, *info.second);
-		}
+		// Apply the visitor to the variant
+		std::visit(drawVisitor, prop);
 	}
 }
 

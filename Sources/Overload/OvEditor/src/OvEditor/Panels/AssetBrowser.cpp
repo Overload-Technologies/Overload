@@ -798,7 +798,7 @@ namespace
 				if (material)
 				{
 					OpenInAssetView(*material);
-					OpenInMaterialEditor(*material);
+					EDITOR_EXEC(DelayAction([material]() { OpenInMaterialEditor(*material); }));
 				}
 			};
 
@@ -1264,7 +1264,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			{
 				auto& res = GetResource<OvCore::ResourceManagement::MaterialManager>(path, p_isEngineItem);
 				OpenInAssetView(res);
-				OpenInMaterialEditor(res);
+				EDITOR_EXEC(DelayAction([&res]() { OpenInMaterialEditor(res); }));
 			};
 		}
 

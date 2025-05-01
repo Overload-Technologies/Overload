@@ -61,11 +61,10 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 					light.UpdateShadowData(frameDescriptor.camera.value());
 					const auto& lightSpaceMatrix = light.GetLightSpaceMatrix();
 					const auto& shadowBuffer = light.GetShadowBuffer();
-					m_shadowMaterial.SetProperty("_LightSpaceMatrix", lightSpaceMatrix);
 					shadowBuffer.Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
-					DrawOpaques(pso, scene);
+					DrawShadows(pso, scene, lightSpaceMatrix);
 					shadowBuffer.Unbind();
 				}
 				else
@@ -84,9 +83,10 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 	m_renderer.SetViewport(0, 0, frameDescriptor.renderWidth, frameDescriptor.renderHeight);
 }
 
-void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
+void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 	OvRendering::Data::PipelineState p_pso,
-	OvCore::SceneSystem::Scene& p_scene
+	OvCore::SceneSystem::Scene& p_scene,
+	const OvMaths::FMatrix4& p_lightSpaceMatrix
 )
 {
 	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
@@ -106,16 +106,30 @@ void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
 					{
 						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid() && material->IsShadowCaster())
 						{
+							const std::string shadowPassName = "SHADOW_PASS";
+
+							// If the material has shadow pass, use it, otherwise use the shadow fallback material
+							auto& targetMaterial =
+								material->SupportsFeature(shadowPassName) ?
+								*material :
+								m_shadowMaterial;
+
 							OvRendering::Entities::Drawable drawable;
 							drawable.mesh = *mesh;
-							drawable.material = m_shadowMaterial;
-							drawable.stateMask = m_shadowMaterial.GenerateStateMask();
+							drawable.material = targetMaterial;
+							// TODO: Use a custom state mask.
+							// For instance, the shadow pass should never use blending.
+							drawable.stateMask = targetMaterial.GenerateStateMask();
+							drawable.featureSetOverride = { shadowPassName };
+							drawable.AddDescriptor<EngineDrawableDescriptor>({
+								modelMatrix,
+								materialRenderer->GetUserMatrix()
+							});
 
-							drawable.material.value().SetProperty("_ModelMatrix", modelMatrix);
+							targetMaterial.SetProperty("_LightSpaceMatrix", p_lightSpaceMatrix, true);
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}
-
 					}
 				}
 			}

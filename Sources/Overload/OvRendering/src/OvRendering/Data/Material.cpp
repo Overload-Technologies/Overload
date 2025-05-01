@@ -397,3 +397,8 @@ bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
 {
 	return m_features.contains(p_feature);
 }
+
+bool OvRendering::Data::Material::SupportsFeature(const std::string& p_feature) const
+{
+	return m_shader->GetFeatures().contains(p_feature);
+}

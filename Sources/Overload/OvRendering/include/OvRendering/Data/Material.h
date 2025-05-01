@@ -253,6 +253,12 @@ namespace OvRendering::Data
 		*/
 		bool HasFeature(const std::string& p_feature) const;
 
+		/**
+		* Returns true if the material supports a feature
+		* @param p_feature
+		*/
+		bool SupportsFeature(const std::string& p_feature) const;
+
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;

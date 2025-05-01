@@ -42,45 +42,42 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 
 		Serializer::SerializeString(p_doc, uniform, "name", name);
 
-		if (!std::holds_alternative<std::monostate>(value))
-		{
-			auto visitor = [&](auto&& arg) {
-				using T = std::decay_t<decltype(arg)>;
-				using enum EUniformType;
+		auto visitor = [&](auto&& arg) {
+			using T = std::decay_t<decltype(arg)>;
+			using enum EUniformType;
 
-				if constexpr (std::same_as<T, bool>)
-				{
-					Serializer::SerializeInt(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, int>)
-				{
-					Serializer::SerializeInt(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, float>)
-				{
-					Serializer::SerializeFloat(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, FVector2>)
-				{
-					Serializer::SerializeVec2(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, FVector3>)
-				{
-					Serializer::SerializeVec3(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, FVector4>)
-				{
-					Serializer::SerializeVec4(p_doc, uniform, "value", arg);
-				}
-				else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
-				{
-					Serializer::SerializeTexture(p_doc, uniform, "value", arg);
-				}
-				// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
-			};
+			if constexpr (std::same_as<T, bool>)
+			{
+				Serializer::SerializeInt(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, int>)
+			{
+				Serializer::SerializeInt(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, float>)
+			{
+				Serializer::SerializeFloat(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, FVector2>)
+			{
+				Serializer::SerializeVec2(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, FVector3>)
+			{
+				Serializer::SerializeVec3(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, FVector4>)
+			{
+				Serializer::SerializeVec4(p_doc, uniform, "value", arg);
+			}
+			else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
+			{
+				Serializer::SerializeTexture(p_doc, uniform, "value", arg);
+			}
+			// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
+		};
 
-			std::visit(visitor, value);
-		}
+		std::visit(visitor, value);
 	}
 
 	std::string features;

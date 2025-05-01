@@ -1,3 +1,5 @@
+#feature SHADOW_PASS
+
 #shader vertex
 #version 450 core
 
@@ -20,6 +22,10 @@ out VS_OUT
     vec3 TangentFragPos;
 } vs_out;
 
+#if defined(SHADOW_PASS)
+uniform mat4 _LightSpaceMatrix;
+#endif
+
 void main()
 {
     vs_out.FragPos = vec3(ubo_Model * vec4(geo_Pos, 1.0));
@@ -29,7 +35,11 @@ void main()
     vs_out.TangentViewPos = transpose(vs_out.TBN) * ubo_ViewPos;
     vs_out.TangentFragPos = transpose(vs_out.TBN) * vs_out.FragPos;
 
+#if defined(SHADOW_PASS)
+    gl_Position = _LightSpaceMatrix * vec4(vs_out.FragPos, 1.0);
+#else
     gl_Position = ubo_Projection * ubo_View * vec4(vs_out.FragPos, 1.0);
+#endif
 }
 
 #shader fragment
@@ -68,6 +78,10 @@ out vec4 FRAGMENT_COLOR;
 
 void main()
 {
+#if defined(SHADOW_PASS)
+    // Empty fragment shader for shadow pass
+    gl_FragDepth = gl_FragCoord.z;
+#else
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
     texCoords = ApplyParallaxMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
 
@@ -92,4 +106,5 @@ void main()
     {
         FRAGMENT_COLOR = vec4(0.0);
     }
+#endif
 }

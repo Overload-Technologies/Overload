@@ -26,10 +26,6 @@ project "OvPhysics"
 		"include"
 	}
 
-	defines {
-		"BT_USE_DOUBLE_PRECISION"
-	}
-
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }
 		symbols "On"

@@ -144,9 +144,12 @@ OvEditor::Panels::Hierarchy::Hierarchy
 	const std::string & p_title,
 	bool p_opened,
 	const OvUI::Settings::PanelWindowSettings& p_windowSettings
-) : PanelWindow(p_title, p_opened, p_windowSettings)
+) :
+	PanelWindow(p_title, p_opened, p_windowSettings),
+	m_actions(CreateWidget<OvUI::Widgets::Layout::Group>()),
+	m_actors(CreateWidget<OvUI::Widgets::Layout::Group>())
 {
-	auto& searchBar = CreateWidget<OvUI::Widgets::InputFields::InputText>();
+	auto& searchBar = m_actions.CreateWidget<OvUI::Widgets::InputFields::InputText>();
 	searchBar.ContentChangedEvent += [this](const std::string& p_content)
 	{
 		founds.clear();
@@ -227,7 +230,7 @@ void OvEditor::Panels::Hierarchy::Clear()
 {
 	EDITOR_EXEC(UnselectActor());
 
-	RemoveAllWidgets();
+	m_actors.RemoveAllWidgets();
 	m_widgetActorLink.clear();
 }
 
@@ -329,7 +332,7 @@ void OvEditor::Panels::Hierarchy::DeleteActorByInstance(OvCore::ECS::Actor& p_ac
 
 void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_actor)
 {
-	auto& textSelectable = CreateWidget<OvUI::Widgets::Layout::TreeNode>(p_actor.GetName(), true);
+	auto& textSelectable = m_actors.CreateWidget<OvUI::Widgets::Layout::TreeNode>(p_actor.GetName(), true);
 	textSelectable.leaf = true;
 	textSelectable.AddPlugin<ActorContextualMenu>(&p_actor, &textSelectable);
 	textSelectable.AddPlugin<OvUI::Plugins::DDSource<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor", "Attach to...", std::make_pair(&p_actor, &textSelectable));

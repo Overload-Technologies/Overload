@@ -429,7 +429,6 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
 		auto& features = shader->GetFeatures();
 		for (const auto& feature : features)
 		{
-			// bool enabled = m_target->HasFeature(feature);
 			GUIDrawer::DrawBoolean(
 				*m_featureSettingsColumns,
 				feature,

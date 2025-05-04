@@ -215,8 +215,14 @@ void OvWindowing::Window::MakeCurrentContext() const
 	glfwMakeContextCurrent(m_glfwWindow);
 }
 
-void OvWindowing::Window::SwapBuffers() const
+void OvWindowing::Window::SwapBuffers()
 {
+	if (m_cursorShape.has_value())
+	{
+		glfwSetCursor(m_glfwWindow, m_device.GetCursorInstance(m_cursorShape.value()));
+		m_cursorShape.reset();
+	}
+
 	glfwSwapBuffers(m_glfwWindow);
 }
 
@@ -229,7 +235,6 @@ void OvWindowing::Window::SetCursorMode(Cursor::ECursorMode p_cursorMode)
 void OvWindowing::Window::SetCursorShape(Cursor::ECursorShape p_cursorShape)
 {
 	m_cursorShape = p_cursorShape;
-	glfwSetCursor(m_glfwWindow, m_device.GetCursorInstance(p_cursorShape));
 }
 
 void OvWindowing::Window::SetCursorPosition(int16_t p_x, int16_t p_y)
@@ -287,11 +292,6 @@ std::pair<uint16_t, uint16_t> OvWindowing::Window::GetFramebufferSize() const
 OvWindowing::Cursor::ECursorMode OvWindowing::Window::GetCursorMode() const
 {
 	return m_cursorMode;
-}
-
-OvWindowing::Cursor::ECursorShape OvWindowing::Window::GetCursorShape() const
-{
-	return m_cursorShape;
 }
 
 int32_t OvWindowing::Window::GetRefreshRate() const

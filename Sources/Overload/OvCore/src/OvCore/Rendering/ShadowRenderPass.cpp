@@ -23,8 +23,7 @@ OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::Composi
 	OVASSERT(shadowShader, "Cannot find the shadow shader");
 
 	m_shadowMaterial.SetShader(shadowShader);
-	m_shadowMaterial.SetFrontfaceCulling(false);
-	m_shadowMaterial.SetBackfaceCulling(false);
+	// No need to update the material settings, as its generated state mask will be overridden anyway.
 }
 
 void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
@@ -117,9 +116,19 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 							OvRendering::Entities::Drawable drawable;
 							drawable.mesh = *mesh;
 							drawable.material = targetMaterial;
-							// TODO: Use a custom state mask.
-							// For instance, the shadow pass should never use blending.
+
+							// Generate the state mask for the target material, and override
+							// its properties to ensure the shadow pass is rendered correctly.
 							drawable.stateMask = targetMaterial.GenerateStateMask();
+							drawable.stateMask.blendable = false; // The shadow pass should never use blending.
+							drawable.stateMask.depthTest = true; // The shadow pass should always use depth test.
+							drawable.stateMask.colorWriting = false; // The shadow pass should never write color.
+							drawable.stateMask.depthWriting = true; // The shadow pass should always write depth.
+							// No front/backface culling for shadow pass.
+							// A "two-sided" shadow pass setting could be added in the future, to change this behavior.
+							drawable.stateMask.frontfaceCulling = false;
+							drawable.stateMask.backfaceCulling = false;
+
 							drawable.featureSetOverride = { shadowPassName };
 							drawable.AddDescriptor<EngineDrawableDescriptor>({
 								modelMatrix,

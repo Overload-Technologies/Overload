@@ -82,7 +82,6 @@ void main()
 {
 #if defined(SHADOW_PASS)
     // Empty fragment shader for shadow pass
-    gl_FragDepth = gl_FragCoord.z;
 #else
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
     texCoords = ApplyParallaxMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);

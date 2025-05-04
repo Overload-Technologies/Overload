@@ -54,7 +54,6 @@ void main()
 {
 #if defined(SHADOW_PASS)
     // Empty fragment shader for shadow pass
-    gl_FragDepth = gl_FragCoord.z;
 #else
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
     FRAGMENT_COLOR = texture(u_DiffuseMap, texCoords) * u_Diffuse;

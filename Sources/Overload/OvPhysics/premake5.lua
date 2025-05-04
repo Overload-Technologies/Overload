@@ -15,7 +15,7 @@ project "OvPhysics"
 
 	includedirs { 
 		-- Dependencies
-		dependdir .. "bullet3/include",
+		dependdir .. "bullet3/",
 
 		-- Overload SDK
 		"%{wks.location}/OvDebug/include",

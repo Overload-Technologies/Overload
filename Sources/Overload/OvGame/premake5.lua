@@ -36,7 +36,6 @@ project "OvGame"
 	}
 
 	libdirs {
-		dependdir .. "bullet3/lib/%{cfg.buildcfg}",
 		dependdir .. "lua/lib"
 	}
 
@@ -44,17 +43,10 @@ project "OvGame"
 		-- Precompiled Libraries
 		"dbghelp.lib",
 		"opengl32.lib",
-		"Bullet3Collision.lib",
-		"Bullet3Common.lib",
-		"Bullet3Dynamics.lib",
-		"Bullet3Geometry.lib",
-		"BulletCollision.lib",
-		"BulletDynamics.lib",
-		"BulletSoftBody.lib",
-		"LinearMath.lib",
 
 		-- Dependencies
 		"assimp",
+		"bullet3",
 		"glad",
 		"glfw",
 		"ImGui",

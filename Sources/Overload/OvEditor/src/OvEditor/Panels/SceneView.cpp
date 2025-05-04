@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+
 #include <OvEditor/Rendering/DebugSceneRenderer.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -12,6 +14,24 @@
 #include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvUI/Plugins/DDTarget.h>
+
+namespace
+{
+	OvTools::Utils::OptRef<OvCore::ECS::Actor> GetActorFromPickingResult(
+		OvEditor::Rendering::PickingRenderPass::PickingResult p_result
+	)
+	{
+		if (p_result)
+		{
+			if (const auto actor = std::get_if<OvTools::Utils::OptRef<OvCore::ECS::Actor>>(&p_result.value()))
+			{
+				return *actor;
+			}
+		}
+
+		return std::nullopt;
+	}
+}
 
 OvEditor::Panels::SceneView::SceneView
 (
@@ -31,12 +51,16 @@ OvEditor::Panels::SceneView::SceneView
 
 	m_image->AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [this](auto p_data)
 	{
-		std::string path = p_data.first;
+		const std::string path = p_data.first;
 
-		switch (OvTools::Utils::PathParser::GetFileType(path))
+		using namespace OvTools::Utils;
+		using enum PathParser::EFileType;
+
+		switch (PathParser::GetFileType(path))
 		{
-		case OvTools::Utils::PathParser::EFileType::SCENE:	EDITOR_EXEC(LoadSceneFromDisk(path));			break;
-		case OvTools::Utils::PathParser::EFileType::MODEL:	EDITOR_EXEC(CreateActorWithModel(path, true));	break;
+			case SCENE: OnSceneDropped(path); break;
+			case MODEL: OnModelDropped(path); break;
+			case MATERIAL: OnMaterialDropped(path); break;
 		}
 	};
 
@@ -150,20 +174,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 
 	if (IsHovered() && !IsResizing())
 	{
-		auto [mouseX, mouseY] = inputManager.GetMousePosition();
-		mouseX -= m_position.x;
-		mouseY -= m_position.y;
-		mouseY = GetSafeSize().second - mouseY + 25;
-
-		auto& scene = *GetScene();
-		
-		auto& actorPickingFeature = m_renderer->GetPass<Rendering::PickingRenderPass>("Picking");
-
-		auto pickingResult = actorPickingFeature.ReadbackPickingResult(
-			scene,
-			static_cast<uint32_t>(mouseX),
-			static_cast<uint32_t>(mouseY)
-		);
+		const auto pickingResult = GetPickingResult();
 
 		m_highlightedActor = {};
 		m_highlightedGizmoDirection = {};
@@ -219,5 +230,51 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 
 		m_gizmoOperations.SetCurrentMouse({ static_cast<float>(mousePosition.first - m_position.x), static_cast<float>(mousePosition.second - m_position.y) });
 		m_gizmoOperations.ApplyOperation(m_camera.GetViewMatrix(), m_camera.GetProjectionMatrix(), m_camera.GetPosition(), { static_cast<float>(winWidth), static_cast<float>(winHeight) });
+	}
+}
+
+OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Panels::SceneView::GetPickingResult()
+{
+	auto [mouseX, mouseY] = EDITOR_CONTEXT(inputManager)->GetMousePosition();
+	mouseX -= m_position.x;
+	mouseY -= m_position.y;
+	mouseY = GetSafeSize().second - mouseY + 25;
+
+	auto& scene = *GetScene();
+
+	auto& actorPickingFeature = m_renderer->GetPass<OvEditor::Rendering::PickingRenderPass>("Picking");
+
+	return actorPickingFeature.ReadbackPickingResult(
+		scene,
+		static_cast<uint32_t>(mouseX),
+		static_cast<uint32_t>(mouseY)
+	);
+}
+
+void OvEditor::Panels::SceneView::OnSceneDropped(const std::string& p_path)
+{
+	EDITOR_EXEC(LoadSceneFromDisk(p_path));
+}
+
+void OvEditor::Panels::SceneView::OnModelDropped(const std::string& p_path)
+{
+	EDITOR_EXEC(CreateActorWithModel(p_path, true));
+}
+
+void OvEditor::Panels::SceneView::OnMaterialDropped(const std::string& p_path)
+{
+	const auto pickingResult = GetPickingResult();
+
+	if (auto actor = GetActorFromPickingResult(pickingResult))
+	{
+		if (auto materialRenderer = actor->GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
+		{
+			const auto resourcePath = EDITOR_EXEC(GetResourcePath(p_path));
+
+			if (const auto material = EDITOR_CONTEXT(materialManager)[resourcePath])
+			{
+				materialRenderer->SetMaterialAtIndex(0, *material);
+			}
+		}
 	}
 }

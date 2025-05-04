@@ -4,6 +4,9 @@
 * @licence: MIT
 */
 
+#include <format>
+#include <ranges>
+
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Assertion.h>
@@ -81,16 +84,22 @@ void OvRendering::Data::Material::FillUniform()
 {
 	m_properties.clear();
 
-	for (const auto& uniform : m_shader->GetProgram().GetUniforms())
+	for (const auto& program : m_shader->GetPrograms() | std::views::values)
 	{
-		m_properties.emplace(uniform.name, MaterialProperty{
-			.value = UniformToPropertyValue(uniform.defaultValue),
-			.singleUse = false
-		});
+		for (const auto& uniform : program->GetUniforms())
+		{
+			m_properties.emplace(uniform.name, MaterialProperty{
+				.value = UniformToPropertyValue(uniform.defaultValue),
+				.singleUse = false
+			});
+		}
 	}
 }
 
-void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture)
+void OvRendering::Data::Material::Bind(
+	OvRendering::HAL::Texture* p_emptyTexture,
+	OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride
+)
 {
 	ZoneScoped;
 
@@ -99,7 +108,10 @@ void OvRendering::Data::Material::Bind(OvRendering::HAL::Texture* p_emptyTexture
 
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
-	auto& program = m_shader->GetProgram();
+	auto& program = m_shader->GetProgram(
+		p_featureSetOverride.value_or(m_features)
+	);
+
 	program.Bind();
 
 	int textureSlot = 0;
@@ -364,4 +376,29 @@ const OvRendering::Data::StateMask OvRendering::Data::Material::GenerateStateMas
 OvRendering::Data::Material::PropertyMap& OvRendering::Data::Material::GetProperties()
 {
 	return m_properties;
+}
+
+OvRendering::Resources::Shader::FeatureSet& OvRendering::Data::Material::GetFeatures()
+{
+	return m_features;
+}
+
+void OvRendering::Data::Material::AddFeature(const std::string& p_feature)
+{
+	m_features.insert(p_feature);
+}
+
+void OvRendering::Data::Material::RemoveFeature(const std::string& p_feature)
+{
+	m_features.erase(p_feature);
+}
+
+bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
+{
+	return m_features.contains(p_feature);
+}
+
+bool OvRendering::Data::Material::SupportsFeature(const std::string& p_feature) const
+{
+	return m_shader->GetFeatures().contains(p_feature);
 }

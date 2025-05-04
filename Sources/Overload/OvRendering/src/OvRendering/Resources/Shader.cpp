@@ -73,3 +73,8 @@ void OvRendering::Resources::Shader::SetPrograms(ProgramVariants&& p_programs)
 		m_features.insert(key.begin(), key.end());
 	}
 }
+
+const OvRendering::Resources::Shader::ProgramVariants& OvRendering::Resources::Shader::GetPrograms() const
+{
+	return m_programs;
+}

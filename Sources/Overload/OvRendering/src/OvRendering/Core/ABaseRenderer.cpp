@@ -215,7 +215,13 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 			}
 		}
 
-		material->Bind(&m_emptyTexture->GetTexture());
+		material->Bind(
+			&m_emptyTexture->GetTexture(),
+			p_drawable.featureSetOverride.has_value() ?
+			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet>(p_drawable.featureSetOverride.value()) :
+			std::nullopt
+		);
+
 		m_driver.Draw(p_pso, mesh.value(), p_drawable.primitiveMode, gpuInstances);
 		material->Unbind();
 	}

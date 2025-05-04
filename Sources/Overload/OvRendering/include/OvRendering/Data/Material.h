@@ -68,8 +68,12 @@ namespace OvRendering::Data
 		/**
 		* Bind the material and send its uniform data to the GPU
 		* @param p_emptyTexture (The texture to use if a texture uniform is null)
+		* @param p_featureSetOverride
 		*/
-		void Bind(OvRendering::HAL::Texture* p_emptyTexture = nullptr);
+		void Bind(
+			HAL::Texture* p_emptyTexture = nullptr,
+			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride = std::nullopt
+		);
 
 		/**
 		* Unbind the material
@@ -226,9 +230,39 @@ namespace OvRendering::Data
 		*/
 		PropertyMap& GetProperties();
 
+		/**
+		* Returns the feature set of this material
+		*/
+		Resources::Shader::FeatureSet& GetFeatures();
+
+		/**
+		* Adds a feature to the material
+		* @param p_feature
+		*/
+		void AddFeature(const std::string& p_feature);
+
+		/**
+		* Removes a feature from the material
+		* @param p_feature
+		*/
+		void RemoveFeature(const std::string& p_feature);
+
+		/**
+		* Returns true if the material has a feature
+		* @param p_feature
+		*/
+		bool HasFeature(const std::string& p_feature) const;
+
+		/**
+		* Returns true if the material supports a feature
+		* @param p_feature
+		*/
+		bool SupportsFeature(const std::string& p_feature) const;
+
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
+		Resources::Shader::FeatureSet m_features;
 
 		bool m_userInterface = false;
 		bool m_blendable = false;

@@ -85,5 +85,7 @@ namespace OvEditor::Panels
 
 	private:
 		std::unordered_map<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*> m_widgetActorLink;
+		OvUI::Internal::WidgetContainer& m_actions;
+		OvUI::Internal::WidgetContainer& m_actors;
 	};
 }

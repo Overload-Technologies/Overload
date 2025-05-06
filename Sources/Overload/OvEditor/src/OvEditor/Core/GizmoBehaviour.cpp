@@ -179,22 +179,76 @@ void OvEditor::Core::GizmoBehaviour::ApplyRotation(const OvMaths::FMatrix4& p_vi
 	m_target->transform.SetWorldRotation(originRotation * rotationToApply);
 }
 
-void OvEditor::Core::GizmoBehaviour::ApplyScale(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector2& p_viewSize) const
+void OvEditor::Core::GizmoBehaviour::ApplyScale(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector3& p_cameraPosition, const OvMaths::FVector2& p_viewSize)
 {
-	auto unitsPerPixel = 0.01f;
-	auto originScale = m_originalTransform.GetWorldScale();
+	if (!m_target)
+		return;
 
-	auto screenDirection = GetScreenDirection(p_viewMatrix, p_projectionMatrix, p_viewSize);
+	const auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
 
-	auto totalDisplacement = m_currentMouse - m_originMouse;
-	auto scaleCoefficient = OvMaths::FVector2::Dot(totalDisplacement, screenDirection) * unitsPerPixel;
+	const OvMaths::FVector3 gizmoAxisDirection = GetRealDirection(true);
+
+	OvMaths::FVector3 vectorToCamera = m_target->transform.GetWorldPosition() - p_cameraPosition;
+	if (OvMaths::FVector3::Dot(vectorToCamera, vectorToCamera) < 0.0001f)
+	{
+		vectorToCamera = m_originalTransform.GetWorldUp(); 
+		if (std::abs(OvMaths::FVector3::Dot(gizmoAxisDirection, vectorToCamera)) > 0.99f)
+		{
+			vectorToCamera = m_originalTransform.GetWorldRight();
+		}
+	}
+
+	const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(gizmoAxisDirection, vectorToCamera);
+	
+	OvMaths::FVector3 tempPlaneNormal = OvMaths::FVector3::Cross(gizmoAxisDirection, planeTangent);
+	if (OvMaths::FVector3::Dot(tempPlaneNormal, tempPlaneNormal) < 0.0001f)
+	{
+		OvMaths::FVector3 nonCollinearVector = OvMaths::FVector3::Up;
+		if (std::abs(OvMaths::FVector3::Dot(gizmoAxisDirection, nonCollinearVector)) > 0.99f)
+		{
+			nonCollinearVector = OvMaths::FVector3::Right;
+		}
+		tempPlaneNormal = OvMaths::FVector3::Cross(gizmoAxisDirection, nonCollinearVector);
+	}
+	const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Normalize(planeNormal);
+
+
+	const OvMaths::FVector3 planePoint = m_originalTransform.GetWorldPosition();
+
+	const float denom = OvMaths::FVector3::Dot(ray, planeNormal);
+
+	if (std::abs(denom) <= 0.001f)
+		return;
+
+	const float t = OvMaths::FVector3::Dot(planePoint - p_cameraPosition, planeNormal) / denom;
+
+	if (t <= 0.001f)
+		return;
+
+	const OvMaths::FVector3 pointOnPlane = p_cameraPosition + ray * t * 2.0f;
+
+	OvMaths::FVector3 displacementOnPlane;
+	if (m_firstPick)
+	{
+		m_initialOffset = m_originalTransform.GetWorldPosition() - pointOnPlane;
+		m_firstPick = false;
+		displacementOnPlane = OvMaths::FVector3::Zero;
+	}
+	else
+	{
+		displacementOnPlane = pointOnPlane - m_originalTransform.GetWorldPosition() + m_initialOffset;
+	}
+
+	float scaleDeltaCoefficient = OvMaths::FVector3::Dot(displacementOnPlane, gizmoAxisDirection);
 
 	if (IsSnappedBehaviourEnabled())
 	{
-		scaleCoefficient = SnapValue(scaleCoefficient, OvEditor::Settings::EditorSettings::ScalingSnapUnit);
+		scaleDeltaCoefficient = SnapValue(scaleDeltaCoefficient, OvEditor::Settings::EditorSettings::ScalingSnapUnit);
 	}
 
-	auto newScale = originScale + GetFakeDirection() * scaleCoefficient;
+	const auto originScale = m_originalTransform.GetWorldScale();
+
+	auto newScale = originScale + GetFakeDirection() * scaleDeltaCoefficient;
 
 	/* Prevent scale from being negative*/
 	newScale.x = std::max(newScale.x, 0.0001f);
@@ -217,7 +271,7 @@ void OvEditor::Core::GizmoBehaviour::ApplyOperation(const OvMaths::FMatrix4& p_v
 		break;
 
 	case EGizmoOperation::SCALE:
-		ApplyScale(p_viewMatrix, p_projectionMatrix, p_viewSize);
+		ApplyScale(p_viewMatrix, p_projectionMatrix, p_cameraPosition, p_viewSize);
 		break;
 	}
 }

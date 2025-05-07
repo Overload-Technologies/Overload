@@ -18,7 +18,6 @@ namespace
 		OvRendering::Settings::ETextureFilteringMode minFilter;
 		OvRendering::Settings::ETextureFilteringMode magFilter;
 		bool generateMipmap;
-		bool hdr;
 	};
 
 	TextureMetaData LoadTextureMetadata(const std::string_view p_filePath)
@@ -31,8 +30,7 @@ namespace
 		return TextureMetaData{
 			.minFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(LINEAR_MIPMAP_LINEAR))),
 			.magFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(LINEAR))),
-			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true),
-			.hdr = metaFile.GetOrDefault("HDR", false)
+			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true)
 		};
 	}
 }
@@ -47,8 +45,7 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 		realPath,
 		metaData.minFilter,
 		metaData.magFilter,
-		metaData.generateMipmap,
-		metaData.hdr
+		metaData.generateMipmap
 	);
 
 	if (texture)
@@ -73,7 +70,6 @@ void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Res
 		realPath,
 		metaData.minFilter,
 		metaData.magFilter,
-		metaData.generateMipmap,
-		metaData.hdr
+		metaData.generateMipmap
 	);
 }

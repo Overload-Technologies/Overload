@@ -31,11 +31,18 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
+		* @param p_hdr
 		*/
-		static Texture* Create(const std::string& p_filepath, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap);
+		static Texture* Create(
+			const std::string& p_filepath,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			bool p_generateMipmap,
+			bool p_hdr = false
+		);
 
 		/**
-		* Create a texture from a single pixel color
+		* Create a texture from a single SDR pixel color
 		* @param p_r
 		* @param p_g
 		* @param p_b
@@ -51,8 +58,17 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
+		* @param p_hdr
 		*/
-		static Texture* CreateFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap);
+		static Texture* CreateFromMemory(
+			uint8_t* p_data,
+			uint32_t p_width,
+			uint32_t p_height,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			bool p_generateMipmap,
+			bool p_hdr = false
+		);
 
 		/**
 		* Reload a texture from file
@@ -61,8 +77,16 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
+		* @param p_hdr
 		*/
-		static void Reload(Texture& p_texture, const std::string& p_filePath, OvRendering::Settings::ETextureFilteringMode p_minFilter, OvRendering::Settings::ETextureFilteringMode p_magFilter, bool p_generateMipmap);
+		static void Reload(
+			Texture& p_texture,
+			const std::string& p_filePath,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			bool p_generateMipmap,
+			bool p_hdr
+		);
 
 		/**
 		* Destroy a texture

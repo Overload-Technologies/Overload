@@ -282,10 +282,12 @@ void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 	const std::string kMinFilter = "MIN_FILTER";
 	const std::string kMagFilter = "MAG_FILTER";
 	const std::string kEnableMipmapping = "ENABLE_MIPMAPPING";
+	const std::string kHDR = "HDR";
 
 	m_metadata->Add(kMinFilter, static_cast<int>(ETextureFilteringMode::LINEAR_MIPMAP_LINEAR));
 	m_metadata->Add(kMagFilter, static_cast<int>(ETextureFilteringMode::LINEAR));
 	m_metadata->Add(kEnableMipmapping, true);
+	m_metadata->Add(kHDR, false);
 
 	const auto filteringModes = std::map<int, std::string>{
 		{static_cast<int>(ETextureFilteringMode::NEAREST), "NEAREST"},
@@ -318,6 +320,15 @@ void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 		},
 		[this, kEnableMipmapping](bool value) {
 			m_metadata->Set<bool>(kEnableMipmapping, value);
+		}
+	);
+
+	OvCore::Helpers::GUIDrawer::DrawBoolean(*m_settingsColumns, kHDR,
+		[this, kHDR]() {
+			return m_metadata->Get<bool>(kHDR);
+		},
+		[this, kHDR](bool value) {
+			m_metadata->Set<bool>(kHDR, value);
 		}
 	);
 }

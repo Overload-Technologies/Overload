@@ -5,10 +5,8 @@
 */
 
 #include <algorithm>
-#include <array>
-#include <set>
 
-#include "OvTools/Utils/PathParser.h"
+#include <OvTools/Utils/PathParser.h>
 
 std::string OvTools::Utils::PathParser::MakeWindowsStyle(const std::string & p_path)
 {

@@ -23,41 +23,27 @@ namespace
 		int height = 0;
 		int bpp = 0;
 		bool isHDR = false;
-		union
-		{
-			uint8_t* sdr;
-			float* hdr;
-			void* ptr;
-		} data;
+		void* data = nullptr;
 
-		Image(const std::string& p_filepath, bool p_hdr)
+		Image(const std::string& p_filepath)
 		{
 			stbi_set_flip_vertically_on_load(true);
 
-			if (p_hdr && stbi_is_hdr(p_filepath.c_str()))
-			{
-				isHDR = true;
-				data.hdr = stbi_loadf(p_filepath.c_str(), &width, &height, &bpp, 4);
-			}
-			else
-			{
-				if (p_hdr)
-				{
-					OVLOG_WARNING(std::format("Image at path \"{}\" doesn't support HDR, falling back to SDR.", p_filepath));
-				}
+			isHDR = stbi_is_hdr(p_filepath.c_str());
 
-				data.sdr = stbi_load(p_filepath.c_str(), &width, &height, &bpp, 4);
-			}
+			data = isHDR ?
+				static_cast<void*>(stbi_loadf(p_filepath.c_str(), &width, &height, &bpp, 4)) :
+				static_cast<void*>(stbi_load(p_filepath.c_str(), &width, &height, &bpp, 4));
 		}
 
 		virtual ~Image()
 		{
-			stbi_image_free(data.ptr);
+			stbi_image_free(data);
 		}
 
 		bool IsValid() const
 		{
-			return data.ptr;
+			return data;
 		}
 
 		operator bool() const
@@ -101,14 +87,13 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	const std::string& p_filepath,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	bool p_generateMipmap,
-	bool p_hdr
+	bool p_generateMipmap
 )
 {
-	if (Image image{ p_filepath, p_hdr })
+	if (Image image{ p_filepath })
 	{
 		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filepath));
-		PrepareTexture(*texture, image.data.ptr, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
+		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
 		return new Texture{ p_filepath, std::move(texture) };
 	}
 
@@ -138,12 +123,11 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	uint32_t p_height,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	bool p_generateMipmap,
-	bool p_hdr
+	bool p_generateMipmap
 )
 {
 	auto texture = std::make_unique<HAL::Texture>("FromMemory");
-	PrepareTexture(*texture, p_data, p_minFilter, p_magFilter, p_width, p_height, p_generateMipmap, p_hdr);
+	PrepareTexture(*texture, p_data, p_minFilter, p_magFilter, p_width, p_height, p_generateMipmap, false);
 	return new Texture("", std::move(texture));
 }
 
@@ -152,14 +136,13 @@ void OvRendering::Resources::Loaders::TextureLoader::Reload(
 	const std::string& p_filePath,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	bool p_generateMipmap,
-	bool p_hdr
+	bool p_generateMipmap
 )
 {
-	if (Image image{ p_filePath, p_hdr })
+	if (Image image{ p_filePath })
 	{
 		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filePath));
-		PrepareTexture(*texture, image.data.ptr, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
+		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
 		p_texture.SetTexture(std::move(texture));
 	}
 }

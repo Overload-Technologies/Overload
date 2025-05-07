@@ -31,14 +31,12 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
-		* @param p_hdr
 		*/
 		static Texture* Create(
 			const std::string& p_filepath,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			bool p_generateMipmap,
-			bool p_hdr = false
+			bool p_generateMipmap
 		);
 
 		/**
@@ -58,7 +56,6 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
-		* @param p_hdr
 		*/
 		static Texture* CreateFromMemory(
 			uint8_t* p_data,
@@ -66,8 +63,7 @@ namespace OvRendering::Resources::Loaders
 			uint32_t p_height,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			bool p_generateMipmap,
-			bool p_hdr = false
+			bool p_generateMipmap
 		);
 
 		/**
@@ -77,15 +73,13 @@ namespace OvRendering::Resources::Loaders
 		* @param p_minFilter
 		* @param p_magFilter
 		* @param p_generateMipmap
-		* @param p_hdr
 		*/
 		static void Reload(
 			Texture& p_texture,
 			const std::string& p_filePath,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			bool p_generateMipmap,
-			bool p_hdr
+			bool p_generateMipmap
 		);
 
 		/**

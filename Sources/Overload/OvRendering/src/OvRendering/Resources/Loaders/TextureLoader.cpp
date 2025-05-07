@@ -17,6 +17,10 @@
 
 namespace
 {
+	/**
+	* Simple wrapper for stb_image. Handles SDR and HDR image loading,
+	* and enforces RAII for the loaded data.
+	*/
 	struct Image
 	{
 		int width = 0;
@@ -36,20 +40,9 @@ namespace
 				static_cast<void*>(stbi_load(p_filepath.c_str(), &width, &height, &bpp, 4));
 		}
 
-		virtual ~Image()
-		{
-			stbi_image_free(data);
-		}
-
-		bool IsValid() const
-		{
-			return data;
-		}
-
-		operator bool() const
-		{
-			return IsValid();
-		}
+		virtual ~Image() { stbi_image_free(data); }
+		bool IsValid() const { return data; }
+		operator bool() const { return IsValid(); }
 	};
 
 	void PrepareTexture(

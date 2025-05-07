@@ -210,7 +210,7 @@ void OvEditor::Core::GizmoBehaviour::ApplyScale(const OvMaths::FMatrix4& p_viewM
 		}
 		tempPlaneNormal = OvMaths::FVector3::Cross(gizmoAxisDirection, nonCollinearVector);
 	}
-	const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Normalize(planeNormal);
+	const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Normalize(tempPlaneNormal);
 
 
 	const OvMaths::FVector3 planePoint = m_originalTransform.GetWorldPosition();
@@ -226,7 +226,7 @@ void OvEditor::Core::GizmoBehaviour::ApplyScale(const OvMaths::FMatrix4& p_viewM
 		return;
 
 	const OvMaths::FVector3 pointOnPlane = p_cameraPosition + ray * t * 2.0f;
-
+	
 	OvMaths::FVector3 displacementOnPlane;
 	if (m_firstPick)
 	{

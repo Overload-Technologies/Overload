@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-#include "OvTools/Utils/PathParser.h"
+#include <OvTools/Utils/PathParser.h>
 
 std::string OvTools::Utils::PathParser::MakeWindowsStyle(const std::string & p_path)
 {
@@ -104,15 +104,15 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 	std::string ext = GetExtension(p_path);
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-	if (ext == "fbx" || ext == "obj")											return EFileType::MODEL;
-	else if (ext == "png" || ext == "jpeg" || ext == "jpg" || ext == "tga")		return EFileType::TEXTURE;
-	else if (ext == "ovfx")														return EFileType::SHADER;
-	else if (ext == "ovfxh")													return EFileType::SHADER_PART;
-	else if (ext == "ovmat")													return EFileType::MATERIAL;
-	else if (ext == "wav" || ext == "mp3" || ext == "ogg")						return EFileType::SOUND;
-	else if (ext == "ovscene")													return EFileType::SCENE;
-	else if (ext == "lua" || ext == "ovscript")									return EFileType::SCRIPT;
-	else if (ext == "ttf")														return EFileType::FONT;
+	if (ext == "fbx" || ext == "obj") return EFileType::MODEL;
+	else if (ext == "png" || ext == "jpeg" || ext == "jpg" || ext == "tga" || ext == "hdr") return EFileType::TEXTURE;
+	else if (ext == "ovfx") return EFileType::SHADER;
+	else if (ext == "ovfxh") return EFileType::SHADER_PART;
+	else if (ext == "ovmat") return EFileType::MATERIAL;
+	else if (ext == "wav" || ext == "mp3" || ext == "ogg") return EFileType::SOUND;
+	else if (ext == "ovscene") return EFileType::SCENE;
+	else if (ext == "lua" || ext == "ovscript") return EFileType::SCRIPT;
+	else if (ext == "ttf") return EFileType::FONT;
 
 	return EFileType::UNKNOWN;
 }

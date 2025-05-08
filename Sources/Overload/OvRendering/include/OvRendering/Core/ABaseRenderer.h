@@ -117,7 +117,7 @@ namespace OvRendering::Core
 		Data::FrameDescriptor m_frameDescriptor;
 		Context::Driver& m_driver;
 		OvRendering::Resources::Texture* m_emptyTexture;
-		std::unique_ptr<OvRendering::Resources::IMesh> m_unitQuad;
+		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;
 

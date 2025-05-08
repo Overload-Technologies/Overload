@@ -3,12 +3,13 @@
 
 layout (location = 0) in vec3 geo_Pos;
 
+#include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+
 uniform mat4 _LightSpaceMatrix;
-uniform mat4 _ModelMatrix;
 
 void main()
 {
-    gl_Position = _LightSpaceMatrix * _ModelMatrix * vec4(geo_Pos, 1.0);
+    gl_Position = _LightSpaceMatrix * ubo_Model * vec4(geo_Pos, 1.0);
 }
 
 #shader fragment

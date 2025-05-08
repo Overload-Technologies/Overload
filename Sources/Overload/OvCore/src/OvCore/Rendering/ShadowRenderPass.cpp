@@ -19,12 +19,11 @@ constexpr uint8_t kMaxShadowMaps = 1;
 OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
 {
-	const auto shadowShader = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(":Shaders\\Shadow.ovfx");
+	const auto shadowShader = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(":Shaders\\ShadowFallback.ovfx");
 	OVASSERT(shadowShader, "Cannot find the shadow shader");
 
 	m_shadowMaterial.SetShader(shadowShader);
-	m_shadowMaterial.SetFrontfaceCulling(false);
-	m_shadowMaterial.SetBackfaceCulling(false);
+	// No need to update the material settings, as its generated state mask will be overridden anyway.
 }
 
 void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
@@ -61,11 +60,10 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 					light.UpdateShadowData(frameDescriptor.camera.value());
 					const auto& lightSpaceMatrix = light.GetLightSpaceMatrix();
 					const auto& shadowBuffer = light.GetShadowBuffer();
-					m_shadowMaterial.SetProperty("_LightSpaceMatrix", lightSpaceMatrix);
 					shadowBuffer.Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
-					DrawOpaques(pso, scene);
+					DrawShadows(pso, scene, lightSpaceMatrix);
 					shadowBuffer.Unbind();
 				}
 				else
@@ -84,9 +82,10 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 	m_renderer.SetViewport(0, 0, frameDescriptor.renderWidth, frameDescriptor.renderHeight);
 }
 
-void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
+void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 	OvRendering::Data::PipelineState p_pso,
-	OvCore::SceneSystem::Scene& p_scene
+	OvCore::SceneSystem::Scene& p_scene,
+	const OvMaths::FMatrix4& p_lightSpaceMatrix
 )
 {
 	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
@@ -106,16 +105,40 @@ void OvCore::Rendering::ShadowRenderPass::DrawOpaques(
 					{
 						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid() && material->IsShadowCaster())
 						{
+							const std::string shadowPassName = "SHADOW_PASS";
+
+							// If the material has shadow pass, use it, otherwise use the shadow fallback material
+							auto& targetMaterial =
+								material->SupportsFeature(shadowPassName) ?
+								*material :
+								m_shadowMaterial;
+
 							OvRendering::Entities::Drawable drawable;
 							drawable.mesh = *mesh;
-							drawable.material = m_shadowMaterial;
-							drawable.stateMask = m_shadowMaterial.GenerateStateMask();
+							drawable.material = targetMaterial;
 
-							drawable.material.value().SetProperty("_ModelMatrix", modelMatrix);
+							// Generate the state mask for the target material, and override
+							// its properties to ensure the shadow pass is rendered correctly.
+							drawable.stateMask = targetMaterial.GenerateStateMask();
+							drawable.stateMask.blendable = false; // The shadow pass should never use blending.
+							drawable.stateMask.depthTest = true; // The shadow pass should always use depth test.
+							drawable.stateMask.colorWriting = false; // The shadow pass should never write color.
+							drawable.stateMask.depthWriting = true; // The shadow pass should always write depth.
+							// No front/backface culling for shadow pass.
+							// A "two-sided" shadow pass setting could be added in the future, to change this behavior.
+							drawable.stateMask.frontfaceCulling = false;
+							drawable.stateMask.backfaceCulling = false;
+
+							drawable.featureSetOverride = { shadowPassName };
+							drawable.AddDescriptor<EngineDrawableDescriptor>({
+								modelMatrix,
+								materialRenderer->GetUserMatrix()
+							});
+
+							targetMaterial.SetProperty("_LightSpaceMatrix", p_lightSpaceMatrix, true);
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}
-
 					}
 				}
 			}

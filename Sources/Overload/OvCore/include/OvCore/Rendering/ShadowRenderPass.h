@@ -33,7 +33,12 @@ namespace OvCore::Rendering
 
 	private:
 		virtual void Draw(OvRendering::Data::PipelineState p_pso) override;
-		void DrawOpaques(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
+
+		void DrawShadows(
+			OvRendering::Data::PipelineState p_pso,
+			OvCore::SceneSystem::Scene& p_scene,
+			const OvMaths::FMatrix4& p_lightSpaceMatrix
+		);
 
 	private:
 		OvCore::Resources::Material m_shadowMaterial;

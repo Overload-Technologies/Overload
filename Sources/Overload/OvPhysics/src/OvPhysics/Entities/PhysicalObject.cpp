@@ -4,10 +4,12 @@
 * @licence: MIT
 */
 
-#include "OvPhysics/Entities/PhysicalObject.h"
+#include <bullet/btBulletCollisionCommon.h>
+#include <bullet/btBulletDynamicsCommon.h>
 
-#include "OvPhysics/Tools/Conversion.h"
-#include "OvDebug/Logger.h"
+#include <OvDebug/Logger.h>
+#include <OvPhysics/Entities/PhysicalObject.h>
+#include <OvPhysics/Tools/Conversion.h>
 
 using namespace OvPhysics::Tools;
 using namespace OvPhysics::Settings;
@@ -16,6 +18,19 @@ OvTools::Eventing::Event<OvPhysics::Entities::PhysicalObject&>	OvPhysics::Entiti
 OvTools::Eventing::Event<OvPhysics::Entities::PhysicalObject&>	OvPhysics::Entities::PhysicalObject::DestroyedEvent;
 OvTools::Eventing::Event<btRigidBody&>							OvPhysics::Entities::PhysicalObject::ConsiderEvent;
 OvTools::Eventing::Event<btRigidBody&>							OvPhysics::Entities::PhysicalObject::UnconsiderEvent;
+
+namespace
+{
+	void AddFlag(btCollisionObject& p_object, btCollisionObject::CollisionFlags p_flag)
+	{
+		p_object.setCollisionFlags(p_object.getCollisionFlags() | p_flag);
+	}
+
+	void RemoveFlag(btCollisionObject& p_object, btCollisionObject::CollisionFlags p_flag)
+	{
+		p_object.setCollisionFlags(p_object.getCollisionFlags() & ~p_flag);
+	}
+}
 
 OvPhysics::Entities::PhysicalObject::PhysicalObject() :
 	m_transform(new OvMaths::FTransform()),
@@ -62,16 +77,6 @@ void OvPhysics::Entities::PhysicalObject::AddImpulse(const OvMaths::FVector3& p_
 void OvPhysics::Entities::PhysicalObject::ClearForces()
 {
 	m_body->clearForces();
-}
-
-void OvPhysics::Entities::PhysicalObject::AddFlag(btCollisionObject::CollisionFlags p_flag)
-{
-	m_body->setCollisionFlags(m_body->getCollisionFlags() | p_flag);
-}
-
-void OvPhysics::Entities::PhysicalObject::RemoveFlag(btCollisionObject::CollisionFlags p_flag)
-{
-	m_body->setCollisionFlags(m_body->getCollisionFlags() & ~p_flag);
 }
 
 float OvPhysics::Entities::PhysicalObject::GetMass() const
@@ -190,9 +195,9 @@ void OvPhysics::Entities::PhysicalObject::SetAngularFactor(const OvMaths::FVecto
 void OvPhysics::Entities::PhysicalObject::SetTrigger(bool p_trigger)
 {
 	if (p_trigger)
-		AddFlag(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+		AddFlag(*m_body, btCollisionObject::CF_NO_CONTACT_RESPONSE);
 	else
-		RemoveFlag(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+		RemoveFlag(*m_body, btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
 	m_trigger = p_trigger;
 }
@@ -260,7 +265,9 @@ void OvPhysics::Entities::PhysicalObject::RecreateBody()
 
 void OvPhysics::Entities::PhysicalObject::ApplyInertia()
 {
-	m_body->setMassProps(m_kinematic ? 0.0f : std::max(0.0000001f, m_mass), m_kinematic ? btVector3(0.0f, 0.0f, 0.0f) : CalculateInertia());
+	m_body->setMassProps(
+		m_kinematic ? 0.0f : std::max(0.0000001f, m_mass),
+		m_kinematic ? btVector3(0.0f, 0.0f, 0.0f) : Tools::Conversion::ToBtVector3(CalculateInertia()));
 }
 
 void OvPhysics::Entities::PhysicalObject::Consider()
@@ -283,7 +290,7 @@ void OvPhysics::Entities::PhysicalObject::Unconsider()
 
 void OvPhysics::Entities::PhysicalObject::CreateBody(const Settings::BodySettings & p_bodySettings)
 {
-	m_motion = std::make_unique<btDefaultMotionState>(Tools::Conversion::ToBtTransform(*m_transform));
+	m_motion = std::make_unique<btDefaultMotionState>(Conversion::ToBtTransform(*m_transform));
 
 	m_body = std::make_unique<btRigidBody>(btRigidBody::btRigidBodyConstructionInfo{ 0.0f, m_motion.get(), m_shape.get(), btVector3(0.0f, 0.0f, 0.0f) });
 
@@ -291,16 +298,16 @@ void OvPhysics::Entities::PhysicalObject::CreateBody(const Settings::BodySetting
 
 	m_body->setRestitution(p_bodySettings.restitution);
 	m_body->setFriction(p_bodySettings.friction);
-	m_body->setLinearVelocity(p_bodySettings.linearVelocity);
-	m_body->setAngularVelocity(p_bodySettings.angularVelocity);
-	m_body->setLinearFactor(p_bodySettings.linearFactor);
-	m_body->setAngularFactor(p_bodySettings.angularFactor);
+	m_body->setLinearVelocity(Conversion::ToBtVector3(p_bodySettings.linearVelocity));
+	m_body->setAngularVelocity(Conversion::ToBtVector3(p_bodySettings.angularVelocity));
+	m_body->setLinearFactor(Conversion::ToBtVector3(p_bodySettings.linearFactor));
+	m_body->setAngularFactor(Conversion::ToBtVector3(p_bodySettings.angularFactor));
 	m_body->setUserPointer(this);
 
-	AddFlag(btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+	AddFlag(*m_body, btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
 
 	if (p_bodySettings.isTrigger)
-		AddFlag(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+		AddFlag(*m_body, btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
 	SetActivationState(EActivationState::ALWAYS_ACTIVE); // TODO: Avoid using always active
 
@@ -312,10 +319,10 @@ OvPhysics::Settings::BodySettings OvPhysics::Entities::PhysicalObject::DestroyBo
 {
 	BodySettings result
 	{
-		m_body->getLinearVelocity(),
-		m_body->getAngularVelocity(),
-		m_body->getLinearFactor(),
-		m_body->getAngularFactor(),
+		Conversion::ToOvVector3(m_body->getLinearVelocity()),
+		Conversion::ToOvVector3(m_body->getAngularVelocity()),
+		Conversion::ToOvVector3(m_body->getLinearFactor()),
+		Conversion::ToOvVector3(m_body->getAngularFactor()),
 		GetBounciness(),
 		GetFriction(),
 		IsTrigger(),
@@ -330,14 +337,14 @@ OvPhysics::Settings::BodySettings OvPhysics::Entities::PhysicalObject::DestroyBo
 	return result;
 }
 
-btVector3 OvPhysics::Entities::PhysicalObject::CalculateInertia() const
+OvMaths::FVector3 OvPhysics::Entities::PhysicalObject::CalculateInertia() const
 {
 	btVector3 result = { 0.f, 0.f, 0.f };
 
 	if (m_mass != 0.0f)
 		m_shape->calculateLocalInertia(m_mass, result);
 
-	return result;
+	return Conversion::ToOvVector3(result);
 }
 
 btRigidBody& OvPhysics::Entities::PhysicalObject::GetBody()

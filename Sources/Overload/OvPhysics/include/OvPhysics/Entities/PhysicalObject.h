@@ -9,17 +9,15 @@
 #include <any>
 #include <memory>
 
-#include <bullet/btBulletCollisionCommon.h>
-#include <bullet/btBulletDynamicsCommon.h>
-
 #include <OvMaths/FTransform.h>
-
 #include <OvTools/Eventing/Event.h>
-
-
-#include "OvPhysics/Settings/BodySettings.h"
+#include <OvPhysics/Settings/BodySettings.h>
 
 namespace OvPhysics::Core { class PhysicsEngine; }
+
+class btCollisionShape;
+class btRigidBody;
+class btMotionState;
 
 namespace OvPhysics::Entities
 {
@@ -85,18 +83,6 @@ namespace OvPhysics::Entities
 		* Clear forces
 		*/
 		void ClearForces();
-
-		/**
-		* Add a flag to the physical object
-		* @param p_flag
-		*/
-		void AddFlag(btCollisionObject::CollisionFlags p_flag);
-
-		/**
-		* Add a flag from the physical object
-		* @param p_flag
-		*/
-		void RemoveFlag(btCollisionObject::CollisionFlags p_flag);
 
 		/**
 		* Returns the mass of the physical object
@@ -256,9 +242,9 @@ namespace OvPhysics::Entities
 
 	private:
 		/* Internal */
-		void								CreateBody(const Settings::BodySettings& p_bodySettings);
-		Settings::BodySettings				DestroyBody();
-		btVector3							CalculateInertia() const;
+		void CreateBody(const Settings::BodySettings& p_bodySettings);
+		Settings::BodySettings DestroyBody();
+		OvMaths::FVector3 CalculateInertia() const;
 
 		/* Needed by the physics engine */
 		btRigidBody&			GetBody();

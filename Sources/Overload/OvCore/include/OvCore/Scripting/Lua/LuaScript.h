@@ -10,11 +10,22 @@
 
 #include <OvCore/Scripting/Common/TScript.h>
 
-#include <sol/sol.hpp>
-
 namespace OvCore::ECS
 {
 	class Actor;
+}
+
+namespace sol
+{
+	template <bool b>
+	class basic_reference;
+	using reference = basic_reference<false>;
+
+	template <bool, typename>
+	class basic_table_core;
+	template <bool b>
+	using table_core = basic_table_core<b, reference>;
+	using table = table_core<false>;
 }
 
 namespace OvCore::Scripting
@@ -24,7 +35,7 @@ namespace OvCore::Scripting
 	*/
 	struct LuaScriptContext
 	{
-		sol::table table;
+		std::unique_ptr<sol::table> table;
 	};
 
 	using LuaScriptBase = TScript<EScriptingLanguage::LUA, LuaScriptContext>;

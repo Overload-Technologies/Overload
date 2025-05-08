@@ -2,11 +2,23 @@ project "ImGui"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
-	files { "**.h", "**.cpp", "**.lua" }
-	includedirs { "include", dependdir .. "glfw/include", dependdir .. "glad/include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
+	warnings "Off"
+
+	files {
+		"**.h",
+		"**.cpp",
+		"**.lua"
+	}
+
+	includedirs {
+		-- Dependencies
+		dependdir .. "glfw/include",
+
+		-- Current Project
+		"include"
+	}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

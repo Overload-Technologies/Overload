@@ -6,11 +6,13 @@
 
 #pragma once
 
-#include <bullet/btBulletCollisionCommon.h>
-
 #include <OvMaths/FTransform.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FQuaternion.h>
+
+class btTransform;
+class btVector3;
+class btQuaternion;
 
 namespace OvPhysics::Tools
 {

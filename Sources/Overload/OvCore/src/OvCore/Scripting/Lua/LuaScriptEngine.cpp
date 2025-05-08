@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <sol/sol.hpp>
+
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
@@ -34,7 +36,7 @@ void ExecuteLuaFunction(OvCore::ECS::Components::Behaviour& p_behaviour, const s
 	OVASSERT(context.has_value(), "The given context is null");
 	OVASSERT(context->IsValid(), "The given context is invalid");
 
-	const sol::table& table = static_cast<OvCore::Scripting::LuaScript&>(context.value()).GetContext().table;
+	const sol::table& table = *static_cast<OvCore::Scripting::LuaScript&>(context.value()).GetContext().table;
 
 	if (table[p_functionName].valid())
 	{

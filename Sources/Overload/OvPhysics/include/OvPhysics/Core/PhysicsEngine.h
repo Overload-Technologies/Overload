@@ -6,13 +6,22 @@
 
 #pragma once
 
-#include <vector>
 #include <map>
 #include <optional>
+#include <vector>
 
-#include "OvPhysics/Entities/PhysicalObject.h"
-#include "OvPhysics/Settings/PhysicsSettings.h"
-#include "OvPhysics/Entities/RaycastHit.h"
+#include <OvPhysics/Entities/PhysicalObject.h>
+#include <OvPhysics/Entities/RaycastHit.h>
+#include <OvPhysics/Settings/PhysicsSettings.h>
+
+class btDynamicsWorld;
+class btDispatcher;
+class btCollisionConfiguration;
+class btBroadphaseInterface;
+class btConstraintSolver;
+class btRigidBody;
+class btManifoldPoint;
+struct btCollisionObjectWrapper;
 
 namespace OvPhysics::Core
 {
@@ -28,6 +37,11 @@ namespace OvPhysics::Core
 		* @param p_settings
 		*/
 		PhysicsEngine(const Settings::PhysicsSettings& p_settings);
+
+		/**
+		* Destructor
+		*/
+		virtual ~PhysicsEngine() = default;
 
 		/**
 		* Simulate the physics. This method call is decomposed in 3 things:
@@ -71,17 +85,17 @@ namespace OvPhysics::Core
 		void CheckCollisionStopEvents();
 
 		static bool CollisionCallback(btManifoldPoint& cp, const btCollisionObjectWrapper* obj1, int id1, int index1, const btCollisionObjectWrapper* obj2, int id2, int index2);
-		void		SetCollisionCallback();
+		void SetCollisionCallback();
 
 	private:
 		/* Bullet world */
-		std::unique_ptr<btDynamicsWorld>			m_world;
-		std::unique_ptr<btDispatcher>				m_dispatcher;
-		std::unique_ptr<btCollisionConfiguration>	m_collisionConfig;
-		std::unique_ptr<btBroadphaseInterface>		m_broadphase;
-		std::unique_ptr<btConstraintSolver>			m_solver;
+		std::unique_ptr<btDynamicsWorld> m_world;
+		std::unique_ptr<btDispatcher> m_dispatcher;
+		std::unique_ptr<btCollisionConfiguration> m_collisionConfig;
+		std::unique_ptr<btBroadphaseInterface> m_broadphase;
+		std::unique_ptr<btConstraintSolver> m_solver;
 
-		static std::map< std::pair<Entities::PhysicalObject*, Entities::PhysicalObject*>, bool> m_collisionEvents;
-		std::vector<std::reference_wrapper<Entities::PhysicalObject>>							m_physicalObjects;
+		static std::map<std::pair<Entities::PhysicalObject*, Entities::PhysicalObject*>, bool> m_collisionEvents;
+		std::vector<std::reference_wrapper<Entities::PhysicalObject>> m_physicalObjects;
 	};
 }

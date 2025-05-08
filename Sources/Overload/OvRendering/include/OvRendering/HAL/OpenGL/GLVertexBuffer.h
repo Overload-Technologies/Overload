@@ -8,7 +8,6 @@
 
 #include <OvRendering/HAL/Common/TVertexBuffer.h>
 #include <OvRendering/HAL/OpenGL/GLBuffer.h>
-#include <OvRendering/HAL/OpenGL/GLTypes.h>
 
 namespace OvRendering::HAL
 {

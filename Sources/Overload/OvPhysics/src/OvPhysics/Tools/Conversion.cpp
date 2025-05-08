@@ -4,7 +4,9 @@
 * @licence: MIT
 */
 
-#include "OvPhysics/Tools/Conversion.h"
+#include <bullet/LinearMath/btTransform.h>
+
+#include <OvPhysics/Tools/Conversion.h>
 
 btTransform OvPhysics::Tools::Conversion::ToBtTransform(const OvMaths::FTransform& p_transform)
 {

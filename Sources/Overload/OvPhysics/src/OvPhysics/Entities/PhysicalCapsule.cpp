@@ -6,8 +6,10 @@
 
 #include <algorithm>
 
-#include "OvPhysics/Entities/PhysicalCapsule.h"
-#include "OvPhysics/Tools/Conversion.h"
+#include <bullet/btBulletCollisionCommon.h>
+
+#include <OvPhysics/Entities/PhysicalCapsule.h>
+#include <OvPhysics/Tools/Conversion.h>
 
 OvPhysics::Entities::PhysicalCapsule::PhysicalCapsule(float p_radius, float p_height) : PhysicalObject()
 {

@@ -8,7 +8,8 @@
 
 #include <string>
 
-#include "OvUI/Widgets/Buttons/AButton.h"
+#include <OvUI/Settings/EDirection.h>
+#include <OvUI/Widgets/Buttons/AButton.h>
 
 namespace OvUI::Widgets::Buttons
 {
@@ -22,12 +23,12 @@ namespace OvUI::Widgets::Buttons
 		* Create the button
 		* @param p_direction
 		*/
-		ButtonArrow(ImGuiDir p_direction = ImGuiDir_None);
+		ButtonArrow(Settings::EDirection p_direction = Settings::EDirection::NONE);
 
 	protected:
 		void _Draw_Impl() override;
 
 	public:
-		ImGuiDir direction;
+		Settings::EDirection direction;
 	};
 }

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string>
 
+#include <tinyxml2.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>

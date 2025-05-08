@@ -17,12 +17,11 @@
 
 project 'assimp'
 	kind 'StaticLib'
-	warnings 'Off'
 	language "C++"
 	cppdialect "C++20"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
+	warnings "Off"
 
 	includedirs {
 		'./',
@@ -58,6 +57,7 @@ project 'assimp'
 		'code/AssetLib/Obj/**',
 		'code/AssetLib/FBX/**',
 	}
+
 	-- Importers
 	defines {
 		'ASSIMP_BUILD_NO_3D_IMPORTER',
@@ -112,6 +112,7 @@ project 'assimp'
 		'ASSIMP_BUILD_NO_X3D_IMPORTER',
 		'ASSIMP_BUILD_NO_XGL_IMPORTER'
 	}
+
 	-- Exporters
 	defines {
 		'ASSIMP_BUILD_NO_COLLADA_EXPORTER',

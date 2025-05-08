@@ -6,7 +6,9 @@
 
 #include <algorithm>
 
-#include "OvPhysics/Entities/PhysicalSphere.h"
+#include <bullet/btBulletCollisionCommon.h>
+
+#include <OvPhysics/Entities/PhysicalSphere.h>
 
 OvPhysics::Entities::PhysicalSphere::PhysicalSphere(float p_radius) : PhysicalObject()
 {

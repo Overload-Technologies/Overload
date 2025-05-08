@@ -45,6 +45,7 @@ OvEditor::Panels::AssetView::AssetView
 
 	m_assetActor = &m_scene.CreateActor("Asset");
 	m_modelRenderer = &m_assetActor->AddComponent<OvCore::ECS::Components::CModelRenderer>();
+	m_modelRenderer->SetFrustumBehaviour(OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED);
 	m_materialRenderer = &m_assetActor->AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
 
 	m_cameraController.LockTargetActor(*m_assetActor);

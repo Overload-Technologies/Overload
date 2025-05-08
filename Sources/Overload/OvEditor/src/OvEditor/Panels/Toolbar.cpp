@@ -4,13 +4,23 @@
 * @licence: MIT
 */
 
-#include <OvUI/Widgets/Layout/Spacing.h>
-
-#include "OvEditor/Panels/Toolbar.h"
-#include "OvEditor/Core/EditorActions.h"
-
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
+
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/GizmoBehaviour.h>
+#include <OvEditor/Panels/Toolbar.h>
+
+#include <OvUI/Widgets/Layout/Spacing.h>
+
+namespace
+{
+	void SetButtonState(OvUI::Widgets::Buttons::ButtonImage* p_button, bool p_enable)
+	{
+		p_button->disabled = !p_enable;
+		p_button->tint = p_enable ? OvUI::Types::Color{ 1.0f, 1.0f, 1.0f, 1.0f } : OvUI::Types::Color{ 1.0f, 1.0f, 1.0f, 0.15f };
+	}
+}
 
 OvEditor::Panels::Toolbar::Toolbar
 (
@@ -19,17 +29,59 @@ OvEditor::Panels::Toolbar::Toolbar
 	const OvUI::Settings::PanelWindowSettings& p_windowSettings
 ) : PanelWindow(p_title, p_opened, p_windowSettings)
 {
-	std::string iconFolder = ":Textures/Icons/";
+	using namespace OvUI::Widgets;
+	using namespace OvUI::Widgets::Buttons;
 
+	const auto iconSize = OvMaths::FVector2{ 20, 20 };
 	auto& textureManager = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>();
+	auto& editorResources = EDITOR_CONTEXT(editorResources);
 
-	m_playButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Play")->GetTexture().GetID(), OvMaths::FVector2{ 20, 20 });
-	m_pauseButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Pause")->GetTexture().GetID(), OvMaths::FVector2{ 20, 20 });
-	m_stopButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Stop")->GetTexture().GetID(), OvMaths::FVector2{ 20, 20 });
-	m_nextButton = &CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Next")->GetTexture().GetID(), OvMaths::FVector2{ 20, 20 });
+	auto& translate = CreateWidget<ButtonImage>(editorResources->GetTexture("Move")->GetTexture().GetID(), iconSize);
+	translate.lineBreak = false;
+	translate.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::TRANSLATE)); };
 
-	CreateWidget<OvUI::Widgets::Layout::Spacing>(0).lineBreak = false;
-	auto& refreshButton = CreateWidget<OvUI::Widgets::Buttons::ButtonImage>(EDITOR_CONTEXT(editorResources)->GetTexture("Refresh")->GetTexture().GetID(), OvMaths::FVector2{ 20, 20 });
+	auto& rotate = CreateWidget<ButtonImage>(editorResources->GetTexture("Rotate")->GetTexture().GetID(), iconSize);
+	rotate.lineBreak = false;
+	rotate.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::ROTATE)); };
+
+	auto& scale = CreateWidget<ButtonImage>(editorResources->GetTexture("Scale")->GetTexture().GetID(), iconSize);
+	scale.lineBreak = false;
+	scale.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::SCALE)); };
+
+	auto updateGizmoOperation = [&translate, &rotate, &scale](Core::EGizmoOperation p_operation) {
+		switch (p_operation)
+		{
+		case Core::EGizmoOperation::TRANSLATE:
+			SetButtonState(&translate, true);
+			SetButtonState(&rotate, false);
+			SetButtonState(&scale, false);
+			break;
+		case Core::EGizmoOperation::ROTATE:
+			SetButtonState(&translate, false);
+			SetButtonState(&rotate, true);
+			SetButtonState(&scale, false);
+			break;
+		case Core::EGizmoOperation::SCALE:
+			SetButtonState(&translate, false);
+			SetButtonState(&rotate, false);
+			SetButtonState(&scale, true);
+			break;
+		}
+	};
+
+	updateGizmoOperation(EDITOR_EXEC(GetGizmoOperation()));
+
+	EDITOR_EVENT(EditorOperationChanged) += updateGizmoOperation;
+
+	CreateWidget<Layout::Spacing>().lineBreak = false;
+
+	m_playButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Play")->GetTexture().GetID(), iconSize);
+	m_pauseButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Pause")->GetTexture().GetID(), iconSize);
+	m_stopButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Stop")->GetTexture().GetID(), iconSize);
+	m_nextButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Next")->GetTexture().GetID(), iconSize);
+
+	CreateWidget<Layout::Spacing>(0).lineBreak = false;
+	auto& refreshButton = CreateWidget<ButtonImage>(editorResources->GetTexture("Refresh")->GetTexture().GetID(), iconSize);
 
 	m_playButton->lineBreak		= false;
 	m_pauseButton->lineBreak	= false;
@@ -43,39 +95,33 @@ OvEditor::Panels::Toolbar::Toolbar
 	m_nextButton->ClickedEvent	+= EDITOR_BIND(NextFrame);
 	refreshButton.ClickedEvent	+= EDITOR_BIND(RefreshScripts);
 
-	EDITOR_EVENT(EditorModeChangedEvent) += [this](OvEditor::Core::EditorActions::EEditorMode p_newMode)
+	EDITOR_EVENT(EditorModeChangedEvent) += [this](Core::EditorActions::EEditorMode p_newMode)
 	{
-		auto enable = [](OvUI::Widgets::Buttons::ButtonImage* p_button, bool p_enable)
-		{
-			p_button->disabled = !p_enable;
-			p_button->tint = p_enable ? OvUI::Types::Color{ 1.0f, 1.0f, 1.0f, 1.0f} : OvUI::Types::Color{1.0f, 1.0f, 1.0f, 0.15f};
-		};
-
 		switch (p_newMode)
 		{
-		case OvEditor::Core::EditorActions::EEditorMode::EDIT:
-			enable(m_playButton, true);
-			enable(m_pauseButton, false);
-			enable(m_stopButton, false);
-			enable(m_nextButton, false);
+		case Core::EditorActions::EEditorMode::EDIT:
+			SetButtonState(m_playButton, true);
+			SetButtonState(m_pauseButton, false);
+			SetButtonState(m_stopButton, false);
+			SetButtonState(m_nextButton, false);
 			break;
-		case OvEditor::Core::EditorActions::EEditorMode::PLAY:
-			enable(m_playButton, false);
-			enable(m_pauseButton, true);
-			enable(m_stopButton, true);
-			enable(m_nextButton, true);
+		case Core::EditorActions::EEditorMode::PLAY:
+			SetButtonState(m_playButton, false);
+			SetButtonState(m_pauseButton, true);
+			SetButtonState(m_stopButton, true);
+			SetButtonState(m_nextButton, true);
 			break;
-		case OvEditor::Core::EditorActions::EEditorMode::PAUSE:
-			enable(m_playButton, true);
-			enable(m_pauseButton, false);
-			enable(m_stopButton, true);
-			enable(m_nextButton, true);
+		case Core::EditorActions::EEditorMode::PAUSE:
+			SetButtonState(m_playButton, true);
+			SetButtonState(m_pauseButton, false);
+			SetButtonState(m_stopButton, true);
+			SetButtonState(m_nextButton, true);
 			break;
-		case OvEditor::Core::EditorActions::EEditorMode::FRAME_BY_FRAME:
-			enable(m_playButton, true);
-			enable(m_pauseButton, false);
-			enable(m_stopButton, true);
-			enable(m_nextButton, true);
+		case Core::EditorActions::EEditorMode::FRAME_BY_FRAME:
+			SetButtonState(m_playButton, true);
+			SetButtonState(m_pauseButton, false);
+			SetButtonState(m_stopButton, true);
+			SetButtonState(m_nextButton, true);
 			break;
 		}
 	};

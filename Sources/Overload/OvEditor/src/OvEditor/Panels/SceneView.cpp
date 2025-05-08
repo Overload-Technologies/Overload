@@ -83,17 +83,17 @@ void OvEditor::Panels::SceneView::Update(float p_deltaTime)
 	{
 		if (EDITOR_CONTEXT(inputManager)->IsKeyPressed(EKey::KEY_W))
 		{
-			m_currentOperation = OvEditor::Core::EGizmoOperation::TRANSLATE;
+			SetGizmoOperation(Core::EGizmoOperation::TRANSLATE);
 		}
 
 		if (EDITOR_CONTEXT(inputManager)->IsKeyPressed(EKey::KEY_E))
 		{
-			m_currentOperation = OvEditor::Core::EGizmoOperation::ROTATE;
+			SetGizmoOperation(Core::EGizmoOperation::ROTATE);
 		}
 
 		if (EDITOR_CONTEXT(inputManager)->IsKeyPressed(EKey::KEY_R))
 		{
-			m_currentOperation = OvEditor::Core::EGizmoOperation::SCALE;
+			SetGizmoOperation(Core::EGizmoOperation::SCALE);
 		}
 	}
 }
@@ -120,6 +120,17 @@ void OvEditor::Panels::SceneView::InitFrame()
 OvCore::SceneSystem::Scene* OvEditor::Panels::SceneView::GetScene()
 {
 	return m_sceneManager.GetCurrentScene();
+}
+
+void OvEditor::Panels::SceneView::SetGizmoOperation(OvEditor::Core::EGizmoOperation p_operation)
+{
+	m_currentOperation = p_operation;
+	EDITOR_EVENT(EditorOperationChanged).Invoke(m_currentOperation);
+}
+
+OvEditor::Core::EGizmoOperation OvEditor::Panels::SceneView::GetGizmoOperation() const
+{
+	return m_currentOperation;
 }
 
 OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::SceneView::CreateSceneDescriptor()

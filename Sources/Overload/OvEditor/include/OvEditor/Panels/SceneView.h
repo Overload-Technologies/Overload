@@ -9,6 +9,7 @@
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Panels/AViewControllable.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvTools/Eventing/Event.h>
 
 namespace OvEditor::Panels
 {
@@ -41,6 +42,17 @@ namespace OvEditor::Panels
 		* Returns the scene used by this view
 		*/
 		virtual OvCore::SceneSystem::Scene* GetScene();
+
+		/**
+		* Set the gizmo operation
+		* @param p_operation
+		*/
+		void SetGizmoOperation(Core::EGizmoOperation p_operation);
+
+		/**
+		* Returns the current gizmo operation
+		*/
+		Core::EGizmoOperation GetGizmoOperation() const;
 
 	protected:
 		virtual OvCore::Rendering::SceneRenderer::SceneDescriptor CreateSceneDescriptor() override;

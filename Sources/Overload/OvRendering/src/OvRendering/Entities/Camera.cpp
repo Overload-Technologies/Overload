@@ -11,11 +11,11 @@
 
 OvRendering::Entities::Camera::Camera(OvTools::Utils::OptRef<OvMaths::FTransform> p_transform) :
 	Entity{ p_transform },
-    m_projectionMode(Settings::EProjectionMode::PERSPECTIVE),
-	m_fov(45.0f),
-    m_size(5.0f),
+	m_projectionMode(Settings::EProjectionMode::PERSPECTIVE),
+	m_fov(60.0f),
+	m_size(5.0f),
 	m_near(0.1f),
-	m_far(100.f),
+	m_far(1000.f),
 	m_clearColor(0.f, 0.f, 0.f),
 	m_clearColorBuffer(true),
 	m_clearDepthBuffer(true),

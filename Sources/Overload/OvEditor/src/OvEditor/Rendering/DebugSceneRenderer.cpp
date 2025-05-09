@@ -173,6 +173,9 @@ protected:
 	{
 		TracyGpuZone("DebugActorRenderPass");
 
+		// Clear stencil buffer for outline rendering
+		m_renderer.Clear(false, false, true);
+
 		auto& debugSceneDescriptor = m_renderer.GetDescriptor<OvEditor::Rendering::DebugSceneRenderer::DebugSceneDescriptor>();
 
 		if (debugSceneDescriptor.selectedActor)
@@ -572,7 +575,7 @@ OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context
 	AddFeature<OvEditor::Rendering::OutlineRenderFeature>();
 	AddFeature<OvEditor::Rendering::GizmoRenderFeature>();
 
-	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Opaque + 1);
 	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);

@@ -47,6 +47,7 @@ group ""
 
 group "Dependencies/Prebuilt"
 	include "../../Dependencies/bullet3"
+	include "../../Dependencies/json"
 	include "../../Dependencies/stb_image"
 	include "../../Dependencies/sol"
 group ""

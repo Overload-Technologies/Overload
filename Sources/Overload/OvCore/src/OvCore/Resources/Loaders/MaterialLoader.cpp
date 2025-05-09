@@ -4,9 +4,14 @@
 * @licence: MIT
 */
 
+#include <json.hpp>
+
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
 #include <OvDebug/Logger.h>
+#include <json_fwd.hpp>
+#include <iostream>
+#include <fstream>
 
 OvCore::Resources::Material * OvCore::Resources::Loaders::MaterialLoader::Create(const std::string & p_path)
 {
@@ -30,6 +35,16 @@ OvCore::Resources::Material * OvCore::Resources::Loaders::MaterialLoader::Create
 
 void OvCore::Resources::Loaders::MaterialLoader::Reload(Material& p_material, const std::string& p_path)
 {
+	if (std::filesystem::exists(std::format("{}.json", p_path)))
+	{
+		std::ifstream file(std::format("{}.json", p_path));
+		nlohmann::json j;
+		file >> j;
+		p_material = j.template get<std::remove_reference<decltype(p_material)>::type>();
+		OVLOG_INFO("[MATERIAL] \"" + p_path + "\" Reloaded");
+		return;
+	}
+
 	tinyxml2::XMLDocument doc;
 	doc.LoadFile(p_path.c_str());
 	if (!doc.Error())
@@ -42,6 +57,11 @@ void OvCore::Resources::Loaders::MaterialLoader::Reload(Material& p_material, co
 
 void OvCore::Resources::Loaders::MaterialLoader::Save(Material& p_material, const std::string& p_path)
 {
+	nlohmann::json j = p_material;
+	std::cout << j << std::endl;
+	std::ofstream file(std::format("{}.json", p_path));
+	file << std::setw(4) << j << std::endl;
+
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLNode* node = doc.NewElement("root");
 	doc.InsertFirstChild(node);

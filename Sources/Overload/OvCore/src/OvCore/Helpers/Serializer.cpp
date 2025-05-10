@@ -4,13 +4,15 @@
 * @licence: MIT
 */
 
-#include "OvCore/ResourceManagement/TextureManager.h"
-#include "OvCore/ResourceManagement/ModelManager.h"
-#include "OvCore/ResourceManagement/ShaderManager.h"
-#include "OvCore/ResourceManagement/MaterialManager.h"
-#include "OvCore/ResourceManagement/SoundManager.h"
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/Helpers/Serializer.h"
+#include <tinyxml2.h>
+
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/SoundManager.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Helpers/Serializer.h>
 
 void OvCore::Helpers::Serializer::SerializeBoolean(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, bool p_value)
 {

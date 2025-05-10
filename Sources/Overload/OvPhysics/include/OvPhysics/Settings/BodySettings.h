@@ -6,22 +6,22 @@
 
 #pragma once
 
-#include <bullet/btBulletCollisionCommon.h>
+#include <OvMaths/FVector3.h>
 
 namespace OvPhysics::Settings
 {
 	/**
-	* Usefull to re-create a body using its previous settings
+	* Specifies the settings of a physical body
 	*/
 	struct BodySettings
 	{
-		btVector3 linearVelocity	= { 0.f, 0.f, 0.f };
-		btVector3 angularVelocity	= { 0.f, 0.f, 0.f };
-		btVector3 linearFactor		= { 1, 1, 1 };
-		btVector3 angularFactor		= { 1, 1, 1 };
-		float restitution			= 0.f;
-		float friction				= 0.5f;
-		bool isTrigger				= false;
-		bool isKinematic			= false;
+		OvMaths::FVector3 linearVelocity = OvMaths::FVector3::Zero;
+		OvMaths::FVector3 angularVelocity = OvMaths::FVector3::Zero;
+		OvMaths::FVector3 linearFactor = OvMaths::FVector3::One;
+		OvMaths::FVector3 angularFactor = OvMaths::FVector3::One;
+		float restitution = 0.f;
+		float friction = 0.5f;
+		bool isTrigger = false;
+		bool isKinematic = false;
 	};
 }

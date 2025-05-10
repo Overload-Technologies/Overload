@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "OvEditor/Core/EditorActions.h"
+#include <OvEditor/Core/EditorActions.h>
 
 namespace OvEditor::Core
 {
@@ -17,7 +17,7 @@ namespace OvEditor::Core
 
 		T& component = instance.AddComponent<T>();
 
-        instance.SetName(component.GetName());
+		instance.SetName(component.GetName());
 
 		if (p_focusOnCreation)
 			SelectActor(instance);

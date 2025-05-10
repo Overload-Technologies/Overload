@@ -6,7 +6,6 @@ project "lua"
 	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

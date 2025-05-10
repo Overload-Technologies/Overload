@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <imgui.h>
-
 #include <string>
 
 #include <OvUI/API/IDrawable.h>

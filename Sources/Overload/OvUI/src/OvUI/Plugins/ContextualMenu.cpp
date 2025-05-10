@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <imgui.h>
+
 #include <OvUI/Panels/APanel.h>
 #include <OvUI/Plugins/ContextualMenu.h>
 

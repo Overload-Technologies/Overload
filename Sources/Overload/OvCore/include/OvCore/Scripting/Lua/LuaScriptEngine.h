@@ -11,11 +11,14 @@
 
 #include <OvCore/Scripting/Common/TScriptEngine.h>
 
-#include <sol/sol.hpp>
-
 namespace OvCore::ECS::Components
 {
 	class Behaviour;
+}
+
+namespace sol
+{
+	class state;
 }
 
 namespace OvCore::Scripting
@@ -47,7 +50,7 @@ namespace OvCore::Scripting
 		/**
 		* Destructor of the Lua script engine
 		*/
-		~LuaScriptEngine();
+		virtual ~LuaScriptEngine();
 
 		/**
 		* Create the Lua state

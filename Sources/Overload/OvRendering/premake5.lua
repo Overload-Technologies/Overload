@@ -2,15 +2,32 @@ project "OvRendering"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
-	files { "**.h", "**.inl", "**.cpp", "**.lua" }
-	includedirs {
-		dependdir .. "glad/include", dependdir .. "stb_image/include", dependdir .. "assimp/include", dependdir .. "tracy",
-		"%{wks.location}/OvDebug/include", "%{wks.location}/OvMaths/include", "%{wks.location}/OvTools/include",
-		"include"
-	}
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
+
+	files {
+		"**.h",
+		"**.inl",
+		"**.cpp",
+		"**.lua",
+		"**.ini"
+	}
+
+	includedirs {
+		-- Dependencies
+		dependdir .. "assimp/include",
+		dependdir .. "glad/include",
+		dependdir .. "stb_image/include",
+		dependdir .. "tracy",
+
+		-- Overload SDK
+		"%{wks.location}/OvDebug/include",
+		"%{wks.location}/OvMaths/include",
+		"%{wks.location}/OvTools/include",
+
+		-- Current Project
+		"include"
+	}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

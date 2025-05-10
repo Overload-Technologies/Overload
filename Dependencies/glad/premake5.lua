@@ -2,11 +2,19 @@ project "glad"
 	kind "StaticLib"
 	language "C"
 	cdialect "C17"
-	files { "**.h", "**.c", "**.lua" }
-	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
+	warnings "Off"
+
+	files {
+		"**.h",
+		"**.c",
+		"**.lua"
+	}
+
+	includedirs {
+		"include"
+	}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

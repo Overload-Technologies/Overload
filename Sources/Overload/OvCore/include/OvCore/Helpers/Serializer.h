@@ -7,7 +7,6 @@
 #pragma once
 
 #include <string>
-#include <tinyxml2.h>
 
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
@@ -32,6 +31,12 @@ namespace OvAudio::Resources
 namespace OvCore::Resources
 {
 	class Material;
+}
+
+namespace tinyxml2
+{
+	class XMLDocument;
+	class XMLNode;
 }
 
 namespace OvCore::Helpers

@@ -5,6 +5,7 @@
 */
 
 #include <sstream>
+#include <tinyxml2.h>
 
 #include <OvCore/Resources/Material.h>
 

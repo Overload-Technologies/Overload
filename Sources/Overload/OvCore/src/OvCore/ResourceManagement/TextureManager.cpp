@@ -4,29 +4,50 @@
 * @licence: MIT
 */
 
-#include "OvCore/ResourceManagement/TextureManager.h"
-#include "OvRendering/Settings/DriverSettings.h"
+#include <format>
+
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvRendering/Settings/DriverSettings.h>
 
 #include <OvTools/Filesystem/IniFile.h>
 
-std::tuple<OvRendering::Settings::ETextureFilteringMode, OvRendering::Settings::ETextureFilteringMode, bool> GetAssetMetadata(const std::string& p_path)
+namespace
 {
-	auto metaFile = OvTools::Filesystem::IniFile(p_path + ".meta");
+	struct TextureMetaData
+	{
+		OvRendering::Settings::ETextureFilteringMode minFilter;
+		OvRendering::Settings::ETextureFilteringMode magFilter;
+		bool generateMipmap;
+	};
 
-	auto min = metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR));
-	auto mag = metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(OvRendering::Settings::ETextureFilteringMode::LINEAR));
-	auto mipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true);
+	TextureMetaData LoadTextureMetadata(const std::string_view p_filePath)
+	{
+		using namespace OvRendering::Settings;
+		using enum ETextureFilteringMode;
 
-	return { static_cast<OvRendering::Settings::ETextureFilteringMode>(min), static_cast<OvRendering::Settings::ETextureFilteringMode>(mag), mipmap };
+		const auto metaFile = OvTools::Filesystem::IniFile(std::format("{}.meta", p_filePath));
+
+		return TextureMetaData{
+			.minFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(LINEAR_MIPMAP_LINEAR))),
+			.magFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(LINEAR))),
+			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true)
+		};
+	}
 }
 
 OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::CreateResource(const std::string & p_path)
 {
 	std::string realPath = GetRealPath(p_path);
 
-	auto [min, mag, mipmap] = GetAssetMetadata(realPath);
+	const auto metaData = LoadTextureMetadata(realPath);
 
-	OvRendering::Resources::Texture* texture = OvRendering::Resources::Loaders::TextureLoader::Create(realPath, min, mag, mipmap);
+	OvRendering::Resources::Texture* texture = OvRendering::Resources::Loaders::TextureLoader::Create(
+		realPath,
+		metaData.minFilter,
+		metaData.magFilter,
+		metaData.generateMipmap
+	);
+
 	if (texture)
 		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(texture) + offsetof(OvRendering::Resources::Texture, path)) = p_path; // Force the resource path to fit the given path
 
@@ -42,7 +63,13 @@ void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Res
 {
 	std::string realPath = GetRealPath(p_path);
 
-	auto [min, mag, mipmap] = GetAssetMetadata(realPath);
+	const auto metaData = LoadTextureMetadata(realPath);
 
-	OvRendering::Resources::Loaders::TextureLoader::Reload(*p_resource, realPath, min, mag, mipmap);
+	OvRendering::Resources::Loaders::TextureLoader::Reload(
+		*p_resource,
+		realPath,
+		metaData.minFilter,
+		metaData.magFilter,
+		metaData.generateMipmap
+	);
 }

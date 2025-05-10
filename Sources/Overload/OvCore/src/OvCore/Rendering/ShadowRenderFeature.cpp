@@ -43,7 +43,7 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 					{
 						const auto shadowTex = light.GetShadowBuffer().GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::DEPTH);
 						material.SetProperty("_ShadowMap", &shadowTex.value(), true); // Single use material property
-						material.SetProperty("_LightSpaceMatrix", light.GetLightSpaceMatrix());
+						material.SetProperty("_LightSpaceMatrix", light.GetLightSpaceMatrix(), true);
 						++lightIndex;
 					}
 				}

@@ -4,7 +4,9 @@
 * @licence: MIT
 */
 
-#include "OvUI/Widgets/Texts/Text.h"
+#include <imgui.h>
+
+#include <OvUI/Widgets/Texts/Text.h>
 
 OvUI::Widgets::Texts::Text::Text(const std::string & p_content) :
 	DataWidget(content),

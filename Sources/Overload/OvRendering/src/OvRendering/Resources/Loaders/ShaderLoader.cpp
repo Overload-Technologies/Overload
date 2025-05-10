@@ -237,7 +237,7 @@ namespace
 		{
 			if (!p_disableLogging && __LOGGING_SETTINGS.linkingErrors)
 			{
-				OVLOG_INFO(std::format(
+				OVLOG_ERROR(std::format(
 					"[Shader Linking] {}{}: {}",
 					p_shaderInputInfo.name,
 					FeatureSetToString(p_features),

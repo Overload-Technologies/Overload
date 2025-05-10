@@ -6,12 +6,9 @@
 
 #pragma once
 
-#include <bullet/btBulletCollisionCommon.h>
-
 #include <vector>
 
-
-#include "OvPhysics/Entities/PhysicalObject.h"
+#include <OvPhysics/Entities/PhysicalObject.h>
 
 namespace OvPhysics::Entities
 {

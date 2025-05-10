@@ -7,17 +7,21 @@
 #pragma once
 
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Core/PanelsManager.h>
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvTools/Utils/PathParser.h>
 
-#include <OvEditor/Core/Context.h>
-#include <OvEditor/Core/PanelsManager.h>
+#define EDITOR_EXEC(action) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().action
+#define EDITOR_BIND(method, ...) std::bind(&OvEditor::Core::EditorActions::method, &OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>(), ##__VA_ARGS__)
+#define EDITOR_EVENT(target) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().target
+#define EDITOR_CONTEXT(instance) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetContext().instance
+#define EDITOR_PANEL(type, id) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetPanelsManager().GetPanelAs<type>(id)
 
-#define EDITOR_EXEC(action)					OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().action
-#define EDITOR_BIND(method, ...)			std::bind(&OvEditor::Core::EditorActions::method, &OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>(), ##__VA_ARGS__)
-#define EDITOR_EVENT(target)				OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().target
-#define EDITOR_CONTEXT(instance)			OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetContext().instance
-#define EDITOR_PANEL(type, id)				OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetPanelsManager().GetPanelAs<type>(id)
+namespace tinyxml2
+{
+	class XMLDocument;
+}
 
 namespace OvEditor::Core
 {
@@ -35,6 +39,11 @@ namespace OvEditor::Core
 		* @param p_panelsManager
 		*/
 		EditorActions(Context& p_context, PanelsManager& p_panelsManager);
+
+		/**
+		* Destructor
+		*/
+		virtual ~EditorActions();
 
 		#pragma region TOOLS
 		/**
@@ -173,7 +182,7 @@ namespace OvEditor::Core
 		* Create an empty actor
 		* @param p_focusOnCreation
 		* @param p_parent
-        * @param p_name
+		* @param p_name
 		*/
 		OvCore::ECS::Actor&	CreateEmptyActor(bool p_focusOnCreation = true, OvCore::ECS::Actor* p_parent = nullptr, const std::string& p_name = "");
 
@@ -183,7 +192,7 @@ namespace OvEditor::Core
 		* @param p_path
 		* @param p_focusOnCreation
 		* @param p_parent
-        * @param p_name
+		* @param p_name
 		*/
 		OvCore::ECS::Actor&	CreateActorWithModel(const std::string& p_path, bool p_focusOnCreation = true, OvCore::ECS::Actor* p_parent = nullptr, const std::string& p_name = "");
 
@@ -224,12 +233,12 @@ namespace OvEditor::Core
 		* Returns the selected actor. Make sur you verified that an actor is selected
 		* with IsAnyActorSelected() before calling this method
 		*/
-		OvCore::ECS::Actor&		GetSelectedActor() const;
+		OvCore::ECS::Actor& GetSelectedActor() const;
 
 		/**
 		* Moves the camera to the target actor
 		*/
-		void					MoveToTarget(OvCore::ECS::Actor& p_target);
+		void MoveToTarget(OvCore::ECS::Actor& p_target);
 		#pragma endregion
 
 		#pragma region RESOURCE_MANAGEMENT
@@ -412,8 +421,8 @@ namespace OvEditor::Core
 
 		std::vector<std::pair<uint32_t, std::function<void()>>> m_delayedActions;
 
-		tinyxml2::XMLDocument m_sceneBackup;
+		std::unique_ptr<tinyxml2::XMLDocument> m_sceneBackup;
 	};
 }
 
-#include "OvEditor/Core/EditorActions.inl"
+#include <OvEditor/Core/EditorActions.inl>

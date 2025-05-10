@@ -4,7 +4,9 @@
 * @licence: MIT
 */
 
-#include "OvUI/Widgets/Texts/TextSelectable.h"
+#include <imgui.h>
+
+#include <OvUI/Widgets/Texts/TextSelectable.h>
 
 OvUI::Widgets::Texts::TextSelectable::TextSelectable(const std::string & p_content, bool p_selected, bool p_disabled) :
 	Text(p_content), selected(p_selected), disabled(p_disabled)

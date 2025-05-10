@@ -30,10 +30,12 @@ Overload is a free, open-source 3D game engine made in C++ with Lua as its scrip
 Originally created in 2019 by [Benjamin VIRANIN](https://github.com/BenjaminViranin), [Max BRUN](https://github.com/maxbrundev), and [Adrien GIVRY](https://github.com/adriengivry) as a graduation project, it has since evolved into an community-driven initiative supported by dozens of contributors.
 
 Overload pillars are:
-- 🐣 Ease of use
-- 📄 Documentation
-- 🤝 Community
-- ⚙️ Modern C++20 code
+- 🐣 **Ease of use** – Inspired by other commercial engines, so you feel right at home.
+- 🧊 **Simplicity** – Minimalistic by design, avoiding unnecessary complexity.
+- 💭 **Pragmatic Design** – Features are carefully considered and deeply integrated.
+- 📄 **Documentation** – Scripting API and documented source-code.
+- 🤝 **Community-Driven** – Welcoming contributions and feedback from all developers.
+- ⚙️ **Modern C++20** – Leveraging the power and safety of up-to-date C++ features.
 
 # Features
 - Lua scripting
@@ -50,39 +52,39 @@ Overload pillars are:
 Check out our [issues](https://github.com/Overload-Technologies/Overload/issues) and [pull requests](https://github.com/Overload-Technologies/Overload/pulls) to learn more about what's coming next!
 
 # Architecture
-Overload is divided into 12 modules: 10 libraries (SDK), and 2 executables (Applications).
+Overload is divided into 11 modules: 9 libraries (SDK), and 2 executables (Applications).
 
 ## Overload SDK
 The Overload SDK is the core of the engine. It is a set of libraries used by our applications: `OvGame` and `OvEditor`.
 We designed theses libraries with reusability in mind. They are highly modular and easy to extract from a game engine context.
-- `OvDebug`: Logging and assertions
-- `OvTools`: Serialization, INI files, events, clock
-- `OvMaths`: Vectors, matrices, quaternions, transforms
-- `OvAudio`: Audio engine, built around [SoLoud](https://github.com/jarikomppa/soloud)
-- `OvPhysics`: Wraps Bullet3
-- `OvRendering`: Rendering engine using OpenGL
-- `OvWindowing`: GLFW and Windows API wrapper
-- `OvUI`: Dear ImGui wrapped into an event-based and component-based UI system
-- `OvCore`: Component-based scene system, scripting, and resource management
+- `OvDebug`: Logging and assertions.
+- `OvTools`: Serialization, file system, platform, events, clock, and more.
+- `OvMaths`: Vectors, matrices, quaternions, transforms.
+- `OvAudio`: Audio engine, built around [SoLoud](https://github.com/jarikomppa/soloud).
+- `OvPhysics`: Physics engine, built around [Bullet3](https://github.com/bulletphysics/bullet3).
+- `OvRendering`: Fully agnostic rendering engine (HAL), with OpenGL implementation using [GLAD](https://github.com/Dav1dde/glad).
+- `OvWindowing`: Handles inputs and windows using [GLFW](https://github.com/glfw/glfw).
+- `OvUI`: Widget-based UI, leveraging [ImGui](https://github.com/ocornut/imgui) under the hood.
+- `OvCore`: Component-based scene system, scripting, and resource management.
 
 ## Overload Applications
 Overload applications use the Overload SDK to operate.
-- `OvGame`: A data-driven executable for any game built with Overload
-- `OvEditor`: An editor for building your game
+- `OvGame`: A data-driven executable for any game built with Overload.
+- `OvEditor`: An editor for building your game.
 
 ![Editor](https://user-images.githubusercontent.com/33324216/94352908-fd228a80-0038-11eb-849a-c076bde4c7c6.PNG)
 
 ## Dependencies
 Overload depends on a few third-party libraries:
-- OpenGL with GLAD (Graphics API)
-- GLFW (Windowing and inputs)
-- Assimp (3D model loader)
-- Bullet3 (Physics)
-- SoLoud (Audio)
-- Tinyxml2 (XML serializer)
-- Sol2 (Lua binding)
-- ImGui (GUI)
-- Premake5 (Project generation)
+- OpenGL with [GLAD](https://github.com/Dav1dde/glad) (Graphics API)
+- [GLFW](https://github.com/glfw/glfw) (Windowing and inputs)
+- [Assimp](https://github.com/assimp/assimp) (3D model loader)
+- [Bullet3](https://github.com/bulletphysics/bullet3) (Physics)
+- [SoLoud](https://github.com/jarikomppa/soloud) (Audio)
+- [Tinyxml2](https://github.com/leethomason/tinyxml2) (XML serializer)
+- [Sol3](https://github.com/ThePhD/sol2) (Lua binding)
+- [ImGui](https://github.com/ocornut/imgui) (GUI)
+- [Premake5](https://github.com/premake/premake-core) (Project generation)
 
 # Getting started
 ## Running Overload from a Release Build
@@ -134,11 +136,13 @@ Overload is open to contributions of all kinds. Feel free to open issues (featur
 
 If you'd like to contribute, please refer to our [contribution guildelines](https://github.com/Overload-Technologies/Overload/blob/develop/CONTRIBUTING.md).
 
-# Requirements
-- **RAM:** 100MB
-- **OS:** Windows 7
-- **GPU:** Graphics card supporting OpenGL 4.5
-- **CPU:** x64
+# Minimum Requirements
+| | |
+|-|-|
+| **RAM** | 1GB |
+| **OS**  | Windows 7 |
+| **GPU** | Graphics card supporting OpenGL 4.5 |
+| **CPU** | x64 |
 
 # Screenshots
 ![PBR Shading](https://user-images.githubusercontent.com/33324216/94352806-96e93800-0037-11eb-8d7f-9c9a318ca2c7.PNG)

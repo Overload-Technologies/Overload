@@ -129,9 +129,10 @@ namespace OvEditor::Core
 		* Handle the scale behaviour
 		* @param p_viewMatrix
 		* @param p_projectionMatrix
+		* @param p_cameraPosition
 		* @param p_viewSize
 		*/
-		void ApplyScale(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector2& p_viewSize) const;
+		void ApplyScale(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector3& p_cameraPosition, const OvMaths::FVector2& p_viewSize);
 
 	private:
 		bool m_firstMouse = true;

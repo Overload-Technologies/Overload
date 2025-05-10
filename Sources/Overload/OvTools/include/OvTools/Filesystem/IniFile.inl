@@ -13,39 +13,41 @@
 namespace OvTools::Filesystem
 {
 	template<SupportedIniType T>
-	inline T IniFile::Get(const std::string& p_key)
+	inline T IniFile::Get(const std::string& p_key) const
 	{
 		if (!IsKeyExisting(p_key))
 		{
 			return T{};
 		}
 
+		const auto value = m_data.at(p_key);
+
 		if constexpr (std::same_as<T, bool>)
 		{
-			return m_data[p_key] == "1" || m_data[p_key] == "T" || m_data[p_key] == "t" || m_data[p_key] == "True" || m_data[p_key] == "true";
+			return value == "1" || value == "T" || value == "t" || value == "True" || value == "true";
 		}
 		else if constexpr (std::same_as<T, std::string>)
 		{
-			return m_data[p_key];
+			return value;
 		}
 		else if constexpr (std::integral<T>)
 		{
-			return static_cast<T>(std::atoi(m_data[p_key].c_str()));
+			return static_cast<T>(std::atoi(value.c_str()));
 		}
 		else if constexpr (std::floating_point<T>)
 		{
-			return static_cast<T>(std::atof(m_data[p_key].c_str()));
+			return static_cast<T>(std::atof(value.c_str()));
 		}
 	}
 
 	template<SupportedIniType T>
-	inline T IniFile::GetOrDefault(const std::string& p_key, T p_default)
+	inline T IniFile::GetOrDefault(const std::string& p_key, T p_default) const
 	{
 		return IsKeyExisting(p_key) ? Get<T>(p_key) : p_default;
 	}
 
 	template<SupportedIniType T>
-	inline bool IniFile::TryGet(const std::string& p_key, T& p_outValue)
+	inline bool IniFile::TryGet(const std::string& p_key, T& p_outValue) const
 	{
 		if (IsKeyExisting(p_key))
 		{

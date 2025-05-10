@@ -50,7 +50,7 @@ namespace OvTools::Filesystem
 		* @param p_key
 		*/
 		template<SupportedIniType T>
-		T Get(const std::string& p_key);
+		T Get(const std::string& p_key) const;
 
 		/**
 		* Return the value attached to the given key
@@ -59,7 +59,7 @@ namespace OvTools::Filesystem
 		* @param p_default
 		*/
 		template<SupportedIniType T>
-		T GetOrDefault(const std::string& p_key, T p_default);
+		T GetOrDefault(const std::string& p_key, T p_default) const;
 
 		/**
 		* Try to get the value attached to the given key
@@ -67,7 +67,7 @@ namespace OvTools::Filesystem
 		* @param p_outValue
 		*/
 		template<SupportedIniType T>
-		bool TryGet(const std::string& p_key, T& p_outValue);
+		bool TryGet(const std::string& p_key, T& p_outValue) const;
 
 		/**
 		* Set a new value to the given key (Not applied to the real file untill Rewrite() or Save() is called)

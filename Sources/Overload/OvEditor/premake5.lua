@@ -36,10 +36,6 @@ project "OvEditor"
 		"include"
 	}
 
-	libdirs {
-		dependdir .. "lua/lib"
-	}
-
 	links {
 		-- Precompiled Libraries
 		"dbghelp.lib",

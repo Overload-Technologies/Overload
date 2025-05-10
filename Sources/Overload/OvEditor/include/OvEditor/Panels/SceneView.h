@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "OvEditor/Panels/AViewControllable.h"
-#include "OvEditor/Core/GizmoBehaviour.h"
+#include <OvEditor/Core/GizmoBehaviour.h>
+#include <OvEditor/Panels/AViewControllable.h>
+#include <OvEditor/Rendering/PickingRenderPass.h>
 
 namespace OvEditor::Panels
 {
@@ -47,6 +48,10 @@ namespace OvEditor::Panels
 	private:
 		virtual void DrawFrame() override;
 		void HandleActorPicking();
+		OvEditor::Rendering::PickingRenderPass::PickingResult GetPickingResult();
+		void OnSceneDropped(const std::string& p_path);
+		void OnModelDropped(const std::string& p_path);
+		void OnMaterialDropped(const std::string& p_path);
 
 	private:
 		OvCore::SceneSystem::SceneManager& m_sceneManager;

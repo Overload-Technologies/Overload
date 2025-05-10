@@ -14,30 +14,28 @@
 
 std::atomic_bool OvRendering::Core::ABaseRenderer::s_isDrawing{ false };
 
-const OvRendering::Entities::Camera kDefaultCamera;
-
-std::unique_ptr<OvRendering::Resources::Mesh> CreateUnitQuad()
+namespace
 {
-	const std::vector<OvRendering::Geometry::Vertex> vertices = {
+	const OvRendering::Entities::Camera kDefaultCamera;
+
+	constexpr auto kUnitQuadVertices = std::to_array<OvRendering::Geometry::Vertex>({
 		{ {-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f} }, // Bottom-left
 		{ { 1.0f, -1.0f, 0.0f}, {1.0f, 0.0f} }, // Bottom-right
 		{ { 1.0f,  1.0f, 0.0f}, {1.0f, 1.0f} }, // Top-right
 		{ {-1.0f,  1.0f, 0.0f}, {0.0f, 1.0f} }  // Top-left
-	};
+	});
 
-	const std::vector<uint32_t> indices = {
+	constexpr auto kUnitQuadIndices = std::to_array<uint32_t>({
 		0, 1, 2, // First triangle
 		0, 2, 3  // Second triangle
-	};
-
-	return std::make_unique<OvRendering::Resources::Mesh>(vertices, indices, 0);
+	});
 }
 
 OvRendering::Core::ABaseRenderer::ABaseRenderer(Context::Driver& p_driver) : 
 	m_driver(p_driver),
 	m_isDrawing(false),
 	m_emptyTexture(OvRendering::Resources::Loaders::TextureLoader::CreatePixel(255, 255, 255, 255)),
-	m_unitQuad(CreateUnitQuad())
+	m_unitQuad(kUnitQuadVertices, kUnitQuadIndices)
 {
 }
 
@@ -133,8 +131,6 @@ void OvRendering::Core::ABaseRenderer::Blit(
 {
 	ZoneScoped;
 
-	OVASSERT(m_unitQuad != nullptr, "Invalid unit quad mesh, cannot blit!");
-
 	auto [srcWidth, srcHeight] = p_src.GetSize();
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC, p_flags))
@@ -150,7 +146,7 @@ void OvRendering::Core::ABaseRenderer::Blit(
 	}
 
 	OvRendering::Entities::Drawable blit;
-	blit.mesh = *m_unitQuad;
+	blit.mesh = m_unitQuad;
 	blit.material = p_material;
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::USE_MATERIAL_STATE_MASK, p_flags))
@@ -215,7 +211,13 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 			}
 		}
 
-		material->Bind(&m_emptyTexture->GetTexture());
+		material->Bind(
+			&m_emptyTexture->GetTexture(),
+			p_drawable.featureSetOverride.has_value() ?
+			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet>(p_drawable.featureSetOverride.value()) :
+			std::nullopt
+		);
+
 		m_driver.Draw(p_pso, mesh.value(), p_drawable.primitiveMode, gpuInstances);
 		material->Unbind();
 	}

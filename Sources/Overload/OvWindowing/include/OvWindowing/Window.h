@@ -7,11 +7,12 @@
 #pragma once
 
 #include <string>
+#include <optional>
 
-#include "OvWindowing/Context/Device.h"
-#include "OvWindowing/Settings/WindowSettings.h"
-#include "OvWindowing/Cursor/ECursorShape.h"
-#include "OvWindowing/Cursor/ECursorMode.h"
+#include <OvWindowing/Context/Device.h>
+#include <OvWindowing/Cursor/ECursorShape.h>
+#include <OvWindowing/Cursor/ECursorMode.h>
+#include <OvWindowing/Settings/WindowSettings.h>
 
 namespace OvWindowing
 {
@@ -201,9 +202,10 @@ namespace OvWindowing
 		void MakeCurrentContext() const;
 
 		/**
-		* Handle the buffer swapping with the current window
+		* Handle the buffer swapping with the current window.
+		* @note Also responsible for updating the cursor, so it's done last and has the final word
 		*/
-		void SwapBuffers() const;
+		void SwapBuffers();
 
 		/**
 		* Define a mode for the mouse cursor
@@ -212,8 +214,10 @@ namespace OvWindowing
 		void SetCursorMode(Cursor::ECursorMode p_cursorMode);
 
 		/**
-		* Define a shape to apply to the current cursor
+		* Define a shape to apply to the current cursor.
 		* @param p_cursorShape
+		* @note the cursor will only update on the next SwapBuffers call, this is so that OvWindowing has the final word.
+		* @note when using ImGui, this needs to be called every frame to update the cursor shape
 		*/
 		void SetCursorShape(Cursor::ECursorShape p_cursorShape);
 
@@ -273,11 +277,6 @@ namespace OvWindowing
 		Cursor::ECursorMode GetCursorMode() const;
 
 		/**
-		* Return the current cursor shape
-		*/
-		Cursor::ECursorShape GetCursorShape() const;
-
-		/**
 		* Return the current refresh rate (Only applied to the fullscreen mode).
 		* If the value is -1 (WindowSettings::DontCare) the highest refresh rate will be used
 		*/
@@ -326,6 +325,6 @@ namespace OvWindowing
 		bool m_fullscreen;
 		int32_t m_refreshRate;
 		Cursor::ECursorMode m_cursorMode;
-		Cursor::ECursorShape m_cursorShape;
+		std::optional<Cursor::ECursorShape> m_cursorShape;
 	};
 }

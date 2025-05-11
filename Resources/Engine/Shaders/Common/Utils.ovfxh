@@ -38,17 +38,21 @@ mat3 ConstructTBN(mat4 model, vec3 normal, vec3 tangent, vec3 bitangent)
     );
 }
 
+
+vec3 ComputeNormal(vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
+{
+    normal = texture(normalMap, texCoords).rgb;
+    normal = normalize(normal * 2.0 - 1.0);
+    normal = normalize(TBN * normal);
+    return normal;
+}
+
 vec3 ComputeNormal(bool enableNormalMapping, vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
 {
     if (enableNormalMapping)
     {
-        normal = texture(normalMap, texCoords).rgb;
-        normal = normalize(normal * 2.0 - 1.0);   
-        normal = normalize(TBN * normal);
-        return normal;
+        return ComputeNormal(texCoords, normal, normalMap, TBN);
     }
-    else
-    {
-        return normalize(normal);
-    }
+
+    return normalize(normal);
 }

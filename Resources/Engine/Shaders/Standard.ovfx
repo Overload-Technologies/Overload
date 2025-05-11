@@ -1,4 +1,7 @@
 #feature SHADOW_PASS
+#feature PARALLAX_MAPPING
+#feature ALPHA_CLIPPING
+#feature NORMAL_MAPPING
 
 #shader vertex
 #version 450 core
@@ -18,8 +21,10 @@ out VS_OUT
     vec2 TexCoords;
     vec3 Normal;
     mat3 TBN;
+#if defined(PARALLAX_MAPPING)
     flat vec3 TangentViewPos;
     vec3 TangentFragPos;
+#endif
 } vs_out;
 
 #if defined(SHADOW_PASS)
@@ -32,8 +37,11 @@ void main()
     vs_out.TexCoords = geo_TexCoords;
     vs_out.Normal = normalize(mat3(transpose(inverse(ubo_Model))) * geo_Normal);
     vs_out.TBN = ConstructTBN(ubo_Model, geo_Normal, geo_Tangent, geo_Bitangent);
+
+#if defined(PARALLAX_MAPPING)
     vs_out.TangentViewPos = transpose(vs_out.TBN) * ubo_ViewPos;
     vs_out.TangentFragPos = transpose(vs_out.TBN) * vs_out.FragPos;
+#endif
 
 #if defined(SHADOW_PASS)
     gl_Position = _LightSpaceMatrix * vec4(vs_out.FragPos, 1.0);
@@ -54,22 +62,29 @@ in VS_OUT
     vec2 TexCoords;
     vec3 Normal;
     mat3 TBN;
+#if defined(PARALLAX_MAPPING)
     flat vec3 TangentViewPos;
     vec3 TangentFragPos;
+#endif
 } fs_in;
 
-uniform vec2 u_TextureTiling = vec2(1.0, 1.0);
-uniform vec2 u_TextureOffset = vec2(0.0, 0.0);
-uniform vec4 u_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
-uniform vec3 u_Specular = vec3(1.0, 1.0, 1.0);
-uniform float u_Shininess = 100.0;
-uniform float u_HeightScale = 0.0;
-uniform bool u_EnableNormalMapping = false;
 uniform sampler2D u_DiffuseMap;
 uniform sampler2D u_SpecularMap;
-uniform sampler2D u_NormalMap;
-uniform sampler2D u_HeightMap;
 uniform sampler2D u_MaskMap;
+uniform vec4 u_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec3 u_Specular = vec3(1.0, 1.0, 1.0);
+uniform vec2 u_TextureTiling = vec2(1.0, 1.0);
+uniform vec2 u_TextureOffset = vec2(0.0, 0.0);
+uniform float u_Shininess = 100.0;
+
+#if defined(PARALLAX_MAPPING)
+uniform sampler2D u_HeightMap;
+uniform float u_HeightScale = 0.0;
+#endif
+
+#if defined(NORMAL_MAPPING)
+uniform sampler2D u_NormalMap;
+#endif
 
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
@@ -78,23 +93,37 @@ out vec4 FRAGMENT_COLOR;
 
 void main()
 {
-#if defined(SHADOW_PASS)
-    // Empty fragment shader for shadow pass
-#else
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
-    texCoords = ApplyParallaxMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
 
-    if (!IsMasked(u_MaskMap, texCoords))
+#if defined(PARALLAX_MAPPING)
+    texCoords = ApplyParallaxMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
+#endif
+
+    vec4 diffuse = texture(u_DiffuseMap, texCoords) * u_Diffuse;
+    diffuse.a *= texture(u_MaskMap, texCoords).r;
+
+#if defined(SHADOW_PASS)
+    if (diffuse.a < 0.5)
     {
-        vec3 normal = ComputeNormal(u_EnableNormalMapping, texCoords, fs_in.Normal, u_NormalMap, fs_in.TBN);
-        FRAGMENT_COLOR = ComputeBlinnPhongLighting(
+        discard;
+    }
+#else
+
+    if (diffuse.a > 0.0)
+    {
+#if defined(NORMAL_MAPPING)
+        const vec3 normal = ComputeNormal(texCoords, fs_in.Normal, u_NormalMap, fs_in.TBN);
+#else
+        const vec3 normal = normalize(fs_in.Normal);
+#endif
+
+        FRAGMENT_COLOR = ComputeBlinnPhongLightingNoDiffuseSampling(
             texCoords,
             normal,
             ubo_ViewPos,
             fs_in.FragPos,
-            u_Diffuse,
+            diffuse,
             u_Specular,
-            u_DiffuseMap,
             u_SpecularMap,
             u_Shininess,
             _ShadowMap,
@@ -103,7 +132,11 @@ void main()
     }
     else
     {
+#if defined(ALPHA_CLIPPING)
+        discard;
+#else
         FRAGMENT_COLOR = vec4(0.0);
+#endif
     }
 #endif
 }

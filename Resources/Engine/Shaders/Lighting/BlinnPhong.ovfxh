@@ -81,10 +81,11 @@ vec3 ComputeAmbientSphereLight(mat4 light, vec3 fragPos, vec4 diffuseTexel)
     return IsPointInSphere(fragPos, lightPosition, radius) ? diffuseTexel.rgb * lightColor * intensity : vec3(0.0);
 }
 
-vec4 ComputeBlinnPhongLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 diffuse, vec3 specular, sampler2D diffuseMap, sampler2D specularMap, float shininess, sampler2D shadowMap, mat4 lightSpaceMatrix)
+// This version doesn't sample the diffuse texture, and expects the diffuse color to be passed in directly.
+// This is because other parts of the shader may have already sampled the diffuse texture, and we want to avoid double sampling.
+vec4 ComputeBlinnPhongLightingNoDiffuseSampling(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 diffuse, vec3 specular, sampler2D specularMap, float shininess, sampler2D shadowMap, mat4 lightSpaceMatrix)
 {
     vec3 viewDir = normalize(viewPos - fragPos);
-    vec4 diffuseTexel = texture(diffuseMap,  texCoords) * diffuse;
     vec4 specularTexel = texture(specularMap, texCoords) * vec4(specular, 1.0);
 
     vec3 lightAccumulation = vec3(0.0);
@@ -96,13 +97,31 @@ vec4 ComputeBlinnPhongLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 f
 
         switch(lightType)
         {
-            case 0: lightAccumulation += ComputePointLight(light, fragPos, diffuseTexel, specularTexel, normal, viewDir, shininess); break;
-            case 1: lightAccumulation += ComputeDirectionalLight(light, fragPos, diffuseTexel, specularTexel, normal, viewDir, shininess, shadowMap, lightSpaceMatrix); break;
-            case 2: lightAccumulation += ComputeSpotLight(light, fragPos, diffuseTexel, specularTexel, normal, viewDir, shininess); break;
-            case 3: lightAccumulation += ComputeAmbientBoxLight(light, fragPos, diffuseTexel); break;
-            case 4: lightAccumulation += ComputeAmbientSphereLight(light, fragPos, diffuseTexel); break;
+            case 0: lightAccumulation += ComputePointLight(light, fragPos, diffuse, specularTexel, normal, viewDir, shininess); break;
+            case 1: lightAccumulation += ComputeDirectionalLight(light, fragPos, diffuse, specularTexel, normal, viewDir, shininess, shadowMap, lightSpaceMatrix); break;
+            case 2: lightAccumulation += ComputeSpotLight(light, fragPos, diffuse, specularTexel, normal, viewDir, shininess); break;
+            case 3: lightAccumulation += ComputeAmbientBoxLight(light, fragPos, diffuse); break;
+            case 4: lightAccumulation += ComputeAmbientSphereLight(light, fragPos, diffuse); break;
         }
     }
 
-    return vec4(lightAccumulation, diffuseTexel.a);
+    return vec4(lightAccumulation, diffuse.a);
+}
+
+vec4 ComputeBlinnPhongLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 diffuse, vec3 specular, sampler2D diffuseMap, sampler2D specularMap, float shininess, sampler2D shadowMap, mat4 lightSpaceMatrix)
+{
+    vec4 diffuseTexel = texture(diffuseMap, texCoords) * diffuse;
+
+    return ComputeBlinnPhongLightingNoDiffuseSampling(
+        texCoords,
+        normal,
+        viewPos,
+        fragPos,
+        diffuseTexel,
+        specular,
+        specularMap,
+        shininess,
+        shadowMap,
+        lightSpaceMatrix
+    );
 }

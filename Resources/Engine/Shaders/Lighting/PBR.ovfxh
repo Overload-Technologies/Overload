@@ -63,10 +63,9 @@ vec3 ComputeAmbientSphereLight(mat4 light, vec3 fragPos)
     return IsPointInSphere(fragPos, lightPosition, radius) ? lightColor * intensity : vec3(0.0);
 }
 
-vec4 ComputePBRLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D albedoMap, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
+vec4 ComputePBRLightingNoAlbedoSampling(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
 {
-    vec4 albedoRGBA = texture(albedoMap, texCoords) * inAlbedo;
-    vec3 albedo = pow(albedoRGBA.rgb, vec3(2.2));
+    vec3 albedo = pow(inAlbedo.rgb, vec3(2.2));
     float metallic = texture(metallicMap, texCoords).r * inMetallic;
     float roughness = texture(roughnessMap, texCoords).r * inRoughness;
     float ao = texture(aoMap, texCoords).r;
@@ -162,5 +161,24 @@ vec4 ComputePBRLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos,
     vec3 ambient = ambientSum * albedo * ao;
     vec3 color = ambient + Lo;
 	
-    return vec4(color, albedoRGBA.a);
+    return vec4(color, inAlbedo.a);
+}
+
+vec4 ComputePBRLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D albedoMap, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
+{
+    vec4 albedoRGBA = texture(albedoMap, texCoords) * inAlbedo;
+    return ComputePBRLightingNoAlbedoSampling(
+        texCoords,
+        normal,
+        viewPos,
+        fragPos,
+        albedoRGBA,
+        inMetallic,
+        inRoughness,
+        metallicMap,
+        roughnessMap,
+        aoMap,
+        shadowMap,
+        lightSpaceMatrix
+    );
 }

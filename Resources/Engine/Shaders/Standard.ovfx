@@ -86,6 +86,10 @@ uniform float u_HeightScale = 0.0;
 uniform sampler2D u_NormalMap;
 #endif
 
+#if defined(ALPHA_CLIPPING)
+uniform float u_AlphaClippingThreshold = 0.1;
+#endif
+
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
 
@@ -108,6 +112,13 @@ void main()
         discard;
     }
 #else
+
+#if defined(ALPHA_CLIPPING)
+    if (diffuse.a < u_AlphaClippingThreshold)
+    {
+        discard;
+    }
+#endif
 
     if (diffuse.a > 0.0)
     {
@@ -132,11 +143,7 @@ void main()
     }
     else
     {
-#if defined(ALPHA_CLIPPING)
-        discard;
-#else
         FRAGMENT_COLOR = vec4(0.0);
-#endif
     }
 #endif
 }

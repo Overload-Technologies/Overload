@@ -1,4 +1,5 @@
 #feature SHADOW_PASS
+#feature ALPHA_CLIPPING
 
 #shader vertex
 #version 450 core
@@ -43,10 +44,14 @@ in VS_OUT
     vec2 TexCoords;
 } fs_in;
 
-uniform vec4 u_Diffuse = vec4(1.0);
 uniform sampler2D u_DiffuseMap;
+uniform vec4 u_Diffuse = vec4(1.0);
 uniform vec2 u_TextureTiling = vec2(1.0);
 uniform vec2 u_TextureOffset = vec2(0.0);
+
+#if defined(ALPHA_CLIPPING)
+uniform float u_AlphaClippingThreshold = 0.1f;
+#endif
 
 out vec4 FRAGMENT_COLOR;
 
@@ -55,7 +60,14 @@ void main()
 #if defined(SHADOW_PASS)
     // Empty fragment shader for shadow pass
 #else
-    vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
-    FRAGMENT_COLOR = texture(u_DiffuseMap, texCoords) * u_Diffuse;
+    const vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
+    const vec4 diffuseColor = texture(u_DiffuseMap, texCoords) * u_Diffuse;
+#if defined(ALPHA_CLIPPING)
+    if (diffuseColor.a < u_AlphaClippingThreshold)
+    {
+        discard;
+    }
+#endif
+    FRAGMENT_COLOR = diffuseColor;
 #endif
 }

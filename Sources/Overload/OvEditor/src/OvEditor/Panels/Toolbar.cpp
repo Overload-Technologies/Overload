@@ -15,10 +15,11 @@
 
 namespace
 {
-	void SetButtonState(OvUI::Widgets::Buttons::ButtonImage* p_button, bool p_enable)
+	OvUI::Types::Color GetButtonTint(bool p_selected)
 	{
-		p_button->disabled = !p_enable;
-		p_button->tint = p_enable ? OvUI::Types::Color{ 1.0f, 1.0f, 1.0f, 1.0f } : OvUI::Types::Color{ 1.0f, 1.0f, 1.0f, 0.15f };
+		return p_selected ?
+			OvUI::Types::Color::Yellow :
+			OvUI::Types::Color::White;
 	}
 }
 
@@ -49,24 +50,10 @@ OvEditor::Panels::Toolbar::Toolbar
 	scale.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::SCALE)); };
 
 	auto updateGizmoOperation = [&translate, &rotate, &scale](Core::EGizmoOperation p_operation) {
-		switch (p_operation)
-		{
-		case Core::EGizmoOperation::TRANSLATE:
-			SetButtonState(&translate, true);
-			SetButtonState(&rotate, false);
-			SetButtonState(&scale, false);
-			break;
-		case Core::EGizmoOperation::ROTATE:
-			SetButtonState(&translate, false);
-			SetButtonState(&rotate, true);
-			SetButtonState(&scale, false);
-			break;
-		case Core::EGizmoOperation::SCALE:
-			SetButtonState(&translate, false);
-			SetButtonState(&rotate, false);
-			SetButtonState(&scale, true);
-			break;
-		}
+		using enum Core::EGizmoOperation;
+		translate.tint = GetButtonTint(p_operation == TRANSLATE);
+		rotate.tint = GetButtonTint(p_operation == ROTATE);
+		scale.tint = GetButtonTint(p_operation == SCALE);
 	};
 
 	updateGizmoOperation(EDITOR_EXEC(GetGizmoOperation()));
@@ -83,47 +70,24 @@ OvEditor::Panels::Toolbar::Toolbar
 	CreateWidget<Layout::Spacing>(0).lineBreak = false;
 	auto& refreshButton = CreateWidget<ButtonImage>(editorResources->GetTexture("Refresh")->GetTexture().GetID(), iconSize);
 
-	m_playButton->lineBreak		= false;
-	m_pauseButton->lineBreak	= false;
-	m_stopButton->lineBreak		= false;
-	m_nextButton->lineBreak		= false;
-	refreshButton.lineBreak		= false;
+	m_playButton->lineBreak = false;
+	m_pauseButton->lineBreak = false;
+	m_stopButton->lineBreak = false;
+	m_nextButton->lineBreak = false;
+	refreshButton.lineBreak = false;
 
-	m_playButton->ClickedEvent	+= EDITOR_BIND(StartPlaying);
-	m_pauseButton->ClickedEvent	+= EDITOR_BIND(PauseGame);
-	m_stopButton->ClickedEvent	+= EDITOR_BIND(StopPlaying);
-	m_nextButton->ClickedEvent	+= EDITOR_BIND(NextFrame);
-	refreshButton.ClickedEvent	+= EDITOR_BIND(RefreshScripts);
+	m_playButton->ClickedEvent += EDITOR_BIND(StartPlaying);
+	m_pauseButton->ClickedEvent += EDITOR_BIND(PauseGame);
+	m_stopButton->ClickedEvent += EDITOR_BIND(StopPlaying);
+	m_nextButton->ClickedEvent += EDITOR_BIND(NextFrame);
+	refreshButton.ClickedEvent += EDITOR_BIND(RefreshScripts);
 
-	EDITOR_EVENT(EditorModeChangedEvent) += [this](Core::EditorActions::EEditorMode p_newMode)
-	{
-		switch (p_newMode)
-		{
-		case Core::EditorActions::EEditorMode::EDIT:
-			SetButtonState(m_playButton, true);
-			SetButtonState(m_pauseButton, false);
-			SetButtonState(m_stopButton, false);
-			SetButtonState(m_nextButton, false);
-			break;
-		case Core::EditorActions::EEditorMode::PLAY:
-			SetButtonState(m_playButton, false);
-			SetButtonState(m_pauseButton, true);
-			SetButtonState(m_stopButton, true);
-			SetButtonState(m_nextButton, true);
-			break;
-		case Core::EditorActions::EEditorMode::PAUSE:
-			SetButtonState(m_playButton, true);
-			SetButtonState(m_pauseButton, false);
-			SetButtonState(m_stopButton, true);
-			SetButtonState(m_nextButton, true);
-			break;
-		case Core::EditorActions::EEditorMode::FRAME_BY_FRAME:
-			SetButtonState(m_playButton, true);
-			SetButtonState(m_pauseButton, false);
-			SetButtonState(m_stopButton, true);
-			SetButtonState(m_nextButton, true);
-			break;
-		}
+	EDITOR_EVENT(EditorModeChangedEvent) += [this](Core::EditorActions::EEditorMode p_mode) {
+		using enum Core::EditorActions::EEditorMode;
+		m_playButton->disabled = !(p_mode == EDIT || p_mode == FRAME_BY_FRAME || p_mode == PAUSE);
+		m_pauseButton->disabled = !(p_mode == PLAY);
+		m_stopButton->disabled = !(p_mode == PLAY || p_mode == FRAME_BY_FRAME || p_mode == PAUSE);
+		m_nextButton->disabled = !(p_mode == PLAY || p_mode == FRAME_BY_FRAME || p_mode == PAUSE);
 	};
 
 	EDITOR_EXEC(SetEditorMode(OvEditor::Core::EditorActions::EEditorMode::EDIT));

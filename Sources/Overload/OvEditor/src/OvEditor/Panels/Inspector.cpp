@@ -125,7 +125,6 @@ OvEditor::Panels::Inspector::Inspector
 			auto defineButtonsStates = [&addComponentButton](bool p_componentExists)
 			{
 				addComponentButton.disabled = p_componentExists;
-				addComponentButton.idleBackgroundColor = !p_componentExists ? OvUI::Types::Color{ 0.7f, 0.5f, 0.f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
 			};
 
 			switch (p_value)
@@ -174,7 +173,6 @@ OvEditor::Panels::Inspector::Inspector
 			const bool isScriptValid = std::filesystem::exists(realScriptPath) && targetActor && !targetActor->GetBehaviour(p_script);
 
 			addScriptButton.disabled = !isScriptValid;
-			addScriptButton.idleBackgroundColor = isScriptValid ? OvUI::Types::Color{ 0.7f, 0.5f, 0.f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
 		};
 
 		m_scriptSelectorWidget->ContentChangedEvent += updateAddScriptButton;

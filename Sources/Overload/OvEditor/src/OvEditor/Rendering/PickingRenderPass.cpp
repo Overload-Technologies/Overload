@@ -16,6 +16,23 @@
 
 #include <OvRendering/HAL/Profiling.h>
 
+namespace
+{
+	void PreparePickingMaterial(
+		OvCore::ECS::Actor& p_actor,
+		OvCore::Resources::Material& p_material,
+		const std::string& p_uniformName = "_PickingColor"
+	)
+	{
+		uint32_t actorID = static_cast<uint32_t>(p_actor.GetID());
+
+		auto bytes = reinterpret_cast<uint8_t*>(&actorID);
+		auto color = OvMaths::FVector4{ bytes[0] / 255.0f, bytes[1] / 255.0f, bytes[2] / 255.0f, 1.0f };
+
+		p_material.SetProperty(p_uniformName, color, true);
+	}
+}
+
 OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
 	m_actorPickingFramebuffer("ActorPicking")
@@ -35,11 +52,7 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
 
 	/* Picking Material */
-	m_actorPickingMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_actorPickingMaterial.SetProperty("u_Diffuse", OvMaths::FVector4{ 1.f, 1.f, 1.f, 1.0f });
-	m_actorPickingMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
-	m_actorPickingMaterial.SetFrontfaceCulling(false);
-	m_actorPickingMaterial.SetBackfaceCulling(false);
+	m_actorPickingFallbackMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
 }
 
 OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Rendering::PickingRenderPass::ReadbackPickingResult(
@@ -125,16 +138,6 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 	}
 }
 
-void PreparePickingMaterial(OvCore::ECS::Actor& p_actor, OvCore::Resources::Material& p_material)
-{
-	uint32_t actorID = static_cast<uint32_t>(p_actor.GetID());
-
-	auto bytes = reinterpret_cast<uint8_t*>(&actorID);
-	auto color = OvMaths::FVector4{ bytes[0] / 255.0f, bytes[1] / 255.0f, bytes[2] / 255.0f, 1.0f };
-
-	p_material.SetProperty("u_Diffuse", color);
-}
-
 void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 	OvRendering::Data::PipelineState p_pso,
 	OvCore::SceneSystem::Scene& p_scene
@@ -153,22 +156,33 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 					const auto& materials = materialRenderer->GetMaterials();
 					const auto& modelMatrix = actor.transform.GetWorldMatrix();
 
-					PreparePickingMaterial(actor, m_actorPickingMaterial);
-
 					for (auto mesh : model->GetMeshes())
 					{
-						auto stateMask = m_actorPickingMaterial.GenerateStateMask();
+						const std::string pickingPassName = "PICKING_PASS";
 
-						// Override the state mask to use the material state mask (if this one is valid)
-						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid())
-						{
-							stateMask = material->GenerateStateMask();
-						}
+						auto customMaterial = materials.at(mesh->GetMaterialIndex());
+
+						// If the material has picking pass, use it, otherwise use the picking fallback material
+						auto& targetMaterial =
+							(customMaterial && customMaterial->IsValid() && customMaterial->SupportsFeature(pickingPassName)) ?
+							*customMaterial :
+							m_actorPickingFallbackMaterial;
+
+						PreparePickingMaterial(actor, targetMaterial);
+
+						// Prioritize using the actual material state mask.
+						auto stateMask =
+							customMaterial && customMaterial->IsValid() ?
+							customMaterial->GenerateStateMask() :
+							targetMaterial.GenerateStateMask();
 
 						OvRendering::Entities::Drawable drawable;
 						drawable.mesh = *mesh;
-						drawable.material = m_actorPickingMaterial;
+						drawable.material = targetMaterial;
 						drawable.stateMask = stateMask;
+						drawable.stateMask.frontfaceCulling = false;
+						drawable.stateMask.backfaceCulling = false;
+						drawable.featureSetOverride = { pickingPassName };
 
 						drawable.AddDescriptor<OvCore::Rendering::EngineDrawableDescriptor>({
 							modelMatrix
@@ -193,14 +207,14 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableCameras(
 
 		if (actor.IsActive())
 		{
-			PreparePickingMaterial(actor, m_actorPickingMaterial);
+			PreparePickingMaterial(actor, m_actorPickingFallbackMaterial);
 			auto& cameraModel = *EDITOR_CONTEXT(editorResources)->GetModel("Camera");
 			auto translation = OvMaths::FMatrix4::Translation(actor.transform.GetWorldPosition());
 			auto rotation = OvMaths::FQuaternion::ToMatrix4(actor.transform.GetWorldRotation());
 			auto modelMatrix = translation * rotation;
 
 			m_renderer.GetFeature<DebugModelRenderFeature>()
-				.DrawModelWithSingleMaterial(p_pso, cameraModel, m_actorPickingMaterial, modelMatrix);
+				.DrawModelWithSingleMaterial(p_pso, cameraModel, m_actorPickingFallbackMaterial, modelMatrix);
 		}
 	}
 }
@@ -222,7 +236,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableLights(
 
 			if (actor.IsActive())
 			{
-				PreparePickingMaterial(actor, m_lightMaterial);
+				PreparePickingMaterial(actor, m_lightMaterial, "u_Diffuse");
 				auto& lightModel = *EDITOR_CONTEXT(editorResources)->GetModel("Vertical_Plane");
 				auto modelMatrix = OvMaths::FMatrix4::Translation(actor.transform.GetWorldPosition());
 

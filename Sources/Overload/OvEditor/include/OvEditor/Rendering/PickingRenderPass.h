@@ -66,7 +66,7 @@ namespace OvEditor::Rendering
 
 	private:
 		OvRendering::HAL::Framebuffer m_actorPickingFramebuffer;
-		OvCore::Resources::Material m_actorPickingMaterial;
+		OvCore::Resources::Material m_actorPickingFallbackMaterial;
 		OvCore::Resources::Material m_lightMaterial;
 		OvCore::Resources::Material m_gizmoPickingMaterial;
 	};

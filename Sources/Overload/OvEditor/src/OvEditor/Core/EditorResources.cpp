@@ -129,6 +129,7 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 		{"Grid", CreateShader(shadersFolder / "Grid.ovfx")},
 		{"Gizmo", CreateShader(shadersFolder / "Gizmo.ovfx")},
 		{"Billboard", CreateShader(shadersFolder / "Billboard.ovfx")},
+		{"PickingFallback", CreateShader(shadersFolder / "PickingFallback.ovfx")}
 	};
 
 	// Ensure that all resources have been loaded successfully

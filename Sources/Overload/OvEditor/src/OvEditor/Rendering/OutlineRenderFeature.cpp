@@ -4,32 +4,29 @@
 * @licence: MIT
 */
 
-#include "OvEditor/Rendering/DebugModelRenderFeature.h"
-#include "OvEditor/Rendering/OutlineRenderFeature.h"
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Settings/EditorSettings.h"
-
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
-
+#include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Rendering/DebugModelRenderFeature.h>
+#include <OvEditor/Rendering/OutlineRenderFeature.h>
+#include <OvEditor/Settings/EditorSettings.h>
 #include <OvRendering/Utils/Conversions.h>
 
-constexpr uint32_t kStencilMask = 0xFF;
-constexpr int32_t kStencilReference = 1;
+namespace
+{
+	constexpr uint32_t kStencilMask = 0xFF;
+	constexpr int32_t kStencilReference = 1;
+	constexpr std::string_view kOutlinePassName = "OUTLINE_PASS";
+}
 
 OvEditor::Rendering::OutlineRenderFeature::OutlineRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Features::ARenderFeature(p_renderer)
 {
 	/* Stencil Fill Material */
-	m_stencilFillMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_stencilFillMaterial.SetBackfaceCulling(true);
-	m_stencilFillMaterial.SetDepthTest(false);
-	m_stencilFillMaterial.SetColorWriting(false);
-	m_stencilFillMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
+	m_stencilFillMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("OutlineFallback"));
 
 	/* Outline Material */
-	m_outlineMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);
-	m_outlineMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
-	m_outlineMaterial.SetDepthTest(false);
+	m_outlineMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("OutlineFallback"));
 }
 
 void OvEditor::Rendering::OutlineRenderFeature::DrawOutline(
@@ -72,10 +69,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawOutlinePass(OvCore::ECS::Act
 	pso.rasterizationMode = OvRendering::Settings::ERasterizationMode::LINE;
 	pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(p_thickness);
 
-	// Prepare the outline material
-	m_outlineMaterial.SetProperty("u_Diffuse", p_color);
-
-	DrawActorOutline(pso, p_actor);
+	DrawActorOutline(pso, p_actor, p_color);
 }
 
 void OvEditor::Rendering::OutlineRenderFeature::DrawActorToStencil(OvRendering::Data::PipelineState p_pso, OvCore::ECS::Actor& p_actor)
@@ -85,7 +79,15 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorToStencil(OvRendering::
 		/* Render static mesh outline and bounding spheres */
 		if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
 		{
-			DrawModelToStencil(p_pso, p_actor.transform.GetWorldMatrix(), *modelRenderer->GetModel());
+			if (auto materialRenderer = p_actor.GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
+			{
+				DrawModelToStencil(
+					p_pso,
+					p_actor.transform.GetWorldMatrix(),
+					*modelRenderer->GetModel(),
+					materialRenderer->GetMaterials()
+				);
+			}
 		}
 
 		/* Render camera component outline */
@@ -104,13 +106,26 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorToStencil(OvRendering::
 	}
 }
 
-void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(OvRendering::Data::PipelineState p_pso, OvCore::ECS::Actor& p_actor)
+void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(
+	OvRendering::Data::PipelineState p_pso,
+	OvCore::ECS::Actor& p_actor,
+	const OvMaths::FVector4& p_color
+)
 {
 	if (p_actor.IsActive())
 	{
 		if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
 		{
-			DrawModelOutline(p_pso, p_actor.transform.GetWorldMatrix(), *modelRenderer->GetModel());
+			if (auto materialRenderer = p_actor.GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
+			{
+				DrawModelOutline(
+					p_pso,
+					p_actor.transform.GetWorldMatrix(),
+					*modelRenderer->GetModel(),
+					p_color,
+					materialRenderer->GetMaterials()
+				);
+			}
 		}
 
 		if (auto cameraComponent = p_actor.GetComponent<OvCore::ECS::Components::CCamera>(); cameraComponent)
@@ -118,12 +133,12 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(OvRendering::Da
 			auto translation = OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition());
 			auto rotation = OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
 			auto model = translation * rotation;
-			DrawModelOutline(p_pso, model, *EDITOR_CONTEXT(editorResources)->GetModel("Camera"));
+			DrawModelOutline(p_pso, model, *EDITOR_CONTEXT(editorResources)->GetModel("Camera"), p_color);
 		}
 
 		for (auto& child : p_actor.GetChildren())
 		{
-			DrawActorOutline(p_pso, *child);
+			DrawActorOutline(p_pso, *child, p_color);
 		}
 	}
 }
@@ -131,19 +146,89 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(OvRendering::Da
 void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 	OvRendering::Data::PipelineState p_pso,
 	const OvMaths::FMatrix4& p_worldMatrix,
-	OvRendering::Resources::Model& p_model
+	OvRendering::Resources::Model& p_model,
+	OvTools::Utils::OptRef<const OvCore::ECS::Components::CMaterialRenderer::MaterialList> p_materials
 )
 {
-	m_renderer.GetFeature<DebugModelRenderFeature>()
-		.DrawModelWithSingleMaterial(p_pso, p_model, m_stencilFillMaterial, p_worldMatrix);
+	const std::string outlinePassName{ kOutlinePassName };
+
+	for (auto mesh : p_model.GetMeshes())
+	{
+		auto getStencilMaterial = [&]() -> OvCore::Resources::Material& {
+			auto material = p_materials.has_value() ? p_materials->at(mesh->GetMaterialIndex()) : nullptr;
+			if (material && material->IsValid() && material->SupportsFeature(outlinePassName))
+			{
+				return *material;
+			}
+			return m_stencilFillMaterial;
+		};
+
+		auto& targetMaterial = getStencilMaterial();
+
+		auto stateMask = targetMaterial.GenerateStateMask();
+
+		auto engineDrawableDescriptor = OvCore::Rendering::EngineDrawableDescriptor{
+			p_worldMatrix,
+			OvMaths::FMatrix4::Identity
+		};
+
+		OvRendering::Entities::Drawable element;
+		element.mesh = *mesh;
+		element.material = targetMaterial;
+		element.stateMask = stateMask;
+		element.stateMask.depthTest = false;
+		element.stateMask.colorWriting = false;
+		element.featureSetOverride = { outlinePassName };
+		element.AddDescriptor(engineDrawableDescriptor);
+
+		m_renderer.DrawEntity(p_pso, element);
+	}
 }
 
 void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 	OvRendering::Data::PipelineState p_pso,
 	const OvMaths::FMatrix4& p_worldMatrix,
-	OvRendering::Resources::Model& p_model
+	OvRendering::Resources::Model& p_model,
+	const OvMaths::FVector4& p_color,
+	OvTools::Utils::OptRef<const OvCore::ECS::Components::CMaterialRenderer::MaterialList> p_materials
 )
 {
-	m_renderer.GetFeature<DebugModelRenderFeature>()
-		.DrawModelWithSingleMaterial(p_pso, p_model, m_outlineMaterial, p_worldMatrix);
+	const std::string outlinePassName{ kOutlinePassName };
+
+	for (auto mesh : p_model.GetMeshes())
+	{
+		auto getStencilMaterial = [&]() -> OvCore::Resources::Material& {
+			auto material = p_materials.has_value() ? p_materials->at(mesh->GetMaterialIndex()) : nullptr;
+			if (material && material->IsValid() && material->SupportsFeature(outlinePassName))
+			{
+				return *material;
+			}
+			return m_stencilFillMaterial;
+		};
+
+		auto& targetMaterial = getStencilMaterial();
+
+		// Set the outline color property if it exists
+		if (targetMaterial.GetProperty("_OutlineColor"))
+		{
+			targetMaterial.SetProperty("_OutlineColor", p_color, true);
+		}
+
+		auto stateMask = targetMaterial.GenerateStateMask();
+
+		auto engineDrawableDescriptor = OvCore::Rendering::EngineDrawableDescriptor{
+			p_worldMatrix,
+			OvMaths::FMatrix4::Identity
+		};
+
+		OvRendering::Entities::Drawable element;
+		element.mesh = *mesh;
+		element.material = targetMaterial;
+		element.stateMask = stateMask;
+		element.stateMask.depthTest = false;
+		element.featureSetOverride = { outlinePassName };
+		element.AddDescriptor(engineDrawableDescriptor);
+
+		m_renderer.DrawEntity(p_pso, element);
+	}
 }

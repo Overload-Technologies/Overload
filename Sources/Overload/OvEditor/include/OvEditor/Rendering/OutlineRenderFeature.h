@@ -46,9 +46,9 @@ namespace OvEditor::Rendering
 		void DrawOutlinePass(OvCore::ECS::Actor& p_actor, const OvMaths::FVector4& p_color, float p_thickness);
 		
 		void DrawActorToStencil(OvRendering::Data::PipelineState p_pso, OvCore::ECS::Actor& p_actor);
-		void DrawActorOutline(OvRendering::Data::PipelineState p_pso, OvCore::ECS::Actor& p_actor);
-		void DrawModelToStencil(OvRendering::Data::PipelineState p_pso, const OvMaths::FMatrix4& p_worldMatrix, OvRendering::Resources::Model& p_model);
-		void DrawModelOutline(OvRendering::Data::PipelineState p_pso, const OvMaths::FMatrix4& p_worldMatrix, OvRendering::Resources::Model& p_model);
+		void DrawActorOutline(OvRendering::Data::PipelineState p_pso, OvCore::ECS::Actor& p_actor, const OvMaths::FVector4& p_color);
+		void DrawModelToStencil(OvRendering::Data::PipelineState p_pso, const OvMaths::FMatrix4& p_worldMatrix, OvRendering::Resources::Model& p_model, OvTools::Utils::OptRef<const OvCore::ECS::Components::CMaterialRenderer::MaterialList> p_materials = std::nullopt);
+		void DrawModelOutline(OvRendering::Data::PipelineState p_pso, const OvMaths::FMatrix4& p_worldMatrix, OvRendering::Resources::Model& p_model, const OvMaths::FVector4& p_color, OvTools::Utils::OptRef<const OvCore::ECS::Components::CMaterialRenderer::MaterialList> p_materials = std::nullopt);
 
 	private:
 		OvCore::Resources::Material m_stencilFillMaterial;

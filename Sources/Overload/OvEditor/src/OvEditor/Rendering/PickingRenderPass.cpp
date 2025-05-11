@@ -29,7 +29,11 @@ namespace
 		auto bytes = reinterpret_cast<uint8_t*>(&actorID);
 		auto color = OvMaths::FVector4{ bytes[0] / 255.0f, bytes[1] / 255.0f, bytes[2] / 255.0f, 1.0f };
 
-		p_material.SetProperty(p_uniformName, color, true);
+		// Set the picking color property if it exists
+		if (p_material.GetProperty(p_uniformName))
+		{
+			p_material.SetProperty(p_uniformName, color, true);
+		}
 	}
 }
 

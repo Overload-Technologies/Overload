@@ -1,0 +1,30 @@
+#shader vertex
+#version 450 core
+
+layout(location = 0) in vec3 geo_Pos;
+
+layout(std140) uniform EngineUBO
+{
+	mat4    ubo_Model;
+	mat4    ubo_View;
+	mat4    ubo_Projection;
+	vec3    ubo_ViewPos;
+	float   ubo_Time;
+};
+
+void main()
+{
+	gl_Position = ubo_Projection * ubo_View * ubo_Model * vec4(geo_Pos, 1.0);
+}
+
+#shader fragment
+#version 450 core
+
+uniform vec4 _OutlineColor = vec4(1.0);
+
+out vec4 FRAGMENT_COLOR;
+
+void main()
+{
+	FRAGMENT_COLOR = _OutlineColor;
+}

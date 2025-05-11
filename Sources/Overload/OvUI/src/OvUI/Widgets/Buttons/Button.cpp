@@ -35,8 +35,24 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 	style.Colors[ImGuiCol_ButtonActive]		= OvUI::Internal::Converter::ToImVec4(clickedBackgroundColor);
 	style.Colors[ImGuiCol_Text]				= OvUI::Internal::Converter::ToImVec4(textColor);
 
-	if (ImGui::ButtonEx((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size), disabled ? ImGuiItemFlags_Disabled : 0))
+	// Instead of using disabled directly, as its value can change if some
+	// callback is bound to the ClickedEvent.
+	const bool isDisabled = disabled;
+
+	if (isDisabled)
+	{
+		ImGui::BeginDisabled();
+	}
+
+	if (ImGui::Button((label + m_widgetID).c_str(), Internal::Converter::ToImVec2(size)))
+	{
 		ClickedEvent.Invoke();
+	}
+
+	if (isDisabled)
+	{
+		ImGui::EndDisabled();
+	}
 
 	style.Colors[ImGuiCol_Button]			= defaultIdleColor;
 	style.Colors[ImGuiCol_ButtonHovered]	= defaultHoveredColor;

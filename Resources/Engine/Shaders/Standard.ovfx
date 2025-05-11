@@ -90,6 +90,10 @@ uniform sampler2D u_NormalMap;
 uniform float u_AlphaClippingThreshold = 0.1;
 #endif
 
+#if defined(SHADOW_PASS)
+uniform float u_ShadowClippingThreshold = 0.5;
+#endif
+
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
 
@@ -107,7 +111,7 @@ void main()
     diffuse.a *= texture(u_MaskMap, texCoords).r;
 
 #if defined(SHADOW_PASS)
-    if (diffuse.a < 0.5)
+    if (diffuse.a < u_ShadowClippingThreshold)
     {
         discard;
     }

@@ -196,7 +196,7 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 				switch (uniformType)
 				{
 					using enum Settings::EUniformType;
-					case BOOL: return GetUniform<int>(name);
+					case BOOL: return static_cast<bool>(GetUniform<int>(name));
 					case INT: return GetUniform<int>(name);
 					case FLOAT: return GetUniform<float>(name);
 					case FLOAT_VEC2: return GetUniform<OvMaths::FVector2>(name);

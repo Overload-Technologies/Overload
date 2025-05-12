@@ -33,6 +33,7 @@ namespace
 				std::nullopt;
 		};
 
+		if (auto value = as.operator()<bool>()) return *value;
 		if (auto value = as.operator()<int>()) return *value;
 		if (auto value = as.operator()<float>()) return *value;
 		if (auto value = as.operator()<FVector2>()) return *value;

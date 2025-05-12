@@ -23,7 +23,7 @@ size_t OvRendering::Resources::Shader::FeatureSetHash::operator()(const FeatureS
 
 	for (const auto& feature : fs)
 	{
-		hash ^= std::hash<std::string>{}(feature)+0x9e3779b9 + (hash << 6) + (hash >> 2);
+		hash ^= std::hash<std::string>{}(feature);
 	}
 
 	return hash;

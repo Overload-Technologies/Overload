@@ -81,7 +81,7 @@ uniform sampler2D u_MaskMap;
 
 #if defined(PARALLAX_MAPPING)
 uniform sampler2D u_HeightMap;
-uniform float u_HeightScale = 0.0;
+uniform float u_HeightScale = 0.05;
 #endif
 
 #if defined(NORMAL_MAPPING)
@@ -106,7 +106,11 @@ void main()
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
 
 #if defined(PARALLAX_MAPPING)
-    texCoords = ApplyParallaxMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
+    texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
+    if (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0)
+    {
+        discard;
+    }
 #endif
 
     vec4 albedo = texture(u_AlbedoMap, texCoords) * u_Albedo;

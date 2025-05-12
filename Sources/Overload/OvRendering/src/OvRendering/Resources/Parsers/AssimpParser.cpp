@@ -97,11 +97,13 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(void* p_transfor
 
 	for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
 	{
-		aiVector3D position		= meshTransformation * p_mesh->mVertices[i];
-		aiVector3D normal		= meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
-		aiVector3D texCoords	= p_mesh->mTextureCoords[0] ? p_mesh->mTextureCoords[0][i] : aiVector3D(0.0f, 0.0f, 0.0f);
-		aiVector3D tangent		= p_mesh->mTangents ? meshTransformation * p_mesh->mTangents[i] : aiVector3D(0.0f, 0.0f, 0.0f);
-		aiVector3D bitangent	= p_mesh->mBitangents ? meshTransformation * p_mesh->mBitangents[i] : aiVector3D(0.0f, 0.0f, 0.0f);
+		const aiVector3D position = meshTransformation * p_mesh->mVertices[i];
+		const aiVector3D normal = meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
+		const aiVector3D texCoords = p_mesh->mTextureCoords[0] ? p_mesh->mTextureCoords[0][i] : aiVector3D(0.0f, 0.0f, 0.0f);
+		const aiVector3D tangent = meshTransformation * (p_mesh->mTangents ? p_mesh->mTangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
+		// Multiply by -1 so that bitangent are left-handed?
+		// Not sure why it works, but it does (had to do that for parallax mapping).
+		const aiVector3D bitangent = meshTransformation * (p_mesh->mBitangents ? (p_mesh->mBitangents[i].SymMul(aiVector3D{ -1.0f })) : aiVector3D(0.0f, 0.0f, 0.0f));
 
 		p_outVertices.push_back
 		(

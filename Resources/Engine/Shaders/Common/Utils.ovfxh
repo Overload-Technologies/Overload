@@ -12,6 +12,8 @@ vec2 TileAndOffsetTexCoords(vec2 texCoords, vec2 tiling, vec2 offset)
     return vec2(mod(texCoords.x * tiling.x, 1), mod(texCoords.y * tiling.y, 1)) + offset;
 }
 
+// Expects a height map with values in the range [0, 1].
+// 1.0 means the height is at the maximum depth, 0.0 means the height is at the minimum depth.
 vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale)
 {
     const vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
@@ -19,44 +21,44 @@ vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tan
     // number of depth layers
     const float minLayers = 8;
     const float maxLayers = 64;
-    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
+    const float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
+
     // calculate the size of each layer
-    float layerDepth = 1.0 / numLayers;
-    // depth of current layer
-    float currentLayerDepth = 0.0;
+    const float layerDepth = 1.0 / numLayers;
     // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 P = viewDir.xy / viewDir.z * heightScale; 
-    vec2 deltaTexCoords = P / numLayers;
+    const vec2 P = viewDir.xy / viewDir.z * heightScale; 
+    const vec2 deltaTexCoords = P / numLayers;
   
     // get initial values
-    vec2  currentTexCoords     = texCoords;
-    float currentDepthMapValue = 1.0f - texture(heightMap, currentTexCoords).r;
+    vec2 currentTexCoords = texCoords;
+    float currentDepthMapValue = 1.0 - texture(heightMap, currentTexCoords).r;
+    float currentLayerDepth = 0.0;
       
     while(currentLayerDepth < currentDepthMapValue)
     {
         // shift texture coordinates along direction of P
         currentTexCoords -= deltaTexCoords;
         // get depthmap value at current texture coordinates
-        currentDepthMapValue = 1.0f - texture(heightMap, currentTexCoords).r;  
+        currentDepthMapValue = 1.0 - texture(heightMap, currentTexCoords).r;
         // get depth of next layer
-        currentLayerDepth += layerDepth;  
+        currentLayerDepth += layerDepth;
     }
     
     // get texture coordinates before collision (reverse operations)
-    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+    const vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
 
     // get depth after and before collision for linear interpolation
-    float afterDepth  = currentDepthMapValue - currentLayerDepth;
-    float beforeDepth = 1.0f - texture(heightMap, prevTexCoords).r - currentLayerDepth + layerDepth;
+    const float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    const float beforeDepth = 1.0 - texture(heightMap, prevTexCoords).r - currentLayerDepth + layerDepth;
  
     // interpolation of texture coordinates
-    float weight = afterDepth / (afterDepth - beforeDepth);
-    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+    const float weight = afterDepth / (afterDepth - beforeDepth);
+    const vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
     return finalTexCoords;
 }
 
-// [Deprecated] Kept for backward compatibility.
+// [Deprecated] Kept for backward compatibility. Prefer using `ApplyParallaxOcclusionMapping()` instead.
 vec2 ApplyParallaxMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale)
 {
     if (heightScale > 0)
@@ -93,6 +95,8 @@ vec3 ComputeNormal(vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
     return normal;
 }
 
+// [Deprecated] Kept for backward compatibility. Prefer using `ComputeNormal()` without the `enableNormalMapping` parameter,
+// and handle branching using preprocessor directives instead.
 vec3 ComputeNormal(bool enableNormalMapping, vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
 {
     if (enableNormalMapping)

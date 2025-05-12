@@ -81,6 +81,7 @@ uniform sampler2D u_MaskMap;
 
 #if defined(PARALLAX_MAPPING)
 uniform sampler2D u_HeightMap;
+uniform bool u_ParallaxClipEdges = false;
 uniform float u_HeightScale = 0.05;
 #endif
 
@@ -107,7 +108,7 @@ void main()
 
 #if defined(PARALLAX_MAPPING)
     texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
-    if (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0)
+    if (u_ParallaxClipEdges && (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0))
     {
         discard;
     }

@@ -63,6 +63,8 @@ vec3 ComputeAmbientSphereLight(mat4 light, vec3 fragPos)
     return IsPointInSphere(fragPos, lightPosition, radius) ? lightColor * intensity : vec3(0.0);
 }
 
+// This version doesn't sample the albedo texture, and expects the albedo color to be passed in directly.
+// This is because other parts of the shader may have already sampled the albedo texture, and we want to avoid double sampling.
 vec4 ComputePBRLightingNoAlbedoSampling(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
 {
     vec3 albedo = pow(inAlbedo.rgb, vec3(2.2));

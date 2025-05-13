@@ -668,15 +668,15 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 	using namespace OvWindowing::Dialogs;
 
 	std::string modelFormats = "*.fbx;*.obj;";
-	std::string textureFormats = "*.png;*.jpeg;*.jpg;*.tga";
-	std::string shaderFormats = "*.ovfx";
-	std::string shaderPartFormats = "*.ovfxh";
+	std::string textureFormats = "*.png;*.jpeg;*.jpg;*.tga;*.hdr;";
+	std::string shaderFormats = "*.ovfx;";
+	std::string shaderPartFormats = "*.ovfxh;";
 	std::string soundFormats = "*.mp3;*.ogg;*.wav;";
 
 	OpenFileDialog selectAssetDialog("Select an asset to import");
 	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + soundFormats);
 	selectAssetDialog.AddFileType("Model (.fbx, .obj)", modelFormats);
-	selectAssetDialog.AddFileType("Texture (.png, .jpeg, .jpg, .tga)", textureFormats);
+	selectAssetDialog.AddFileType("Texture (.png, .jpeg, .jpg, .tga, .hdr)", textureFormats);
 	selectAssetDialog.AddFileType("Shader (.ovfx)", shaderFormats);
 	selectAssetDialog.AddFileType("Shader Parts (.ovfxh)", shaderPartFormats);
 	selectAssetDialog.AddFileType("Sound (.mp3, .ogg, .wav)", soundFormats);
@@ -714,9 +714,9 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	using namespace OvWindowing::Dialogs;
 
 	std::string modelFormats = "*.fbx;*.obj;";
-	std::string textureFormats = "*.png;*.jpeg;*.jpg;*.tga;*.hdr";
-	std::string shaderFormats = "*.ovfx";
-	std::string shaderPartFormats = "*.ovfxh";
+	std::string textureFormats = "*.png;*.jpeg;*.jpg;*.tga;*.hdr;";
+	std::string shaderFormats = "*.ovfx;";
+	std::string shaderPartFormats = "*.ovfxh;";
 	std::string soundFormats = "*.mp3;*.ogg;*.wav;";
 
 	OpenFileDialog selectAssetDialog("Select an asset to import");

@@ -98,32 +98,31 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(void* p_transfor
 	for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
 	{
 		const aiVector3D position = meshTransformation * p_mesh->mVertices[i];
-		const aiVector3D normal = meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
 		const aiVector3D texCoords = p_mesh->mTextureCoords[0] ? p_mesh->mTextureCoords[0][i] : aiVector3D(0.0f, 0.0f, 0.0f);
+		const aiVector3D normal = meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
 		const aiVector3D tangent = meshTransformation * (p_mesh->mTangents ? p_mesh->mTangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
-		// Multiply by -1 so that bitangent are left-handed?
-		// Not sure why it works, but it does (had to do that for parallax mapping).
-		const aiVector3D bitangent = meshTransformation * (p_mesh->mBitangents ? (p_mesh->mBitangents[i].SymMul(aiVector3D{ -1.0f })) : aiVector3D(0.0f, 0.0f, 0.0f));
+		const aiVector3D bitangent = meshTransformation * (p_mesh->mBitangents ? p_mesh->mBitangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
 
-		p_outVertices.push_back
-		(
-			{
-				position.x,
-				position.y,
-				position.z,
-				texCoords.x,
-				texCoords.y,
-				normal.x,
-				normal.y,
-				normal.z,
-				tangent.x,
-				tangent.y,
-				tangent.z,
-				bitangent.x,
-				bitangent.y,
-				bitangent.z
-			}
-		);
+		p_outVertices.push_back({
+			position.x,
+			position.y,
+			position.z,
+			texCoords.x,
+			texCoords.y,
+			normal.x,
+			normal.y,
+			normal.z,
+			tangent.x,
+			tangent.y,
+			tangent.z,
+			// Assimp calculates the tangent space vectors in a right-handed system.
+			// But our shader code expects a left-handed system.
+			// Multiplying the bitangent by -1 will convert it to a left-handed system.
+			// Learn OpenGL also uses a left-handed tangent space for normal mapping and parallax mapping.
+			-bitangent.x,
+			-bitangent.y,
+			-bitangent.z
+		});
 	}
 
 	for (uint32_t faceID = 0; faceID < p_mesh->mNumFaces; ++faceID)

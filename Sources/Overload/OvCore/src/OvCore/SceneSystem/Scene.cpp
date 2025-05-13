@@ -12,6 +12,10 @@
 
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/SceneSystem/Scene.h>
 
 OvCore::SceneSystem::Scene::Scene()
@@ -40,12 +44,39 @@ void OvCore::SceneSystem::Scene::AddDefaultCamera()
 void OvCore::SceneSystem::Scene::AddDefaultLights()
 {
 	auto& directionalLight = CreateActor("Directional Light");
-	directionalLight.AddComponent<ECS::Components::CDirectionalLight>().SetIntensity(0.75f);
+	directionalLight.AddComponent<ECS::Components::CDirectionalLight>().SetIntensity(1.0f);
 	directionalLight.transform.SetLocalPosition({ 0.0f, 10.0f, 0.0f });
 	directionalLight.transform.SetLocalRotation(OvMaths::FQuaternion({ 120.0f, -40.0f, 0.0f }));
 
 	auto& ambientLight = CreateActor("Ambient Light");
 	ambientLight.AddComponent<ECS::Components::CAmbientSphereLight>().SetRadius(10000.0f);
+}
+
+void OvCore::SceneSystem::Scene::AddDefaultPostProcessStack()
+{
+	auto& postProcessStack = CreateActor("Post Process Stack");
+	postProcessStack.AddComponent<ECS::Components::CPostProcessStack>();
+}
+
+void OvCore::SceneSystem::Scene::AddDefaultSkysphere()
+{
+	auto& skysphere = CreateActor("Skysphere");
+	auto& materialRenderer = skysphere.AddComponent<ECS::Components::CMaterialRenderer>();
+	auto& modelRenderer = skysphere.AddComponent<ECS::Components::CModelRenderer>();
+	modelRenderer.SetFrustumBehaviour(ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED);
+
+	auto skysphereMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(":Materials\\Skysphere.ovmat");
+	auto sphereModel = Global::ServiceLocator::Get<ResourceManagement::ModelManager>().GetResource(":Models\\Sphere.fbx");
+	
+	if (skysphereMaterial)
+	{
+		materialRenderer.SetMaterialAtIndex(0, *skysphereMaterial);
+	}
+
+	if (sphereModel)
+	{
+		modelRenderer.SetModel(sphereModel);
+	}
 }
 
 void OvCore::SceneSystem::Scene::Play()

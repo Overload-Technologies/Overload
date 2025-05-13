@@ -11,7 +11,7 @@
 #include "OvEditor/Settings/EditorSettings.h"
 
 const OvMaths::FVector3 kDefaultGridColor{ 0.176f, 0.176f, 0.176f };
-const OvMaths::FVector3 kDefaultClearColor{ 0.098f, 0.098f, 0.098f };
+const OvMaths::FVector3 kDefaultClearColor{ 0.0f, 0.0f, 0.0f };
 const OvMaths::FVector3 kDefaultCameraPosition{ -10.0f, 3.0f, 10.0f };
 const OvMaths::FQuaternion kDefaultCameraRotation({ 0.0f, 135.0f, 0.0f });
 

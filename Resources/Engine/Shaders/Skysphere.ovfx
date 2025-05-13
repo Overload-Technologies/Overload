@@ -1,0 +1,66 @@
+#feature OUTLINE_PASS
+#feature PICKING_PASS
+
+#shader vertex
+#version 450 core
+
+#include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+#include ":Shaders/Common/Utils.ovfxh"
+
+layout (location = 0) in vec3 geo_Pos;
+layout (location = 1) in vec2 geo_TexCoords;
+
+out VS_OUT
+{
+    vec3 FragPos;
+    vec2 TexCoords;
+} vs_out;
+
+void main()
+{
+    vs_out.FragPos = ubo_ViewPos + geo_Pos * 1000.0f;
+    vs_out.TexCoords = geo_TexCoords;
+
+    gl_Position = ubo_Projection * ubo_View * vec4(vs_out.FragPos, 1.0);
+}
+
+#shader fragment
+#version 450 core
+
+#include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+#include ":Shaders/Common/Utils.ovfxh"
+
+in VS_OUT
+{
+    vec3 FragPos;
+    vec2 TexCoords;
+} fs_in;
+
+uniform vec4 u_Diffuse = vec4(1.0);
+uniform sampler2D u_DiffuseMap;
+uniform vec2 u_TextureTiling = vec2(1.0);
+uniform vec2 u_TextureOffset = vec2(0.0);
+
+#if defined(PICKING_PASS)
+uniform vec4 _PickingColor;
+#endif
+
+#if defined(OUTLINE_PASS)
+uniform vec4 _OutlineColor;
+#endif
+
+out vec4 FRAGMENT_COLOR;
+
+void main()
+{
+#if defined(PICKING_PASS)
+    // The skysphere cannot be picked.
+    discard;
+#elif defined(OUTLINE_PASS)
+    // The skysphere cannot be outlined.
+    discard;
+#else
+    vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
+    FRAGMENT_COLOR = texture(u_DiffuseMap, texCoords) * u_Diffuse;
+#endif
+}

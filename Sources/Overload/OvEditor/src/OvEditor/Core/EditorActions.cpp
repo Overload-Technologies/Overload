@@ -58,10 +58,7 @@ void OvEditor::Core::EditorActions::LoadEmptyScene()
 	if (GetCurrentEditorMode() != EEditorMode::EDIT)
 		StopPlaying();
 
-	m_context.sceneManager.LoadEmptyScene();
-	auto scene = m_context.sceneManager.GetCurrentScene();
-	scene->AddDefaultCamera();
-	scene->AddDefaultLights();
+	m_context.sceneManager.LoadDefaultScene();
 
 	OVLOG_INFO("New scene created");
 }

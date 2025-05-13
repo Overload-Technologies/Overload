@@ -18,7 +18,7 @@ OvCore::ECS::Components::CAmbientBoxLight::CAmbientBoxLight(ECS::Actor & p_owner
 {
 	m_data.type = OvRendering::Settings::ELightType::AMBIENT_BOX;
 
-	m_data.intensity = 0.1f;
+	m_data.intensity = 0.03f;
 	m_data.constant = 1.0f;
 	m_data.linear = 1.0f;
 	m_data.quadratic = 1.0f;

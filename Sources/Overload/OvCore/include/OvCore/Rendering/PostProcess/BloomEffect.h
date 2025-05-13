@@ -17,7 +17,7 @@ namespace OvCore::Rendering::PostProcess
 	*/
 	struct BloomSettings : public EffectSettings
 	{
-		float threshold = 0.8f;
+		float threshold = 1.0f;
 		float radius = 5.0f;
 		int kernelSize = 6;
 		float intensity = 0.6f;

@@ -23,7 +23,7 @@ OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::Composite
 	m_gridMaterial.SetBlendable(true);
 	m_gridMaterial.SetBackfaceCulling(false);
 	m_gridMaterial.SetDepthWriting(false);
-	m_gridMaterial.SetDepthTest(false);
+	m_gridMaterial.SetDepthTest(true);
 }
 
 void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
@@ -47,19 +47,8 @@ void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState 
 
 	m_gridMaterial.SetProperty("u_Color", gridDescriptor.gridColor);
 
-	// Stencil test to ensure the grid doesn't render over any other scene geometry
-	pso.stencilTest = true;
-	pso.stencilOpFail = OvRendering::Settings::EOperation::KEEP;
-	pso.depthOpFail = OvRendering::Settings::EOperation::KEEP;
-	pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
-	pso.stencilFuncOp = OvRendering::Settings::EComparaisonAlgorithm::NOTEQUAL;
-	pso.stencilFuncRef = 1;
-	pso.stencilFuncMask = 0xFF;
-
 	m_renderer.GetFeature<DebugModelRenderFeature>()
-	.DrawModelWithSingleMaterial(pso, *EDITOR_CONTEXT(editorResources)->GetModel("Plane"), m_gridMaterial, model);
-
-	pso.stencilTest = false;
+		.DrawModelWithSingleMaterial(pso, *EDITOR_CONTEXT(editorResources)->GetModel("Plane"), m_gridMaterial, model);
 
 	debugShapeRenderer.DrawLine(pso, OvMaths::FVector3(-gridSize + gridDescriptor.viewPosition.x, 0.0f, 0.0f), OvMaths::FVector3(gridSize + gridDescriptor.viewPosition.x, 0.0f, 0.0f), OvMaths::FVector3(1.0f, 0.0f, 0.0f), 1.0f);
 	debugShapeRenderer.DrawLine(pso, OvMaths::FVector3(0.0f, -gridSize + gridDescriptor.viewPosition.y, 0.0f), OvMaths::FVector3(0.0f, gridSize + gridDescriptor.viewPosition.y, 0.0f), OvMaths::FVector3(0.0f, 1.0f, 0.0f), 1.0f);

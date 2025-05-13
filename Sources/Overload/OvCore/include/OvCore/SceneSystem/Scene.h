@@ -56,6 +56,16 @@ namespace OvCore::SceneSystem
 		void AddDefaultLights();
 
 		/**
+		* Add default post-process stack to the scene
+		*/
+		void AddDefaultPostProcessStack();
+
+		/**
+		* Add default skysphere to the scene
+		*/
+		void AddDefaultSkysphere();
+
+		/**
 		* Play the scene
 		*/
 		void Play();

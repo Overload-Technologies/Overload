@@ -31,17 +31,13 @@ OvEditor::Panels::AssetView::AssetView
 	m_renderer->AddFeature<OvRendering::Features::DebugShapeRenderFeature>();
 	m_renderer->AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
 
-	m_renderer->AddPass<OvEditor::Rendering::GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::First);
+	m_renderer->AddPass<OvEditor::Rendering::GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
 
 	m_camera.SetFar(5000.0f);
 
-	auto& directionalLight = m_scene.CreateActor("Directional Light");
-	directionalLight.transform.SetLocalPosition({ 0.0f, 10.0f, 0.0f });
-	directionalLight.transform.SetLocalRotation(OvMaths::FQuaternion({ 120.0f, -40.0f, 0.0f }));
-	directionalLight.AddComponent<OvCore::ECS::Components::CDirectionalLight>().SetIntensity(0.75f);
-
-	auto& ambientLight = m_scene.CreateActor("Ambient Light");
-	ambientLight.AddComponent<OvCore::ECS::Components::CAmbientSphereLight>().SetRadius(10000.0f);
+	m_scene.AddDefaultLights();
+	m_scene.AddDefaultPostProcessStack();
+	// m_scene.AddDefaultSkysphere();
 
 	m_assetActor = &m_scene.CreateActor("Asset");
 	m_modelRenderer = &m_assetActor->AddComponent<OvCore::ECS::Components::CModelRenderer>();
@@ -51,10 +47,9 @@ OvEditor::Panels::AssetView::AssetView
 	m_cameraController.LockTargetActor(*m_assetActor);
 	
 	/* Default Material */
-	m_defaultMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Standard.ovfx"]);
-	m_defaultMaterial.SetProperty("u_Diffuse", OvMaths::FVector4(1.f, 1.f, 1.f, 1.f));
-	m_defaultMaterial.SetProperty("u_Shininess", 100.0f);
-	m_defaultMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
+	m_defaultMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\StandardPBR.ovfx"]);
+	m_defaultMaterial.SetProperty("u_Metallic", 0.0f);
+	m_defaultMaterial.SetProperty("u_Roughness", 0.5f);
 
 	/* Texture Material */
 	m_textureMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Unlit.ovfx"]);

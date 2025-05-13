@@ -17,6 +17,7 @@ OvCore::ECS::Components::CDirectionalLight::CDirectionalLight(ECS::Actor & p_own
 	CLight(p_owner)
 {
 	m_data.type = OvRendering::Settings::ELightType::DIRECTIONAL;
+	m_data.castShadows = true;
 }
 
 std::string OvCore::ECS::Components::CDirectionalLight::GetName()

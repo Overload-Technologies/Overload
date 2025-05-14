@@ -22,7 +22,7 @@ out VS_OUT
     vec3 Normal;
     mat3 TBN;
 #if defined(PARALLAX_MAPPING)
-    flat vec3 TangentViewPos;
+    vec3 TangentViewPos;
     vec3 TangentFragPos;
 #endif
 } vs_out;
@@ -63,7 +63,7 @@ in VS_OUT
     vec3 Normal;
     mat3 TBN;
 #if defined(PARALLAX_MAPPING)
-    flat vec3 TangentViewPos;
+    vec3 TangentViewPos;
     vec3 TangentFragPos;
 #endif
 } fs_in;

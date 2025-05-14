@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <tinyxml2.h>
 
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
@@ -217,7 +218,7 @@ namespace
 	public:
 		FolderContextualMenu(const std::string& p_filePath, bool p_protected = false) : BrowserItemContextualMenu(p_filePath, p_protected) {}
 
-		void CreateNewShader(const std::string& p_shaderName, const std::string_view p_shaderType)
+		void CreateNewShader(const std::string& p_shaderName, std::optional<const std::string_view> p_type)
 		{
 			size_t fails = 0;
 			std::string finalPath;
@@ -228,34 +229,42 @@ namespace
 				++fails;
 			} while (std::filesystem::exists(finalPath));
 
-			if (p_shaderType == "?")
-			{
-				std::ofstream outfile(finalPath);
-			}
-			else
+			if (p_type.has_value())
 			{
 				std::filesystem::copy_file(
 					std::filesystem::path(EDITOR_CONTEXT(engineAssetsPath)) /
 					"Shaders" /
-					std::format("{}.ovfx", p_shaderType),
+					std::format("{}.ovfx", p_type.value()),
 					finalPath
 				);
+			}
+			else
+			{
+				// Empty shader.
+				std::ofstream outfile(finalPath);
 			}
 
 			ItemAddedEvent.Invoke(finalPath);
 			Close();
 		}
 
-		void CreateNewShaderCallback(OvUI::Widgets::InputFields::InputText& p_inputText, const std::string& p_shaderType)
+		void CreateNewShaderCallback(
+			OvUI::Widgets::InputFields::InputText& p_inputText,
+			std::optional<const std::string_view> p_type = std::nullopt
+		)
 		{
 			p_inputText.EnterPressedEvent += std::bind(
 				&FolderContextualMenu::CreateNewShader,
 				this, std::placeholders::_1,
-				p_shaderType
+				p_type
 			);
 		}
 
-		void CreateNewMaterial(const std::string& p_materialName, const std::string_view p_materialType)
+		void CreateNewMaterial(
+			const std::string& p_materialName,
+			std::optional<const std::string_view> p_type,
+			std::optional<std::function<void(OvCore::Resources::Material&)>> p_setupCallback
+		)
 		{
 			size_t fails = 0;
 			std::string finalPath;
@@ -266,15 +275,24 @@ namespace
 				++fails;
 			} while (std::filesystem::exists(finalPath));
 
+			OvCore::Resources::Material material;
+
+			if (p_type.has_value())
 			{
-				std::ofstream outfile(finalPath);
-				outfile << std::format(
-					"<root><shader>{}</shader></root>",
-					p_materialType == "?" ?
-					p_materialType :
-					std::format(":Shaders\\{}.ovfx", p_materialType)
-				) << std::endl;
+				const std::string shaderPath = std::format(":Shaders\\{}.ovfx", p_type.value());
+
+				if (auto shader = EDITOR_CONTEXT(shaderManager)[shaderPath])
+				{
+					material.SetShader(shader);
+				}
 			}
+
+			if (p_setupCallback.has_value())
+			{
+				p_setupCallback.value()(material);
+			}
+
+			OvCore::Resources::Loaders::MaterialLoader::Save(material, finalPath);
 
 			ItemAddedEvent.Invoke(finalPath);
 
@@ -288,12 +306,17 @@ namespace
 			Close();
 		}
 
-		void CreateNewMaterialCallback(OvUI::Widgets::InputFields::InputText& p_inputText, const std::string& p_materialType)
+		void CreateNewMaterialCallback(
+			OvUI::Widgets::InputFields::InputText& p_inputText,
+			std::optional<const std::string_view> p_type = std::nullopt,
+			std::optional<std::function<void(OvCore::Resources::Material&)>> p_setupCallback = std::nullopt
+		)
 		{
 			p_inputText.EnterPressedEvent += std::bind(
 				&FolderContextualMenu::CreateNewMaterial,
 				this, std::placeholders::_1,
-				p_materialType
+				p_type,
+				p_setupCallback
 			);
 		}
 
@@ -431,19 +454,24 @@ namespace
 					Close();
 				};
 
-				CreateNewShaderCallback(createEmptyShader, "?");
+				CreateNewShaderCallback(createEmptyShader);
 				CreateNewShaderCallback(createStandardShader, "Standard");
 				CreateNewShaderCallback(createStandardPBRShader, "StandardPBR");
 				CreateNewShaderCallback(createUnlitShader, "Unlit");
 				CreateNewShaderCallback(createLambertShader, "Lambert");
 				CreateNewShaderCallback(createSkysphereShader, "Skysphere");
 
-				CreateNewMaterialCallback(createEmptyMaterial, "?");
+				CreateNewMaterialCallback(createEmptyMaterial);
 				CreateNewMaterialCallback(createStandardMaterial, "Standard");
 				CreateNewMaterialCallback(createStandardPBRMaterial, "StandardPBR");
 				CreateNewMaterialCallback(createUnlitMaterial, "Unlit");
 				CreateNewMaterialCallback(createLambertMaterial, "Lambert");
-				CreateNewMaterialCallback(createSkysphereMaterial, "Skysphere");
+				CreateNewMaterialCallback(createSkysphereMaterial, "Skysphere", [](OvCore::Resources::Material& material) {
+					// A default skysphere material should have backface culling disabled
+					// And frontface culling enabled (renders the inside of the sphere).
+					material.SetBackfaceCulling(false);
+					material.SetFrontfaceCulling(true);
+				});
 
 				BrowserItemContextualMenu::CreateList();
 			}

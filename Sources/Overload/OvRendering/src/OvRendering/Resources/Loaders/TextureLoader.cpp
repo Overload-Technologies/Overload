@@ -63,7 +63,7 @@ namespace
 			.height = p_height,
 			.minFilter = p_minFilter,
 			.magFilter = p_magFilter,
-			.internalFormat = p_hdr ? EInternalFormat::RGBA16F : EInternalFormat::RGBA8,
+			.internalFormat = p_hdr ? EInternalFormat::RGBA32F : EInternalFormat::RGBA8,
 			.useMipMaps = p_generateMipmap
 		});
 

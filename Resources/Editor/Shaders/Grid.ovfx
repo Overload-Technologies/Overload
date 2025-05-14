@@ -49,9 +49,8 @@ in VS_OUT
 
 uniform vec3 u_Color;
 
-float MAG(float p_lp)
+float MAG(float lineWidth, float p_lp)
 {
-    const float lineWidth = 1.0f;
     const vec2 coord = fs_in.TexCoords / p_lp;
     const vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
     const float line = min(grid.x, grid.y);
@@ -59,11 +58,11 @@ float MAG(float p_lp)
     return lineResult;
 }
 
-float Grid(float height, float a, float b, float c)
+float Grid(float lineWidth, float height, float a, float b, float c)
 {
-    const float cl = MAG(a);
-    const float ml = MAG(b);
-    const float fl = MAG(c);
+    const float cl = MAG(lineWidth, a);
+    const float ml = MAG(lineWidth, b);
+    const float fl = MAG(lineWidth, c);
     const float cmit = 10.0f;
     const float cmet = 40.0f;
     const float mfit = 80.0f;
@@ -78,9 +77,9 @@ float Grid(float height, float a, float b, float c)
 void main()
 {
     const float height = distance(ubo_ViewPos.y, fs_in.FragPos.y);
-    const float gridA = Grid(height, 1.0f, 4.0f, 8.0f);
-    const float gridB = Grid(height, 4.0f, 16.0f, 32.0f);
-    const float grid = gridA * 0.25f + gridB * 0.5f;
+    const float gridA = Grid(0.5f, height, 1.0f, 4.0f, 8.0f);
+    const float gridB = Grid(0.7f, height, 4.0f, 16.0f, 32.0f);
+    const float grid = gridA * 0.7f + gridB * 0.7f;
 
     // Calculate view direction vector (from camera to fragment)
     const vec3 viewDir = normalize(fs_in.FragPos - ubo_ViewPos);
@@ -90,7 +89,7 @@ void main()
     const float horizonFactor = abs(viewDir.y);
 
     // Define how much we want to fade when looking at horizon
-    const float horizonMinFade = 0.01f; // Minimum fade at horizon
+    const float horizonMinFade = 0.02f; // Minimum fade at horizon
     const float horizonFadeStart = 0.0f; // Start fading at this angle
     const float horizonFadeEnd = 1.0f; // Full grid strength at this angle
 

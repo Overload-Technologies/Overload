@@ -173,6 +173,9 @@ protected:
 	{
 		TracyGpuZone("DebugActorRenderPass");
 
+		// Clear stencil buffer for outline rendering
+		m_renderer.Clear(false, false, true);
+
 		auto& debugSceneDescriptor = m_renderer.GetDescriptor<OvEditor::Rendering::DebugSceneRenderer::DebugSceneDescriptor>();
 
 		if (debugSceneDescriptor.selectedActor)

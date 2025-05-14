@@ -27,6 +27,7 @@ OvEditor::Panels::AssetView::AssetView
 ) : AViewControllable(p_title, p_opened, p_windowSettings)
 {
 	m_renderer = std::make_unique<OvCore::Rendering::SceneRenderer>(*EDITOR_CONTEXT(driver));
+
 	m_renderer->AddFeature<OvEditor::Rendering::DebugModelRenderFeature>();
 	m_renderer->AddFeature<OvRendering::Features::DebugShapeRenderFeature>();
 	m_renderer->AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
@@ -37,7 +38,7 @@ OvEditor::Panels::AssetView::AssetView
 
 	m_scene.AddDefaultLights();
 	m_scene.AddDefaultPostProcessStack();
-	// m_scene.AddDefaultSkysphere();
+	m_scene.AddDefaultSkysphere();
 
 	m_assetActor = &m_scene.CreateActor("Asset");
 	m_modelRenderer = &m_assetActor->AddComponent<OvCore::ECS::Components::CModelRenderer>();

@@ -80,7 +80,7 @@ void main()
     const float height = distance(ubo_ViewPos.y, fs_in.FragPos.y);
     const float gridA = Grid(height, 1.0f, 4.0f, 8.0f);
     const float gridB = Grid(height, 4.0f, 16.0f, 32.0f);
-    const float grid = gridA * 0.5f + gridB * 0.75f;
+    const float grid = gridA * 0.25f + gridB * 0.5f;
 
     // Calculate view direction vector (from camera to fragment)
     const vec3 viewDir = normalize(fs_in.FragPos - ubo_ViewPos);
@@ -90,9 +90,9 @@ void main()
     const float horizonFactor = abs(viewDir.y);
 
     // Define how much we want to fade when looking at horizon
-    const float horizonMinFade = 0.075f; // Minimum fade at horizon
-    const float horizonFadeStart = 0.20f; // Start fading at this angle
-    const float horizonFadeEnd = 0.90f; // Full grid strength at this angle
+    const float horizonMinFade = 0.01f; // Minimum fade at horizon
+    const float horizonFadeStart = 0.0f; // Start fading at this angle
+    const float horizonFadeEnd = 1.0f; // Full grid strength at this angle
 
     // Calculate horizon fade factor (1.0 = full grid, 0.0 = fully faded)
     const float horizonFade =

@@ -1,11 +1,11 @@
 #shader vertex
 #version 450 core
 
-layout(location = 0) in vec3 geo_Pos;
-layout(location = 1) in vec2 geo_TexCoords;
-layout(location = 2) in vec3 geo_Normal;
+layout (location = 0) in vec3 geo_Pos;
+layout (location = 1) in vec2 geo_TexCoords;
+layout (location = 2) in vec3 geo_Normal;
 
-layout(std140) uniform EngineUBO
+layout (std140) uniform EngineUBO
 {
     mat4 ubo_Model;
     mat4 ubo_View;
@@ -32,7 +32,7 @@ void main()
 
 out vec4 FRAGMENT_COLOR;
 
-layout(std140) uniform EngineUBO
+layout (std140) uniform EngineUBO
 {
     mat4 ubo_Model;
     mat4 ubo_View;
@@ -95,9 +95,10 @@ void main()
     const float horizonFadeEnd = 0.90f; // Full grid strength at this angle
 
     // Calculate horizon fade factor (1.0 = full grid, 0.0 = fully faded)
-    const float horizonFade = horizonMinFade
+    const float horizonFade =
+        horizonMinFade
         + (1.0f - horizonMinFade)
-            * smoothstep(horizonFadeStart, horizonFadeEnd, horizonFactor);
+        * smoothstep(horizonFadeStart, horizonFadeEnd, horizonFactor);
 
     FRAGMENT_COLOR = vec4(u_Color, grid * horizonFade);
 }

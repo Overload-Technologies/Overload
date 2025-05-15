@@ -62,5 +62,8 @@ namespace OvCore::Rendering::PostProcess
 		OvRendering::Data::Material m_luminanceMaterial;
 		OvRendering::Data::Material m_exposureMaterial;
 		OvRendering::Data::Material m_compensationMaterial;
+
+		// Used to skip the first frame of the exposure adaptation
+		bool m_firstFrame = true;
 	};
 }

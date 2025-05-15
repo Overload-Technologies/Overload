@@ -81,7 +81,7 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	m_exposureMaterial.SetProperty("_MaxLuminanceEV", autoExposureSettings.maxLuminanceEV, true);
 	m_exposureMaterial.SetProperty("_ExposureCompensationEV", autoExposureSettings.exposureCompensationEV, true);
 	m_exposureMaterial.SetProperty("_ElapsedTime", elapsedTime, true);
-	m_exposureMaterial.SetProperty("_Progressive", static_cast<int>(autoExposureSettings.progressive), true);
+	m_exposureMaterial.SetProperty("_Progressive", static_cast<int>(autoExposureSettings.progressive && !m_firstFrame), true);
 	m_exposureMaterial.SetProperty("_SpeedUp", autoExposureSettings.speedUp, true);
 	m_exposureMaterial.SetProperty("_SpeedDown", autoExposureSettings.speedDown, true);
 	m_renderer.Blit(p_pso, previousExposure, currentExposure, m_exposureMaterial);
@@ -90,4 +90,6 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	const auto exposureTex = currentExposure.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
 	m_compensationMaterial.SetProperty("_ExposureTexture", &exposureTex.value(), true);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_compensationMaterial);
+
+	m_firstFrame = false;
 }

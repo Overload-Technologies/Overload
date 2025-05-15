@@ -66,6 +66,32 @@ namespace
 		EDITOR_EXEC(SelectActor(instance));
 	}
 
+	void CreateAtmosphere(OvCore::ECS::Actor* p_parent)
+	{
+		auto& instance = EDITOR_EXEC(CreateEmptyActor(false, p_parent));
+
+		auto& materialRenderer = instance.AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
+		auto& modelRenderer = instance.AddComponent<OvCore::ECS::Components::CModelRenderer>();
+		modelRenderer.SetFrustumBehaviour(OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED);
+
+		auto atmosphereMaterial = EDITOR_CONTEXT(materialManager).GetResource(":Materials\\Atmosphere.ovmat");
+		auto sphereModel = EDITOR_CONTEXT(modelManager).GetResource(":Models\\Sphere.fbx");
+
+		if (atmosphereMaterial)
+		{
+			materialRenderer.SetMaterialAtIndex(0, *atmosphereMaterial);
+		}
+
+		if (sphereModel)
+		{
+			modelRenderer.SetModel(sphereModel);
+		}
+
+		instance.SetName("Atmosphere");
+
+		EDITOR_EXEC(SelectActor(instance));
+	}
+
 	template<class T>
 	std::function<void()> ActorWithComponentCreationHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
@@ -80,6 +106,11 @@ namespace
 	std::function<void()> CreateSkysphereHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
 		return Combine(std::bind(CreateSkysphere, p_parent), p_onItemClicked);
+	}
+
+	std::function<void()> CreateAtmosphereHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
+	{
+		return Combine(std::bind(CreateAtmosphere, p_parent), p_onItemClicked);
 	}
 }
 
@@ -119,4 +150,5 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	others.CreateWidget<MenuItem>("Camera").ClickedEvent += ActorWithComponentCreationHandler<CCamera>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Post Process Stack").ClickedEvent += ActorWithComponentCreationHandler<CPostProcessStack>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Skysphere").ClickedEvent += CreateSkysphereHandler(p_parent, p_onItemClicked);
+	others.CreateWidget<MenuItem>("Atmosphere").ClickedEvent += CreateAtmosphereHandler(p_parent, p_onItemClicked);
 }

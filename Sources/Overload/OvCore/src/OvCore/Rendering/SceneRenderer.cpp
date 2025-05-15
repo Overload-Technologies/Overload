@@ -21,6 +21,16 @@
 #include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
 
+bool OvCore::Rendering::SceneRenderer::DrawOrder::operator<(const DrawOrder& p_other) const
+{
+	return order < p_other.order || (order == p_other.order && distance < p_other.distance);
+}
+
+bool OvCore::Rendering::SceneRenderer::DrawOrder::operator>(const DrawOrder& p_other) const
+{
+	return p_other.operator <(*this);
+}
+
 struct SceneRenderPassDescriptor
 {
 	OvCore::Rendering::SceneRenderer::AllDrawables drawables;
@@ -303,17 +313,26 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 								if (material->IsUserInterface())
 								{
-									ui.emplace(distanceToActor, drawable);
+									ui.emplace(DrawOrder{
+										.order = material->GetDrawOrder(),
+										.distance = distanceToActor
+									}, drawable);
 								}
 								else
 								{
 									if (material->IsBlendable())
 									{
-										transparents.emplace(distanceToActor, drawable);
+										transparents.emplace(DrawOrder{
+											.order = material->GetDrawOrder(),
+											.distance = distanceToActor
+										}, drawable);
 									}
 									else
 									{
-										opaques.emplace(distanceToActor, drawable);
+										opaques.emplace(DrawOrder{
+											.order = material->GetDrawOrder(),
+											.distance = distanceToActor
+										}, drawable);
 									}
 								}
 							}

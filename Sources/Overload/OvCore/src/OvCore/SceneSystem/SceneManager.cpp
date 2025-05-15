@@ -56,7 +56,7 @@ void OvCore::SceneSystem::SceneManager::LoadDefaultScene()
 	m_currentScene->AddDefaultCamera();
 	m_currentScene->AddDefaultLights();
 	m_currentScene->AddDefaultPostProcessStack();
-	m_currentScene->AddDefaultSkysphere();
+	m_currentScene->AddDefaultAtmosphere();
 	SceneLoadEvent.Invoke();
 }
 

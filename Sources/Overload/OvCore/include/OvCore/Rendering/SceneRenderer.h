@@ -28,9 +28,23 @@ namespace OvCore::Rendering
 	class SceneRenderer : public OvRendering::Core::CompositeRenderer
 	{
 	public:
-		using OpaqueDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::less<float>>;
-		using TransparentDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::greater<float>>;
-		using UIDrawables = std::multimap<float, OvRendering::Entities::Drawable, std::greater<float>>;
+		struct DrawOrder
+		{
+			int order;
+			float distance;
+
+			/**
+			* Determines the order of the drawables.
+			* Current order is: order -> distance
+			* @param p_other
+			*/
+			bool operator<(const DrawOrder& p_other) const;
+			bool operator>(const DrawOrder& p_other) const;
+		};
+
+		using OpaqueDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::less<DrawOrder>>;
+		using TransparentDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::greater<DrawOrder>>;
+		using UIDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::greater<DrawOrder>>;
 
 		struct AllDrawables
 		{

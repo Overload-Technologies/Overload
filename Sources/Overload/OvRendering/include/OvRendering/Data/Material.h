@@ -110,6 +110,12 @@ namespace OvRendering::Data
 		bool IsValid() const;
 
 		/**
+		* Sets the draw order of the material
+		* @param p_order
+		*/
+		void SetDrawOrder(int p_order);
+
+		/**
 		* Defines if the material is blendable
 		* @param p_blendable
 		*/
@@ -169,6 +175,11 @@ namespace OvRendering::Data
 		* @param p_instances
 		*/
 		void SetGPUInstances(int p_instances);
+
+		/**
+		* Returns the draw order of the material
+		*/
+		int GetDrawOrder() const;
 
 		/**
 		* Returns true if the material is blendable
@@ -275,5 +286,6 @@ namespace OvRendering::Data
 		bool m_receiveShadows = false;
 
 		int m_gpuInstances = 1;
+		int m_drawOrder = 1000;
 	};
 }

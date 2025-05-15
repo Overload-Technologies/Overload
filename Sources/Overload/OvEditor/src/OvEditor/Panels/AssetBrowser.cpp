@@ -355,6 +355,7 @@ namespace
 				auto& createUnlitShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit template");
 				auto& createLambertShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert template");
 				auto& createSkysphereShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Skysphere template");
+				auto& createAtmosphereShaderMenu = createShaderMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Atmosphere template");
 
 				auto& createEmptyMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Empty");
 				auto& createStandardMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Standard");
@@ -362,6 +363,7 @@ namespace
 				auto& createUnlitMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Unlit");
 				auto& createLambertMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Lambert");
 				auto& createSkysphereMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Skysphere");
+				auto& createAtmosphereMaterialMenu = createMaterialMenu.CreateWidget<OvUI::Widgets::Menu::MenuList>("Atmosphere");
 
 				auto& createFolder = createFolderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createScene = createSceneMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
@@ -372,6 +374,7 @@ namespace
 				auto& createUnlitMaterial = createUnlitMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createLambertMaterial = createLambertMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createSkysphereMaterial = createSkysphereMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createAtmosphereMaterial = createAtmosphereMaterialMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 
 				auto& createEmptyShader = createEmptyShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createPartialShader = createPartialShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
@@ -380,6 +383,7 @@ namespace
 				auto& createUnlitShader = createUnlitShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createLambertShader = createLambertShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 				auto& createSkysphereShader = createSkysphereShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+				auto& createAtmosphereShader = createAtmosphereShaderMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
 
 				createFolderMenu.ClickedEvent += [&createFolder] { createFolder.content = ""; };
 				createSceneMenu.ClickedEvent += [&createScene] { createScene.content = ""; };
@@ -388,6 +392,7 @@ namespace
 				createUnlitShaderMenu.ClickedEvent += [&createUnlitShader] { createUnlitShader.content = ""; };
 				createLambertShaderMenu.ClickedEvent += [&createLambertShader] { createLambertShader.content = ""; };
 				createSkysphereShaderMenu.ClickedEvent += [&createSkysphereShader] { createSkysphereShader.content = ""; };
+				createAtmosphereShaderMenu.ClickedEvent += [&createAtmosphereShader] { createAtmosphereShader.content = ""; };
 				createEmptyMaterialMenu.ClickedEvent += [&createEmptyMaterial] { createEmptyMaterial.content = ""; };
 				createEmptyShaderMenu.ClickedEvent += [&createEmptyShader] { createEmptyShader.content = ""; };
 				createPartialShaderMenu.ClickedEvent += [&createPartialShader] { createPartialShader.content = ""; };
@@ -396,6 +401,7 @@ namespace
 				createUnlitMaterialMenu.ClickedEvent += [&createUnlitMaterial] { createUnlitMaterial.content = ""; };
 				createLambertMaterialMenu.ClickedEvent += [&createLambertMaterial] { createLambertMaterial.content = ""; };
 				createSkysphereMaterialMenu.ClickedEvent += [&createSkysphereMaterial] { createSkysphereMaterial.content = ""; };
+				createAtmosphereMaterialMenu.ClickedEvent += [&createAtmosphereMaterial] { createAtmosphereMaterial.content = ""; };
 
 				createFolder.EnterPressedEvent += [this](std::string newFolderName)
 				{
@@ -460,6 +466,7 @@ namespace
 				CreateNewShaderCallback(createUnlitShader, "Unlit");
 				CreateNewShaderCallback(createLambertShader, "Lambert");
 				CreateNewShaderCallback(createSkysphereShader, "Skysphere");
+				CreateNewShaderCallback(createAtmosphereShader, "Atmosphere");
 
 				CreateNewMaterialCallback(createEmptyMaterial);
 				CreateNewMaterialCallback(createStandardMaterial, "Standard");
@@ -469,8 +476,21 @@ namespace
 				CreateNewMaterialCallback(createSkysphereMaterial, "Skysphere", [](OvCore::Resources::Material& material) {
 					// A default skysphere material should have backface culling disabled
 					// And frontface culling enabled (renders the inside of the sphere).
+					material.SetDrawOrder(100);
+					material.SetDepthTest(false);
+					material.SetDepthWriting(false);
 					material.SetBackfaceCulling(false);
 					material.SetFrontfaceCulling(true);
+				});
+				CreateNewMaterialCallback(createAtmosphereMaterial, "Atmosphere", [](OvCore::Resources::Material& material) {
+					// A default atmosphere material should have backface culling disabled
+					// And frontface culling enabled (renders the inside of the cube).
+					material.SetDrawOrder(10);
+					material.SetDepthTest(false);
+					material.SetDepthWriting(false);
+					material.SetBackfaceCulling(false);
+					material.SetFrontfaceCulling(true);
+					material.AddFeature("DYNAMIC_SUN_POSITION");
 				});
 
 				BrowserItemContextualMenu::CreateList();

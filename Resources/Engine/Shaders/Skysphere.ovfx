@@ -18,10 +18,9 @@ out VS_OUT
 
 void main()
 {
-    vs_out.FragPos = ubo_ViewPos + geo_Pos * 1000.0f;
+    vs_out.FragPos = geo_Pos;
     vs_out.TexCoords = geo_TexCoords;
-
-    gl_Position = ubo_Projection * ubo_View * vec4(vs_out.FragPos, 1.0);
+    gl_Position = ubo_Projection * ubo_View * vec4(ubo_ViewPos + vs_out.FragPos, 1.0);
 }
 
 #shader fragment

@@ -30,6 +30,7 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 	Serializer::SerializeBoolean(p_doc, settingsNode, "receive_shadows", m_receiveShadows);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "user_interface", m_userInterface);
 	Serializer::SerializeInt(p_doc, settingsNode, "gpu_instances", m_gpuInstances);
+	Serializer::SerializeInt(p_doc, settingsNode, "draw_order", m_drawOrder);
 
 	// Create "Uniforms" (Every uniform will be attached to "Uniforms")
 	tinyxml2::XMLNode* uniformsNode = p_doc.NewElement("uniforms");
@@ -114,6 +115,7 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "receive_shadows", m_receiveShadows);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "user_interface", m_userInterface);
 		Serializer::DeserializeInt(p_doc, settingsNode, "gpu_instances", m_gpuInstances);
+		Serializer::DeserializeInt(p_doc, settingsNode, "draw_order", m_drawOrder);
 	}
 
 	/* We get the shader with Deserialize method */

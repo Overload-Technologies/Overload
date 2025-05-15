@@ -66,6 +66,11 @@ namespace OvCore::SceneSystem
 		void AddDefaultSkysphere();
 
 		/**
+		* Add default atmosphere to the scene
+		*/
+		void AddDefaultAtmosphere();
+
+		/**
 		* Play the scene
 		*/
 		void Play();

@@ -38,7 +38,7 @@ OvEditor::Panels::AssetView::AssetView
 
 	m_scene.AddDefaultLights();
 	m_scene.AddDefaultPostProcessStack();
-	m_scene.AddDefaultSkysphere();
+	m_scene.AddDefaultAtmosphere();
 
 	m_assetActor = &m_scene.CreateActor("Asset");
 	m_modelRenderer = &m_assetActor->AddComponent<OvCore::ECS::Components::CModelRenderer>();

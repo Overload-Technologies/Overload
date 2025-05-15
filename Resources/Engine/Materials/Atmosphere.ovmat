@@ -1,5 +1,5 @@
 <root>
-    <shader>:Shaders\Skysphere.ovfx</shader>
+    <shader>:Shaders\Atmosphere.ovfx</shader>
     <settings>
         <blendable>false</blendable>
         <backface_culling>false</backface_culling>
@@ -11,36 +11,25 @@
         <receive_shadows>false</receive_shadows>
         <user_interface>false</user_interface>
         <gpu_instances>1</gpu_instances>
-        <draw_order>100</draw_order>
+        <draw_order>10</draw_order>
     </settings>
     <uniforms>
         <uniform>
-            <name>u_Diffuse</name>
-            <value>
-                <x>1</x>
-                <y>1</y>
-                <z>1</z>
-                <w>1</w>
-            </value>
+            <name>u_MiePreferredScatteringDirection</name>
+            <value>0.75800002</value>
         </uniform>
         <uniform>
-            <name>u_DiffuseMap</name>
-            <value>:Textures\PureSky.hdr</value>
+            <name>u_SunIntensity</name>
+            <value>22</value>
         </uniform>
         <uniform>
-            <name>u_TextureOffset</name>
+            <name>u_SunPosition</name>
             <value>
                 <x>0</x>
-                <y>0</y>
-            </value>
-        </uniform>
-        <uniform>
-            <name>u_TextureTiling</name>
-            <value>
-                <x>1</x>
-                <y>1</y>
+                <y>0.1</y>
+                <z>-1</z>
             </value>
         </uniform>
     </uniforms>
-    <features></features>
+    <features>DYNAMIC_SUN_POSITION</features>
 </root>

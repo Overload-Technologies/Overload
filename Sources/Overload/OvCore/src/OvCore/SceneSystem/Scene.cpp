@@ -79,6 +79,27 @@ void OvCore::SceneSystem::Scene::AddDefaultSkysphere()
 	}
 }
 
+void OvCore::SceneSystem::Scene::AddDefaultAtmosphere()
+{
+	auto& atmosphere = CreateActor("Atmoshpere");
+	auto& materialRenderer = atmosphere.AddComponent<ECS::Components::CMaterialRenderer>();
+	auto& modelRenderer = atmosphere.AddComponent<ECS::Components::CModelRenderer>();
+	modelRenderer.SetFrustumBehaviour(ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED);
+
+	auto atmosphereMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(":Materials\\Atmosphere.ovmat");
+	auto sphereModel = Global::ServiceLocator::Get<ResourceManagement::ModelManager>().GetResource(":Models\\Sphere.fbx");
+
+	if (atmosphereMaterial)
+	{
+		materialRenderer.SetMaterialAtIndex(0, *atmosphereMaterial);
+	}
+
+	if (sphereModel)
+	{
+		modelRenderer.SetModel(sphereModel);
+	}
+}
+
 void OvCore::SceneSystem::Scene::Play()
 {
 	m_isPlaying = true;

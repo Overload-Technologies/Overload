@@ -260,6 +260,11 @@ bool OvRendering::Data::Material::IsValid() const
 	return HasShader();
 }
 
+void OvRendering::Data::Material::SetDrawOrder(int p_order)
+{
+	m_drawOrder = p_order;
+}
+
 void OvRendering::Data::Material::SetBlendable(bool p_transparent)
 {
 	m_blendable = p_transparent;
@@ -309,6 +314,11 @@ void OvRendering::Data::Material::SetReceiveShadows(bool p_receiveShadows)
 void OvRendering::Data::Material::SetGPUInstances(int p_instances)
 {
 	m_gpuInstances = p_instances;
+}
+
+int OvRendering::Data::Material::GetDrawOrder() const
+{
+	return m_drawOrder;
 }
 
 bool OvRendering::Data::Material::IsBlendable() const

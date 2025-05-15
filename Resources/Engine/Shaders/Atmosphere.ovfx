@@ -199,10 +199,10 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
 void main()
 {
 #if defined(PICKING_PASS)
-    // The skysphere cannot be picked.
+    // The atmosphere cannot be picked.
     discard;
 #elif defined(OUTLINE_PASS)
-    // The skysphere cannot be outlined.
+    // The atmosphere cannot be outlined.
     discard;
 #else
 

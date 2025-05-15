@@ -21,16 +21,6 @@
 #include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
 
-bool OvCore::Rendering::SceneRenderer::DrawOrder::operator<(const DrawOrder& p_other) const
-{
-	return order < p_other.order || (order == p_other.order && distance < p_other.distance);
-}
-
-bool OvCore::Rendering::SceneRenderer::DrawOrder::operator>(const DrawOrder& p_other) const
-{
-	return p_other.operator <(*this);
-}
-
 struct SceneRenderPassDescriptor
 {
 	OvCore::Rendering::SceneRenderer::AllDrawables drawables;
@@ -313,7 +303,7 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 
 								if (material->IsUserInterface())
 								{
-									ui.emplace(DrawOrder{
+									ui.emplace(decltype(decltype(ui)::value_type::first){
 										.order = material->GetDrawOrder(),
 										.distance = distanceToActor
 									}, drawable);
@@ -322,14 +312,14 @@ OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer:
 								{
 									if (material->IsBlendable())
 									{
-										transparents.emplace(DrawOrder{
+										transparents.emplace(decltype(decltype(transparents)::value_type::first){
 											.order = material->GetDrawOrder(),
 											.distance = distanceToActor
 										}, drawable);
 									}
 									else
 									{
-										opaques.emplace(DrawOrder{
+										opaques.emplace(decltype(decltype(opaques)::value_type::first){
 											.order = material->GetDrawOrder(),
 											.distance = distanceToActor
 										}, drawable);

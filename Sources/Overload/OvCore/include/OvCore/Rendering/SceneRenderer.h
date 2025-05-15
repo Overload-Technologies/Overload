@@ -28,23 +28,46 @@ namespace OvCore::Rendering
 	class SceneRenderer : public OvRendering::Core::CompositeRenderer
 	{
 	public:
+		enum class EOrderingMode
+		{
+			BACK_TO_FRONT,
+			FRONT_TO_BACK,
+		};
+
+		template<EOrderingMode OrderingMode>
 		struct DrawOrder
 		{
-			int order;
-			float distance;
+			const int order;
+			const float distance;
 
 			/**
 			* Determines the order of the drawables.
 			* Current order is: order -> distance
 			* @param p_other
 			*/
-			bool operator<(const DrawOrder& p_other) const;
-			bool operator>(const DrawOrder& p_other) const;
+			bool operator<(const DrawOrder& p_other) const
+			{
+				if (order == p_other.order)
+				{
+					if constexpr (OrderingMode == EOrderingMode::BACK_TO_FRONT)
+					{
+						return distance > p_other.distance;
+					}
+					else
+					{
+						return distance < p_other.distance;
+					}
+				}
+				else
+				{
+					return order < p_other.order;
+				}
+			}
 		};
 
-		using OpaqueDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::less<DrawOrder>>;
-		using TransparentDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::greater<DrawOrder>>;
-		using UIDrawables = std::multimap<DrawOrder, OvRendering::Entities::Drawable, std::greater<DrawOrder>>;
+		using OpaqueDrawables = std::multimap<DrawOrder<EOrderingMode::FRONT_TO_BACK>, OvRendering::Entities::Drawable>;
+		using TransparentDrawables = std::multimap<DrawOrder<EOrderingMode::BACK_TO_FRONT>, OvRendering::Entities::Drawable>;
+		using UIDrawables = std::multimap<DrawOrder<EOrderingMode::BACK_TO_FRONT>, OvRendering::Entities::Drawable>;
 
 		struct AllDrawables
 		{

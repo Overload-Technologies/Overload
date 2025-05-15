@@ -6,11 +6,9 @@
 #version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
-#include ":Shaders/Common/Utils.ovfxh"
 #include ":Shaders/Common/Buffers/LightsSSBO.ovfxh"
 
 layout (location = 0) in vec3 geo_Pos;
-layout (location = 1) in vec2 geo_TexCoords;
 
 out VS_OUT
 {
@@ -56,7 +54,6 @@ void main()
 #version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
-#include ":Shaders/Common/Utils.ovfxh"
 
 in VS_OUT
 {

@@ -61,6 +61,14 @@ namespace OvRendering::Data
 		void SetShader(OvRendering::Resources::Shader* p_shader);
 
 		/**
+		* Returns the shader program (variant) given the current feature set
+		* @param p_override
+		*/
+		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> GetProgram(
+			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_override = std::nullopt
+		) const;
+
+		/**
 		* Fill uniform with default uniform values
 		*/
 		void FillUniform();

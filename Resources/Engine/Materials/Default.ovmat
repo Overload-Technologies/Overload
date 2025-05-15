@@ -11,15 +11,9 @@
         <receive_shadows>true</receive_shadows>
         <user_interface>false</user_interface>
         <gpu_instances>1</gpu_instances>
+        <draw_order>1000</draw_order>
     </settings>
     <uniforms>
-        <uniform>
-            <name>_LightSpaceMatrix</name>
-        </uniform>
-        <uniform>
-            <name>_ShadowMap</name>
-            <value>?</value>
-        </uniform>
         <uniform>
             <name>u_Albedo</name>
             <value>
@@ -34,20 +28,8 @@
             <value>?</value>
         </uniform>
         <uniform>
-            <name>u_AlphaClippingThreshold</name>
-            <value>0.1</value>
-        </uniform>
-        <uniform>
             <name>u_AmbientOcclusionMap</name>
             <value>?</value>
-        </uniform>
-        <uniform>
-            <name>u_HeightMap</name>
-            <value>?</value>
-        </uniform>
-        <uniform>
-            <name>u_HeightScale</name>
-            <value>0.050000001</value>
         </uniform>
         <uniform>
             <name>u_MaskMap</name>
@@ -62,24 +44,12 @@
             <value>?</value>
         </uniform>
         <uniform>
-            <name>u_NormalMap</name>
-            <value>?</value>
-        </uniform>
-        <uniform>
-            <name>u_ParallaxClipEdges</name>
-            <value>0</value>
-        </uniform>
-        <uniform>
             <name>u_Roughness</name>
             <value>0.5</value>
         </uniform>
         <uniform>
             <name>u_RoughnessMap</name>
             <value>?</value>
-        </uniform>
-        <uniform>
-            <name>u_ShadowClippingThreshold</name>
-            <value>0.5</value>
         </uniform>
         <uniform>
             <name>u_TextureOffset</name>

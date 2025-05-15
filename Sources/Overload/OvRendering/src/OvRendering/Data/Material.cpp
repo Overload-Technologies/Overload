@@ -81,6 +81,20 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 	}
 }
 
+OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Material::GetProgram(
+	OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_override
+) const
+{
+	if (m_shader)
+	{
+		return m_shader->GetProgram(
+			p_override.value_or(m_features)
+		);
+	}
+	
+	return std::nullopt;
+}
+
 void OvRendering::Data::Material::FillUniform()
 {
 	m_properties.clear();

@@ -343,16 +343,25 @@ void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
 
 	for (auto&[name, prop] : m_target->GetProperties())
 	{
-		if (name.length() > 0 && name[0] != '_') // Uniforms starting with '_' are internal (private), so not exposed
+		if (auto program = m_target->GetProgram(); !program || !program->GetUniformInfo(name))
 		{
-			const auto index = std::visit(typeIndexVisitor, prop.value);
-			sortedProperties.emplace(
-				index,
-				std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{ 
-					name,
-					std::ref(prop.value)
-			});
+			// This property isn't used in the shader program, so skip it
+			continue;
 		}
+
+		// Uniforms starting with '_' are internal (private), so not exposed
+		if (name.length() == 0 || name[0] == '_')
+		{
+			continue;
+		}
+
+		const auto index = std::visit(typeIndexVisitor, prop.value);
+		sortedProperties.emplace(
+			index,
+			std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{ 
+				name,
+				std::ref(prop.value)
+		});
 	}
 
 	for (auto& [index, propInfo] : sortedProperties)
@@ -440,10 +449,12 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
 					if (p_enabled)
 					{
 						m_target->AddFeature(feature);
+						GenerateShaderSettingsContent();
 					}
 					else
 					{
 						m_target->RemoveFeature(feature);
+						GenerateShaderSettingsContent();
 					}
 				}
 			);

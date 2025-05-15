@@ -36,8 +36,28 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 	tinyxml2::XMLNode* uniformsNode = p_doc.NewElement("uniforms");
 	p_node->InsertEndChild(uniformsNode);
 
+	const auto program = GetProgram();
+
+	// If the material has no valid program for the current feature set, we skip serialization of properties.
+	if (!program)
+	{
+		return;
+	}
+
 	for (const auto& [name, prop] : m_properties)
 	{
+		// Skip serialization of this property if the current program isn't using its associated uniform
+		if (!program->GetUniformInfo(name))
+		{
+			continue;
+		}
+
+		// Skip serialization of this property if it is marked as single-use
+		if (prop.singleUse)
+		{
+			continue;
+		}
+
 		auto& value = prop.value;
 		tinyxml2::XMLNode* uniform = p_doc.NewElement("uniform");
 		uniformsNode->InsertEndChild(uniform);

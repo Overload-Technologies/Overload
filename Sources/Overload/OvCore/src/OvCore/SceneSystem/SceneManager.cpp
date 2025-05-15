@@ -55,8 +55,8 @@ void OvCore::SceneSystem::SceneManager::LoadDefaultScene()
 	m_currentScene.reset(new Scene());
 	m_currentScene->AddDefaultCamera();
 	m_currentScene->AddDefaultLights();
-	m_currentScene->AddDefaultPostProcessStack();
 	m_currentScene->AddDefaultAtmosphere();
+	m_currentScene->AddDefaultPostProcessStack();
 	SceneLoadEvent.Invoke();
 }
 

@@ -89,12 +89,27 @@ namespace OvRendering::Data
 		void Unbind() const;
 
 		/**
+		* Returns true if the material has a given property
+		* @param p_name
+		*/
+		bool HasProperty(const std::string& p_name) const;
+
+		/**
 		* Sets a material property value
+		* @note This method expects that the property already exists. If unsure, use TrySetProperty instead.
 		* @param p_name
 		* @param p_value
 		* @param p_singleUse (automatically consume the value after the first use)
 		*/
 		void SetProperty(const std::string p_name, const MaterialPropertyType& p_value, bool p_singleUse = false);
+
+		/**
+		* Sets a material property value if the property exists
+		* @param p_name
+		* @param p_value
+		* @param p_singleUse (automatically consume the value after the first use)
+		*/
+		bool TrySetProperty(const std::string& p_name, const MaterialPropertyType& p_value, bool p_singleUse = false);
 
 		/**
 		* Gets a material property

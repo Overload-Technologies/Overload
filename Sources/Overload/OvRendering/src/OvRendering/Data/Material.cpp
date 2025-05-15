@@ -228,23 +228,33 @@ void OvRendering::Data::Material::Unbind() const
 	m_shader->GetProgram().Unbind();
 }
 
+bool OvRendering::Data::Material::HasProperty(const std::string& p_name) const
+{
+	OVASSERT(IsValid(), "Attempting to call HasProperty on an invalid material.");
+	return m_properties.contains(p_name);
+}
+
 void OvRendering::Data::Material::SetProperty(const std::string p_name, const MaterialPropertyType& p_value, bool p_singleUse)
 {
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
+	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
+	const auto property = 
 
-	if (m_properties.find(p_name) != m_properties.end())
-	{
-		const auto property = MaterialProperty{
-			p_value,
-			p_singleUse
-		};
+	m_properties[p_name] = MaterialProperty{
+		p_value,
+		p_singleUse
+	};
+}
 
-		m_properties[p_name] = property;
-	}
-	else
+bool OvRendering::Data::Material::TrySetProperty(const std::string& p_name, const MaterialPropertyType& p_value, bool p_singleUse)
+{
+	if (HasProperty(p_name))
 	{
-		OVLOG_ERROR("Material Set failed: Uniform not found");
+		SetProperty(p_name, p_value, p_singleUse);
+		return true;
 	}
+
+	return false;
 }
 
 OvTools::Utils::OptRef<const OvRendering::Data::MaterialProperty> OvRendering::Data::Material::GetProperty(const std::string p_key) const

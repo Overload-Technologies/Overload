@@ -4,21 +4,23 @@
 * @licence: MIT
 */
 
-#include "OvEditor/Panels/MaterialEditor.h"
-#include "OvEditor/Panels/AssetView.h"
 
-#include "OvEditor/Core/EditorActions.h"
 
-#include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
-#include <OvUI/Widgets/Layout/Columns.h>
-#include <OvUI/Widgets/Layout/GroupCollapsable.h>
-#include <OvUI/Widgets/Visual/Separator.h>
-#include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvCore/Resources/Loaders/MaterialLoader.h>
+
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/MaterialEditor.h>
+
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Buttons/ButtonSmall.h>
-#include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -136,8 +138,7 @@ namespace
 	}
 }
 
-OvEditor::Panels::MaterialEditor::MaterialEditor
-(
+OvEditor::Panels::MaterialEditor::MaterialEditor(
 	const std::string& p_title,
 	bool p_opened,
 	const OvUI::Settings::PanelWindowSettings& p_windowSettings
@@ -150,11 +151,11 @@ OvEditor::Panels::MaterialEditor::MaterialEditor
 	m_settings = &CreateWidget<Layout::Group>();
 	CreateShaderSelector();
 	CreateMaterialSettings();
-	CreateShaderSettings();
-	CreateFeatureSettings();
+	CreateMaterialFeatures();
+	CreateMaterialProperties();
 
 	m_settings->enabled = false;
-	m_shaderSettings->enabled = false;
+	m_materialProperties->enabled = false;
 
 	m_materialDroppedEvent += std::bind(&MaterialEditor::OnMaterialDropped, this);
 	m_shaderDroppedEvent += std::bind(&MaterialEditor::OnShaderDropped, this);
@@ -190,7 +191,9 @@ void OvEditor::Panels::MaterialEditor::Preview()
 	auto& assetView = EDITOR_PANEL(Panels::AssetView, "Asset View");
 
 	if (m_target)
+	{
 		assetView.SetResource(m_target);
+	}
 
 	assetView.Open();
 }
@@ -219,28 +222,32 @@ void OvEditor::Panels::MaterialEditor::OnMaterialDropped()
 		m_materialSettingsColumns->RemoveAllWidgets();
 	}
 
-	m_shaderSettings->enabled = false;
-	m_shaderSettingsColumns->RemoveAllWidgets();
+	m_materialProperties->enabled = false;
+	m_materialPropertiesColumns->RemoveAllWidgets();
 
 	if (m_target && m_target->GetShader())
+	{
 		OnShaderDropped();
+	}
 }
 
 void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 {
-	m_shaderSettings->enabled = m_shader; // Enable m_shaderSettings group if the shader of the target material is non-null
+	m_materialProperties->enabled = m_shader; // Enable m_shaderSettings group if the shader of the target material is non-null
 
 	if (m_shader != m_target->GetShader())
-		m_target->SetShader(m_shader);
-
-	if (m_shaderSettings->enabled)
 	{
-		GenerateShaderSettingsContent();
+		m_target->SetShader(m_shader);
+	}
+
+	if (m_materialProperties->enabled)
+	{
+		GenerateMaterialPropertiesContent();
 		GenerateMaterialFeaturesContent();
 	}
 	else
 	{
-		m_shaderSettingsColumns->RemoveAllWidgets();
+		m_materialPropertiesColumns->RemoveAllWidgets();
 	}
 }
 
@@ -248,20 +255,22 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Save to file");
 	saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
-	saveButton.ClickedEvent += [this]
-	{
+	saveButton.ClickedEvent += [this] {
 		if (m_target)
+		{
 			OvCore::Resources::Loaders::MaterialLoader::Save(*m_target, EDITOR_EXEC(GetRealPath(m_target->path)));
+		}
 	};
 
 	saveButton.lineBreak = false;
 
 	auto& reloadButton = CreateWidget<Buttons::Button>("Reload from file");
 	reloadButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	reloadButton.ClickedEvent += [this]
-	{
+	reloadButton.ClickedEvent += [this] {
 		if (m_target)
+		{
 			OvCore::Resources::Loaders::MaterialLoader::Reload(*m_target, EDITOR_EXEC(GetRealPath(m_target->path)));
+		}
 
 		OnMaterialDropped();
 	};
@@ -294,121 +303,23 @@ void OvEditor::Panels::MaterialEditor::CreateShaderSelector()
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 {
-	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Material Settings");
+	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Settings");
 	m_materialSettingsColumns = &m_materialSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialSettingsColumns->widths[0] = 150;
 }
 
-void OvEditor::Panels::MaterialEditor::CreateShaderSettings()
+void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
 {
-	m_shaderSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Shader Settings");
-	m_shaderSettingsColumns = &m_shaderSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_shaderSettingsColumns->widths[0] = 150;
+	m_materialFeatures = &m_settings->CreateWidget<Layout::GroupCollapsable>("Features");
+	m_materialFeaturesColumns = &m_materialFeatures->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	m_materialFeaturesColumns->widths[0] = 150;
 }
 
-void OvEditor::Panels::MaterialEditor::CreateFeatureSettings()
+void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
 {
-	m_featureSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Feature Settings");
-	m_featureSettingsColumns = &m_featureSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_featureSettingsColumns->widths[0] = 150;
-}
-
-void OvEditor::Panels::MaterialEditor::GenerateShaderSettingsContent()
-{
-	using namespace OvRendering::Settings;
-	using namespace OvRendering::Resources;
-
-	m_shaderSettingsColumns->RemoveAllWidgets(); // Ensure that the m_shaderSettingsColumns is empty
-
-	std::multimap<
-		int,
-		std::pair<
-			std::string,
-			std::reference_wrapper<OvRendering::Data::MaterialPropertyType>
-		>
-	> sortedProperties;
-
-	auto typeIndexVisitor = [&](auto& arg) -> uint32_t {
-		using T = std::decay_t<decltype(arg)>;
-
-		if constexpr (std::is_same_v<T, Texture*>) return 0;
-		else if constexpr (std::is_same_v<T, OvMaths::FVector4>) return 1;
-		else if constexpr (std::is_same_v<T, OvMaths::FVector3>) return 2;
-		else if constexpr (std::is_same_v<T, OvMaths::FVector2>) return 3;
-		else if constexpr (std::is_same_v<T, float>) return 4;
-		else if constexpr (std::is_same_v<T, int>) return 5;
-		if constexpr (std::is_same_v<T, bool>) return 6;
-		return ~static_cast<uint32_t>(0UL);
-	};
-
-	for (auto&[name, prop] : m_target->GetProperties())
-	{
-		if (auto program = m_target->GetProgram(); !program || !program->GetUniformInfo(name))
-		{
-			// This property isn't used in the shader program, so skip it
-			continue;
-		}
-
-		// Uniforms starting with '_' are internal (private), so not exposed
-		if (name.length() == 0 || name[0] == '_')
-		{
-			continue;
-		}
-
-		const auto index = std::visit(typeIndexVisitor, prop.value);
-		sortedProperties.emplace(
-			index,
-			std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{ 
-				name,
-				std::ref(prop.value)
-		});
-	}
-
-	for (auto& [index, propInfo] : sortedProperties)
-	{
-		const auto& name = propInfo.first;
-		auto& prop = propInfo.second.get();
-
-		const auto formattedType = FormatPropertyName(name);
-
-		// Create a visitor to handle each type in the variant
-		auto drawVisitor = [&](auto& arg) {
-			using T = std::decay_t<decltype(arg)>;
-
-			if constexpr (std::is_same_v<T, bool>)
-			{
-				GUIDrawer::DrawBoolean(*m_shaderSettingsColumns, formattedType, arg);
-			}
-			else if constexpr (std::is_same_v<T, int>)
-			{
-				GUIDrawer::DrawScalar<int>(*m_shaderSettingsColumns, formattedType, arg);
-			}
-			else if constexpr (std::is_same_v<T, float>)
-			{
-				GUIDrawer::DrawScalar<float>(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-			}
-			else if constexpr (std::is_same_v<T, OvMaths::FVector2>)
-			{
-				GUIDrawer::DrawVec2(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-			}
-			else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
-			{
-				DrawHybridVec3(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-			}
-			else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
-			{
-				DrawHybridVec4(*m_shaderSettingsColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
-			}
-			else if constexpr (std::is_same_v<T, Texture*>)
-			{
-				GUIDrawer::DrawTexture(*m_shaderSettingsColumns, formattedType, arg);
-			}
-			// No UI for TextureHandle* since it's not handled in the original code
-		};
-
-		// Apply the visitor to the variant
-		std::visit(drawVisitor, prop);
-	}
+	m_materialProperties = &m_settings->CreateWidget<Layout::GroupCollapsable>("Properties");
+	m_materialPropertiesColumns = &m_materialProperties->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	m_materialPropertiesColumns->widths[0] = 150;
 }
 
 void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()
@@ -430,7 +341,7 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()
 
 void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
 {
-	m_featureSettingsColumns->RemoveAllWidgets();
+	m_materialFeaturesColumns->RemoveAllWidgets();
 
 	if (m_target && m_target->GetShader())
 	{
@@ -440,7 +351,7 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
 		for (const auto& feature : features)
 		{
 			GUIDrawer::DrawBoolean(
-				*m_featureSettingsColumns,
+				*m_materialFeaturesColumns,
 				feature,
 				[this, feature]() -> bool {
 					return m_target->HasFeature(feature);
@@ -449,15 +360,113 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialFeaturesContent()
 					if (p_enabled)
 					{
 						m_target->AddFeature(feature);
-						GenerateShaderSettingsContent();
+						GenerateMaterialPropertiesContent();
 					}
 					else
 					{
 						m_target->RemoveFeature(feature);
-						GenerateShaderSettingsContent();
+						GenerateMaterialPropertiesContent();
 					}
 				}
 			);
 		}
+	}
+}
+
+void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
+{
+	using namespace OvRendering::Settings;
+	using namespace OvRendering::Resources;
+
+	m_materialPropertiesColumns->RemoveAllWidgets(); // Ensure that the m_shaderSettingsColumns is empty
+
+	std::multimap<
+		int,
+		std::pair<
+		std::string,
+		std::reference_wrapper<OvRendering::Data::MaterialPropertyType>
+		>
+	> sortedProperties;
+
+	auto typeIndexVisitor = [&](auto& arg) -> uint32_t {
+		using T = std::decay_t<decltype(arg)>;
+
+		if constexpr (std::is_same_v<T, Texture*>) return 0;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector4>) return 1;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector3>) return 2;
+		else if constexpr (std::is_same_v<T, OvMaths::FVector2>) return 3;
+		else if constexpr (std::is_same_v<T, float>) return 4;
+		else if constexpr (std::is_same_v<T, int>) return 5;
+		if constexpr (std::is_same_v<T, bool>) return 6;
+		return ~static_cast<uint32_t>(0UL);
+	};
+
+	for (auto& [name, prop] : m_target->GetProperties())
+	{
+		if (auto program = m_target->GetProgram(); !program || !program->GetUniformInfo(name))
+		{
+			// This property isn't used in the shader program, so skip it
+			continue;
+		}
+
+		// Uniforms starting with '_' are internal (private), so not exposed
+		if (name.length() == 0 || name[0] == '_')
+		{
+			continue;
+		}
+
+		sortedProperties.emplace(
+			std::visit(typeIndexVisitor, prop.value),
+			std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{
+				name,
+				std::ref(prop.value)
+			}
+		);
+	}
+
+	for (auto& [index, propInfo] : sortedProperties)
+	{
+		const auto& name = propInfo.first;
+		auto& prop = propInfo.second.get();
+
+		const auto formattedType = FormatPropertyName(name);
+
+		// Create a visitor to handle each type in the variant
+		auto drawVisitor = [&](auto& arg) {
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_same_v<T, bool>)
+			{
+				GUIDrawer::DrawBoolean(*m_materialPropertiesColumns, formattedType, arg);
+			}
+			else if constexpr (std::is_same_v<T, int>)
+			{
+				GUIDrawer::DrawScalar<int>(*m_materialPropertiesColumns, formattedType, arg);
+			}
+			else if constexpr (std::is_same_v<T, float>)
+			{
+				GUIDrawer::DrawScalar<float>(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector2>)
+			{
+				GUIDrawer::DrawVec2(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
+			{
+				DrawHybridVec3(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
+			{
+				DrawHybridVec4(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+			}
+			else if constexpr (std::is_same_v<T, Texture*>)
+			{
+				GUIDrawer::DrawTexture(*m_materialPropertiesColumns, formattedType, arg);
+			}
+			// No UI for TextureHandle* since it's not handled in the original code
+			};
+
+		// Apply the visitor to the variant
+		std::visit(drawVisitor, prop);
 	}
 }

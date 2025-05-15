@@ -71,30 +71,30 @@ namespace OvEditor::Panels
 		void CreateMaterialSelector();
 		void CreateShaderSelector();
 		void CreateMaterialSettings();
-		void CreateShaderSettings();
-		void CreateFeatureSettings();
+		void CreateMaterialFeatures();
+		void CreateMaterialProperties();
 
-		void GenerateShaderSettingsContent();
 		void GenerateMaterialSettingsContent();
 		void GenerateMaterialFeaturesContent();
+		void GenerateMaterialPropertiesContent();
 
 	private:
-		OvCore::Resources::Material* m_target		= nullptr;
-		OvRendering::Resources::Shader* m_shader	= nullptr;
+		OvCore::Resources::Material* m_target = nullptr;
+		OvRendering::Resources::Shader* m_shader = nullptr;
 
-		OvUI::Widgets::Texts::Text* m_targetMaterialText	= nullptr;
-		OvUI::Widgets::Texts::Text* m_shaderText			= nullptr;
+		OvUI::Widgets::Texts::Text* m_targetMaterialText = nullptr;
+		OvUI::Widgets::Texts::Text* m_shaderText = nullptr;
 
 		OvTools::Eventing::Event<> m_materialDroppedEvent;
 		OvTools::Eventing::Event<> m_shaderDroppedEvent;
 
-		OvUI::Widgets::Layout::Group* m_settings			= nullptr;
-		OvUI::Widgets::Layout::Group* m_materialSettings	= nullptr;
-		OvUI::Widgets::Layout::Group* m_shaderSettings = nullptr;
-		OvUI::Widgets::Layout::Group* m_featureSettings = nullptr;
+		OvUI::Widgets::Layout::Group* m_settings = nullptr;
+		OvUI::Widgets::Layout::Group* m_materialSettings = nullptr;
+		OvUI::Widgets::Layout::Group* m_materialFeatures = nullptr;
+		OvUI::Widgets::Layout::Group* m_materialProperties = nullptr;
 
-		OvUI::Widgets::Layout::Columns<2>* m_shaderSettingsColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_materialSettingsColumns = nullptr;
-		OvUI::Widgets::Layout::Columns<2>* m_featureSettingsColumns = nullptr;
+		OvUI::Widgets::Layout::Columns<2>* m_materialFeaturesColumns = nullptr;
+		OvUI::Widgets::Layout::Columns<2>* m_materialPropertiesColumns = nullptr;
 	};
 }

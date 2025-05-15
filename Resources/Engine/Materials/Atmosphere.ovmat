@@ -31,5 +31,5 @@
             </value>
         </uniform>
     </uniforms>
-    <features>DYNAMIC_SUN_POSITION</features>
+    <features></features>
 </root>

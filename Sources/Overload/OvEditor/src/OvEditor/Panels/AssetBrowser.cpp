@@ -490,7 +490,6 @@ namespace
 					material.SetDepthWriting(false);
 					material.SetBackfaceCulling(false);
 					material.SetFrontfaceCulling(true);
-					material.AddFeature("DYNAMIC_SUN_POSITION");
 				});
 
 				BrowserItemContextualMenu::CreateList();

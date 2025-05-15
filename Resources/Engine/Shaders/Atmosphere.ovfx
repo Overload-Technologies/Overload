@@ -1,6 +1,6 @@
 #feature OUTLINE_PASS
 #feature PICKING_PASS
-#feature DYNAMIC_SUN_POSITION
+#feature DISABLE_TRACKING
 
 #shader vertex
 #version 450 core
@@ -14,13 +14,22 @@ out VS_OUT
 {
     vec3 FragPos;
     flat vec3 SunPosition;
+    flat float SunIntensity;
 } vs_out;
 
-uniform vec3 u_SunPosition = vec3(0.0, 0.1, -1.0); // Default sun position
-
-// Calculate the sun position based on the first directional light in the scene
-vec3 calculateSunPositionFromDirectionalLight()
+struct SunInfo
 {
+    vec3 position;
+    float intensity;
+};
+
+uniform vec3 u_SunPosition = vec3(0.0, 0.1, -1.0); // Default sun position
+uniform float u_SunIntensity = 22.0; // Sun intensity
+
+SunInfo getSunInfo()
+{
+#if !defined(DISABLE_TRACKING)
+    // Calculate the sun position based on the first directional light in the scene
     for (int i = 0; i < ssbo_Lights.length(); ++i)
     {
         const mat4 light = ssbo_Lights[i];
@@ -28,24 +37,32 @@ vec3 calculateSunPositionFromDirectionalLight()
 
         if (lightType == 1)
         {
-            vec3 lightDirection = -light[1].xyz;
-            return normalize(lightDirection);
+            const vec3 lightDirection = -light[1].xyz;
+            const float lightIntensity = light[3][3];
+
+            return SunInfo(
+                normalize(lightDirection),
+                u_SunIntensity * lightIntensity
+            );
         }
     }
+#endif
 
-    // If no directional light is found, use the sun position uniform
-    return u_SunPosition;
+    // If no directional light is found, use the provided settings as-is
+    return SunInfo(
+        u_SunPosition,
+        u_SunIntensity
+    );
 }
 
 void main()
 {
     vs_out.FragPos = geo_Pos;
 
-#if defined(DYNAMIC_SUN_POSITION)
-    vs_out.SunPosition = calculateSunPositionFromDirectionalLight();
-#else
-    vs_out.SunPosition = u_SunPosition;
-#endif
+    SunInfo sunInfo = getSunInfo();
+
+    vs_out.SunPosition = sunInfo.position;
+    vs_out.SunIntensity = sunInfo.intensity;
 
     gl_Position = ubo_Projection * ubo_View * vec4(ubo_ViewPos + vs_out.FragPos, 1.0);
 }
@@ -59,6 +76,7 @@ in VS_OUT
 {
     vec3 FragPos;
     flat vec3 SunPosition;
+    flat float SunIntensity;
 } fs_in;
 
 #if defined(PICKING_PASS)
@@ -69,7 +87,6 @@ uniform vec4 _PickingColor;
 uniform vec4 _OutlineColor;
 #endif
 
-uniform float u_SunIntensity = 22.0; // Sun intensity
 uniform float u_MiePreferredScatteringDirection = 0.758; // Mie preferred scattering direction
 
 const vec3 kRayOrigin = vec3(0.0, 6372e3, 0.0); // Ray origin
@@ -207,7 +224,7 @@ void main()
         normalize(fs_in.FragPos),           // normalized ray direction
         kRayOrigin,                         // ray origin
         fs_in.SunPosition,                  // position of the sun
-        u_SunIntensity,                     // intensity of the sun
+        fs_in.SunIntensity,                 // intensity of the sun
         kPlanetRadius,                      // radius of the planet in meters
         kAtmosphereRadius,                  // radius of the atmosphere in meters
         kRayleighScattering,                // Rayleigh scattering coefficient

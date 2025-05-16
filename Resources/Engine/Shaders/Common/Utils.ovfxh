@@ -21,14 +21,18 @@ bool IsOrthographic(mat4 projectionMatrix)
 
 // Expects a height map with values in the range [0, 1].
 // 1.0 means the height is at the maximum depth, 0.0 means the height is at the minimum depth.
-vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale)
+vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale, int minLayers, int maxLayers)
 {
     const vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
 
-    // number of depth layers
-    const float minLayers = 8;
-    const float maxLayers = 64;
-    const float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
+    // calculate optimal layer count
+    minLayers = max(minLayers, 1); // Ensure minLayers is at least 1
+    maxLayers = min(maxLayers, 8192); // Limit maxLayers to a reasonable value (2^13)
+    maxLayers = max(maxLayers, minLayers); // Ensure maxLayers is at least minLayers
+
+    // clamp alpha to prevent extrapolating (which could make the fragment very expensive, and potentially result in a crash).
+    const float alpha = clamp(abs(dot(vec3(0.0, 0.0, 1.0), viewDir)), 0.0, 1.0);
+    const float numLayers = mix(maxLayers, minLayers, alpha);
 
     // calculate the size of each layer
     const float layerDepth = 1.0 / numLayers;

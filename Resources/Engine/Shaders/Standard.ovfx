@@ -71,6 +71,8 @@ uniform float u_Shininess = 100.0;
 
 #if defined(PARALLAX_MAPPING)
 uniform sampler2D u_HeightMap;
+uniform int u_MinLayers = 8;
+uniform int u_MaxLayers = 64;
 uniform bool u_ParallaxClipEdges = false;
 uniform float u_HeightScale = 0.05;
 #endif
@@ -98,7 +100,7 @@ void main()
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
 
 #if defined(PARALLAX_MAPPING)
-    texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
+    texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale, u_MinLayers, u_MaxLayers);
     if (u_ParallaxClipEdges && IsParallaxOutOfBounds(texCoords, ubo_Projection))
     {
         discard;

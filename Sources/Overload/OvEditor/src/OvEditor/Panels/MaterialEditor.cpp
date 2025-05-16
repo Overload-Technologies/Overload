@@ -335,6 +335,8 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Shadow Casting", std::bind(&OvCore::Resources::Material::IsShadowCaster, m_target), std::bind(&OvCore::Resources::Material::SetCastShadows, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Shadow Receiving", std::bind(&OvCore::Resources::Material::IsShadowReceiver, m_target), std::bind(&OvCore::Resources::Material::SetReceiveShadows, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "User Interface", std::bind(&OvCore::Resources::Material::IsUserInterface, m_target), std::bind(&OvCore::Resources::Material::SetUserInterface, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Orthographic Support", std::bind(&OvCore::Resources::Material::SupportsOrthographic, m_target), std::bind(&OvCore::Resources::Material::SetOrthographicSupport, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Perspective Support", std::bind(&OvCore::Resources::Material::SupportsPerspective, m_target), std::bind(&OvCore::Resources::Material::SetPerspectiveSupport, m_target, std::placeholders::_1));
 	GUIDrawer::DrawScalar<int>(*m_materialSettingsColumns, "GPU Instances", std::bind(&OvCore::Resources::Material::GetGPUInstances, m_target), std::bind(&OvCore::Resources::Material::SetGPUInstances, m_target, std::placeholders::_1), 1.0f, 0, 100000);
 	GUIDrawer::DrawScalar<int>(*m_materialSettingsColumns, "Draw Order", std::bind(&OvCore::Resources::Material::GetDrawOrder, m_target), std::bind(&OvCore::Resources::Material::SetDrawOrder, m_target, std::placeholders::_1), 1.0f, 0, 100000);
 }

@@ -15,6 +15,7 @@
 #include <OvRendering/HAL/TextureHandle.h>
 #include <OvRendering/Resources/Shader.h>
 #include <OvRendering/Resources/Texture.h>
+#include <OvRendering/Settings/EProjectionMode.h>
 
 namespace OvRendering::Data
 {
@@ -133,6 +134,18 @@ namespace OvRendering::Data
 		bool IsValid() const;
 
 		/**
+		* Sets the shader support for orthographic projection
+		* @param p_supportOrthographic
+		*/
+		void SetOrthographicSupport(bool p_supportOrthographic);
+
+		/**
+		* Sets the shader support for perspective projection
+		* @param p_supportPerspective
+		*/
+		void SetPerspectiveSupport(bool p_supportPerspective);
+
+		/**
 		* Sets the draw order of the material
 		* @param p_order
 		*/
@@ -149,7 +162,6 @@ namespace OvRendering::Data
 		* @param p_blendable
 		*/
 		void SetUserInterface(bool p_userInterface);
-
 
 		/**
 		* Defines if the material has backface culling
@@ -293,10 +305,29 @@ namespace OvRendering::Data
 		*/
 		bool SupportsFeature(const std::string& p_feature) const;
 
+		/**
+		* Returns true if the material supports orthopgraphic projection
+		*/
+		bool SupportsOrthographic() const;
+
+		/**
+		* Returns true if the material supports perspective projection
+		*/
+		bool SupportsPerspective() const;
+
+		/**
+		* Returns true if the material supports the given projection mode
+		* @param p_projectionMode
+		*/
+		bool SupportsProjectionMode(OvRendering::Settings::EProjectionMode p_projectionMode) const;
+
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
 		Data::FeatureSet m_features;
+
+		bool m_supportOrthographic = true;
+		bool m_supportPerspective = true;
 
 		bool m_userInterface = false;
 		bool m_blendable = false;

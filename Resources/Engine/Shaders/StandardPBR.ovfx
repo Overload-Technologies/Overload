@@ -86,6 +86,7 @@ uniform float u_AlphaClippingThreshold = 0.1;
 #endif
 
 #if defined(SHADOW_PASS)
+#undef PARALLAX_MAPPING // Disable parallax mapping in shadow pass
 uniform float u_ShadowClippingThreshold = 0.5;
 #endif
 
@@ -100,7 +101,7 @@ void main()
 
 #if defined(PARALLAX_MAPPING)
     texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale);
-    if (u_ParallaxClipEdges && (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0))
+    if (u_ParallaxClipEdges && IsParallaxOutOfBounds(texCoords, ubo_Projection))
     {
         discard;
     }

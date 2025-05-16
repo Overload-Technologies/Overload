@@ -284,6 +284,16 @@ bool OvRendering::Data::Material::IsValid() const
 	return HasShader();
 }
 
+void OvRendering::Data::Material::SetOrthographicSupport(bool p_supportOrthographic)
+{
+	m_supportOrthographic = p_supportOrthographic;
+}
+
+void OvRendering::Data::Material::SetPerspectiveSupport(bool p_supportPerspective)
+{
+	m_supportPerspective = p_supportPerspective;
+}
+
 void OvRendering::Data::Material::SetDrawOrder(int p_order)
 {
 	m_drawOrder = p_order;
@@ -436,4 +446,27 @@ bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
 bool OvRendering::Data::Material::SupportsFeature(const std::string& p_feature) const
 {
 	return m_shader->GetFeatures().contains(p_feature);
+}
+
+bool OvRendering::Data::Material::SupportsOrthographic() const
+{
+	return m_supportOrthographic;
+}
+
+bool OvRendering::Data::Material::SupportsPerspective() const
+{
+	return m_supportPerspective;
+}
+
+bool OvRendering::Data::Material::SupportsProjectionMode(OvRendering::Settings::EProjectionMode p_projectionMode) const
+{
+	using enum OvRendering::Settings::EProjectionMode;
+
+	switch (p_projectionMode)
+	{
+	case ORTHOGRAPHIC: return SupportsOrthographic();
+	case PERSPECTIVE: return SupportsPerspective();
+	}
+
+	return true;
 }

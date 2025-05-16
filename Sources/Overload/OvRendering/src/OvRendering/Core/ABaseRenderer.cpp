@@ -185,9 +185,12 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 	auto material = p_drawable.material;
 	auto mesh = p_drawable.mesh;
 
-	const auto gpuInstances = material.value().GetGPUInstances();
+	OVASSERT(material.has_value(), "Missing material instance!");
 
-	if (mesh && material && material->IsValid() && gpuInstances > 0)
+	const auto gpuInstances = material->GetGPUInstances();
+	const auto projectionMode = m_frameDescriptor.camera->GetProjectionMode();
+
+	if (mesh && material->IsValid() && material->SupportsProjectionMode(projectionMode) && gpuInstances > 0)
 	{
 		p_pso.depthWriting = p_drawable.stateMask.depthWriting;
 		p_pso.colorWriting.mask = p_drawable.stateMask.colorWriting ? 0xFF : 0x00;

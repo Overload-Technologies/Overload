@@ -20,6 +20,8 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 	tinyxml2::XMLNode* settingsNode = p_doc.NewElement("settings");
 	p_node->InsertEndChild(settingsNode);
 
+	Serializer::SerializeBoolean(p_doc, settingsNode, "support_orthographic", m_supportOrthographic);
+	Serializer::SerializeBoolean(p_doc, settingsNode, "support_perspective", m_supportPerspective);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "blendable", m_blendable);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "backface_culling", m_backfaceCulling);
 	Serializer::SerializeBoolean(p_doc, settingsNode, "frontface_culling", m_frontfaceCulling);
@@ -125,6 +127,8 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 	
 	if (settingsNode)
 	{
+		Serializer::DeserializeBoolean(p_doc, settingsNode, "support_orthographic", m_supportOrthographic);
+		Serializer::DeserializeBoolean(p_doc, settingsNode, "support_perspective", m_supportPerspective);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "blendable", m_blendable);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "backface_culling", m_backfaceCulling);
 		Serializer::DeserializeBoolean(p_doc, settingsNode, "frontface_culling", m_frontfaceCulling);

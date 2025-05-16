@@ -1,6 +1,8 @@
 <root>
     <shader>:Shaders\Skysphere.ovfx</shader>
     <settings>
+        <support_orthographic>false</support_orthographic>
+        <support_perspective>true</support_perspective>
         <blendable>false</blendable>
         <backface_culling>false</backface_culling>
         <frontface_culling>true</frontface_culling>

@@ -12,6 +12,13 @@ vec2 TileAndOffsetTexCoords(vec2 texCoords, vec2 tiling, vec2 offset)
     return vec2(mod(texCoords.x * tiling.x, 1), mod(texCoords.y * tiling.y, 1)) + offset;
 }
 
+bool IsOrthographic(mat4 projectionMatrix)
+{
+    // In an orthographic projection matrix, the [3][3] element is 1.0
+    // In a perspective projection matrix, it's 0.0
+    return projectionMatrix[3][3] > 0.5;
+}
+
 // Expects a height map with values in the range [0, 1].
 // 1.0 means the height is at the maximum depth, 0.0 means the height is at the minimum depth.
 vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale)
@@ -56,6 +63,13 @@ vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tan
     const vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
 
     return finalTexCoords;
+}
+
+bool IsParallaxOutOfBounds(vec2 texCoords, mat4 projectionMatrix)
+{
+    return
+        !IsOrthographic(projectionMatrix) && // No clipping in orthographic projection (not supported)
+        (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0);
 }
 
 // [Deprecated] Kept for backward compatibility. Prefer using `ApplyParallaxOcclusionMapping()` instead.

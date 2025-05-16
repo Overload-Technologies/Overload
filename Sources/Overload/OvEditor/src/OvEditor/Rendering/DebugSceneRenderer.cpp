@@ -464,7 +464,7 @@ protected:
 			pso,
 			data.transform->GetWorldPosition(),
 			data.transform->GetWorldRotation(),
-			data.GetEffectRange(),
+			data.CalculateEffectRange(),
 			kDebugBoundsColor,
 			1.0f
 		);
@@ -482,7 +482,7 @@ protected:
 			p_ambientBoxLight.owner.transform.GetWorldPosition(),
 			data.transform->GetWorldRotation(),
 			{ data.constant, data.linear, data.quadratic },
-			data.GetEffectRange(),
+			data.CalculateEffectRange(),
 			1.0f
 		);
 	}

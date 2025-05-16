@@ -41,14 +41,18 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 				{
 					if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
 					{
-						const auto shadowTex = light.GetShadowBuffer().GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::DEPTH);
+						OVASSERT(light.IsSetupForShadowRendering(), "This light isn't setup for shadow rendering");
+
+						const auto shadowTex = light.shadowBuffer->GetAttachment<OvRendering::HAL::Texture>(
+							OvRendering::Settings::EFramebufferAttachment::DEPTH
+						);
 
 						if (!material.TrySetProperty("_ShadowMap", &shadowTex.value(), true))
 						{
 							OVLOG_WARNING("ShadowRenderFeature: Material does not have a _ShadowMap property");
 						}
 
-						if (!material.TrySetProperty("_LightSpaceMatrix", light.GetLightSpaceMatrix(), true))
+						if (!material.TrySetProperty("_LightSpaceMatrix", light.lightSpaceMatrix.value(), true))
 						{
 							OVLOG_WARNING("ShadowRenderFeature: Material does not have a _LightSpaceMatrix property");
 						}

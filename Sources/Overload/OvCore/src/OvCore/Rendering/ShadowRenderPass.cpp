@@ -57,14 +57,17 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 			{
 				if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
 				{
-					light.UpdateShadowData(frameDescriptor.camera.value());
-					const auto& lightSpaceMatrix = light.GetLightSpaceMatrix();
-					const auto& shadowBuffer = light.GetShadowBuffer();
-					shadowBuffer.Bind();
+					light.PrepareForShadowRendering(frameDescriptor);
+
+					engineBufferRenderFeature.SetCamera(light.shadowCamera.value());
+
+					light.shadowBuffer->Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
-					DrawShadows(pso, scene, lightSpaceMatrix);
-					shadowBuffer.Unbind();
+					DrawShadows(pso, scene);
+					light.shadowBuffer->Unbind();
+
+					engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 				}
 				else
 				{
@@ -84,8 +87,7 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 
 void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 	OvRendering::Data::PipelineState p_pso,
-	OvCore::SceneSystem::Scene& p_scene,
-	const OvMaths::FMatrix4& p_lightSpaceMatrix
+	OvCore::SceneSystem::Scene& p_scene
 )
 {
 	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
@@ -135,8 +137,6 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 								modelMatrix,
 								materialRenderer->GetUserMatrix()
 							});
-
-							targetMaterial.SetProperty("_LightSpaceMatrix", p_lightSpaceMatrix, true);
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}

@@ -57,52 +57,64 @@ namespace
 	{
 		return Pack(static_cast<uint8_t>(p_toPack.x * 255.f), static_cast<uint8_t>(p_toPack.y * 255.f), static_cast<uint8_t>(p_toPack.z * 255.f), 0);
 	}
-}
 
-void OvRendering::Entities::Light::UpdateShadowData(const OvRendering::Entities::Camera& p_camera)
-{
-	if (type == OvRendering::Settings::ELightType::DIRECTIONAL)
+	OvRendering::Entities::Camera CreateCamera(
+		const OvRendering::Entities::Light& p_light,
+		const OvRendering::Data::FrameDescriptor& p_frameDescriptor
+	)
 	{
-		if (!shadowBuffer)
-		{
-			shadowBuffer = std::make_unique<OvRendering::HAL::Framebuffer>("DirectionalShadow");
-			SetupFramebufferForShadowMapping(*shadowBuffer, static_cast<uint32_t>(shadowMapResolution));
-		}
-		else
-		{
-			shadowBuffer->Resize(shadowMapResolution, shadowMapResolution);
-		}
+		OVASSERT(
+			!p_light.shadowFollowCamera || p_frameDescriptor.camera.has_value(),
+			"Cannot create a camera for the light, no camera found in the frame descriptor!"
+		);
 
 		const auto lightPosition =
-			shadowFollowCamera ?
-			p_camera.transform->GetWorldPosition() + OvMaths::FVector3::Up * shadowAreaSize :  // offsets the camera position be positioned on the top plane of the effect area
-			transform->GetWorldPosition();
+			p_light.shadowFollowCamera ?
+			p_frameDescriptor.camera->transform->GetWorldPosition() + OvMaths::FVector3::Up * p_light.shadowAreaSize :  // offsets the camera position be positioned on the top plane of the effect area
+			p_light.transform->GetWorldPosition();
 
 		OvRendering::Entities::Camera lightCamera;
 		lightCamera.SetNear(0.1f);
-		lightCamera.SetFar(shadowAreaSize * 2.0f); // x2 because the light will be positioned on the top plane of the effect area (above the camera)
-		lightCamera.SetSize(shadowAreaSize);
+		lightCamera.SetFar(p_light.shadowAreaSize * 2.0f); // x2 because the light will be positioned on the top plane of the effect area (above the camera)
+		lightCamera.SetSize(p_light.shadowAreaSize);
 		lightCamera.SetProjectionMode(OvRendering::Settings::EProjectionMode::ORTHOGRAPHIC);
 		lightCamera.SetPosition(lightPosition);
-		lightCamera.SetRotation(transform->GetWorldRotation()); // keep the forward from the directional light
-		lightCamera.CacheMatrices(shadowMapResolution, shadowMapResolution);
-		lightSpaceMatrix = lightCamera.GetProjectionMatrix() * lightCamera.GetViewMatrix();
+		lightCamera.SetRotation(p_light.transform->GetWorldRotation()); // keep the forward from the directional light
+		lightCamera.CacheMatrices(p_light.shadowMapResolution, p_light.shadowMapResolution);
+
+		return lightCamera;
+	}
+}
+
+void OvRendering::Entities::Light::PrepareForShadowRendering(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
+{
+	OVASSERT(type == Settings::ELightType::DIRECTIONAL, "Cannot prepare shadow buffer for a non directional light! (not supported yet)");
+
+	shadowCamera = CreateCamera(*this, p_frameDescriptor);
+
+	if (!shadowBuffer)
+	{
+		shadowBuffer = std::make_unique<OvRendering::HAL::Framebuffer>("DirectionalShadow");
+		SetupFramebufferForShadowMapping(*shadowBuffer, static_cast<uint32_t>(shadowMapResolution));
 	}
 	else
 	{
-		shadowBuffer.reset();
+		shadowBuffer->Resize(shadowMapResolution, shadowMapResolution);
 	}
+
+	lightSpaceMatrix =
+		shadowCamera->GetProjectionMatrix() *
+		shadowCamera->GetViewMatrix();
+
+	OVASSERT(IsSetupForShadowRendering(), "Light failed to setup for shadow rendering!");
 }
 
-const OvMaths::FMatrix4& OvRendering::Entities::Light::GetLightSpaceMatrix() const
+bool OvRendering::Entities::Light::IsSetupForShadowRendering() const
 {
-	return lightSpaceMatrix;
-}
-
-const OvRendering::HAL::Framebuffer& OvRendering::Entities::Light::GetShadowBuffer() const
-{
-	OVASSERT(shadowBuffer != nullptr, "Cannot retrieve the shadow map because this light has no framebuffer!");
-	return *shadowBuffer;
+	return
+		shadowCamera.has_value() &&
+		shadowBuffer &&
+		lightSpaceMatrix.has_value();
 }
 
 OvMaths::FMatrix4 OvRendering::Entities::Light::GenerateMatrix() const
@@ -189,7 +201,7 @@ float CalculateAmbientBoxLightRadius(const OvMaths::FVector3& p_position, const 
 	return OvMaths::FVector3::Distance(p_position, p_position + p_size);
 }
 
-float OvRendering::Entities::Light::GetEffectRange() const
+float OvRendering::Entities::Light::CalculateEffectRange() const
 {
 	switch (type)
 	{

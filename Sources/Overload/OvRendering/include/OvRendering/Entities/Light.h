@@ -10,11 +10,12 @@
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FTransform.h>
 
-#include "OvRendering/Entities/Entity.h"
-#include "OvRendering/Settings/ELightType.h"
-#include "OvRendering/Resources/Texture.h"
-#include "OvRendering/HAL/Framebuffer.h"
+#include <OvRendering/Data/FrameDescriptor.h>
 #include <OvRendering/Entities/Camera.h>
+#include <OvRendering/Entities/Entity.h>
+#include <OvRendering/HAL/Framebuffer.h>
+#include <OvRendering/Resources/Texture.h>
+#include <OvRendering/Settings/ELightType.h>
 
 namespace OvRendering::Entities
 {
@@ -37,22 +38,19 @@ namespace OvRendering::Entities
 		bool shadowFollowCamera = true;
 		int16_t shadowMapResolution = 8192;
 
-		/**
-		* Update the content of the shadow cache
-		* @param p_shadowMapResolution
-		* @param p_camera
-		*/
-		void UpdateShadowData(const OvRendering::Entities::Camera& p_camera);
+		std::unique_ptr<OvRendering::HAL::Framebuffer> shadowBuffer;
+		std::optional<OvRendering::Entities::Camera> shadowCamera;
+		std::optional<OvMaths::FMatrix4> lightSpaceMatrix;
 
 		/**
-		* Returns the light space matrix
+		* Generate and cache light space matrix for the light
 		*/
-		const OvMaths::FMatrix4& GetLightSpaceMatrix() const;
+		void PrepareForShadowRendering(const OvRendering::Data::FrameDescriptor& p_frameDescriptor);
 
 		/**
-		* Returns the framebuffer used to render the shadow map
+		* Returns true if the light is setup for shadow rendering
 		*/
-		const OvRendering::HAL::Framebuffer& GetShadowBuffer() const;
+		bool IsSetupForShadowRendering() const;
 
 		/**
 		* Generate the light matrix, ready to send to the GPU
@@ -62,9 +60,6 @@ namespace OvRendering::Entities
 		/**
 		* Calculate the light effect range from the quadratic falloff equation
 		*/
-		float GetEffectRange() const;
-
-		OvMaths::FMatrix4 lightSpaceMatrix;
-		std::unique_ptr<OvRendering::HAL::Framebuffer> shadowBuffer;
+		float CalculateEffectRange() const;
 	};
 }

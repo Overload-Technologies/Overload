@@ -16,14 +16,14 @@ OvRendering::Features::LightingRenderFeature::LightingRenderFeature(Core::Compos
 bool IsLightInFrustum(const OvRendering::Entities::Light& p_light, const OvRendering::Data::Frustum& p_frustum)
 {
 	const auto& position = p_light.transform->GetWorldPosition();
-	const auto effectRange = p_light.GetEffectRange();
+	const auto effectRange = p_light.CalculateEffectRange();
 
 	// We always consider lights that have an +inf range (Not necessary to test if they are in frustum)
 	const bool isOmniscientLight = std::isinf(effectRange);
 
 	return
 		isOmniscientLight ||
-		p_frustum.SphereInFrustum(position.x, position.y, position.z, p_light.GetEffectRange());
+		p_frustum.SphereInFrustum(position.x, position.y, position.z, effectRange);
 }
 
 void OvRendering::Features::LightingRenderFeature::OnBeginFrame(const Data::FrameDescriptor& p_frameDescriptor)

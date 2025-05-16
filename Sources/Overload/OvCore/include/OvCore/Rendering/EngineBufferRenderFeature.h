@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <map>
 #include <chrono>
+#include <map>
+#include <stack>
 
 #include <OvRendering/Features/ARenderFeature.h>
 #include <OvRendering/HAL/UniformBuffer.h>
@@ -27,6 +28,12 @@ namespace OvCore::Rendering
 		*/
 		EngineBufferRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
 
+		/**
+		* Replace the current camera data in the engine buffer by the provided camera
+		* @param p_camera
+		*/
+		void SetCamera(const OvRendering::Entities::Camera& p_camera);
+
 	protected:
 		virtual void OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor) override;
 		virtual void OnEndFrame() override;
@@ -35,6 +42,5 @@ namespace OvCore::Rendering
 	protected:
 		std::chrono::high_resolution_clock::time_point m_startTime;
 		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_engineBuffer;
-		OvRendering::Data::FrameDescriptor m_cachedFrameDescriptor;
 	};
 }

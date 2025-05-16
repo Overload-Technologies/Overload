@@ -36,8 +36,7 @@ namespace OvCore::Rendering
 
 		void DrawShadows(
 			OvRendering::Data::PipelineState p_pso,
-			OvCore::SceneSystem::Scene& p_scene,
-			const OvMaths::FMatrix4& p_lightSpaceMatrix
+			OvCore::SceneSystem::Scene& p_scene
 		);
 
 	private:

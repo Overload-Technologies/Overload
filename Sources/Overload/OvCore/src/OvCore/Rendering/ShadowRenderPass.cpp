@@ -126,8 +126,9 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 							drawable.stateMask.depthTest = true; // The shadow pass should always use depth test.
 							drawable.stateMask.colorWriting = false; // The shadow pass should never write color.
 							drawable.stateMask.depthWriting = true; // The shadow pass should always write depth.
-							// No front/backface culling for shadow pass.
-							// A "two-sided" shadow pass setting could be added in the future, to change this behavior.
+
+							// No front/backface culling for shadow pass (aka: two-sided shadow pass).
+							// A "two-sided" shadow pass setting could be added in the future to change this behavior.
 							drawable.stateMask.frontfaceCulling = false;
 							drawable.stateMask.backfaceCulling = false;
 

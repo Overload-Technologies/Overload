@@ -214,7 +214,7 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		material->Bind(
 			&m_emptyTexture->GetTexture(),
 			p_drawable.featureSetOverride.has_value() ?
-			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet>(p_drawable.featureSetOverride.value()) :
+			OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
 			std::nullopt
 		);
 

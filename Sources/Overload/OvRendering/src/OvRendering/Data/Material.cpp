@@ -82,7 +82,7 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 }
 
 OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Material::GetProgram(
-	OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_override
+	OvTools::Utils::OptRef<const Data::FeatureSet> p_override
 ) const
 {
 	if (m_shader)
@@ -113,7 +113,7 @@ void OvRendering::Data::Material::FillUniform()
 
 void OvRendering::Data::Material::Bind(
 	OvRendering::HAL::Texture* p_emptyTexture,
-	OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride
+	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
 )
 {
 	ZoneScoped;
@@ -413,7 +413,7 @@ OvRendering::Data::Material::PropertyMap& OvRendering::Data::Material::GetProper
 	return m_properties;
 }
 
-OvRendering::Resources::Shader::FeatureSet& OvRendering::Data::Material::GetFeatures()
+OvRendering::Data::FeatureSet& OvRendering::Data::Material::GetFeatures()
 {
 	return m_features;
 }

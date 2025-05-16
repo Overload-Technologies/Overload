@@ -178,7 +178,8 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 		element.stateMask = stateMask;
 		element.stateMask.depthTest = false;
 		element.stateMask.colorWriting = false;
-		element.featureSetOverride = { outlinePassName };
+		element.featureSetOverride = targetMaterial.GetFeatures() + outlinePassName;
+
 		element.AddDescriptor(engineDrawableDescriptor);
 
 		m_renderer.DrawEntity(p_pso, element);
@@ -221,14 +222,15 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 			OvMaths::FMatrix4::Identity
 		};
 
-		OvRendering::Entities::Drawable element;
-		element.mesh = *mesh;
-		element.material = targetMaterial;
-		element.stateMask = stateMask;
-		element.stateMask.depthTest = false;
-		element.featureSetOverride = { outlinePassName };
-		element.AddDescriptor(engineDrawableDescriptor);
+		OvRendering::Entities::Drawable drawable;
+		drawable.mesh = *mesh;
+		drawable.material = targetMaterial;
+		drawable.stateMask = stateMask;
+		drawable.stateMask.depthTest = false;
+		drawable.featureSetOverride = targetMaterial.GetFeatures() + outlinePassName;
 
-		m_renderer.DrawEntity(p_pso, element);
+		drawable.AddDescriptor(engineDrawableDescriptor);
+
+		m_renderer.DrawEntity(p_pso, drawable);
 	}
 }

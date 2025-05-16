@@ -186,7 +186,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 						drawable.stateMask = stateMask;
 						drawable.stateMask.frontfaceCulling = false;
 						drawable.stateMask.backfaceCulling = false;
-						drawable.featureSetOverride = { pickingPassName };
+						drawable.featureSetOverride = targetMaterial.GetFeatures() + pickingPassName;
 
 						drawable.AddDescriptor<OvCore::Rendering::EngineDrawableDescriptor>({
 							modelMatrix

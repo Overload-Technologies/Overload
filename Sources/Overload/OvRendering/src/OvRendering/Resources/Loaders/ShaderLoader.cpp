@@ -62,7 +62,7 @@ namespace
 		const ShaderInputInfo inputInfo;
 		const std::string vertexShader;
 		const std::string fragmentShader;
-		const OvRendering::Resources::Shader::FeatureSet features;
+		const OvRendering::Data::FeatureSet features;
 	};
 
 	struct ShaderAssembleResult
@@ -96,7 +96,7 @@ namespace
 		return std::string{ view.begin(), view.end() };
 	}
 
-	std::string FeatureSetToString(const OvRendering::Resources::Shader::FeatureSet& features)
+	std::string FeatureSetToString(const OvRendering::Data::FeatureSet& features)
 	{
 		if (!features.empty())
 		{
@@ -111,7 +111,7 @@ namespace
 		return std::string{};
 	}
 
-	std::string EnableFeaturesInShaderCode(const std::string& shaderCode, const OvRendering::Resources::Shader::FeatureSet& features)
+	std::string EnableFeaturesInShaderCode(const std::string& shaderCode, const OvRendering::Data::FeatureSet& features)
 	{
 		if (features.empty())
 		{
@@ -150,7 +150,7 @@ namespace
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
 		const ShaderInputInfo& p_shaderInputInfo,
 		std::span<const ShaderStageDesc> p_stages,
-		const OvRendering::Resources::Shader::FeatureSet& p_features,
+		const OvRendering::Data::FeatureSet& p_features,
 		bool p_disableLogging = false
 	)
 	{
@@ -367,7 +367,7 @@ void main()
 		std::istringstream stream(p_shaderLoadResult.source); // Add this line to create a stringstream from shaderCode
 		std::string line;
 		std::unordered_map<EShaderType, std::stringstream> shaderSources;
-		OvRendering::Resources::Shader::FeatureSet features;
+		OvRendering::Data::FeatureSet features;
 
 		auto currentType = EShaderType::NONE;
 
@@ -426,7 +426,7 @@ void main()
 		// The number of combinations is 2^n, where n is the number of features.
 		for (size_t i = 0; i < variantCount; ++i)
 		{
-			OvRendering::Resources::Shader::FeatureSet featureSet;
+			OvRendering::Data::FeatureSet featureSet;
 			for (size_t j = 0; j < p_parseResult.features.size(); ++j)
 			{
 				if (i & (size_t{ 1UL } << j))
@@ -460,7 +460,7 @@ void main()
 		if (!variants.contains({}))
 		{
 			variants.emplace(
-				OvRendering::Resources::Shader::FeatureSet{},
+				OvRendering::Data::FeatureSet{},
 				std::move(CreateDefaultProgram())
 			);
 		}

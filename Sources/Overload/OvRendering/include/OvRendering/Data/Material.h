@@ -65,7 +65,7 @@ namespace OvRendering::Data
 		* @param p_override
 		*/
 		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> GetProgram(
-			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_override = std::nullopt
+			OvTools::Utils::OptRef<const Data::FeatureSet> p_override = std::nullopt
 		) const;
 
 		/**
@@ -80,7 +80,7 @@ namespace OvRendering::Data
 		*/
 		void Bind(
 			HAL::Texture* p_emptyTexture = nullptr,
-			OvTools::Utils::OptRef<const Resources::Shader::FeatureSet> p_featureSetOverride = std::nullopt
+			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
 		);
 
 		/**
@@ -267,7 +267,7 @@ namespace OvRendering::Data
 		/**
 		* Returns the feature set of this material
 		*/
-		Resources::Shader::FeatureSet& GetFeatures();
+		Data::FeatureSet& GetFeatures();
 
 		/**
 		* Adds a feature to the material
@@ -296,7 +296,7 @@ namespace OvRendering::Data
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
-		Resources::Shader::FeatureSet m_features;
+		Data::FeatureSet m_features;
 
 		bool m_userInterface = false;
 		bool m_blendable = false;

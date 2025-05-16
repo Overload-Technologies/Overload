@@ -129,7 +129,8 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 							drawable.stateMask.frontfaceCulling = false;
 							drawable.stateMask.backfaceCulling = false;
 
-							drawable.featureSetOverride = { shadowPassName };
+							drawable.featureSetOverride = targetMaterial.GetFeatures() + shadowPassName;
+
 							drawable.AddDescriptor<EngineDrawableDescriptor>({
 								modelMatrix,
 								materialRenderer->GetUserMatrix()

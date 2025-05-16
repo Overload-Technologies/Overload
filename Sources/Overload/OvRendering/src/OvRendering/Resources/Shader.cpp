@@ -17,24 +17,7 @@ namespace
 	}
 }
 
-size_t OvRendering::Resources::Shader::FeatureSetHash::operator()(const FeatureSet& fs) const
-{
-	size_t hash = 0;
-
-	for (const auto& feature : fs)
-	{
-		hash ^= std::hash<std::string>{}(feature);
-	}
-
-	return hash;
-}
-
-bool OvRendering::Resources::Shader::FeatureSetEqual::operator()(const FeatureSet& lhs, const FeatureSet& rhs) const
-{
-	return lhs == rhs;
-};
-
-OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetProgram(const FeatureSet& p_featureSet)
+OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetProgram(const Data::FeatureSet& p_featureSet)
 {
 	if (m_programs.contains(p_featureSet))
 	{
@@ -47,7 +30,7 @@ OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetProgram(cons
 	}
 }
 
-const OvRendering::Resources::Shader::FeatureSet& OvRendering::Resources::Shader::GetFeatures() const
+const OvRendering::Data::FeatureSet& OvRendering::Resources::Shader::GetFeatures() const
 {
 	return m_features;
 }

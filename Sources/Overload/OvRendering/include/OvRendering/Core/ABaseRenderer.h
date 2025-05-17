@@ -104,7 +104,14 @@ namespace OvRendering::Core
 		);
 
 		/**
+		* Returns true if the entity is drawable. Should be used before submitting an entity.
+		* @param p_drawable
+		*/
+		virtual bool IsDrawable(const Entities::Drawable& p_drawable) const;
+
+		/**
 		* Draw a drawable entity
+		* @note Any submitted entity should be drawable (Use IsDrawable before)
 		* @param p_pso
 		* @param p_drawable
 		*/

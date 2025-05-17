@@ -175,6 +175,16 @@ void OvRendering::Core::ABaseRenderer::Blit(
 	p_dst.Unbind();
 }
 
+bool OvRendering::Core::ABaseRenderer::IsDrawable(const Entities::Drawable& p_drawable) const
+{
+	return
+		p_drawable.mesh &&
+		p_drawable.material &&
+		p_drawable.material->IsValid()&&
+		p_drawable.material->SupportsProjectionMode(m_frameDescriptor.camera->GetProjectionMode()) &&
+		p_drawable.material->GetGPUInstances() > 0;
+}
+
 void OvRendering::Core::ABaseRenderer::DrawEntity(
 	OvRendering::Data::PipelineState p_pso,
 	const Entities::Drawable& p_drawable
@@ -182,46 +192,43 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 {
 	ZoneScoped;
 
-	auto material = p_drawable.material;
-	auto mesh = p_drawable.mesh;
+	OVASSERT(IsDrawable(p_drawable), "Submitted an entity that isn't properly configured!");
 
-	OVASSERT(material.has_value(), "Missing material instance!");
+	p_pso.depthWriting = p_drawable.stateMask.depthWriting;
+	p_pso.colorWriting.mask = p_drawable.stateMask.colorWriting ? 0xFF : 0x00;
+	p_pso.blending = p_drawable.stateMask.blendable;
+	p_pso.userInterface = p_drawable.stateMask.userInterface;
+	p_pso.culling = p_drawable.stateMask.frontfaceCulling || p_drawable.stateMask.backfaceCulling;
+	p_pso.depthTest = p_drawable.stateMask.depthTest;
 
-	const auto gpuInstances = material->GetGPUInstances();
-	const auto projectionMode = m_frameDescriptor.camera->GetProjectionMode();
-
-	if (mesh && material->IsValid() && material->SupportsProjectionMode(projectionMode) && gpuInstances > 0)
+	if (p_pso.culling)
 	{
-		p_pso.depthWriting = p_drawable.stateMask.depthWriting;
-		p_pso.colorWriting.mask = p_drawable.stateMask.colorWriting ? 0xFF : 0x00;
-		p_pso.blending = p_drawable.stateMask.blendable;
-		p_pso.userInterface = p_drawable.stateMask.userInterface;
-		p_pso.culling = p_drawable.stateMask.frontfaceCulling || p_drawable.stateMask.backfaceCulling;
-		p_pso.depthTest = p_drawable.stateMask.depthTest;
-
-		if (p_pso.culling)
+		if (p_drawable.stateMask.backfaceCulling && p_drawable.stateMask.frontfaceCulling)
 		{
-			if (p_drawable.stateMask.backfaceCulling && p_drawable.stateMask.frontfaceCulling)
-			{
-				p_pso.cullFace = Settings::ECullFace::FRONT_AND_BACK;
-			}
-			else
-			{
-				p_pso.cullFace =
-					p_drawable.stateMask.backfaceCulling ?
-					Settings::ECullFace::BACK :
-					Settings::ECullFace::FRONT;
-			}
+			p_pso.cullFace = Settings::ECullFace::FRONT_AND_BACK;
 		}
-
-		material->Bind(
-			&m_emptyTexture->GetTexture(),
-			p_drawable.featureSetOverride.has_value() ?
-			OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
-			std::nullopt
-		);
-
-		m_driver.Draw(p_pso, mesh.value(), p_drawable.primitiveMode, gpuInstances);
-		material->Unbind();
+		else
+		{
+			p_pso.cullFace =
+				p_drawable.stateMask.backfaceCulling ?
+				Settings::ECullFace::BACK :
+				Settings::ECullFace::FRONT;
+		}
 	}
+
+	p_drawable.material->Bind(
+		&m_emptyTexture->GetTexture(),
+		p_drawable.featureSetOverride.has_value() ?
+		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
+		std::nullopt
+	);
+
+	m_driver.Draw(
+		p_pso,
+		p_drawable.mesh.value(),
+		p_drawable.primitiveMode,
+		p_drawable.material->GetGPUInstances()
+	);
+
+	p_drawable.material->Unbind();
 }

@@ -91,6 +91,13 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 {
 	ZoneScoped;
 
+	// Ensure the drawable is valid.
+	// If not, skip the draw call and the attached features.
+	if (!IsDrawable(p_drawable))
+	{
+		return;
+	}
+
 	for (const auto& [_, feature] : m_features)
 	{
 		if (feature->IsEnabled())

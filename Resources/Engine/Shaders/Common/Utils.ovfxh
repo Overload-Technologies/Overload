@@ -9,7 +9,7 @@ vec3 UnPack(float target)
 
 vec2 TileAndOffsetTexCoords(vec2 texCoords, vec2 tiling, vec2 offset)
 {
-    return vec2(mod(texCoords.x * tiling.x, 1), mod(texCoords.y * tiling.y, 1)) + offset;
+    return texCoords * tiling + offset;
 }
 
 bool IsOrthographic(mat4 projectionMatrix)
@@ -69,11 +69,13 @@ vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tan
     return finalTexCoords;
 }
 
-bool IsParallaxOutOfBounds(vec2 texCoords, mat4 projectionMatrix)
+bool IsParallaxOutOfBounds(vec2 texCoords, vec2 tiling, vec2 offset, mat4 projectionMatrix)
 {
+    const vec2 adjustedCoords = texCoords - offset;
+
     return
         !IsOrthographic(projectionMatrix) && // No clipping in orthographic projection (not supported)
-        (texCoords.x < 0.0 || texCoords.x > 1.0 || texCoords.y < 0.0 || texCoords.y > 1.0);
+        (adjustedCoords.x < 0.0 || adjustedCoords.x > tiling.x || adjustedCoords.y < 0.0 || adjustedCoords.y > tiling.y);
 }
 
 // [Deprecated] Kept for backward compatibility. Prefer using `ApplyParallaxOcclusionMapping()` instead.

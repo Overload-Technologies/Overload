@@ -103,7 +103,7 @@ void main()
 
 #if defined(PARALLAX_MAPPING)
     texCoords = ApplyParallaxOcclusionMapping(texCoords, u_HeightMap, fs_in.TangentViewPos, fs_in.TangentFragPos, u_HeightScale, u_MinLayers, u_MaxLayers);
-    if (u_ParallaxClipEdges && IsParallaxOutOfBounds(texCoords, ubo_Projection))
+    if (u_ParallaxClipEdges && IsParallaxOutOfBounds(texCoords, u_TextureTiling, u_TextureOffset, ubo_Projection))
     {
         discard;
     }

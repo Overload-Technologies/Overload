@@ -21,6 +21,8 @@ namespace
 			p_path.string(),
 			FilteringMode,
 			FilteringMode,
+			OvRendering::Settings::ETextureWrapMode::REPEAT,
+			OvRendering::Settings::ETextureWrapMode::REPEAT,
 			false
 		);
 	}

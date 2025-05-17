@@ -281,10 +281,14 @@ void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 
 	const std::string kMinFilter = "MIN_FILTER";
 	const std::string kMagFilter = "MAG_FILTER";
+	const std::string kHorizontalWrap = "HORIZONTAL_WRAP";
+	const std::string kVerticalWrap = "VERTICAL_WRAP";
 	const std::string kEnableMipmapping = "ENABLE_MIPMAPPING";
 
 	m_metadata->Add(kMinFilter, static_cast<int>(ETextureFilteringMode::LINEAR_MIPMAP_LINEAR));
 	m_metadata->Add(kMagFilter, static_cast<int>(ETextureFilteringMode::LINEAR));
+	m_metadata->Add(kHorizontalWrap, static_cast<int>(ETextureWrapMode::REPEAT));
+	m_metadata->Add(kVerticalWrap, static_cast<int>(ETextureWrapMode::REPEAT));
 	m_metadata->Add(kEnableMipmapping, true);
 
 	const auto filteringModes = std::map<int, std::string>{
@@ -299,17 +303,37 @@ void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kMinFilter);
 	auto& minFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kMinFilter));
 	minFilter.choices = filteringModes;
-	minFilter.ValueChangedEvent += [this, kMinFilter](int p_choice)
-	{
+	minFilter.ValueChangedEvent += [this, kMinFilter](int p_choice) {
 		m_metadata->Set(kMinFilter, p_choice);
 	};
 
 	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kMagFilter);
 	auto& magFilter = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kMagFilter));
 	magFilter.choices = filteringModes;
-	magFilter.ValueChangedEvent += [this, kMagFilter](int p_choice)
-	{
+	magFilter.ValueChangedEvent += [this, kMagFilter](int p_choice) {
 		m_metadata->Set(kMagFilter, p_choice);
+	};
+
+	const auto wrapModes = std::map<int, std::string>{
+		{static_cast<int>(ETextureWrapMode::REPEAT), "REPEAT"},
+		{static_cast<int>(ETextureWrapMode::CLAMP_TO_EDGE), "CLAMP_TO_EDGE"},
+		{static_cast<int>(ETextureWrapMode::CLAMP_TO_BORDER), "CLAMP_TO_BORDER"},
+		{static_cast<int>(ETextureWrapMode::MIRRORED_REPEAT), "MIRRORED_REPEAT" },
+		{static_cast<int>(ETextureWrapMode::MIRROR_CLAMP_TO_EDGE), "MIRROR_CLAMP_TO_EDGE"}
+	};
+
+	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kHorizontalWrap);
+	auto& horizontalWrap = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kHorizontalWrap));
+	horizontalWrap.choices = wrapModes;
+	horizontalWrap.ValueChangedEvent += [this, kHorizontalWrap](int p_choice) {
+		m_metadata->Set(kHorizontalWrap, p_choice);
+	};
+
+	OvCore::Helpers::GUIDrawer::CreateTitle(*m_settingsColumns, kVerticalWrap);
+	auto& verticalWrap = m_settingsColumns->CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_metadata->Get<int>(kVerticalWrap));
+	verticalWrap.choices = wrapModes;
+	verticalWrap.ValueChangedEvent += [this, kVerticalWrap](int p_choice) {
+		m_metadata->Set(kVerticalWrap, p_choice);
 	};
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(*m_settingsColumns, kEnableMipmapping,
@@ -346,5 +370,5 @@ void OvEditor::Panels::AssetProperties::Apply()
 		}
 	}
 
-    Refresh();
+	Refresh();
 }

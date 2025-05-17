@@ -50,6 +50,8 @@ namespace
 		void* p_data,
 		OvRendering::Settings::ETextureFilteringMode p_minFilter,
 		OvRendering::Settings::ETextureFilteringMode p_magFilter,
+		OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+		OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 		uint32_t p_width,
 		uint32_t p_height,
 		bool p_generateMipmap,
@@ -63,6 +65,8 @@ namespace
 			.height = p_height,
 			.minFilter = p_minFilter,
 			.magFilter = p_magFilter,
+			.horizontalWrap = p_horizontalWrapMode,
+			.verticalWrap = p_verticalWrapMode,
 			.internalFormat = p_hdr ? EInternalFormat::RGBA32F : EInternalFormat::RGBA8,
 			.useMipMaps = p_generateMipmap
 		});
@@ -80,13 +84,28 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	const std::string& p_filepath,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Image image{ p_filepath })
 	{
 		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filepath));
-		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
+
+		PrepareTexture(
+			*texture,
+			image.data,
+			p_minFilter,
+			p_magFilter,
+			p_horizontalWrapMode,
+			p_verticalWrapMode,
+			image.width,
+			image.height,
+			p_generateMipmap,
+			image.isHDR
+		);
+
 		return new Texture{ p_filepath, std::move(texture) };
 	}
 
@@ -106,6 +125,8 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 		colorData.data(), 1, 1,
 		OvRendering::Settings::ETextureFilteringMode::NEAREST,
 		OvRendering::Settings::ETextureFilteringMode::NEAREST,
+		OvRendering::Settings::ETextureWrapMode::REPEAT,
+		OvRendering::Settings::ETextureWrapMode::REPEAT,
 		false
 	);
 }
@@ -116,11 +137,26 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	uint32_t p_height,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	auto texture = std::make_unique<HAL::Texture>("FromMemory");
-	PrepareTexture(*texture, p_data, p_minFilter, p_magFilter, p_width, p_height, p_generateMipmap, false);
+
+	PrepareTexture(
+		*texture,
+		p_data,
+		p_minFilter,
+		p_magFilter,
+		p_horizontalWrapMode,
+		p_verticalWrapMode,
+		p_width,
+		p_height,
+		p_generateMipmap,
+		false
+	);
+
 	return new Texture("", std::move(texture));
 }
 
@@ -129,13 +165,28 @@ void OvRendering::Resources::Loaders::TextureLoader::Reload(
 	const std::string& p_filePath,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
 	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Image image{ p_filePath })
 	{
 		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filePath));
-		PrepareTexture(*texture, image.data, p_minFilter, p_magFilter, image.width, image.height, p_generateMipmap, image.isHDR);
+
+		PrepareTexture(
+			*texture,
+			image.data,
+			p_minFilter,
+			p_magFilter,
+			p_horizontalWrapMode,
+			p_verticalWrapMode,
+			image.width,
+			image.height,
+			p_generateMipmap,
+			image.isHDR
+		);
+
 		p_texture.SetTexture(std::move(texture));
 	}
 }

@@ -30,12 +30,16 @@ namespace OvRendering::Resources::Loaders
 		* @param p_filePath
 		* @param p_minFilter
 		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
 		* @param p_generateMipmap
 		*/
 		static Texture* Create(
 			const std::string& p_filepath,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -55,6 +59,8 @@ namespace OvRendering::Resources::Loaders
 		* @param p_height
 		* @param p_minFilter
 		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
 		* @param p_generateMipmap
 		*/
 		static Texture* CreateFromMemory(
@@ -63,6 +69,8 @@ namespace OvRendering::Resources::Loaders
 			uint32_t p_height,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -72,6 +80,8 @@ namespace OvRendering::Resources::Loaders
 		* @param p_filePath
 		* @param p_minFilter
 		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
 		* @param p_generateMipmap
 		*/
 		static void Reload(
@@ -79,6 +89,8 @@ namespace OvRendering::Resources::Loaders
 			const std::string& p_filePath,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 

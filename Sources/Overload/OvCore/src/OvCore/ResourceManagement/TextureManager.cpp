@@ -17,6 +17,8 @@ namespace
 	{
 		OvRendering::Settings::ETextureFilteringMode minFilter;
 		OvRendering::Settings::ETextureFilteringMode magFilter;
+		OvRendering::Settings::ETextureWrapMode horizontalWrap;
+		OvRendering::Settings::ETextureWrapMode verticalWrap;
 		bool generateMipmap;
 	};
 
@@ -24,12 +26,15 @@ namespace
 	{
 		using namespace OvRendering::Settings;
 		using enum ETextureFilteringMode;
+		using enum ETextureWrapMode;
 
 		const auto metaFile = OvTools::Filesystem::IniFile(std::format("{}.meta", p_filePath));
 
 		return TextureMetaData{
 			.minFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(LINEAR_MIPMAP_LINEAR))),
 			.magFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(LINEAR))),
+			.horizontalWrap = static_cast<ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(REPEAT))),
+			.verticalWrap = static_cast<ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(REPEAT))),
 			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true)
 		};
 	}
@@ -45,6 +50,8 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 		realPath,
 		metaData.minFilter,
 		metaData.magFilter,
+		metaData.horizontalWrap,
+		metaData.verticalWrap,
 		metaData.generateMipmap
 	);
 
@@ -70,6 +77,8 @@ void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Res
 		realPath,
 		metaData.minFilter,
 		metaData.magFilter,
+		metaData.horizontalWrap,
+		metaData.verticalWrap,
 		metaData.generateMipmap
 	);
 }

@@ -47,13 +47,14 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 
 	/* Light Material */
 	m_lightMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Billboard"));
-	m_lightMaterial.SetDepthTest(true);
+	m_lightMaterial.SetDepthTest(false);
 
 	/* Gizmo Pickable Material */
 	m_gizmoPickingMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));
 	m_gizmoPickingMaterial.SetGPUInstances(3);
 	m_gizmoPickingMaterial.SetProperty("u_IsBall", false);
 	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
+	m_gizmoPickingMaterial.SetDepthTest(true);
 
 	/* Picking Material */
 	m_actorPickingFallbackMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
@@ -121,6 +122,9 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 	DrawPickableModels(pso, scene);
 	DrawPickableCameras(pso, scene);
 	DrawPickableLights(pso, scene);
+
+	// Clear depth, gizmos are rendered on top of everything else
+	m_renderer.Clear(false, true, false);
 
 	if (debugSceneDescriptor.selectedActor)
 	{

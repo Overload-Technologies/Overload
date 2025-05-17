@@ -63,20 +63,15 @@ vec3 ComputeAmbientSphereLight(mat4 light, vec3 fragPos)
     return IsPointInSphere(fragPos, lightPosition, radius) ? lightColor * intensity : vec3(0.0);
 }
 
-// This version doesn't sample the albedo texture, and expects the albedo color to be passed in directly.
-// This is because other parts of the shader may have already sampled the albedo texture, and we want to avoid double sampling.
-vec4 ComputePBRLightingNoAlbedoSampling(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
+vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix)
 {
-    vec3 albedo = pow(inAlbedo.rgb, vec3(2.2));
-    float metallic = texture(metallicMap, texCoords).r * inMetallic;
-    float roughness = texture(roughnessMap, texCoords).r * inRoughness;
-    float ao = texture(aoMap, texCoords).r;
-    
-    vec3 N = normalize(normal);
-    vec3 V = normalize(viewPos - fragPos);
+    // Gamma correction of the albedo color (assuming the albedo is in sRGB space)
+    albedo = pow(albedo, vec3(2.2));
 
-    vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
+    const vec3 N = normalize(normal);
+    const vec3 V = normalize(viewPos - fragPos);
+
+    const vec3 F0 = mix(vec3(0.04), albedo, metallic); 
 	           
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -98,9 +93,9 @@ vec4 ComputePBRLightingNoAlbedoSampling(vec2 texCoords, vec3 normal, vec3 viewPo
         else
         {
             // calculate per-light radiance
-            vec3 L = lightType == 1 ? -light[1].rgb : normalize(light[0].rgb - fragPos);
-            vec3 H = normalize(V + L);
-            float distance = length(light[0].rgb - fragPos);
+            const vec3 L = lightType == 1 ? -light[1].rgb : normalize(light[0].rgb - fragPos);
+            const vec3 H = normalize(V + L);
+            const float distance = length(light[0].rgb - fragPos);
             float lightCoeff = 0.0;
 
             switch(int(light[3][0]))
@@ -139,48 +134,54 @@ vec4 ComputePBRLightingNoAlbedoSampling(vec2 texCoords, vec3 normal, vec3 viewPo
                     break;
             }
 
-            vec3 radiance = UnPack(light[2][0]) * lightCoeff;        
+            const vec3 radiance = UnPack(light[2][0]) * lightCoeff;        
             
             // cook-torrance brdf
-            float NDF = DistributionGGX(N, H, roughness);        
-            float G = GeometrySmith(N, V, L, roughness);      
-            vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);       
+            const float NDF = DistributionGGX(N, H, roughness);        
+            const float G = GeometrySmith(N, V, L, roughness);      
+            const vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);       
             
-            vec3 kS = F;
+            const vec3 kS = F;
             vec3 kD = vec3(1.0) - kS;
             kD *= 1.0 - metallic;	  
             
-            vec3 numerator = NDF * G * F;
-            float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-            vec3 specular = numerator / max(denominator, 0.001);  
+            const vec3 numerator = NDF * G * F;
+            const float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+            const vec3 specular = numerator / max(denominator, 0.001);  
                 
             // add to outgoing radiance Lo
-            float NdotL = max(dot(N, L), 0.0);                
+            const float NdotL = max(dot(N, L), 0.0);                
             Lo += (kD * albedo / PI + specular) * radiance * NdotL; 
         }
     }
 
-    vec3 ambient = ambientSum * albedo * ao;
-    vec3 color = ambient + Lo;
-	
-    return vec4(color, inAlbedo.a);
+    const vec3 ambient = ambientSum * albedo * ao;
+    const vec3 color = ambient + Lo;
+
+    return color;
 }
 
+// [Deprecated]
+// Internally sample the albedo, metallic, roughness and ao maps, which isn't recommended for performance and flexibility reasons.
+// Instead, use the PBRLightingModel function directly with the sampled values.
 vec4 ComputePBRLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D albedoMap, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
 {
-    vec4 albedoRGBA = texture(albedoMap, texCoords) * inAlbedo;
-    return ComputePBRLightingNoAlbedoSampling(
-        texCoords,
+    const vec4 albedo = texture(albedoMap, texCoords) * inAlbedo;
+    const float metallic = texture(metallicMap, texCoords).r * inMetallic;
+    const float roughness = texture(roughnessMap, texCoords).r * inRoughness;
+    const float ao = texture(aoMap, texCoords).r;
+
+    const vec3 pbr = PBRLightingModel(
+        albedo.rgb,
+        metallic,
+        roughness,
+        ao,
         normal,
         viewPos,
         fragPos,
-        albedoRGBA,
-        inMetallic,
-        inRoughness,
-        metallicMap,
-        roughnessMap,
-        aoMap,
         shadowMap,
         lightSpaceMatrix
     );
+
+    return vec4(pbr, albedo.a);
 }

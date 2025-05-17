@@ -4,6 +4,7 @@
 #feature ALPHA_DITHERING
 #feature NORMAL_MAPPING
 #feature DISTANCE_FADE
+#feature SPECULAR_WORKFLOW
 
 #shader vertex
 #version 450 core
@@ -63,14 +64,26 @@ in VS_OUT
 } fs_in;
 
 uniform sampler2D u_AlbedoMap;
+#if defined(SPECULAR_WORKFLOW)
+uniform sampler2D u_SpecularMap;
+uniform sampler2D u_GlossinessMap;
+#else
 uniform sampler2D u_MetallicMap;
 uniform sampler2D u_RoughnessMap;
+#endif
 uniform sampler2D u_AmbientOcclusionMap;
 uniform vec4 u_Albedo = vec4(1.0);
 uniform vec2 u_TextureTiling = vec2(1.0, 1.0);
 uniform vec2 u_TextureOffset = vec2(0.0, 0.0);
+
+#if defined(SPECULAR_WORKFLOW)
+uniform float u_Specular = 1.0;
+uniform float u_Glossiness = 1.0;
+#else
 uniform float u_Metallic = 1.0;
 uniform float u_Roughness = 1.0;
+#endif
+
 uniform sampler2D u_MaskMap;
 
 #if defined(PARALLAX_MAPPING)
@@ -157,20 +170,33 @@ void main()
 #else
         const vec3 normal = normalize(fs_in.Normal);
 #endif
-        FRAGMENT_COLOR = ComputePBRLightingNoAlbedoSampling(
-            texCoords,
+        const vec4 albedo = texture(u_AlbedoMap, texCoords) * u_Albedo;
+
+#if defined(SPECULAR_WORKFLOW)
+        const float specular = texture(u_SpecularMap, texCoords).r * u_Specular;
+        const float glossiness = texture(u_GlossinessMap, texCoords).r * u_Glossiness;
+        const float metallic = 1.0 - specular;
+        const float roughness = 1.0 - glossiness;
+#else
+        const float metallic = texture(u_MetallicMap, texCoords).r * u_Metallic;
+        const float roughness = texture(u_RoughnessMap, texCoords).r * u_Roughness;
+#endif
+
+        const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
+
+        const vec3 pbr = PBRLightingModel(
+            albedo.rgb,
+            metallic,
+            roughness,
+            ao,
             normal,
             ubo_ViewPos,
             fs_in.FragPos,
-            albedo,
-            u_Metallic,
-            u_Roughness,
-            u_MetallicMap,
-            u_RoughnessMap,
-            u_AmbientOcclusionMap,
             _ShadowMap,
             _LightSpaceMatrix
         );
+
+        FRAGMENT_COLOR = vec4(pbr, albedo.a);
     }
     else
     {

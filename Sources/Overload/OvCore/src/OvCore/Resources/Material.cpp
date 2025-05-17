@@ -145,6 +145,8 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 	/* We get the shader with Deserialize method */
 	const auto shader = Serializer::DeserializeShader(p_doc, p_node, "shader");
 
+	m_properties.clear();
+
 	/* We verify that the shader is valid (Not null) */
 	if (shader)
 	{
@@ -209,6 +211,8 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 			}
 		}
 	}
+
+	m_features.clear();
 
 	const auto features = Serializer::DeserializeString(p_doc, p_node, "features");
 

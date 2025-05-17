@@ -417,6 +417,8 @@ void main()
 	*/
 	ShaderAssembleResult AssembleShader(const ShaderParseResult& p_parseResult)
 	{
+		const auto startTime = std::chrono::high_resolution_clock::now();
+
 		const auto variantCount = (size_t{ 1UL } << p_parseResult.features.size());
 
 		uint32_t failures = 0;
@@ -465,6 +467,8 @@ void main()
 			);
 		}
 
+		const auto endTime = std::chrono::high_resolution_clock::now();
+
 		if (failures > 0)
 		{
 			if (__LOGGING_SETTINGS.summary)
@@ -479,9 +483,10 @@ void main()
 		else if (__LOGGING_SETTINGS.summary)
 		{
 			OVLOG_INFO(std::format(
-				"[Shader Assembling] {}: {} variant(s) assembled.",
+				"[Shader Assembling] {}: {} variant(s) assembled in {} ms.",
 				p_parseResult.inputInfo.name,
-				variantCount
+				variantCount,
+				std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count()
 			));
 		}
 

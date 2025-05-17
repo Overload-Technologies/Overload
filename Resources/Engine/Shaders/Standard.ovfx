@@ -1,7 +1,9 @@
 #feature SHADOW_PASS
 #feature PARALLAX_MAPPING
 #feature ALPHA_CLIPPING
+#feature ALPHA_DITHERING
 #feature NORMAL_MAPPING
+#feature DISTANCE_FADE
 
 #shader vertex
 #version 450 core
@@ -90,6 +92,11 @@ uniform float u_AlphaClippingThreshold = 0.1;
 uniform float u_ShadowClippingThreshold = 0.5;
 #endif
 
+#if defined(DISTANCE_FADE)
+uniform float u_DistanceFadeStart = 100.0;
+uniform float u_DistanceFadeLength = 10.0;
+#endif
+
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
 
@@ -97,6 +104,15 @@ out vec4 FRAGMENT_COLOR;
 
 void main()
 {
+#if defined(DISTANCE_FADE)
+    const float distanceAlpha = DistanceFadeAlpha(fs_in.FragPos, ubo_ViewPos, u_DistanceFadeStart, u_DistanceFadeLength);
+    const float ditheredDistanceAlpha = Dithering(distanceAlpha, gl_FragCoord.xy);
+    if (ditheredDistanceAlpha < 0)
+    {
+        discard;
+    }
+#endif
+
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
 
 #if defined(PARALLAX_MAPPING)
@@ -119,6 +135,14 @@ void main()
 
 #if defined(ALPHA_CLIPPING)
     if (diffuse.a < u_AlphaClippingThreshold)
+    {
+        discard;
+    }
+#endif
+
+#if defined(ALPHA_DITHERING)
+    const float ditheredAlpha = Dithering(diffuse.a, gl_FragCoord.xy);
+    if (ditheredAlpha < 0)
     {
         discard;
     }

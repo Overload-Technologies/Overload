@@ -34,6 +34,15 @@ namespace OvRendering::Features
 		*/
 		LightingRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer, uint32_t p_bufferBindingPoint = 0);
 
+		/**
+		* Bind the light buffer
+		*/
+		void Bind() const;
+
+		/**
+		* Returns the binding point of the light buffer
+		*/
+		uint32_t GetBufferBindingPoint() const;
 
 	protected:
 		virtual void OnBeginFrame(const Data::FrameDescriptor& p_frameDescriptor) override;

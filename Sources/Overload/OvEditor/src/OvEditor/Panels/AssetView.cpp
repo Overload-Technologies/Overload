@@ -48,7 +48,7 @@ OvEditor::Panels::AssetView::AssetView
 	m_cameraController.LockTargetActor(*m_assetActor);
 	
 	/* Default Material */
-	m_defaultMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\StandardPBR.ovfx"]);
+	m_defaultMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Standard.ovfx"]);
 	m_defaultMaterial.SetProperty("u_Metallic", 0.0f);
 	m_defaultMaterial.SetProperty("u_Roughness", 0.5f);
 

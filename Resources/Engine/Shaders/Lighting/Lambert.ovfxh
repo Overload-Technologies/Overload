@@ -1,5 +1,0 @@
-vec3 ComputeLambertLighting(vec3 fragPos, vec3 normal, vec3 lightPos, vec3 lightDiffuse, vec3 lightAmbient)
-{
-    const float diffuse = max(dot(normal, normalize(lightPos - fragPos)), 0.0);
-    return clamp(lightDiffuse * diffuse + lightAmbient, 0.0, 1.0);
-}

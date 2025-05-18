@@ -1,16 +1,3 @@
-float LuminosityFromAttenuation(mat4 light, vec3 fragPos)
-{
-    const vec3 lightPosition = light[0].rgb;
-    const float constant = light[0][3];
-    const float linear = light[1][3];
-    const float quadratic = light[2][3];
-
-    const float distanceToLight = length(lightPosition - fragPos);
-    const float attenuation = (constant + linear * distanceToLight + quadratic * (distanceToLight * distanceToLight));
-    
-    return 1.0 / attenuation;
-}
-
 float SampleShadow(sampler2D shadowMap, vec3 projCoords, float bias)
 {
     float depth = texture(shadowMap, projCoords.xy).r;

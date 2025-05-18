@@ -1,5 +1,5 @@
 <root>
-    <shader>:Shaders\StandardPBR.ovfx</shader>
+    <shader>:Shaders\Standard.ovfx</shader>
     <settings>
         <support_orthographic>true</support_orthographic>
         <support_perspective>true</support_perspective>

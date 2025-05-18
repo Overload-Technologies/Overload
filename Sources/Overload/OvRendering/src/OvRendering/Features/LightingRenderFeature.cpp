@@ -26,6 +26,16 @@ bool IsLightInFrustum(const OvRendering::Entities::Light& p_light, const OvRende
 		p_frustum.SphereInFrustum(position.x, position.y, position.z, effectRange);
 }
 
+void OvRendering::Features::LightingRenderFeature::Bind() const
+{
+	m_lightBuffer->Bind(m_bufferBindingPoint);
+}
+
+uint32_t OvRendering::Features::LightingRenderFeature::GetBufferBindingPoint() const
+{
+	return m_bufferBindingPoint;
+}
+
 void OvRendering::Features::LightingRenderFeature::OnBeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
 {
 	OVASSERT(m_renderer.HasDescriptor<LightingDescriptor>(), "Cannot find LightingDescriptor attached to this renderer");
@@ -55,7 +65,7 @@ void OvRendering::Features::LightingRenderFeature::OnBeginFrame(const Data::Fram
 		m_lightBuffer->Upload(lightMatricesView.data());
 	}
 
-	m_lightBuffer->Bind(m_bufferBindingPoint);
+	Bind();
 }
 
 void OvRendering::Features::LightingRenderFeature::OnEndFrame()

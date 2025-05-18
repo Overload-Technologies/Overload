@@ -30,44 +30,84 @@
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
+#include <OvRendering/Features/LightingRenderFeature.h>
 #include <OvRendering/HAL/Profiling.h>
 
 using namespace OvMaths;
 using namespace OvRendering::Resources;
 using namespace OvCore::Resources;
 
-const OvMaths::FVector3 kDebugBoundsColor		= { 1.0f, 0.0f, 0.0f };
-const OvMaths::FVector3 kLightVolumeColor		= { 1.0f, 1.0f, 0.0f };
-const OvMaths::FVector3 kColliderColor			= { 0.0f, 1.0f, 0.0f };
-const OvMaths::FVector3 kFrustumColor			= { 1.0f, 1.0f, 1.0f };
-
-const OvMaths::FVector4 kHoveredOutlineColor{ 1.0f, 1.0f, 0.0f, 1.0f };
-const OvMaths::FVector4 kSelectedOutlineColor{ 1.0f, 0.7f, 0.0f, 1.0f };
-
-constexpr float kHoveredOutlineWidth = 2.5f;
-constexpr float kSelectedOutlineWidth = 5.0f;
-
-OvMaths::FMatrix4 CalculateCameraModelMatrix(OvCore::ECS::Actor& p_actor)
+namespace
 {
-	auto translation = FMatrix4::Translation(p_actor.transform.GetWorldPosition());
-	auto rotation = FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-	return translation * rotation;
-}
+	const OvMaths::FVector3 kDebugBoundsColor = { 1.0f, 0.0f, 0.0f };
+	const OvMaths::FVector3 kLightVolumeColor = { 1.0f, 1.0f, 0.0f };
+	const OvMaths::FVector3 kColliderColor = { 0.0f, 1.0f, 0.0f };
+	const OvMaths::FVector3 kFrustumColor = { 1.0f, 1.0f, 1.0f };
 
-std::optional<std::string> GetLightTypeTextureName(OvRendering::Settings::ELightType type)
-{
-	using namespace OvRendering::Settings;
+	const OvMaths::FVector4 kHoveredOutlineColor{ 1.0f, 1.0f, 0.0f, 1.0f };
+	const OvMaths::FVector4 kSelectedOutlineColor{ 1.0f, 0.7f, 0.0f, 1.0f };
 
-	switch (type)
+	constexpr float kHoveredOutlineWidth = 2.5f;
+	constexpr float kSelectedOutlineWidth = 5.0f;
+
+	OvMaths::FMatrix4 CalculateCameraModelMatrix(OvCore::ECS::Actor& p_actor)
 	{
-	case ELightType::POINT: return "Point_Light";
-	case ELightType::SPOT: return "Spot_Light";
-	case ELightType::DIRECTIONAL: return "Directional_Light";
-	case ELightType::AMBIENT_BOX: return "Ambient_Box_Light";
-	case ELightType::AMBIENT_SPHERE: return "Ambient_Sphere_Light";
+		auto translation = FMatrix4::Translation(p_actor.transform.GetWorldPosition());
+		auto rotation = FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+		return translation * rotation;
 	}
 
-	return std::nullopt;
+	std::optional<std::string> GetLightTypeTextureName(OvRendering::Settings::ELightType type)
+	{
+		using namespace OvRendering::Settings;
+
+		switch (type)
+		{
+		case ELightType::POINT: return "Point_Light";
+		case ELightType::SPOT: return "Spot_Light";
+		case ELightType::DIRECTIONAL: return "Directional_Light";
+		case ELightType::AMBIENT_BOX: return "Ambient_Box_Light";
+		case ELightType::AMBIENT_SPHERE: return "Ambient_Sphere_Light";
+		}
+
+		return std::nullopt;
+	}
+
+	OvMaths::FMatrix4 CreateDebugDirectionalLight()
+	{
+		OvRendering::Entities::Light directionalLight{
+			.intensity = 2.0f,
+			.type = OvRendering::Settings::ELightType::DIRECTIONAL,
+		};
+
+		directionalLight.transform->SetLocalPosition({ 0.0f, 10.0f, 0.0f });
+		directionalLight.transform->SetLocalRotation(OvMaths::FQuaternion({ 120.0f, -40.0f, 0.0f }));
+		return directionalLight.GenerateMatrix();
+	}
+
+	OvMaths::FMatrix4 CreateDebugAmbientLight()
+	{
+		return OvRendering::Entities::Light{
+			.intensity = 0.01f,
+			.constant = 10000.0f, // radius
+			.type = OvRendering::Settings::ELightType::AMBIENT_SPHERE
+		}.GenerateMatrix();
+	}
+
+	std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> CreateDebugLightBuffer()
+	{
+		auto lightBuffer = std::make_unique<OvRendering::HAL::ShaderStorageBuffer>();
+
+		const auto lightMatrices = std::to_array<OvMaths::FMatrix4>({
+			CreateDebugDirectionalLight(),
+			CreateDebugAmbientLight()
+		});
+
+		lightBuffer->Allocate(sizeof(lightMatrices), OvRendering::Settings::EAccessSpecifier::STATIC_READ);
+		lightBuffer->Upload(lightMatrices.data());
+
+		return lightBuffer;
+	}
 }
 
 class DebugCamerasRenderPass : public OvRendering::Core::ARenderPass
@@ -75,15 +115,34 @@ class DebugCamerasRenderPass : public OvRendering::Core::ARenderPass
 public:
 	DebugCamerasRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
 	{
-		m_cameraMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Lambert.ovfx"]);
-		m_cameraMaterial.SetProperty("u_Diffuse", FVector4{ 0.0f, 0.3f, 0.7f, 1.0f });
-		m_cameraMaterial.SetProperty("u_DiffuseMap", static_cast<OvRendering::Resources::Texture*>(nullptr));
+		m_fakeLightsBuffer = CreateDebugLightBuffer();
+
+		m_cameraMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Standard.ovfx"]);
+		m_cameraMaterial.SetProperty("u_Albedo", FVector4{ 0.0f, 0.447f, 1.0f, 1.0f });
+		m_cameraMaterial.SetProperty("u_Metallic", 0.0f);
+		m_cameraMaterial.SetProperty("u_Roughness", 0.25f);
+		m_cameraMaterial.AddFeature("GAMMA_CORRECTION");
 	}
 
 protected:
 	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
 	{
 		TracyGpuZone("DebugCamerasRenderPass");
+
+		using namespace OvRendering::Features;
+
+		const auto lightingRenderFeature = OvTools::Utils::OptRef<LightingRenderFeature>{
+			m_renderer.HasFeature<LightingRenderFeature>() ?
+			m_renderer.GetFeature<LightingRenderFeature>() :
+			OvTools::Utils::OptRef<LightingRenderFeature>{std::nullopt}
+		};
+
+		// Override the light buffer with fake lights
+		m_fakeLightsBuffer->Bind(
+			lightingRenderFeature ?
+			lightingRenderFeature->GetBufferBindingPoint() :
+			0
+		);
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
@@ -100,10 +159,17 @@ protected:
 					.DrawModelWithSingleMaterial(p_pso, model, m_cameraMaterial, modelMatrix);
 			}
 		}
+
+		if (lightingRenderFeature)
+		{
+			// Bind back the original light buffer
+			lightingRenderFeature->Bind();
+		}
 	}
 
 private:
 	OvCore::Resources::Material m_cameraMaterial;
+	std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_fakeLightsBuffer;
 };
 
 class DebugLightsRenderPass : public OvRendering::Core::ARenderPass

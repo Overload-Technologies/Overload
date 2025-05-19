@@ -39,8 +39,9 @@ void main()
     vs_out.TBN = ConstructTBN(ubo_Model, geo_Normal, geo_Tangent, geo_Bitangent);
 
 #if defined(PARALLAX_MAPPING)
-    vs_out.TangentViewPos = transpose(vs_out.TBN) * ubo_ViewPos;
-    vs_out.TangentFragPos = transpose(vs_out.TBN) * vs_out.FragPos;
+    const mat3 TBNi = transpose(vs_out.TBN);
+    vs_out.TangentViewPos = TBNi * ubo_ViewPos;
+    vs_out.TangentFragPos = TBNi * vs_out.FragPos;
 #endif
 
     gl_Position = ubo_Projection * ubo_View * vec4(vs_out.FragPos, 1.0);
@@ -65,38 +66,33 @@ in VS_OUT
 } fs_in;
 
 uniform sampler2D u_AlbedoMap;
-#if defined(SPECULAR_WORKFLOW)
-uniform sampler2D u_SpecularMap;
-uniform sampler2D u_GlossinessMap;
-#else
-uniform sampler2D u_MetallicMap;
-uniform sampler2D u_RoughnessMap;
-#endif
-uniform sampler2D u_AmbientOcclusionMap;
 uniform vec4 u_Albedo = vec4(1.0);
-uniform vec2 u_TextureTiling = vec2(1.0, 1.0);
-uniform vec2 u_TextureOffset = vec2(0.0, 0.0);
 
-#if defined(SPECULAR_WORKFLOW)
-uniform float u_Specular = 1.0;
-uniform float u_Glossiness = 1.0;
-#else
-uniform float u_Metallic = 1.0;
-uniform float u_Roughness = 1.0;
-#endif
-
+uniform sampler2D u_AmbientOcclusionMap;
 uniform sampler2D u_MaskMap;
 
-#if defined(PARALLAX_MAPPING)
-uniform sampler2D u_HeightMap;
-uniform bool u_ParallaxClipEdges = false;
-uniform int u_MinLayers = 8;
-uniform int u_MaxLayers = 64;
-uniform float u_HeightScale = 0.05;
+#if defined(SPECULAR_WORKFLOW)
+uniform sampler2D u_SpecularMap;
+uniform float u_Specular = 1.0;
+uniform sampler2D u_GlossinessMap;
+uniform float u_Glossiness = 1.0;
+#else
+uniform sampler2D u_MetallicMap;
+uniform float u_Metallic = 1.0;
+uniform sampler2D u_RoughnessMap;
+uniform float u_Roughness = 1.0;
 #endif
 
 #if defined(NORMAL_MAPPING)
 uniform sampler2D u_NormalMap;
+#endif
+
+#if defined(PARALLAX_MAPPING)
+uniform sampler2D u_HeightMap;
+uniform float u_HeightScale = 0.05;
+uniform bool u_ParallaxClipEdges = false;
+uniform int u_MinLayers = 8;
+uniform int u_MaxLayers = 64;
 #endif
 
 #if defined(ALPHA_CLIPPING)
@@ -112,6 +108,9 @@ uniform float u_ShadowClippingThreshold = 0.5;
 uniform float u_DistanceFadeStart = 100.0;
 uniform float u_DistanceFadeLength = 10.0;
 #endif
+
+uniform vec2 u_TextureTiling = vec2(1.0, 1.0);
+uniform vec2 u_TextureOffset = vec2(0.0, 0.0);
 
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
@@ -164,48 +163,40 @@ void main()
     }
 #endif
 
-    if (albedo.a > 0.0)
-    {
 #if defined(NORMAL_MAPPING)
-        const vec3 normal = ComputeNormal(texCoords, fs_in.Normal, u_NormalMap, fs_in.TBN);
+    const vec3 normal = ComputeNormal(texCoords, fs_in.Normal, u_NormalMap, fs_in.TBN);
 #else
-        const vec3 normal = normalize(fs_in.Normal);
+    const vec3 normal = normalize(fs_in.Normal);
 #endif
-        const vec4 albedo = texture(u_AlbedoMap, texCoords) * u_Albedo;
 
 #if defined(SPECULAR_WORKFLOW)
-        const float specular = texture(u_SpecularMap, texCoords).r * u_Specular;
-        const float glossiness = texture(u_GlossinessMap, texCoords).r * u_Glossiness;
-        const float metallic = 1.0 - specular;
-        const float roughness = 1.0 - glossiness;
+    const float specular = texture(u_SpecularMap, texCoords).r * u_Specular;
+    const float glossiness = texture(u_GlossinessMap, texCoords).r * u_Glossiness;
+    const float metallic = 1.0 - specular;
+    const float roughness = 1.0 - glossiness;
 #else
-        const float metallic = texture(u_MetallicMap, texCoords).r * u_Metallic;
-        const float roughness = texture(u_RoughnessMap, texCoords).r * u_Roughness;
+    const float metallic = texture(u_MetallicMap, texCoords).r * u_Metallic;
+    const float roughness = texture(u_RoughnessMap, texCoords).r * u_Roughness;
 #endif
 
-        const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
+    const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
 
-        vec3 pbr = PBRLightingModel(
-            albedo.rgb,
-            metallic,
-            roughness,
-            ao,
-            normal,
-            ubo_ViewPos,
-            fs_in.FragPos,
-            _ShadowMap,
-            _LightSpaceMatrix
-        );
+    vec3 pbr = PBRLightingModel(
+        albedo.rgb,
+        metallic,
+        roughness,
+        ao,
+        normal,
+        ubo_ViewPos,
+        fs_in.FragPos,
+        _ShadowMap,
+        _LightSpaceMatrix
+    );
 
 #if defined(GAMMA_CORRECTION)
-        pbr = pow(pbr, vec3(1.0 / 2.2));
+    pbr = pow(pbr, vec3(1.0 / 2.2));
 #endif
 
-        FRAGMENT_COLOR = vec4(pbr, albedo.a);
-    }
-    else
-    {
-        FRAGMENT_COLOR = vec4(0.0);
-    }
+    FRAGMENT_COLOR = vec4(pbr, albedo.a);
 #endif
 }

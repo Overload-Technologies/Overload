@@ -1,5 +1,6 @@
-#feature OUTLINE_PASS
-#feature PICKING_PASS
+#pass OUTLINE_PASS
+#pass PICKING_PASS
+
 #feature DISABLE_TRACKING
 
 #shader vertex

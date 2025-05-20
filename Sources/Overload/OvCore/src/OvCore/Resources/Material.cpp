@@ -38,7 +38,7 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 	tinyxml2::XMLNode* uniformsNode = p_doc.NewElement("uniforms");
 	p_node->InsertEndChild(uniformsNode);
 
-	const auto program = GetProgram();
+	const auto program = GetVariant();
 
 	// If the material has no valid program for the current feature set, we skip serialization of properties.
 	if (!program)

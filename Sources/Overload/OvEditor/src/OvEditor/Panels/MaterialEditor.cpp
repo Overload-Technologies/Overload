@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-
-
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
@@ -382,6 +380,11 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
 
 	m_materialPropertiesColumns->RemoveAllWidgets(); // Ensure that the m_shaderSettingsColumns is empty
 
+	if (!m_target->HasShader())
+	{
+		return;
+	}
+
 	std::multimap<
 		int,
 		std::pair<
@@ -389,6 +392,8 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
 		std::reference_wrapper<OvRendering::Data::MaterialPropertyType>
 		>
 	> sortedProperties;
+
+	std::unordered_set<std::string> usedProperties;
 
 	auto typeIndexVisitor = [&](auto& arg) -> uint32_t {
 		using T = std::decay_t<decltype(arg)>;
@@ -405,25 +410,36 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
 
 	for (auto& [name, prop] : m_target->GetProperties())
 	{
-		if (auto program = m_target->GetProgram(); !program || !program->GetUniformInfo(name))
+		for (const auto& pass : m_target->GetShader()->GetPasses())
 		{
-			// This property isn't used in the shader program, so skip it
-			continue;
-		}
-
-		// Uniforms starting with '_' are internal (private), so not exposed
-		if (name.length() == 0 || name[0] == '_')
-		{
-			continue;
-		}
-
-		sortedProperties.emplace(
-			std::visit(typeIndexVisitor, prop.value),
-			std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{
-				name,
-				std::ref(prop.value)
+			if (auto variant = m_target->GetVariant(pass); !variant || !variant->GetUniformInfo(name))
+			{
+				// This property isn't used in the shader program, so skip it
+				continue;
 			}
-		);
+
+			// Uniforms starting with '_' are internal (private), so not exposed
+			if (name.length() == 0 || name[0] == '_')
+			{
+				continue;
+			}
+
+			// Skip properties that already got added (e.g. if they are used in multiple passes)
+			if (usedProperties.contains(name))
+			{
+				continue;
+			}
+
+			usedProperties.insert(name);
+
+			sortedProperties.emplace(
+				std::visit(typeIndexVisitor, prop.value),
+				std::pair<std::string, std::reference_wrapper<OvRendering::Data::MaterialPropertyType>>{
+					name,
+					std::ref(prop.value)
+				}
+			);
+		}
 	}
 
 	for (auto& [index, propInfo] : sortedProperties)

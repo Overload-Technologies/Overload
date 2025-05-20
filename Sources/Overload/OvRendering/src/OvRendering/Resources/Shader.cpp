@@ -4,30 +4,38 @@
 * @licence: MIT
 */
 
+#include <format>
+#include <ranges>
+
 #include <OvDebug/Assertion.h>
 #include <OvRendering/Resources/Shader.h>
 
 namespace
 {
-	void ValidateProgramRegistry(const OvRendering::Resources::Shader::ProgramVariants& p_programs)
+	void ValidateVariants(const OvRendering::Resources::Shader::Variants& p_variants)
 	{
-		OVASSERT(p_programs.size() > 0 && p_programs.contains({}),
-			"Shader program registry must contain at least a default program"
-		);
+		OVASSERT(p_variants.contains({}), "Missing default pass.");
+		OVASSERT(p_variants.at({}).size() > 0 && p_variants.at({}).contains({}), "Missing default program.");
 	}
 }
 
-OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetProgram(const Data::FeatureSet& p_featureSet)
+OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetVariant(std::optional<const std::string_view> p_pass, const Data::FeatureSet& p_featureSet)
 {
-	if (m_programs.contains(p_featureSet))
+	const std::string pass = std::string{ p_pass.value_or("") };
+
+	if (!m_variants.contains(pass))
 	{
-		return *m_programs[p_featureSet];
+		OVASSERT(m_variants[{}].contains({}), "No default program found for the default pass");
+		return *m_variants[{}][{}];
 	}
-	else
+
+	if (!m_variants[pass].contains(p_featureSet))
 	{
-		OVASSERT(m_programs.contains({}), "No default program found for this shader");
-		return *m_programs[{}];
+		OVASSERT(m_variants[pass].contains({}), std::format("No default program found for pass: {}", pass));
+		return *m_variants[pass][{}];
 	}
+
+	return *m_variants[pass][p_featureSet];
 }
 
 const OvRendering::Data::FeatureSet& OvRendering::Resources::Shader::GetFeatures() const
@@ -35,29 +43,40 @@ const OvRendering::Data::FeatureSet& OvRendering::Resources::Shader::GetFeatures
 	return m_features;
 }
 
-OvRendering::Resources::Shader::Shader(
-	const std::string p_path,
-	ProgramVariants&& p_program
-) : path(p_path)
+const std::unordered_set<std::string>& OvRendering::Resources::Shader::GetPasses() const
 {
-	SetPrograms(std::move(p_program));
+	return m_passes;
 }
 
-void OvRendering::Resources::Shader::SetPrograms(ProgramVariants&& p_programs)
+OvRendering::Resources::Shader::Shader(
+	const std::string p_path,
+	Variants&& p_variants
+) : path(p_path)
 {
-	ValidateProgramRegistry(p_programs);
-	m_programs = std::move(p_programs);
+	SetVariants(std::move(p_variants));
+}
 
+void OvRendering::Resources::Shader::SetVariants(Variants&& p_variants)
+{
+	ValidateVariants(p_variants);
+	m_variants = std::move(p_variants);
+
+	m_passes.clear();
 	m_features.clear();
 
-	// Find all features based on the compiled programs
-	for (const auto& [key, _] : m_programs)
+	// Find all passes & features based on the compiled variants
+	for (const auto& [pass, featureVariants] : m_variants)
 	{
-		m_features.insert(key.begin(), key.end());
+		m_passes.insert(pass);
+
+		for (const auto& featureSet : featureVariants | std::views::keys)
+		{
+			m_features.insert(featureSet.begin(), featureSet.end());
+		}
 	}
 }
 
-const OvRendering::Resources::Shader::ProgramVariants& OvRendering::Resources::Shader::GetPrograms() const
+const OvRendering::Resources::Shader::Variants& OvRendering::Resources::Shader::GetVariants() const
 {
-	return m_programs;
+	return m_variants;
 }

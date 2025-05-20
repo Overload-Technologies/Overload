@@ -27,18 +27,29 @@ namespace OvRendering::Resources
 		friend class Loaders::ShaderLoader;
 
 	public:
-		using ProgramVariants = std::unordered_map<
+		// Shader programs for each feature combination
+		using FeatureVariants = std::unordered_map<
 			Data::FeatureSet,
 			std::unique_ptr<HAL::ShaderProgram>,
 			Data::FeatureSetHash,
 			Data::FeatureSetEqual
 		>;
 
+		// Shader programs for each pass for each feature combination
+		using Variants = std::unordered_map<
+			std::string,
+			FeatureVariants
+		>;
+
 		/**
 		* Returns the associated shader program for a given feature set
+		* @param p_pass (optional) The pass to use. If not provided, the default pass will be selected.
 		* @param p_featureSet (optional) The feature set to use. If not provided, the default program will be used.
 		*/
-		HAL::ShaderProgram& GetProgram(const Data::FeatureSet& p_featureSet = {});
+		HAL::ShaderProgram& GetVariant(
+			std::optional<const std::string_view> p_pass = std::nullopt,
+			const Data::FeatureSet& p_featureSet = {}
+		);
 
 		/**
 		* Returns supported features
@@ -46,24 +57,30 @@ namespace OvRendering::Resources
 		const Data::FeatureSet& GetFeatures() const;
 
 		/**
+		* Returns supported passes
+		*/
+		const std::unordered_set<std::string>& GetPasses() const;
+
+		/**
 		* Return all programs
 		*/
-		const ProgramVariants& GetPrograms() const;
+		const Variants& GetVariants() const;
 
 	private:
 		Shader(
 			const std::string p_path,
-			ProgramVariants&& p_programs
+			Variants&& p_variants
 		);
 
 		~Shader() = default;
-		void SetPrograms(ProgramVariants&& p_programs);
+		void SetVariants(Variants&& p_variants);
 
 	public:
 		const std::string path;
 
 	private:
+		std::unordered_set<std::string> m_passes;
 		Data::FeatureSet m_features;
-		ProgramVariants m_programs;
+		Variants m_variants;
 	};
 }

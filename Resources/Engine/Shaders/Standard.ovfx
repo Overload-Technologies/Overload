@@ -1,4 +1,5 @@
-#feature SHADOW_PASS
+#pass SHADOW_PASS
+
 #feature PARALLAX_MAPPING
 #feature ALPHA_CLIPPING
 #feature ALPHA_DITHERING

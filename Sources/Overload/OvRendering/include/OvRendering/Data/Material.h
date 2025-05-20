@@ -62,10 +62,12 @@ namespace OvRendering::Data
 		void SetShader(OvRendering::Resources::Shader* p_shader);
 
 		/**
-		* Returns the shader program (variant) given the current feature set
+		* Returns the variant (shader program) given a pass and the current feature set (or an override)
+		* @param p_pass
 		* @param p_override
 		*/
-		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> GetProgram(
+		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> GetVariant(
+			std::optional<const std::string_view> p_pass = std::nullopt,
 			OvTools::Utils::OptRef<const Data::FeatureSet> p_override = std::nullopt
 		) const;
 
@@ -77,10 +79,12 @@ namespace OvRendering::Data
 		/**
 		* Bind the material and send its uniform data to the GPU
 		* @param p_emptyTexture (The texture to use if a texture uniform is null)
+		* @param p_pass
 		* @param p_featureSetOverride
 		*/
 		void Bind(
 			HAL::Texture* p_emptyTexture = nullptr,
+			std::optional<const std::string_view> p_pass = std::nullopt,
 			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
 		);
 
@@ -304,6 +308,12 @@ namespace OvRendering::Data
 		* @param p_feature
 		*/
 		bool SupportsFeature(const std::string& p_feature) const;
+
+		/**
+		* Returns true if the material has a pass
+		* @param p_pass
+		*/
+		bool HasPass(const std::string& p_pass) const;
 
 		/**
 		* Returns true if the material supports orthopgraphic projection

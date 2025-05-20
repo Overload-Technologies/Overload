@@ -22,6 +22,7 @@ namespace OvRendering::Entities
 		OvTools::Utils::OptRef<OvRendering::Data::Material> material;
 		Data::StateMask stateMask;
 		Settings::EPrimitiveMode primitiveMode = OvRendering::Settings::EPrimitiveMode::TRIANGLES;
+		std::optional<std::string> pass = std::nullopt;
 		std::optional<Data::FeatureSet> featureSetOverride = std::nullopt;
 	};
 }

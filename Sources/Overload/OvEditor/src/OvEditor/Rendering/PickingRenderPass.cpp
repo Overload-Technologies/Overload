@@ -172,7 +172,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 
 						// If the material has picking pass, use it, otherwise use the picking fallback material
 						auto& targetMaterial =
-							(customMaterial && customMaterial->IsValid() && customMaterial->SupportsFeature(pickingPassName)) ?
+							(customMaterial && customMaterial->IsValid() && customMaterial->HasPass(pickingPassName)) ?
 							*customMaterial :
 							m_actorPickingFallbackMaterial;
 
@@ -190,7 +190,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 						drawable.stateMask = stateMask;
 						drawable.stateMask.frontfaceCulling = false;
 						drawable.stateMask.backfaceCulling = false;
-						drawable.featureSetOverride = targetMaterial.GetFeatures() + pickingPassName;
+						drawable.pass = pickingPassName;
 
 						drawable.AddDescriptor<OvCore::Rendering::EngineDrawableDescriptor>({
 							modelMatrix

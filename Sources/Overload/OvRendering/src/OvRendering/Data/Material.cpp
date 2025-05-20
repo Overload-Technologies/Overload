@@ -81,13 +81,15 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 	}
 }
 
-OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Material::GetProgram(
+OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Material::GetVariant(
+	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_override
 ) const
 {
 	if (m_shader)
 	{
-		return m_shader->GetProgram(
+		return m_shader->GetVariant(
+			p_pass,
 			p_override.value_or(m_features)
 		);
 	}
@@ -99,20 +101,24 @@ void OvRendering::Data::Material::FillUniform()
 {
 	m_properties.clear();
 
-	for (const auto& program : m_shader->GetPrograms() | std::views::values)
+	for (const auto& featureVariants : m_shader->GetVariants() | std::views::values)
 	{
-		for (const auto& uniform : program->GetUniforms())
+		for (const auto& variant : featureVariants | std::views::values)
 		{
-			m_properties.emplace(uniform.name, MaterialProperty{
-				.value = UniformToPropertyValue(uniform.defaultValue),
-				.singleUse = false
-			});
+			for (const auto& uniform : variant->GetUniforms())
+			{
+				m_properties.emplace(uniform.name, MaterialProperty{
+					.value = UniformToPropertyValue(uniform.defaultValue),
+					.singleUse = false
+				});
+			}
 		}
 	}
 }
 
 void OvRendering::Data::Material::Bind(
 	OvRendering::HAL::Texture* p_emptyTexture,
+	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
 )
 {
@@ -123,7 +129,8 @@ void OvRendering::Data::Material::Bind(
 
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
-	auto& program = m_shader->GetProgram(
+	auto& program = m_shader->GetVariant(
+		p_pass,
 		p_featureSetOverride.value_or(m_features)
 	);
 
@@ -225,7 +232,7 @@ void OvRendering::Data::Material::Bind(
 void OvRendering::Data::Material::Unbind() const
 {
 	OVASSERT(IsValid(), "Attempting to unbind an invalid material.");
-	m_shader->GetProgram().Unbind();
+	m_shader->GetVariant().Unbind();
 }
 
 bool OvRendering::Data::Material::HasProperty(const std::string& p_name) const
@@ -308,7 +315,6 @@ void OvRendering::Data::Material::SetUserInterface(bool p_userInterface)
 {
 	m_userInterface = p_userInterface;
 }
-
 
 void OvRendering::Data::Material::SetBackfaceCulling(bool p_backfaceCulling)
 {
@@ -446,6 +452,11 @@ bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
 bool OvRendering::Data::Material::SupportsFeature(const std::string& p_feature) const
 {
 	return m_shader->GetFeatures().contains(p_feature);
+}
+
+bool OvRendering::Data::Material::HasPass(const std::string& p_pass) const
+{
+	return m_shader->GetPasses().contains(p_pass);
 }
 
 bool OvRendering::Data::Material::SupportsOrthographic() const

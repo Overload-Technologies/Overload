@@ -112,7 +112,7 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 
 							// If the material has shadow pass, use it, otherwise use the shadow fallback material
 							auto& targetMaterial =
-								material->SupportsFeature(shadowPassName) ?
+								material->HasPass(shadowPassName) ?
 								*material :
 								m_shadowMaterial;
 
@@ -133,7 +133,7 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 							drawable.stateMask.frontfaceCulling = false;
 							drawable.stateMask.backfaceCulling = false;
 
-							drawable.featureSetOverride = targetMaterial.GetFeatures() + shadowPassName;
+							drawable.pass = shadowPassName;
 
 							drawable.AddDescriptor<EngineDrawableDescriptor>({
 								modelMatrix,

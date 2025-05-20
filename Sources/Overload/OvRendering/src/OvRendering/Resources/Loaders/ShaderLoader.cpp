@@ -29,6 +29,7 @@ namespace
 {
 	namespace Grammar
 	{
+		constexpr std::string_view kPassToken = "#pass";
 		constexpr std::string_view kFeatureToken = "#feature";
 		constexpr std::string_view kVertexShaderToken = "#shader vertex";
 		constexpr std::string_view kFragmentShaderToken = "#shader fragment";
@@ -62,6 +63,7 @@ namespace
 		const ShaderInputInfo inputInfo;
 		const std::string vertexShader;
 		const std::string fragmentShader;
+		const std::unordered_set<std::string> passes;
 		const OvRendering::Data::FeatureSet features;
 	};
 
@@ -69,7 +71,7 @@ namespace
 	{
 		const ShaderInputInfo inputInfo;
 		const uint32_t failures; // How many variants failed to compile
-		OvRendering::Resources::Shader::ProgramVariants variants;
+		OvRendering::Resources::Shader::Variants variants;
 	};
 
 	struct ShaderStageDesc
@@ -111,18 +113,24 @@ namespace
 		return std::string{};
 	}
 
-	std::string EnableFeaturesInShaderCode(const std::string& shaderCode, const OvRendering::Data::FeatureSet& features)
+	std::string AddDefinesToShaderCode(
+		const std::string& shaderCode,
+		const std::unordered_set<std::string_view> defines
+	)
 	{
-		if (features.empty())
+		if (defines.empty())
 		{
 			return shaderCode;
 		}
 
 		// Create the defines string once
 		std::string definesStr;
-		for (const auto& feature : features)
+		for (const auto& define : defines)
 		{
-			definesStr += std::format("{} {}\n", Grammar::kDefineToken, feature);
+			if (!define.empty())
+			{
+				definesStr += std::format("{} {}\n", Grammar::kDefineToken, define);
+			}
 		}
 
 		// Find insertion point after version directive if it exists
@@ -150,6 +158,7 @@ namespace
 	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
 		const ShaderInputInfo& p_shaderInputInfo,
 		std::span<const ShaderStageDesc> p_stages,
+		const std::string_view p_pass,
 		const OvRendering::Data::FeatureSet& p_features,
 		bool p_disableLogging = false
 	)
@@ -163,7 +172,10 @@ namespace
 		for (const auto& stageInput : p_stages)
 		{
 			const auto& processedStage = processedStages.emplace_back(stageInput.type);
-			const auto source = EnableFeaturesInShaderCode(stageInput.source, p_features);
+			
+			std::unordered_set<std::string_view> defines(p_features.begin(), p_features.end());
+			defines.insert(p_pass);
+			const auto source = AddDefinesToShaderCode(stageInput.source, defines);
 			processedStage.stage.Upload(source);
 
 			if (const auto result = processedStage.stage.Compile(); !result.success)
@@ -171,11 +183,12 @@ namespace
 				if (!p_disableLogging && __LOGGING_SETTINGS.compilationErrors)
 				{
 					OVLOG_ERROR(std::format(
-						"[Shader Compile] {}{}: {}",
+						"[Shader Compile] {}<{}>{}: {}",
 						std::format("{}/{}",
 							p_shaderInputInfo.name,
 							OvRendering::Utils::GetShaderTypeName(stageInput.type)
 						),
+						p_pass,
 						FeatureSetToString(p_features),
 						result.message
 					));
@@ -186,11 +199,12 @@ namespace
 			else if (!p_disableLogging && __LOGGING_SETTINGS.compilationSuccess)
 			{
 				OVLOG_INFO(std::format(
-					"[Shader Compile] {}{}: Compilation successful.",
+					"[Shader Compile] {}<{}>{}: Compilation successful.",
 					std::format("{}/{}",
 						p_shaderInputInfo.name,
 						OvRendering::Utils::GetShaderTypeName(stageInput.type)
 					),
+					p_pass,
 					FeatureSetToString(p_features)
 				));
 			}
@@ -224,8 +238,9 @@ namespace
 			if (!p_disableLogging && __LOGGING_SETTINGS.linkingSuccess)
 			{
 				OVLOG_INFO(std::format(
-					"[Shader Linking] {}{}: {}",
+					"[Shader Linking] {}<{}>{}: {}",
 					p_shaderInputInfo.name,
+					p_pass,
 					FeatureSetToString(p_features),
 					"Linking successful."
 				));
@@ -284,6 +299,7 @@ void main()
 				.name = "DefaultProgram"
 			},
 			shaders,
+			{},
 			{},
 			true // Force no logging for default program (we expect it to succeed, otherwise we have a problem)
 		);
@@ -368,6 +384,8 @@ void main()
 		std::string line;
 		std::unordered_map<EShaderType, std::stringstream> shaderSources;
 		OvRendering::Data::FeatureSet features;
+		std::unordered_set<std::string> passes;
+		passes.emplace(); // Default pass if none is specified (empty string)
 
 		auto currentType = EShaderType::NONE;
 
@@ -375,7 +393,22 @@ void main()
 		{
 			const std::string trimmedLine = Trim(line);
 
-			if (trimmedLine.starts_with(Grammar::kFeatureToken))
+			if (trimmedLine.starts_with(Grammar::kPassToken))
+			{
+				std::string passName;
+				passName.reserve(16); // Reserve some arbitrary space for the pass name
+
+				for (auto& c : trimmedLine |
+					std::views::drop(Grammar::kPassToken.size()) |
+					std::views::drop_while(isspace) |
+					std::views::take_while([](char c) { return !isspace(c); }))
+				{
+					passName += c;
+				}
+
+				passes.insert(passName);
+			}
+			else if (trimmedLine.starts_with(Grammar::kFeatureToken))
 			{
 				std::string featureName;
 				featureName.reserve(16); // Reserve some arbitrary space for the feature name
@@ -408,6 +441,7 @@ void main()
 			.inputInfo = p_shaderLoadResult.inputInfo,
 			.vertexShader = shaderSources[EShaderType::VERTEX].str(),
 			.fragmentShader = shaderSources[EShaderType::FRAGMENT].str(),
+			.passes = passes,
 			.features = features
 		};
 	}
@@ -419,55 +453,73 @@ void main()
 	{
 		const auto startTime = std::chrono::high_resolution_clock::now();
 
-		const auto variantCount = (size_t{ 1UL } << p_parseResult.features.size());
+		const auto featureVariantCount = (size_t{ 1UL } << p_parseResult.features.size());
 
 		uint32_t failures = 0;
-		OvRendering::Resources::Shader::ProgramVariants variants;
 
-		// We create a shader program (AKA shader variant) for each combination of features.
-		// The number of combinations is 2^n, where n is the number of features.
-		for (size_t i = 0; i < variantCount; ++i)
+		OvRendering::Resources::Shader::Variants variants;
+
+		// We create as many additional shader programs (variants) as there are passes
+		for (const auto& pass : p_parseResult.passes)
 		{
-			OvRendering::Data::FeatureSet featureSet;
-			for (size_t j = 0; j < p_parseResult.features.size(); ++j)
+			OvRendering::Resources::Shader::FeatureVariants featureVariants;
+			featureVariants.reserve(featureVariantCount * p_parseResult.passes.size());
+
+			// We create a shader program (AKA shader variant) for each combination of features.
+			// The number of combinations is 2^n, where n is the number of features.
+			for (size_t i = 0; i < featureVariantCount; ++i)
 			{
-				if (i & (size_t{ 1UL } << j))
+				OvRendering::Data::FeatureSet featureSet;
+				for (size_t j = 0; j < p_parseResult.features.size(); ++j)
 				{
-					featureSet.insert(*std::next(p_parseResult.features.begin(), j));
+					if (i & (size_t{ 1UL } << j))
+					{
+						featureSet.insert(*std::next(p_parseResult.features.begin(), j));
+					}
+				}
+
+				const auto stages = std::to_array<ShaderStageDesc>({
+					{ p_parseResult.vertexShader, OvRendering::Settings::EShaderType::VERTEX },
+					{ p_parseResult.fragmentShader, OvRendering::Settings::EShaderType::FRAGMENT }
+					});
+
+				auto program = CreateProgram(
+					p_parseResult.inputInfo,
+					stages,
+					pass,
+					featureSet
+				);
+
+				if (program)
+				{
+					featureVariants.emplace(featureSet, std::move(program));
+				}
+				else
+				{
+					++failures;
 				}
 			}
 
-			const auto stages = std::to_array<ShaderStageDesc>({
-				{ p_parseResult.vertexShader, OvRendering::Settings::EShaderType::VERTEX },
-				{ p_parseResult.fragmentShader, OvRendering::Settings::EShaderType::FRAGMENT }
-			});
-
-			auto program = CreateProgram(
-				p_parseResult.inputInfo,
-				stages,
-				featureSet
-			);
-
-			if (program)
+			// If no default program was created, we create a default one (fallback)
+			if (!featureVariants.contains({}))
 			{
-				variants.emplace(featureSet, std::move(program));
+				featureVariants.emplace(
+					OvRendering::Data::FeatureSet{},
+					std::move(CreateDefaultProgram())
+				);
 			}
-			else
-			{
-				++failures;
-			}
-		}
 
-		// If no default program was created, we create a default one (fallback)
-		if (!variants.contains({}))
-		{
-			variants.emplace(
-				OvRendering::Data::FeatureSet{},
-				std::move(CreateDefaultProgram())
-			);
+			variants.emplace(pass, std::move(featureVariants));
 		}
 
 		const auto endTime = std::chrono::high_resolution_clock::now();
+
+		const size_t totalVariantCount = std::accumulate(
+			variants.begin(), variants.end(), 0ULL,
+			[](const auto& a, const auto& b) {
+				return a + b.second.size();
+			}
+		);
 
 		if (failures > 0)
 		{
@@ -485,7 +537,7 @@ void main()
 			OVLOG_INFO(std::format(
 				"[Shader Assembling] {}: {} variant(s) assembled in {} ms.",
 				p_parseResult.inputInfo.name,
-				variantCount,
+				totalVariantCount,
 				std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count()
 			));
 		}
@@ -524,6 +576,7 @@ void main()
 			},
 			.vertexShader = p_vertexShader,
 			.fragmentShader = p_fragmentShader,
+			.passes = {{}}, // Default pass (empty string)
 			.features = {} // No support for features in embedded shaders
 		};
 
@@ -561,7 +614,7 @@ namespace OvRendering::Resources::Loaders
 
 		if (result.failures == 0)
 		{
-			p_shader.SetPrograms(std::move(result.variants));
+			p_shader.SetVariants(std::move(result.variants));
 		}
 		else
 		{

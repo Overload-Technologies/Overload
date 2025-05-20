@@ -156,7 +156,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 	{
 		auto getStencilMaterial = [&]() -> OvCore::Resources::Material& {
 			auto material = p_materials.has_value() ? p_materials->at(mesh->GetMaterialIndex()) : nullptr;
-			if (material && material->IsValid() && material->SupportsFeature(outlinePassName))
+			if (material && material->IsValid() && material->HasPass(outlinePassName))
 			{
 				return *material;
 			}
@@ -178,7 +178,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 		element.stateMask = stateMask;
 		element.stateMask.depthTest = false;
 		element.stateMask.colorWriting = false;
-		element.featureSetOverride = targetMaterial.GetFeatures() + outlinePassName;
+		element.pass = outlinePassName;
 
 		element.AddDescriptor(engineDrawableDescriptor);
 
@@ -200,7 +200,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 	{
 		auto getStencilMaterial = [&]() -> OvCore::Resources::Material& {
 			auto material = p_materials.has_value() ? p_materials->at(mesh->GetMaterialIndex()) : nullptr;
-			if (material && material->IsValid() && material->SupportsFeature(outlinePassName))
+			if (material && material->IsValid() && material->HasPass(outlinePassName))
 			{
 				return *material;
 			}
@@ -227,7 +227,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 		drawable.material = targetMaterial;
 		drawable.stateMask = stateMask;
 		drawable.stateMask.depthTest = false;
-		drawable.featureSetOverride = targetMaterial.GetFeatures() + outlinePassName;
+		drawable.pass = outlinePassName;
 
 		drawable.AddDescriptor(engineDrawableDescriptor);
 

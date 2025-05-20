@@ -221,7 +221,6 @@ namespace OvRendering::HAL
 			return std::nullopt;
 		}
 
-		OVLOG_INFO(std::format("OpenGL initialized: {}.{}", GL_MAJOR_VERSION, GL_MINOR_VERSION));
 		TracyGpuContext;
 
 		if (debug)

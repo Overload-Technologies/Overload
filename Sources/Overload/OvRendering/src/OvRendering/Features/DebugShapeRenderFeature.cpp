@@ -109,7 +109,7 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
 
 	m_renderer.DrawEntity(p_pso, drawable);
 
-	m_lineShader->GetProgram().Unbind();
+	m_lineShader->GetVariant().Unbind();
 }
 
 void OvRendering::Features::DebugShapeRenderFeature::DrawBox(

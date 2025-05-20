@@ -219,6 +219,7 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 
 	p_drawable.material->Bind(
 		&m_emptyTexture->GetTexture(),
+		p_drawable.pass,
 		p_drawable.featureSetOverride.has_value() ?
 		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
 		std::nullopt

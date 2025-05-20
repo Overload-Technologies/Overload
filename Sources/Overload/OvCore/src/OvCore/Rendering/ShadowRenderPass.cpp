@@ -28,6 +28,7 @@ OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::Composi
 
 void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
+	ZoneScoped;
 	TracyGpuZone("ShadowRenderPass");
 
 	using namespace OvCore::Rendering;

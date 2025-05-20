@@ -4,9 +4,10 @@
 * @licence: MIT
 */
 
-#include <OvCore/Rendering/PostProcess/FXAAEffect.h>
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/PostProcess/FXAAEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvCore::Rendering::PostProcess::FXAAEffect::FXAAEffect(OvRendering::Core::CompositeRenderer& p_renderer) : AEffect(p_renderer)
 {
@@ -20,5 +21,8 @@ void OvCore::Rendering::PostProcess::FXAAEffect::Draw(
 	const EffectSettings& p_settings
 )
 {
+	ZoneScoped;
+	TracyGpuZone("FXAAEffect");
+
 	m_renderer.Blit(p_pso, p_src, p_dst, m_material);
 }

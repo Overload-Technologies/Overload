@@ -8,6 +8,7 @@
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/PostProcess/BloomEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
 	AEffect(p_renderer),
@@ -46,6 +47,9 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	const EffectSettings& p_settings
 )
 {
+	ZoneScoped;
+	TracyGpuZone("BloomEffect");
+
 	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
 
 	// Step 1: Extract bright spots from the source

@@ -4,10 +4,12 @@
 * @licence: MIT
 */
 
+
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/PostProcess/AutoExposureEffect.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvRendering/HAL/Profiling.h>
 
 constexpr uint32_t kLuminanceBufferResolution = 1024;
 constexpr uint32_t kExposureBufferResolution = 1;
@@ -51,6 +53,9 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	const EffectSettings& p_settings
 )
 {
+	ZoneScoped;
+	TracyGpuZone("AutoExposureEffect");
+
 	const auto& autoExposureSettings = static_cast<const AutoExposureSettings&>(p_settings);
 
 	// Luminance calculation

@@ -4,9 +4,10 @@
 * @licence: MIT
 */
 
-#include "OvCore/Rendering/PostProcess/TonemappingEffect.h"
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Rendering/PostProcess/TonemappingEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvRendering/HAL/Profiling.h>
 
 OvCore::Rendering::PostProcess::TonemappingEffect::TonemappingEffect(OvRendering::Core::CompositeRenderer& p_renderer) : AEffect(p_renderer)
 {
@@ -20,6 +21,9 @@ void OvCore::Rendering::PostProcess::TonemappingEffect::Draw(
 	const EffectSettings& p_settings
 )
 {
+	ZoneScoped;
+	TracyGpuZone("TonemappingEffect");
+
 	const auto& tonemappingSettings = static_cast<const TonemappingSettings&>(p_settings);
 
 	// Tonemapping

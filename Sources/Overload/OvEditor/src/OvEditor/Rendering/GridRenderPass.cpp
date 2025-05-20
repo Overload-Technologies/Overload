@@ -28,6 +28,7 @@ OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::Composite
 
 void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
+	ZoneScoped;
 	TracyGpuZone("GridRenderPass");
 
 	OVASSERT(m_renderer.HasDescriptor<GridDescriptor>(), "Cannot find GridDescriptor attached to this renderer");

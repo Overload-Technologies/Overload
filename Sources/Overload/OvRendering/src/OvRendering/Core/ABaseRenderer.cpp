@@ -131,7 +131,7 @@ void OvRendering::Core::ABaseRenderer::Blit(
 {
 	ZoneScoped;
 
-	auto [srcWidth, srcHeight] = p_src.GetSize();
+	const auto [srcWidth, srcHeight] = p_src.GetSize();
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC, p_flags))
 	{
@@ -168,7 +168,8 @@ void OvRendering::Core::ABaseRenderer::Blit(
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::UPDATE_VIEWPORT_SIZE, p_flags))
 	{
-		SetViewport(0, 0, srcWidth, srcHeight);
+		const auto [dstWidth, dstHeight] = p_dst.GetSize();
+		SetViewport(0, 0, dstWidth, dstHeight);
 	}
 
 	DrawEntity(p_pso, blit);

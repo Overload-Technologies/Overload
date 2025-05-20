@@ -32,7 +32,7 @@ namespace OvCore::Rendering
 		ShadowRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
 
 	protected:
-		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
+		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, OvRendering::Entities::Drawable& p_drawable);
 		virtual void OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
 	};
 }

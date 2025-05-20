@@ -13,6 +13,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvCore/Rendering/PostProcessRenderPass.h>
 
 #include <OvDebug/Assertion.h>
 
@@ -109,6 +110,63 @@ namespace
 		return lightBuffer;
 	}
 }
+
+class DebugViewRenderFeature : public OvRendering::Features::ARenderFeature
+{
+public:
+	DebugViewRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) : ARenderFeature(p_renderer)
+	{
+	}
+
+	void SetDebugViewMode(OvEditor::Rendering::EDebugViewMode p_mode)
+	{
+		m_debugViewMode = p_mode;
+	}
+
+protected:
+	void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, OvRendering::Entities::Drawable& p_drawable)
+	{
+		if (m_debugViewMode != OvEditor::Rendering::EDebugViewMode::NONE && !p_drawable.pass.has_value())
+		{
+			if (m_debugViewMode == OvEditor::Rendering::EDebugViewMode::WIREFRAME)
+			{
+				p_pso.rasterizationMode = OvRendering::Settings::ERasterizationMode::LINE;
+			}
+			
+			const std::string pass = _GetCurrentPassName();
+
+			if (p_drawable.material->HasPass(pass))
+			{
+				p_drawable.pass = pass;
+			}
+		}
+	}
+
+private:
+	std::string _GetCurrentPassName()
+	{
+		using enum OvEditor::Rendering::EDebugViewMode;
+
+		OVASSERT(m_debugViewMode != NONE, "Cannot retrieve current pass name if no debug view is set.");
+
+		switch (m_debugViewMode)
+		{
+		case ALBEDO: return "ALBEDO_PASS";
+		case METALLIC: return "METALLIC_PASS";
+		case ROUGHNESS: return "ROUGHNESS_PASS";
+		case AO: return "AO_PASS";
+		case NORMAL: return "NORMAL_PASS";
+		case UV: return "UV_PASS";
+		case DEPTH: return "DEPTH_PASS";
+		case WIREFRAME: return "ALBEDO_PASS";
+		}
+
+		return {};
+	}
+
+private:
+	OvEditor::Rendering::EDebugViewMode m_debugViewMode = OvEditor::Rendering::EDebugViewMode::NONE;
+};
 
 class DebugCamerasRenderPass : public OvRendering::Core::ARenderPass
 {
@@ -643,10 +701,17 @@ OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context
 	AddFeature<OvEditor::Rendering::DebugModelRenderFeature>();
 	AddFeature<OvEditor::Rendering::OutlineRenderFeature>();
 	AddFeature<OvEditor::Rendering::GizmoRenderFeature>();
+	AddFeature<DebugViewRenderFeature>();
 
 	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::Debug);
+}
+
+void OvEditor::Rendering::DebugSceneRenderer::SetDebugViewMode(EDebugViewMode p_mode) const
+{
+	GetFeature<DebugViewRenderFeature>().SetDebugViewMode(p_mode);
+	GetPass<OvCore::Rendering::PostProcessRenderPass>("Post-Process").SetEnabled(p_mode == EDebugViewMode::NONE);
 }

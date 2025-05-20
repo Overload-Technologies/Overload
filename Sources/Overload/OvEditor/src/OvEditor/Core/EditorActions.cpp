@@ -27,6 +27,7 @@
 #include <OvEditor/Panels/MaterialEditor.h>
 #include <OvEditor/Panels/ProjectSettings.h>
 #include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -501,6 +502,13 @@ OvEditor::Core::EGizmoOperation OvEditor::Core::EditorActions::GetGizmoOperation
 {
 	auto& sceneView = m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View");
 	return sceneView.GetGizmoOperation();
+}
+
+void OvEditor::Core::EditorActions::SetSceneViewDebugMode(OvEditor::Rendering::EDebugViewMode p_mode)
+{
+	auto& sceneView = m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View");
+	const auto& debugSceneRenderer = static_cast<const OvEditor::Rendering::DebugSceneRenderer&>(sceneView.GetRenderer());
+	debugSceneRenderer.SetDebugViewMode(p_mode);
 }
 
 OvMaths::FVector3 OvEditor::Core::EditorActions::CalculateActorSpawnPoint(float p_distanceToCamera)

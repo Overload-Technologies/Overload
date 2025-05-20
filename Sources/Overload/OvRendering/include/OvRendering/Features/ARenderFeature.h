@@ -59,7 +59,7 @@ namespace OvRendering::Features
 		* Invoked before drawing a drawable entity
 		* @param p_drawable
 		*/
-		virtual void OnBeforeDraw(Data::PipelineState& p_pso, const Entities::Drawable& p_drawable);
+		virtual void OnBeforeDraw(Data::PipelineState& p_pso, Entities::Drawable& p_drawable);
 
 		/**
 		* Invoked after drawing a drawable entity

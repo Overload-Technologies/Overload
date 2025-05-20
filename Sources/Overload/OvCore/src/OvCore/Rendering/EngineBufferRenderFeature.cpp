@@ -80,7 +80,7 @@ void OvCore::Rendering::EngineBufferRenderFeature::OnEndFrame()
 	m_engineBuffer->Unbind();
 }
 
-void OvCore::Rendering::EngineBufferRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
+void OvCore::Rendering::EngineBufferRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, OvRendering::Entities::Drawable& p_drawable)
 {
 	OvTools::Utils::OptRef<const EngineDrawableDescriptor> descriptor;
 

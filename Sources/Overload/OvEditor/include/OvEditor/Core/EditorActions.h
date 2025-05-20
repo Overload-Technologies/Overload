@@ -23,6 +23,11 @@ namespace tinyxml2
 	class XMLDocument;
 }
 
+namespace OvEditor::Rendering
+{
+	enum class EDebugViewMode;
+}
+
 namespace OvEditor::Core
 {
 	enum class EGizmoOperation;
@@ -162,6 +167,12 @@ namespace OvEditor::Core
 		* Returns the current gizmo operation
 		*/
 		EGizmoOperation GetGizmoOperation() const;
+
+		/**
+		* Sets the debug view mode to use
+		* @param p_mode
+		*/
+		void SetSceneViewDebugMode(OvEditor::Rendering::EDebugViewMode p_mode);
 		#pragma endregion
 
 		#pragma region ACTOR_CREATION_DESTRUCTION

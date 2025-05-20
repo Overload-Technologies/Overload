@@ -24,6 +24,19 @@ namespace OvEditor::Panels { class AView; }
 
 namespace OvEditor::Rendering
 {
+	enum class EDebugViewMode
+	{
+		NONE,
+		ALBEDO,
+		METALLIC,
+		ROUGHNESS,
+		AO,
+		NORMAL,
+		UV,
+		DEPTH,
+		WIREFRAME
+	};
+
 	/**
 	* Provide a debug layer on top of the default scene renderer to see "invisible" entities such as
 	* lights, cameras, 
@@ -44,5 +57,11 @@ namespace OvEditor::Rendering
 		* @param p_driver
 		*/
 		DebugSceneRenderer(OvRendering::Context::Driver& p_driver);
+
+		/**
+		* Set a debug view mode
+		* @param p_mode
+		*/
+		void SetDebugViewMode(EDebugViewMode p_mode) const;
 	};
 }

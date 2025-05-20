@@ -91,6 +91,8 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 {
 	ZoneScoped;
 
+	Entities::Drawable drawable = p_drawable;
+
 	// Ensure the drawable is valid.
 	// If not, skip the draw call and the attached features.
 	if (!IsDrawable(p_drawable))
@@ -102,17 +104,17 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	{
 		if (feature->IsEnabled())
 		{
-			feature->OnBeforeDraw(p_pso, p_drawable);
+			feature->OnBeforeDraw(p_pso, drawable);
 		}
 	}
 
-	ABaseRenderer::DrawEntity(p_pso, p_drawable);
+	ABaseRenderer::DrawEntity(p_pso, drawable);
 	
 	for (const auto& [_, feature] : m_features)
 	{
 		if (feature->IsEnabled())
 		{
-			feature->OnAfterDraw(p_drawable);
+			feature->OnAfterDraw(drawable);
 		}
 	}
 }

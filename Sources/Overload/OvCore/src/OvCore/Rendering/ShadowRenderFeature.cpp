@@ -19,7 +19,7 @@ OvCore::Rendering::ShadowRenderFeature::ShadowRenderFeature(OvRendering::Core::C
 {
 }
 
-void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
+void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, OvRendering::Entities::Drawable& p_drawable)
 {
 	auto& material = p_drawable.material.value();
 

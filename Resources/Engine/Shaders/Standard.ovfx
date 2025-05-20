@@ -1,4 +1,11 @@
 #pass SHADOW_PASS
+#pass ALBEDO_PASS
+#pass METALLIC_PASS
+#pass ROUGHNESS_PASS
+#pass AO_PASS
+#pass NORMAL_PASS
+#pass UV_PASS
+#pass DEPTH_PASS
 
 #feature PARALLAX_MAPPING
 #feature ALPHA_CLIPPING
@@ -129,6 +136,16 @@ void main()
     }
 #endif
 
+#if defined(DEPTH_PASS)  
+    const float near = 0.1;
+    const float far = 50.0;
+    const float depth = gl_FragCoord.z;
+    const float z = depth * 2.0 - 1.0; // back to NDC 
+    float linearDepth = (2.0 * near * far) / (far + near - z * (far - near)) / far;
+    FRAGMENT_COLOR = vec4(vec3(linearDepth), 1.0);
+    return;  
+#endif
+
     vec2 texCoords = TileAndOffsetTexCoords(fs_in.TexCoords, u_TextureTiling, u_TextureOffset);
 
 #if defined(PARALLAX_MAPPING)
@@ -170,6 +187,18 @@ void main()
     const vec3 normal = normalize(fs_in.Normal);
 #endif
 
+#if defined(NORMAL_PASS)
+    FRAGMENT_COLOR = vec4((normal + 1.0) / 2.0, 1.0);
+    return;
+#endif
+
+    const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
+
+#if defined(AO_PASS)
+    FRAGMENT_COLOR = vec4(ao.rrr, 1.0);
+    return;
+#endif
+
 #if defined(SPECULAR_WORKFLOW)
     const float specular = texture(u_SpecularMap, texCoords).r * u_Specular;
     const float glossiness = texture(u_GlossinessMap, texCoords).r * u_Glossiness;
@@ -180,7 +209,25 @@ void main()
     const float roughness = texture(u_RoughnessMap, texCoords).r * u_Roughness;
 #endif
 
-    const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
+#if defined(ALBEDO_PASS)
+    FRAGMENT_COLOR = vec4(albedo.rgba);
+    return;
+#endif
+
+#if defined(METALLIC_PASS)
+    FRAGMENT_COLOR = vec4(metallic.rrr, 1.0);
+    return;
+#endif
+
+#if defined(ROUGHNESS_PASS)
+    FRAGMENT_COLOR = vec4(roughness.rrr, 1.0);
+    return;
+#endif
+
+#if defined(UV_PASS)
+    FRAGMENT_COLOR = vec4(texCoords.x, texCoords.y, 0.0, 1.0);
+    return;
+#endif
 
     vec3 pbr = PBRLightingModel(
         albedo.rgb,

@@ -37,7 +37,7 @@ namespace OvCore::Rendering
 	protected:
 		virtual void OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor) override;
 		virtual void OnEndFrame() override;
-		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable) override;
+		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, OvRendering::Entities::Drawable& p_drawable) override;
 
 	protected:
 		std::chrono::high_resolution_clock::time_point m_startTime;

@@ -10,8 +10,10 @@
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Panels/Toolbar.h>
+#include <OvEditor/Rendering/DebugSceneRenderer.h>
 
 #include <OvUI/Widgets/Layout/Spacing.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
 {
@@ -91,6 +93,25 @@ OvEditor::Panels::Toolbar::Toolbar
 	};
 
 	EDITOR_EXEC(SetEditorMode(OvEditor::Core::EditorActions::EEditorMode::EDIT));
+
+	using enum OvEditor::Rendering::EDebugViewMode;
+	auto& debugViewSelector = CreateWidget<OvUI::Widgets::Selection::ComboBox>();
+	debugViewSelector.lineBreak = false;
+	debugViewSelector.choices = {
+		{ static_cast<int>(NONE), "Default" },
+		{ static_cast<int>(ALBEDO), "Albedo" },
+		{ static_cast<int>(METALLIC), "Metallic" },
+		{ static_cast<int>(ROUGHNESS), "Roughness" },
+		{ static_cast<int>(AO), "Ambient Occlusion" },
+		{ static_cast<int>(NORMAL), "Normal"},
+		{ static_cast<int>(UV), "UV"},
+		{ static_cast<int>(DEPTH), "Depth"},
+		{ static_cast<int>(WIREFRAME), "Wireframe"}
+	};
+	debugViewSelector.currentChoice = 0;
+	debugViewSelector.ValueChangedEvent += [](int choice) {
+		EDITOR_EXEC(SetSceneViewDebugMode(static_cast<OvEditor::Rendering::EDebugViewMode>(choice)));
+	};
 }
 
 void OvEditor::Panels::Toolbar::_Draw_Impl()

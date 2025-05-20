@@ -32,7 +32,7 @@ void OvRendering::Features::ARenderFeature::OnEndFrame()
 {
 }
 
-void OvRendering::Features::ARenderFeature::OnBeforeDraw(Data::PipelineState& p_pso, const Entities::Drawable& p_drawable)
+void OvRendering::Features::ARenderFeature::OnBeforeDraw(Data::PipelineState& p_pso, Entities::Drawable& p_drawable)
 {
 }
 

@@ -6,32 +6,26 @@
 
 #pragma once
 
-#include <OvTools/Filesystem/IniFile.h>
-
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
-
-#include <OvPhysics/Core/PhysicsEngine.h>
+#include <filesystem>
 
 #include <OvAudio/Core/AudioEngine.h>
-
-#include <OvWindowing/Context/Device.h>
-#include <OvWindowing/Inputs/InputManager.h>
-#include <OvWindowing/Window.h>
-
-#include <OvCore/ResourceManagement/ModelManager.h>
-#include <OvCore/ResourceManagement/TextureManager.h>
-#include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/ResourceManagement/SoundManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
 #include <OvCore/SceneSystem/SceneManager.h>
 #include <OvCore/Scripting/ScriptEngine.h>
-
-#include <OvUI/Core/UIManager.h>
-#include <OvAudio/Core/AudioEngine.h>
-
-#include "OvEditor/Core/EditorResources.h"
+#include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Utils/TextureRegistry.h>
+#include <OvPhysics/Core/PhysicsEngine.h>
+#include <OvRendering/HAL/UniformBuffer.h>
+#include <OvRendering/HAL/ShaderStorageBuffer.h>
+#include <OvTools/Filesystem/IniFile.h>
+#include <OvWindowing/Window.h>
+#include <OvUI/Core/UIManager.h>
+#include <OvWindowing/Context/Device.h>
+#include <OvWindowing/Inputs/InputManager.h>
 
 namespace OvEditor::Core
 {
@@ -43,10 +37,9 @@ namespace OvEditor::Core
 	public:
 		/**
 		* Constructor
-		* @param p_projectPath
-		* @param p_projectName
+		* @param p_projectPath (including the .ovproject file)
 		*/
-		Context(const std::string& p_projectPath, const std::string& p_projectName);
+		Context(const std::filesystem::path& p_projectPath);
 
 		/**
 		* Destructor
@@ -70,9 +63,8 @@ namespace OvEditor::Core
 		void ApplyProjectSettings();
 
 	public:
-		const std::string projectPath;
-		const std::string projectName;
-		const std::string projectFilePath;
+		const std::filesystem::path projectFile;
+		const std::filesystem::path projectFolder;
 		const std::string engineAssetsPath;
 		const std::string projectAssetsPath;
 		const std::string projectScriptsPath;

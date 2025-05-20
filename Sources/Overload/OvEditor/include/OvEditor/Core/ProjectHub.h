@@ -14,6 +14,11 @@
 
 namespace OvEditor::Core
 {
+	struct ProjectHubResult
+	{
+		std::filesystem::path projectPath;
+	};
+
 	/**
 	* A simple panel that allow the user to select the project to launch
 	*/
@@ -28,30 +33,18 @@ namespace OvEditor::Core
 		/**
 		* Run the project hub logic
 		*/
-		std::tuple<bool, std::string, std::string> Run();
+		std::optional<ProjectHubResult> Run();
 
 		/**
 		* Setup the project hub specific context (minimalist context)
 		*/
 		void SetupContext();
 
-		/**
-		* Register the project (identified from the given path) into the project hub
-		* @param p_path
-		*/
-		void RegisterProject(const std::string& p_path);
-
 	private:
-		std::unique_ptr<OvWindowing::Context::Device>		m_device;
-		std::unique_ptr<OvWindowing::Window>				m_window;
-		std::unique_ptr<OvRendering::Context::Driver>		m_driver;
-		std::unique_ptr<OvUI::Core::UIManager>				m_uiManager;
-
+		std::unique_ptr<OvWindowing::Context::Device> m_device;
+		std::unique_ptr<OvWindowing::Window> m_window;
+		std::unique_ptr<OvRendering::Context::Driver> m_driver;
+		std::unique_ptr<OvUI::Core::UIManager> m_uiManager;
 		OvUI::Modules::Canvas m_canvas;
-		std::unique_ptr<OvUI::Panels::PanelWindow>			m_mainPanel;
-
-		std::string m_projectPath = "";
-		std::string m_projectName = "";
-		bool m_readyToGo = false;
 	};
 }

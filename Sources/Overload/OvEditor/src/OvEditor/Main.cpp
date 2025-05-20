@@ -5,10 +5,12 @@
 */
 
 #include <filesystem>
+#include <fstream>
 
 #include <OvEditor/Core/Application.h>
 #include <OvEditor/Core/ProjectHub.h>
 #include <OvEditor/Settings/EditorSettings.h>
+#include <OvEditor/Utils/FileSystem.h>
 
 #include <OvRendering/Utils/Defines.h>
 
@@ -20,28 +22,72 @@
 
 FORCE_DEDICATED_GPU
 
-/**
-* When Overload is launched from a project file, we should consider the executable path as
-* the current working directory
-* @param p_executablePath
-*/
-void UpdateWorkingDirectory(const std::string& p_executablePath)
+namespace
 {
-	if (!IsDebuggerPresent())
+	/**
+	* When Overload is launched from a project file, we should consider the executable path as
+	* the current working directory
+	* @param p_executablePath
+	*/
+	void UpdateWorkingDirectory(const std::string& p_executablePath)
 	{
-		std::filesystem::current_path(OvTools::Utils::PathParser::GetContainingFolder(p_executablePath));
+		if (!IsDebuggerPresent())
+		{
+			std::filesystem::current_path(OvTools::Utils::PathParser::GetContainingFolder(p_executablePath));
+		}
+	}
+
+	void RegisterProject(const std::filesystem::path& p_path)
+	{
+		bool pathAlreadyRegistered = false;
+
+		{
+			std::string line;
+			std::ifstream myfile(OvEditor::Utils::FileSystem::kProjectRegistryFilePath);
+			if (myfile.is_open())
+			{
+				while (getline(myfile, line))
+				{
+					if (line == p_path)
+					{
+						pathAlreadyRegistered = true;
+						break;
+					}
+				}
+				myfile.close();
+			}
+		}
+
+		if (!pathAlreadyRegistered)
+		{
+			std::ofstream projectsFile(OvEditor::Utils::FileSystem::kProjectRegistryFilePath, std::ios::app);
+			projectsFile << p_path.string() << std::endl;
+		}
+	}
+
+	void TryRun(const std::filesystem::path& projectPath)
+	{
+		const auto errorEvent = [](OvWindowing::Context::EDeviceError, std::string errMsg) {
+			errMsg = "Overload requires OpenGL 4.5 or newer.\r\n" + errMsg;
+			MessageBox(0, errMsg.c_str(), "Overload", MB_OK | MB_ICONSTOP);
+		};
+
+		std::unique_ptr<OvEditor::Core::Application> app;
+
+		try
+		{
+			auto listenerId = OvWindowing::Context::Device::ErrorEvent += errorEvent;
+			app = std::make_unique<OvEditor::Core::Application>(projectPath);
+			OvWindowing::Context::Device::ErrorEvent -= listenerId;
+		}
+		catch (...) {}
+
+		if (app)
+		{
+			app->Run();
+		}
 	}
 }
-
-int main(int argc, char** argv);
-static void TryRun(const std::string& projectPath, const std::string& projectName);
-
-#ifndef _DEBUG
-INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
-{
-	main(__argc, __argv);
-}
-#endif
 
 int main(int argc, char** argv)
 {
@@ -49,9 +95,7 @@ int main(int argc, char** argv)
 
 	OvEditor::Settings::EditorSettings::Load();
 
-	bool ready = false;
-	std::string projectPath;
-	std::string projectName;
+	std::optional<OvEditor::Core::ProjectHubResult> projectHubResult;
 
 	{
 		OvEditor::Core::ProjectHub hub;
@@ -59,50 +103,42 @@ int main(int argc, char** argv)
 		if (argc < 2)
 		{
 			// No project file given as argument ==> Open the ProjectHub
-			std::tie(ready, projectPath, projectName) = hub.Run();
+			projectHubResult = hub.Run();
 		}
 		else
 		{
 			// Project file given as argument ==> Open the project
-			std::string projectFile = argv[1];
+			std::filesystem::path projectFile = argv[1];
 
-			if (OvTools::Utils::PathParser::GetExtension(projectFile) == "ovproject")
+			if (std::filesystem::exists(projectFile))
 			{
-				ready = true;
-				projectPath = OvTools::Utils::PathParser::GetContainingFolder(projectFile);
-				projectName = OvTools::Utils::PathParser::GetElementName(projectFile);
-				OvTools::Utils::String::Replace(projectName, ".ovproject", "");
+				if (std::filesystem::is_directory(projectFile))
+				{
+					// Find the first .ovproject file in the directory
+				}
+				else if (projectFile.extension() == ".ovproject")
+				{
+					projectHubResult = {
+						.projectPath = projectFile
+					};
+				}
 			}
-
-			hub.RegisterProject(projectPath);
 		}
 	}
 
-	if (ready)
-		TryRun(projectPath, projectName);
+	if (projectHubResult.has_value())
+	{
+		// Make sure the project is registered in the project registry
+		RegisterProject(projectHubResult->projectPath);
+		TryRun(projectHubResult->projectPath);
+	}
 
 	return EXIT_SUCCESS;
 }
 
-static void TryRun(const std::string& projectPath, const std::string& projectName)
+#ifndef _DEBUG
+INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
-	auto errorEvent =
-		[](OvWindowing::Context::EDeviceError, std::string errMsg)
-		{
-			errMsg = "Overload requires OpenGL 4.5 or newer.\r\n" + errMsg;
-			MessageBox(0, errMsg.c_str(), "Overload", MB_OK | MB_ICONSTOP);
-		};
-
-	std::unique_ptr<OvEditor::Core::Application> app;
-
-	try
-	{
-		auto listenerId = OvWindowing::Context::Device::ErrorEvent += errorEvent;
-		app = std::make_unique<OvEditor::Core::Application>(projectPath, projectName);
-		OvWindowing::Context::Device::ErrorEvent -= listenerId;
-	}
-	catch (...) {}
-
-	if (app)
-		app->Run();
+	main(__argc, __argv);
 }
+#endif

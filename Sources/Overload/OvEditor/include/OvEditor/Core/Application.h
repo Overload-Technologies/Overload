@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "OvEditor/Core/Context.h"
-#include "OvEditor/Core/Editor.h"
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Core/Editor.h>
 
 namespace OvEditor::Core
 {
@@ -20,14 +20,13 @@ namespace OvEditor::Core
 		/**
 		* Constructor
 		* @param p_projectPath
-		* @param p_projectName
 		*/
-		Application(const std::string& p_projectPath, const std::string& p_projectName);
+		Application(const std::filesystem::path& p_projectPath);
 
 		/**
 		* Destructor
 		*/
-		~Application();
+		virtual ~Application();
 
 		/**
 		* Run the app

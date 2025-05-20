@@ -64,16 +64,15 @@ std::array<int, 4> FindBestFitWindowSizeAndPosition(std::array<int, 4> p_workAre
 	return {};
 }
 
-OvEditor::Core::Context::Context(const std::string& p_projectPath, const std::string& p_projectName) :
-	projectPath(p_projectPath),
-	projectName(p_projectName),
-	projectFilePath(p_projectPath + p_projectName + ".ovproject"),
+OvEditor::Core::Context::Context(const std::filesystem::path& p_projectPath) :
+	projectFile(p_projectPath),
+	projectFolder(p_projectPath.parent_path()), // TODO not root directory
 	engineAssetsPath(std::filesystem::canonical("Data\\Engine").string() + "\\"),
-	projectAssetsPath(p_projectPath + "Assets\\"),
-	projectScriptsPath(p_projectPath + "Scripts\\"),
+	projectAssetsPath((projectFolder / "Assets\\").string()),
+	projectScriptsPath((projectFolder / "Scripts\\").string()),
 	editorAssetsPath("Data\\Editor\\"),
 	sceneManager(projectAssetsPath),
-	projectSettings(projectFilePath)
+	projectSettings(projectFile.string())
 {
 	if (!IsProjectSettingsIntegrityVerified())
 	{

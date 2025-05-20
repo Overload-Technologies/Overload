@@ -211,7 +211,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 
 				std::error_code err;
 
-				std::filesystem::copy(m_context.projectFilePath, buildPath + "Data\\User\\Game.ini", err);
+				std::filesystem::copy(m_context.projectFolder, buildPath + "Data\\User\\Game.ini", err);
 
 				if (!err)
 				{

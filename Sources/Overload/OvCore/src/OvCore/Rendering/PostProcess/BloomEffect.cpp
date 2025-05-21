@@ -10,6 +10,8 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvRendering/HAL/Profiling.h>
 
+// Implementation reference: https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
+
 OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
 	AEffect(p_renderer),
 	m_bloomPingPong{
@@ -26,8 +28,8 @@ OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::Comp
 
 	auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 
-	m_brightnessMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Brightness.ovfx"]);
-	m_blurMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Blur.ovfx"]);
+	m_downsamplingMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\BloomDownsampling.ovfx"]);
+	m_upsamplingMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\BloomUpsampling.ovfx"]);
 	m_bloomMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Bloom.ovfx"]);
 }
 
@@ -52,29 +54,94 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 
 	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
 
-	// Step 1: Extract bright spots from the source
-	m_brightnessMaterial.SetProperty("_Threshold", bloomSettings.threshold, true);
-	m_renderer.Blit(p_pso, p_src, m_bloomPingPong[0], m_brightnessMaterial);
+	const auto passCount = static_cast<uint32_t>(bloomSettings.passes);
 
-	// Step 2: Apply gaussian blur on bright spots (horizontal and vertical)
-	bool horizontal = true;
-
-	for (int i = 0; i < bloomSettings.passes; ++i)
+	// Build the resolution chain.
+	const auto [refX, refY] = p_src.GetSize();
+	std::vector<std::pair<uint16_t, uint16_t>> resolutions{ p_src.GetSize() };
+	resolutions.reserve(resolutions.size() + passCount);
+	for (uint32_t i = 0; i < passCount; ++i)
 	{
-		auto& currentSrc = horizontal ? m_bloomPingPong[0] : m_bloomPingPong[1];
-		auto& currentDst = horizontal ? m_bloomPingPong[1] : m_bloomPingPong[0];
-
-		m_blurMaterial.SetProperty("_Horizontal", horizontal ? true : false, true);
-		m_blurMaterial.SetProperty("_BlurSize", bloomSettings.radius, true);
-		m_blurMaterial.SetProperty("_KernelSize", bloomSettings.kernelSize, true);
-		m_renderer.Blit(p_pso, currentSrc, currentDst, m_blurMaterial);
-
-		horizontal = !horizontal;
+		const uint32_t factor = 2ULL << i;
+		resolutions.emplace_back(refX / factor, refY / factor);
 	}
 
-	// Step 3: Combine bloom with original framebuffer
-	const auto bloomTex = m_bloomPingPong[0].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
-	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value(), true);
-	m_bloomMaterial.SetProperty("_BloomIntensity", bloomSettings.intensity, true);
+	uint32_t pingPongIndex = 0;
+
+	p_pso.blending = true;
+	glBlendFunc(GL_ONE, GL_ONE);
+	glBlendEquation(GL_FUNC_ADD);
+
+	OVASSERT(resolutions.size() == passCount + 1, "Resolution list should match the pass count size + 1");
+
+	// Downsample the input n times.
+	for (uint32_t i = 0; i < passCount; ++i)
+	{
+		const bool isFirstPass = i == 0;
+		auto& src = isFirstPass ? p_src : m_bloomPingPong[pingPongIndex % 2];
+		auto& dst = m_bloomPingPong[(pingPongIndex + 1) % 2];
+
+		m_downsamplingMaterial.SetFeatures(
+			isFirstPass ?
+			OvRendering::Data::FeatureSet{ "KARIS_AVERAGE" } :
+			OvRendering::Data::FeatureSet{}
+		);
+
+		// Provide source size to the shader
+		m_downsamplingMaterial.SetProperty("_InputResolution", OvMaths::FVector2{
+			static_cast<float>(resolutions[i].first),
+			static_cast<float>(resolutions[i].second)
+		}, true);
+
+		// Destination size (downsampled)
+		dst.Resize(
+			resolutions[i + 1].first,
+			resolutions[i + 1].second
+		);
+		
+		m_renderer.Blit(
+			p_pso,
+			src,
+			dst,
+			m_downsamplingMaterial,
+			OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC
+		);
+
+		++pingPongIndex;
+	}
+
+	p_pso.blending = false;
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Blur and upsample back to the original resolution
+	for (uint32_t i = 0; i < passCount; ++i)
+	{
+		auto& src = m_bloomPingPong[pingPongIndex % 2];
+		auto& dst = m_bloomPingPong[(pingPongIndex + 1) % 2];
+
+		m_upsamplingMaterial.SetProperty("_FilterRadius", bloomSettings.radius, true);
+
+		// Destination size (upsampled)
+		const uint32_t resolutionIndex = passCount - 1 - i;
+		dst.Resize(
+			resolutions[resolutionIndex].first,
+			resolutions[resolutionIndex].second
+		);
+
+		m_renderer.Blit(
+			p_pso,
+			src,
+			dst,
+			m_upsamplingMaterial,
+			OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC
+		);
+
+		++pingPongIndex;
+	}
+
+	// Final pass, interpolate bloom result with the original frame
+	const auto bloomTex = m_bloomPingPong[pingPongIndex % 2].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value());
+	m_bloomMaterial.SetProperty("_BloomStrength", bloomSettings.intensity * 0.04f);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);
 }

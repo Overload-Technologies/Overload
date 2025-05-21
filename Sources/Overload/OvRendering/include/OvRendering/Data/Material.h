@@ -286,6 +286,12 @@ namespace OvRendering::Data
 		Data::FeatureSet& GetFeatures();
 
 		/**
+		* Defines the feature set this material should use
+		* @param p_features
+		*/
+		void SetFeatures(const Data::FeatureSet& p_features);
+
+		/**
 		* Adds a feature to the material
 		* @param p_feature
 		*/

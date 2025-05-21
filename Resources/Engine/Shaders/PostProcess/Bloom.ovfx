@@ -16,15 +16,15 @@ void main()
 #version 450 core
 
 in vec2 TexCoords;
-out vec4 FRAGMENT_COLOR;
+out vec3 FRAGMENT_COLOR;
 
 uniform sampler2D _InputTexture;
 uniform sampler2D _BloomTexture;
-uniform float _BloomIntensity;
+uniform float _BloomStrength;
 
 void main()
 {
-    const vec3 sceneColor = texture(_InputTexture, TexCoords).rgb;
+    const vec3 hdrColor = texture(_InputTexture, TexCoords).rgb;
     const vec3 bloomColor = texture(_BloomTexture, TexCoords).rgb;
-    FRAGMENT_COLOR = vec4(sceneColor + _BloomIntensity * bloomColor, 1.0);
+    FRAGMENT_COLOR = mix(hdrColor, bloomColor, _BloomStrength);
 }

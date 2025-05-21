@@ -26,10 +26,9 @@ void OvCore::ECS::Components::CPostProcessStack::OnSerialize(tinyxml2::XMLDocume
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "bloom_enabled", bloomSettings.enabled);
-	Helpers::Serializer::SerializeFloat(p_doc, p_node, "bloom_threshold", bloomSettings.threshold);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "bloom_radius", bloomSettings.radius);
-	Helpers::Serializer::SerializeInt(p_doc, p_node, "bloom_kernel_size", bloomSettings.kernelSize);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "bloom_intensity", bloomSettings.intensity);
+	Helpers::Serializer::SerializeInt(p_doc, p_node, "bloom_passes", bloomSettings.passes);
 
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "auto_exposure_enabled", autoExposureSettings.enabled);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "auto_exposure_center_weight_bias", autoExposureSettings.centerWeightBias);
@@ -56,10 +55,9 @@ void OvCore::ECS::Components::CPostProcessStack::OnDeserialize(tinyxml2::XMLDocu
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "bloom_enabled", bloomSettings.enabled);
-	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "bloom_threshold", bloomSettings.threshold);
 	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "bloom_radius", bloomSettings.radius);
-	Helpers::Serializer::DeserializeInt(p_doc, p_node, "bloom_kernel_size", bloomSettings.kernelSize);
 	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "bloom_intensity", bloomSettings.intensity);
+	Helpers::Serializer::DeserializeInt(p_doc, p_node, "bloom_passes", bloomSettings.passes);
 
 	Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "auto_exposure_enabled", autoExposureSettings.enabled);
 	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "auto_exposure_center_weight_bias", autoExposureSettings.centerWeightBias);
@@ -86,10 +84,8 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Threshold", bloomSettings.threshold, 0.05f, 0.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Radius", bloomSettings.radius, 0.1f, 0.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Kernel Size", bloomSettings.kernelSize, 1.0f, 1, 10);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.05f, 0.0f);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Radius", bloomSettings.radius, 0.001f, 0.0f);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f);
 	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, 1, 10);
 	
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();

@@ -434,6 +434,11 @@ OvRendering::Data::FeatureSet& OvRendering::Data::Material::GetFeatures()
 	return m_features;
 }
 
+void OvRendering::Data::Material::SetFeatures(const Data::FeatureSet& p_features)
+{
+	m_features = p_features;
+}
+
 void OvRendering::Data::Material::AddFeature(const std::string& p_feature)
 {
 	m_features.insert(p_feature);

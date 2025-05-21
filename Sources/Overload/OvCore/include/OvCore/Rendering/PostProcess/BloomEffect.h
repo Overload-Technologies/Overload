@@ -17,11 +17,9 @@ namespace OvCore::Rendering::PostProcess
 	*/
 	struct BloomSettings : public EffectSettings
 	{
-		float threshold = 1.0f;
-		float radius = 5.0f;
-		int kernelSize = 6;
-		float intensity = 0.6f;
-		int passes = 10;
+		float radius = 0.005f;
+		float intensity = 1.0f;
+		int passes = 5;
 	};
 
 	/**
@@ -61,8 +59,8 @@ namespace OvCore::Rendering::PostProcess
 
 	private:
 		std::array<OvRendering::HAL::Framebuffer, 2> m_bloomPingPong;
-		OvRendering::Data::Material m_brightnessMaterial;
-		OvRendering::Data::Material m_blurMaterial;
+		OvRendering::Data::Material m_downsamplingMaterial;
+		OvRendering::Data::Material m_upsamplingMaterial;
 		OvRendering::Data::Material m_bloomMaterial;
 	};
 }

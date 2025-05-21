@@ -1,0 +1,54 @@
+#shader vertex
+#version 450 core
+
+layout(location = 0) in vec2 geo_Pos;
+layout(location = 1) in vec2 geo_TexCoords;
+
+out vec2 TexCoords;
+
+void main()
+{
+    TexCoords = geo_TexCoords;
+    gl_Position = vec4(geo_Pos, 0.0, 1.0);
+}
+
+#shader fragment
+#version 450 core
+
+in vec2 TexCoords;
+out vec3 upsample;
+
+uniform sampler2D _InputTexture;
+uniform float _FilterRadius;
+
+void main()
+{
+    float x = _FilterRadius;
+    float y = _FilterRadius;
+
+    // Take 9 samples around current texel:
+    // a - b - c
+    // d - e - f
+    // g - h - i
+    // === ('e' is the current texel) ===
+    vec3 a = texture(_InputTexture, vec2(TexCoords.x - x, TexCoords.y + y)).rgb;
+    vec3 b = texture(_InputTexture, vec2(TexCoords.x,     TexCoords.y + y)).rgb;
+    vec3 c = texture(_InputTexture, vec2(TexCoords.x + x, TexCoords.y + y)).rgb;
+
+    vec3 d = texture(_InputTexture, vec2(TexCoords.x - x, TexCoords.y)).rgb;
+    vec3 e = texture(_InputTexture, vec2(TexCoords.x,     TexCoords.y)).rgb;
+    vec3 f = texture(_InputTexture, vec2(TexCoords.x + x, TexCoords.y)).rgb;
+
+    vec3 g = texture(_InputTexture, vec2(TexCoords.x - x, TexCoords.y - y)).rgb;
+    vec3 h = texture(_InputTexture, vec2(TexCoords.x,     TexCoords.y - y)).rgb;
+    vec3 i = texture(_InputTexture, vec2(TexCoords.x + x, TexCoords.y - y)).rgb;
+
+    // Apply weighted distribution, by using a 3x3 tent filter:
+    //  1   | 1 2 1 |
+    // -- * | 2 4 2 |
+    // 16   | 1 2 1 |
+    upsample = e*4.0;
+    upsample += (b+d+f+h)*2.0;
+    upsample += (a+c+g+i);
+    upsample *= 1.0 / 16.0;
+}

@@ -56,6 +56,6 @@ namespace OvEditor::Panels
 
 	private:
 		OvUI::Widgets::Layout::Group* m_assetList;
-		std::unordered_map<OvUI::Widgets::Layout::TreeNode*, std::string> m_pathUpdate;
+		std::unordered_map<OvUI::Widgets::Layout::TreeNode*, std::filesystem::path> m_pathUpdate;
 	};
 }

@@ -940,7 +940,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 		return;
 	}
 
-	std::string path = p_entry.path().string();
+	const std::string path = p_entry.path().string();
 
 	const std::string resourceFormatPath = EDITOR_EXEC(GetResourcePath(path, p_isEngineItem));
 	const bool protectedItem = !p_root || p_isEngineItem;
@@ -1221,23 +1221,23 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			fileType == OvTools::Utils::PathParser::EFileType::SHADER ||
 			fileType == OvTools::Utils::PathParser::EFileType::SHADER_PART)
 		{
-			clickableText.DoubleClickedEvent += [path] {
-				OvTools::Utils::SystemCalls::OpenFile(path);
+			clickableText.DoubleClickedEvent += [&contextMenu] {
+				OvTools::Utils::SystemCalls::OpenFile(contextMenu.filePath.string());
 			};
 		}
 
 		if (fileType == OvTools::Utils::PathParser::EFileType::MODEL)
 		{
-			clickableText.DoubleClickedEvent += [path, p_isEngineItem] {
-				auto& res = GetResource<OvCore::ResourceManagement::ModelManager>(path, p_isEngineItem);
+			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
+				auto& res = GetResource<OvCore::ResourceManagement::ModelManager>(contextMenu.filePath.string(), p_isEngineItem);
 				OpenInAssetView(res);
 			};
 		}
 
 		if (fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
 		{
-			clickableText.DoubleClickedEvent += [path, p_isEngineItem] {
-				auto& res = GetResource<OvCore::ResourceManagement::MaterialManager>(path, p_isEngineItem);
+			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
+				auto& res = GetResource<OvCore::ResourceManagement::MaterialManager>(contextMenu.filePath.string(), p_isEngineItem);
 				OpenInAssetView(res);
 				EDITOR_EXEC(DelayAction([&res]() { OpenInMaterialEditor(res); }));
 			};
@@ -1248,16 +1248,16 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			auto& texturePreview = clickableText.AddPlugin<TexturePreview>();
 			texturePreview.SetPath(resourceFormatPath);
 
-			clickableText.DoubleClickedEvent += [path, p_isEngineItem] {
-				auto& res = GetResource<OvCore::ResourceManagement::TextureManager>(path, p_isEngineItem);
+			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
+				auto& res = GetResource<OvCore::ResourceManagement::TextureManager>(contextMenu.filePath.string(), p_isEngineItem);
 				OpenInAssetView(res);
 			};
 		}
 
 		if (fileType == OvTools::Utils::PathParser::EFileType::SCENE)
 		{
-			clickableText.DoubleClickedEvent += [path] {
-				EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(path))));
+			clickableText.DoubleClickedEvent += [&contextMenu] {
+				EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string()))));
 			};
 		}
 	}

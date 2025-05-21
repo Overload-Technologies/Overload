@@ -7,6 +7,7 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <tinyxml2.h>
 
 #include <OvCore/Global/ServiceLocator.h>
@@ -103,22 +104,48 @@ namespace
 		}
 	}
 
-	std::filesystem::path FindAvailableFilePath(
-		const std::filesystem::path& p_directory,
-		const std::string p_fileName,
-		const std::string p_extension = {})
+	std::filesystem::path FindAvailableFilePath(const std::filesystem::path& p_path)
 	{
-		size_t fails = 0;
-		std::filesystem::path finalPath;
-
-		do
+		if (!std::filesystem::exists(p_path))
 		{
-			const auto fileName = (!fails ? p_fileName : p_fileName + " (" + std::to_string(fails) + ')') + p_extension;
-			finalPath = p_directory / fileName;
-			++fails;
-		} while (std::filesystem::exists(finalPath));
+			return p_path;
+		}
 
-		return finalPath;
+		// Split the path into directory, filename, and extension
+		const std::filesystem::path dir = p_path.parent_path();
+		const std::string filename = p_path.stem().string();
+		const std::string extension = p_path.extension().string();
+
+		std::optional<std::string> baseName;
+		std::optional<uint32_t> increment;
+
+		const std::regex pattern(R"((.*?)(?:-(\d+))?)");
+		std::smatch matches;
+
+		if (std::regex_match(filename, matches, pattern))
+		{
+			baseName = matches[1].str();
+
+			if (matches[2].matched)
+			{
+				increment = std::atoi(matches[2].str().c_str());
+			}
+		}
+
+		constexpr uint32_t kMaxAttempts = 256;
+
+		for (uint32_t i = increment.value_or(1); i < kMaxAttempts; ++i)
+		{
+			const auto newPath = dir / std::format("{}-{}{}", baseName.value_or("new_file"), i, extension);
+
+			if (!std::filesystem::exists(newPath))
+			{
+				return newPath;
+			}
+		}
+
+		OVASSERT(false, "Failed to generate a unique file name.");
+		return p_path;
 	}
 
 	class TexturePreview : public OvUI::Plugins::IPlugin
@@ -189,11 +216,10 @@ namespace
 						p_newName += filePath.extension().string();
 					}
 
-					/* Clean the name (Remove special chars) */
-					p_newName.erase(std::remove_if(p_newName.begin(), p_newName.end(), [](auto& c)
-					{
-						return std::find(kAllowedFilenameChars.begin(), kAllowedFilenameChars.end(), c) == kAllowedFilenameChars.end();
-					}), p_newName.end());
+					// Remove non-allowed characters.
+					std::erase_if(p_newName, [](char c) {
+						return kAllowedFilenameChars.find(c) >= kAllowedFilenameChars.size();
+					});
 
 					const std::filesystem::path parentFolder = std::filesystem::path{ filePath }.parent_path();
 					const std::filesystem::path newPath = parentFolder / p_newName;
@@ -202,11 +228,6 @@ namespace
 					if (filePath != newPath && !std::filesystem::exists(newPath))
 					{
 						filePath = newPath;
-					}
-
-					if (std::filesystem::is_directory(oldPath))
-					{
-						filePath += '\\';
 					}
 
 					RenamedEvent.Invoke(oldPath, newPath);
@@ -238,7 +259,7 @@ namespace
 
 		void CreateNewShader(const std::string& p_shaderName, std::optional<const std::string_view> p_type)
 		{
-			const auto finalPath = FindAvailableFilePath(filePath, p_shaderName, ".ovfx");
+			const auto finalPath = FindAvailableFilePath(filePath / (p_shaderName + ".ovfx"));
 
 			if (p_type.has_value())
 			{
@@ -294,7 +315,7 @@ namespace
 				p_setupCallback.value()(material);
 			}
 
-			const auto finalPath = FindAvailableFilePath(filePath, p_materialName, ".ovmat");
+			const auto finalPath = FindAvailableFilePath(filePath / (p_materialName + ".ovmat"));
 			OvCore::Resources::Loaders::MaterialLoader::Save(material, finalPath.string());
 
 			ItemAddedEvent.Invoke(finalPath);
@@ -395,14 +416,14 @@ namespace
 				createAtmosphereMaterialMenu.ClickedEvent += [&createAtmosphereMaterial] { createAtmosphereMaterial.content = ""; };
 
 				createFolder.EnterPressedEvent += [this](std::string newFolderName) {
-					const auto finalPath = FindAvailableFilePath(filePath, newFolderName);
+					const auto finalPath = FindAvailableFilePath(filePath / newFolderName);
 					std::filesystem::create_directory(finalPath);
 					ItemAddedEvent.Invoke(finalPath);
 					Close();
 				};
 
 				createScene.EnterPressedEvent += [this](std::string newSceneName) {
-					const auto finalPath = FindAvailableFilePath(filePath, newSceneName, ".ovscene");
+					const auto finalPath = FindAvailableFilePath(filePath / (newSceneName + ".ovscene"));
 
 					auto emptyScene = OvCore::SceneSystem::Scene{};
 					emptyScene.AddDefaultCamera();
@@ -415,7 +436,7 @@ namespace
 				};
 
 				createPartialShader.EnterPressedEvent += [this](std::string newShaderName) {
-					const auto finalPath = FindAvailableFilePath(filePath, newShaderName, ".ovfxh");
+					const auto finalPath = FindAvailableFilePath(filePath / (newShaderName + ".ovfxh"));
 
 					{
 						std::ofstream outfile(finalPath);
@@ -547,25 +568,8 @@ namespace
 				auto& duplicateAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Duplicate");
 
 				duplicateAction.ClickedEvent += [this] {
-					const auto parentFolder = filePath.parent_path();
-					const auto fileName = filePath.stem().string();
-					const auto filePathWithoutExtension = parentFolder / fileName;
-
-					const std::string extension = filePath.extension().string();
-
-					auto filenameAvailable = [&extension](const std::string& target)
-						{
-							return !std::filesystem::exists(target + extension);
-						};
-
-					const auto newNameWithoutExtension = OvTools::Utils::String::GenerateUnique(
-						filePathWithoutExtension.string(),
-						filenameAvailable
-					);
-
-					const std::string finalPath = newNameWithoutExtension + extension;
+					const auto finalPath = FindAvailableFilePath(filePath);
 					std::filesystem::copy(filePath, finalPath);
-
 					DuplicateEvent.Invoke(finalPath);
 				};
 			}
@@ -681,7 +685,7 @@ namespace
 			{
 				for (const std::string& materialName : model->GetMaterialNames())
 				{
-					const auto finalPath = FindAvailableFilePath(filePath, materialName, ".ovmat");
+					const auto finalPath = FindAvailableFilePath(filePath / (materialName + ".ovmat"));
 
 					const std::string fileContent = std::format(
 						"<root><shader>:Shaders\\{}.ovfx</shader></root>",

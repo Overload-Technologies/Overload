@@ -286,8 +286,10 @@ void OvEditor::Core::ProjectHub::SetupContext()
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
 
-	m_uiManager->LoadFont("Ruda_Big", "Data\\Editor\\Fonts\\Ruda-Bold.ttf", 18);
-	m_uiManager->UseFont("Ruda_Big");
+	const auto fontPath = std::filesystem::current_path() / "Data" / "Editor" / "Fonts" / "Ruda-Bold.ttf";
+
+	m_uiManager->LoadFont("Ruda", fontPath.string(), 18);
+	m_uiManager->UseFont("Ruda");
 	m_uiManager->EnableEditorLayoutSave(false);
 	m_uiManager->EnableDocking(false);
 }

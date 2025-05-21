@@ -1023,58 +1023,42 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				{
 					if (!p_data.first.empty())
 					{
-						const std::string folderReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
-						const std::string folderName = OvTools::Utils::PathParser::GetElementName(folderReceivedPath) + '\\';
-						const std::string prevPath = folderReceivedPath;
-						const std::string correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : path;
-						const std::string newPath = correctPath + folderName;
+						const std::filesystem::path folderReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
+						const std::filesystem::path folderName = folderReceivedPath.filename();
+						const std::filesystem::path prevPath = folderReceivedPath;
+						const std::filesystem::path correctPath = m_pathUpdate.contains(&treeNode) ? m_pathUpdate.at(&treeNode) : path;
+						const std::filesystem::path newPath = correctPath / folderName;
 
-						if (!(newPath.find(prevPath) != std::string::npos) || prevPath == newPath)
+						if (!std::filesystem::exists(newPath))
 						{
-							if (!std::filesystem::exists(newPath))
+							const bool isEngineFolder = p_data.first.starts_with(':');
+
+							// Copy dd folder from Engine resources
+							if (isEngineFolder)
 							{
-								bool isEngineFolder = p_data.first.at(0) == ':';
-
-								// Copy dd folder from Engine resources
-								if (isEngineFolder)
-								{
-									std::filesystem::copy(prevPath, newPath, std::filesystem::copy_options::recursive);
-								}
-								else
-								{
-									RenameAsset(prevPath, newPath);
-									EDITOR_EXEC(PropagateFolderRename(prevPath, newPath));
-								}
-
-								treeNode.Open();
-								treeNode.RemoveAllWidgets();
-								ParseFolder(treeNode, std::filesystem::directory_entry(correctPath), p_isEngineItem);
-
-								if (!isEngineFolder)
-								{
-									p_data.second->Destroy();
-								}
+								std::filesystem::copy(prevPath, newPath, std::filesystem::copy_options::recursive);
 							}
-							else if (prevPath != newPath)
+							else
 							{
-								using namespace OvWindowing::Dialogs;
-								MessageBox errorMessage(
-									"Folder already exists",
-									"You can't move this folder to this location because the name is already taken",
-									MessageBox::EMessageType::ERROR,
-									MessageBox::EButtonLayout::OK
-								);
+								RenameAsset(prevPath.string(), newPath.string());
+								EDITOR_EXEC(PropagateFolderRename(prevPath.string(), newPath.string()));
+							}
+
+							treeNode.Open();
+							treeNode.RemoveAllWidgets();
+							ParseFolder(treeNode, std::filesystem::directory_entry(correctPath), p_isEngineItem);
+
+							if (!isEngineFolder)
+							{
+								p_data.second->Destroy();
 							}
 						}
-						else
+						else if (prevPath != newPath)
 						{
 							using namespace OvWindowing::Dialogs;
-
-							// That's an interesting message, I have no idea
-							// how we can reach this point...
 							MessageBox errorMessage(
-								"Wow!",
-								"Crazy boy!",
+								"Folder already exists",
+								"You can't move this folder to this location because the name is already taken",
 								MessageBox::EMessageType::ERROR,
 								MessageBox::EButtonLayout::OK
 							);

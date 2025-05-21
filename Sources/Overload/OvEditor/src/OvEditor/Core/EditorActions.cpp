@@ -147,13 +147,27 @@ std::optional<std::string> OvEditor::Core::EditorActions::SelectBuildFolder()
 	dialog.Show();
 	if (dialog.HasSucceeded())
 	{
-		std::string result = dialog.GetSelectedFilePath();
-		result = std::string(result.data(), result.data() + result.size() - std::string("..").size()) + "\\"; // remove auto extension
-		if (!std::filesystem::exists(result))
-			return result;
+		std::string selectedPath = dialog.GetSelectedFilePath();
+
+		if (selectedPath.ends_with(".."))
+		{
+			selectedPath.erase(selectedPath.size() - 2);
+		}
+
+		if (!std::filesystem::exists(selectedPath))
+		{
+			return selectedPath;
+		}
 		else
 		{
-			OvWindowing::Dialogs::MessageBox message("Folder already exists!", "The folder \"" + result + "\" already exists.\n\nPlease select another location and try again", OvWindowing::Dialogs::MessageBox::EMessageType::WARNING, OvWindowing::Dialogs::MessageBox::EButtonLayout::OK, true);
+			OvWindowing::Dialogs::MessageBox message(
+				"Folder already exists!",
+				std::format("The folder \"{}\" already exists.\n\nPlease select another location and try again", selectedPath),
+				OvWindowing::Dialogs::MessageBox::EMessageType::WARNING,
+				OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+				true
+			);
+
 			return {};
 		}
 	}
@@ -435,7 +449,11 @@ void OvEditor::Core::EditorActions::SetActorSpawnMode(EActorSpawnMode p_value)
 
 void OvEditor::Core::EditorActions::ResetLayout()
 {
-    DelayAction([this]() {m_context.uiManager->ResetLayout("Config\\layout.ini"); });
+	DelayAction([this]() {
+		m_context.uiManager->ResetLayout(
+			(std::filesystem::current_path() / "Config" / "layout.ini").string()
+		);
+	});
 }
 
 void OvEditor::Core::EditorActions::SetSceneViewCameraSpeed(int p_speed)

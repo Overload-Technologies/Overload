@@ -759,7 +759,7 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 		std::string filename = selectAssetDialog.GetSelectedFileName();
 
 		SaveFileDialog saveLocationDialog("Where to import?");
-		saveLocationDialog.SetInitialDirectory(p_initialDestinationDirectory + filename);
+		saveLocationDialog.SetInitialDirectory(p_initialDestinationDirectory);
 		saveLocationDialog.DefineExtension(extension, extension);
 		saveLocationDialog.Show();
 
@@ -801,7 +801,7 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	if (selectAssetDialog.HasSucceeded())
 	{
 		std::string source = selectAssetDialog.GetSelectedFilePath();
-		std::string destination = p_destination + selectAssetDialog.GetSelectedFileName();
+		std::string destination = (std::filesystem::path{ p_destination } / selectAssetDialog.GetSelectedFileName()).string();
 
 		if (!std::filesystem::exists(destination) || MessageBox("File already exists", "The destination you have selected already exists, importing this file will erase the previous file content, are you sure about that?", MessageBox::EMessageType::WARNING, MessageBox::EButtonLayout::OK_CANCEL).GetUserAction() == MessageBox::EUserAction::OK)
 		{

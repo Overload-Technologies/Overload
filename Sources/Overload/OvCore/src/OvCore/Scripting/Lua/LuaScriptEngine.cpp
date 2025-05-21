@@ -118,9 +118,10 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 	m_context.errorCount = 0;
 
 	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
-		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour)
-		{
-			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), m_context.scriptRootFolder + behaviour.get().name + GetDefaultExtension()))
+		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
+			const auto scriptFileName = behaviour.get().name + GetDefaultExtension();
+			const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
+			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), scriptPath.string()))
 			{
 				++m_context.errorCount;
 			}
@@ -155,7 +156,7 @@ template<>
 OvCore::Scripting::LuaScriptEngineBase::~TScriptEngine() {}
 
 template<>
-void OvCore::Scripting::LuaScriptEngineBase::SetScriptRootFolder(const std::string& p_scriptRootFolder)
+void OvCore::Scripting::LuaScriptEngineBase::SetScriptRootFolder(const std::filesystem::path& p_scriptRootFolder)
 {
 	m_context.scriptRootFolder = p_scriptRootFolder;
 }
@@ -185,7 +186,10 @@ void OvCore::Scripting::LuaScriptEngineBase::AddBehaviour(OvCore::ECS::Component
 
 	m_context.behaviours.push_back(std::ref(p_toAdd));
 
-	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, m_context.scriptRootFolder + p_toAdd.name + GetDefaultExtension()))
+	const auto scriptFileName = p_toAdd.name + GetDefaultExtension();
+	const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
+
+	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, scriptPath.string()))
 	{
 		++m_context.errorCount;
 	}

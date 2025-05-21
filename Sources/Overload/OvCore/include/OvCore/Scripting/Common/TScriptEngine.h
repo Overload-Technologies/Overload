@@ -42,7 +42,7 @@ namespace OvCore::Scripting
 		* Defines the root location of the script folder
 		* @param p_rootFolder
 		*/
-		void SetScriptRootFolder(const std::string& p_rootFolder);
+		void SetScriptRootFolder(const std::filesystem::path& p_rootFolder);
 
 		/**
 		* Returns a list of valid extensions for scripts.

@@ -54,7 +54,7 @@ void OvEditor::Core::Editor::SetupUI()
 	settings.dockable = true;
 
 	m_panelsManager.CreatePanel<Panels::MenuBar>("Menu Bar");
-	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings, m_context.engineAssetsPath, m_context.projectAssetsPath, m_context.projectScriptsPath);
+	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings);
 	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings);
 	m_panelsManager.CreatePanel<Panels::FrameInfo>("Frame Info", true, settings);
 	m_panelsManager.CreatePanel<Panels::Console>("Console", true, settings);

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <filesystem>
+
 #include <OvCore/Scripting/Null/NullScriptEngine.h>
 
 template<>
@@ -13,7 +15,7 @@ template<>
 OvCore::Scripting::NullScriptEngineBase::~TScriptEngine() {}
 
 template<>
-void OvCore::Scripting::NullScriptEngineBase::SetScriptRootFolder(const std::string& p_scriptRootFolder) {}
+void OvCore::Scripting::NullScriptEngineBase::SetScriptRootFolder(const std::filesystem::path& p_scriptRootFolder) {}
 
 template<>
 std::vector<std::string> OvCore::Scripting::NullScriptEngineBase::GetValidExtensions()

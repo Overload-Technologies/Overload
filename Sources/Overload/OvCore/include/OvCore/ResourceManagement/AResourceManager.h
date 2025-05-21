@@ -6,10 +6,9 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <any>
-
-
+#include <filesystem>
+#include <unordered_map>
 
 namespace OvCore::ResourceManagement
 {
@@ -93,7 +92,10 @@ namespace OvCore::ResourceManagement
 		* @param p_projectAssetsPath
 		* @param p_engineAssetsPath
 		*/
-		static void ProvideAssetPaths(const std::string& p_projectAssetsPath, const std::string& p_engineAssetsPath);
+		static void ProvideAssetPaths(
+			const std::filesystem::path& p_projectAssetsPath,
+			const std::filesystem::path& p_engineAssetsPath
+		);
 
 		/**
 		* Returns the resource map
@@ -107,8 +109,8 @@ namespace OvCore::ResourceManagement
 		std::string GetRealPath(const std::string& p_path) const;
 
 	private:
-		inline static std::string __PROJECT_ASSETS_PATH = "";
-		inline static std::string __ENGINE_ASSETS_PATH = "";
+		inline static std::filesystem::path __PROJECT_ASSETS_PATH;
+		inline static std::filesystem::path __ENGINE_ASSETS_PATH;
 
 		std::unordered_map<std::string, T*> m_resources;
 	};

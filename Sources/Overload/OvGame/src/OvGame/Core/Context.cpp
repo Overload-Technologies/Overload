@@ -47,11 +47,11 @@ std::array<int, 4> CalculateOptimalWindowSizeAndPosition(
 }
 
 OvGame::Core::Context::Context() :
-	engineAssetsPath("Data\\Engine\\"),
-	projectAssetsPath("Data\\User\\Assets\\"),
-	projectScriptsPath("Data\\User\\Scripts\\"),
-	projectSettings("Data\\User\\Game.ini"),
-	sceneManager(projectAssetsPath)
+	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
+	projectAssetsPath(std::filesystem::current_path() / "Data" / "User" / "Assets"),
+	projectScriptsPath(std::filesystem::current_path() / "Data" / "User" / "Scripts"),
+	projectSettings((std::filesystem::current_path() / "Data" / "User" / "Game.ini").string()),
+	sceneManager(projectAssetsPath.string())
 {
 	ModelManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	TextureManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
@@ -111,9 +111,12 @@ OvGame::Core::Context::Context() :
 	});
 
 	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(), OvUI::Styling::EStyle::DEFAULT_DARK);
-	uiManager->LoadFont("Ruda_Big", engineAssetsPath + "Fonts\\Ruda-Bold.ttf", 16);
-	uiManager->LoadFont("Ruda_Small", engineAssetsPath + "Fonts\\Ruda-Bold.ttf", 12);
-	uiManager->LoadFont("Ruda_Medium", engineAssetsPath + "Fonts\\Ruda-Bold.ttf", 14);
+
+	const auto fontPath = engineAssetsPath / "Fonts" / "Ruda-Bold.ttf";
+
+	uiManager->LoadFont("Ruda_Big", fontPath.string(), 16);
+	uiManager->LoadFont("Ruda_Small", fontPath.string(), 12);
+	uiManager->LoadFont("Ruda_Medium", fontPath.string(), 14);
 	uiManager->UseFont("Ruda_Medium");
 	uiManager->EnableEditorLayoutSave(false);
 	uiManager->EnableDocking(false);

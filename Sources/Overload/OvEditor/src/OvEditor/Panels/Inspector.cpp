@@ -164,10 +164,9 @@ OvEditor::Panels::Inspector::Inspector
 		{
 			const std::string defaultScriptExtension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
 
-			const std::string realScriptPath =
-				EDITOR_CONTEXT(projectScriptsPath) +
-				p_script +
-				defaultScriptExtension;
+			const auto realScriptPath =
+				EDITOR_CONTEXT(projectScriptsPath) /
+				std::format("{}{}", m_scriptSelectorWidget->content, defaultScriptExtension);
 
 			const auto targetActor = GetTargetActor();
 			const bool isScriptValid = std::filesystem::exists(realScriptPath) && targetActor && !targetActor->GetBehaviour(p_script);
@@ -180,10 +179,9 @@ OvEditor::Panels::Inspector::Inspector
 		addScriptButton.ClickedEvent += [updateAddScriptButton, this] {
 			const std::string defaultScriptExtension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
 
-			const std::string realScriptPath =
-				EDITOR_CONTEXT(projectScriptsPath) +
-				m_scriptSelectorWidget->content +
-				defaultScriptExtension;
+			const auto realScriptPath =
+				EDITOR_CONTEXT(projectScriptsPath) /
+				std::format("{}{}", m_scriptSelectorWidget->content, defaultScriptExtension);
 
 			// Ensure that the script is a valid one
 			if (std::filesystem::exists(realScriptPath))

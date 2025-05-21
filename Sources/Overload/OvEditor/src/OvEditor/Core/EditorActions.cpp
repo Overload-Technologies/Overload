@@ -27,6 +27,7 @@
 #include <OvEditor/Panels/MaterialEditor.h>
 #include <OvEditor/Panels/ProjectSettings.h>
 #include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Utils/FileSystem.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -108,7 +109,8 @@ void OvEditor::Core::EditorActions::SaveSceneChanges()
 void OvEditor::Core::EditorActions::SaveAs()
 {
 	OvWindowing::Dialogs::SaveFileDialog dialog("New Scene");
-	dialog.SetInitialDirectory(m_context.projectAssetsPath + "New Scene");
+	const auto initialPath = m_context.projectAssetsPath / "New Scene";
+	dialog.SetInitialDirectory(initialPath.string());
 	dialog.DefineExtension("Overload Scene", ".ovscene");
 	dialog.Show();
 
@@ -163,123 +165,159 @@ std::optional<std::string> OvEditor::Core::EditorActions::SelectBuildFolder()
 
 void OvEditor::Core::EditorActions::Build(bool p_autoRun, bool p_tempFolder)
 {
-	std::string destinationFolder;
+	std::filesystem::path destinationFolder;
 
 	if (p_tempFolder)
 	{
-		destinationFolder = OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\TempBuild\\";
+		destinationFolder = Utils::FileSystem::kEditorDataPath / "TempBuild";
+
 		try
 		{
 			std::filesystem::remove_all(destinationFolder);
 		}
 		catch (std::filesystem::filesystem_error error)
 		{
-			OvWindowing::Dialogs::MessageBox message("Temporary build failed", "The temporary folder is currently being used by another process", OvWindowing::Dialogs::MessageBox::EMessageType::ERROR, OvWindowing::Dialogs::MessageBox::EButtonLayout::OK, true);
+			OvWindowing::Dialogs::MessageBox message(
+				"Temporary build failed",
+				"The temporary folder is currently being used by another process",
+				OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+				OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+				true
+			);
+
 			return;
 		}
 	}
 	else if (auto res = SelectBuildFolder(); res.has_value())
+	{
 		destinationFolder = res.value();
+	}
 	else
+	{
 		return; // Operation cancelled (No folder selected)
+	}
 
 	BuildAtLocation(m_context.projectSettings.Get<bool>("dev_build") ? "Development" : "Shipping", destinationFolder, p_autoRun);
 }
 
-void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_configuration, const std::string p_buildPath, bool p_autoRun)
+void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_configuration, const std::filesystem::path& p_buildPath, bool p_autoRun)
 {
-	std::string buildPath(p_buildPath);
 	std::string executableName = m_context.projectSettings.Get<std::string>("executable_name") + ".exe";
 
 	bool failed = false;
 
-	OVLOG_INFO("Preparing to build at location: \"" + buildPath + "\"");
+	OVLOG_INFO(std::format("Preparing to build at location: \"{}\"", p_buildPath.string()));
 
-	std::filesystem::remove_all(buildPath);
+	std::filesystem::remove_all(p_buildPath);
 
-	if (std::filesystem::create_directory(buildPath))
+	if (std::filesystem::create_directory(p_buildPath))
 	{
 		OVLOG_INFO("Build directory created");
 
-		if (std::filesystem::create_directory(buildPath + "Data\\"))
+		if (std::filesystem::create_directory(p_buildPath / "Data"))
 		{
 			OVLOG_INFO("Data directory created");
 
-			if (std::filesystem::create_directory(buildPath + "Data\\User\\"))
+			if (std::filesystem::create_directory(p_buildPath / "Data" / "User"))
 			{
-				OVLOG_INFO("Data\\User directory created");
+				OVLOG_INFO("Data/User directory created");
 
 				std::error_code err;
 
-				std::filesystem::copy(m_context.projectFolder, buildPath + "Data\\User\\Game.ini", err);
+				std::filesystem::copy(m_context.projectFile, p_buildPath / "Data" / "User" / "Game.ini", err);
 
 				if (!err)
 				{
-					OVLOG_INFO("Data\\User\\Game.ini file generated");
+					OVLOG_INFO("Data/User/Game.ini file generated");
 		
-					std::filesystem::copy(m_context.projectAssetsPath, buildPath + "Data\\User\\Assets\\", std::filesystem::copy_options::recursive, err);
+					std::filesystem::copy(
+						m_context.projectAssetsPath,
+						p_buildPath / "Data" / "User" / "Assets",
+						std::filesystem::copy_options::recursive,
+						err
+					);
 
-					if (!std::filesystem::exists(buildPath + "Data\\User\\Assets\\" + (m_context.projectSettings.Get<std::string>("start_scene"))))
+					const auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
+
+					if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
 					{
 						OVLOG_ERROR("Failed to find Start Scene at expected path. Verify your Project Setings.");
-						OvWindowing::Dialogs::MessageBox message("Build Failure", "An error occured during the building of your game.\nCheck the console for more information", OvWindowing::Dialogs::MessageBox::EMessageType::ERROR, OvWindowing::Dialogs::MessageBox::EButtonLayout::OK, true);
-						std::filesystem::remove_all(buildPath);
+
+						OvWindowing::Dialogs::MessageBox message(
+							"Build Failure",
+							"An error occured during the building of your game.\nCheck the console for more information",
+							OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+							OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+							true
+						);
+
+						std::filesystem::remove_all(p_buildPath);
 						return;						
 					}
 
 					if (!err)
 					{
-						OVLOG_INFO("Data\\User\\Assets\\ directory copied");
+						OVLOG_INFO("Data/User/Assets/ directory copied");
 
-						std::filesystem::copy(m_context.projectScriptsPath, buildPath + "Data\\User\\Scripts\\", std::filesystem::copy_options::recursive, err);
+						std::filesystem::copy(
+							m_context.projectScriptsPath,
+							p_buildPath / "Data" / "User" / "Scripts",
+							std::filesystem::copy_options::recursive,
+							err
+						);
 
 						if (!err)
 						{
-							OVLOG_INFO("Data\\User\\Scripts\\ directory copied");
+							OVLOG_INFO("Data/User/Scripts/ directory copied");
 
-							std::filesystem::copy(m_context.engineAssetsPath, buildPath + "Data\\Engine\\", std::filesystem::copy_options::recursive, err);
+							std::filesystem::copy(
+								m_context.engineAssetsPath,
+								p_buildPath / "Data" / "Engine",
+								std::filesystem::copy_options::recursive,
+								err
+							);
 
 							if (!err)
 							{
-								OVLOG_INFO("Data\\Engine\\ directory copied");
+								OVLOG_INFO("Data/Engine/ directory copied");
 							}
 							else
 							{
-								OVLOG_ERROR("Data\\Engine\\ directory failed to copy");
+								OVLOG_ERROR("Data/Engine/ directory failed to copy");
 								failed = true;
 							}
 						}
 						else
 						{
-							OVLOG_ERROR("Data\\User\\Scripts\\ directory failed to copy");
+							OVLOG_ERROR("Data/User/Scripts/ directory failed to copy");
 							failed = true;
 						}
 					}
 					else
 					{
-						OVLOG_ERROR("Data\\User\\Assets\\ directory failed to copy");
+						OVLOG_ERROR("Data/User/Assets/ directory failed to copy");
 						failed = true;
 					}
 				}
 				else
 				{
-					OVLOG_ERROR("Data\\User\\Game.ini file failed to generate");
+					OVLOG_ERROR("Data/User/Game.ini file failed to generate");
 					failed = true;
 				}
 
-				std::string builderFolder = "Builder\\" + p_configuration + "\\";
+				const auto builderFolder = std::filesystem::current_path() / "Builder" / p_configuration;
 
 				if (std::filesystem::exists(builderFolder))
 				{
 					std::error_code err;
 
-					std::filesystem::copy(builderFolder, buildPath, err);
+					std::filesystem::copy(builderFolder, p_buildPath, err);
 
 					if (!err)
 					{
-						OVLOG_INFO("Builder data (Dlls and executatble) copied");
+						OVLOG_INFO("Builder data (Dlls and executable) copied");
 
-						std::filesystem::rename(buildPath + "OvGame.exe", buildPath + executableName, err);
+						std::filesystem::rename(p_buildPath / "OvGame.exe", p_buildPath / executableName, err);
 
 						if (!err)
 						{
@@ -287,10 +325,13 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 
 							if (p_autoRun)
 							{
-								std::string exePath = buildPath + executableName;
-								OVLOG_INFO("Launching the game at location: \"" + exePath + "\"");
+								const auto exePath = p_buildPath / executableName;
+								OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
+
 								if (std::filesystem::exists(exePath))
-									OvTools::Utils::SystemCalls::OpenFile(exePath, buildPath);
+								{
+									OvTools::Utils::SystemCalls::OpenFile(exePath.string(), p_buildPath.string());
+								}
 								else
 								{
 									OVLOG_ERROR("Failed to start the game: Executable not found");
@@ -313,7 +354,11 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 				else
 				{
 					const std::string buildConfiguration = p_configuration == "Development" ? "Debug" : "Release";
-					OVLOG_ERROR("Builder folder for \"" + p_configuration + "\" not found. Verify you have compiled Engine source code in '" + buildConfiguration + "' configuration.");
+					OVLOG_ERROR(std::format(
+						"Builder folder for \"{}\" not found. Verify you have compiled Engine source code in \"{}\" configuration.",
+						p_configuration,
+						buildConfiguration
+					));
 					failed = true;
 				}
 			}
@@ -327,14 +372,21 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 
 	if (failed)
 	{
-		std::filesystem::remove_all(buildPath);
-		OvWindowing::Dialogs::MessageBox message("Build Failure", "An error occured during the building of your game.\nCheck the console for more information", OvWindowing::Dialogs::MessageBox::EMessageType::ERROR, OvWindowing::Dialogs::MessageBox::EButtonLayout::OK, true);
+		std::filesystem::remove_all(p_buildPath);
+		OvWindowing::Dialogs::MessageBox message(
+			"Build Failure",
+			"An error occured during the building of your game.\nCheck the console for more information",
+			OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+			OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+			true
+		);
 	}
 }
 
 void OvEditor::Core::EditorActions::OpenProfiler()
 {
-	OvTools::Utils::SystemCalls::OpenFile("Tools/tracy-profiler.exe");
+	const auto profilerPath = std::filesystem::current_path() / "Tools" / "tracy-profiler.exe";
+	OvTools::Utils::SystemCalls::OpenFile(profilerPath.string());
 }
 
 void OvEditor::Core::EditorActions::DelayAction(std::function<void()> p_action, uint32_t p_frames)
@@ -745,30 +797,37 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 }
 
 // Duplicate from AResourceManager.h
-std::string OvEditor::Core::EditorActions::GetRealPath(const std::string & p_path)
+std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
-	std::string result;
+	std::filesystem::path result;
 
-	if (p_path[0] == ':') // The path is an engine path
+	if (p_path.starts_with(':')) // The path is an engine path
 	{
-		result = m_context.engineAssetsPath + std::string(p_path.data() + 1, p_path.data() + p_path.size());
+		result = m_context.engineAssetsPath / p_path.substr(1);
 	}
 	else // The path is a project path
 	{
-		result = m_context.projectAssetsPath + p_path;
+		result = m_context.projectAssetsPath / p_path;
 	}
 
-	return result;
+	return result.string();
 }
 
-std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string & p_path, bool p_isFromEngine)
+std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)
 {
 	std::string result = p_path;
 
-	if (OvTools::Utils::String::Replace(result, p_isFromEngine ? m_context.engineAssetsPath : m_context.projectAssetsPath, ""))
+	if (OvTools::Utils::String::Replace(result, p_isFromEngine ? m_context.engineAssetsPath.string() : m_context.projectAssetsPath.string(), ""))
 	{
+		if (result.starts_with(std::filesystem::path::preferred_separator))
+		{
+			result = result.substr(1);
+		}
+
 		if (p_isFromEngine)
+		{
 			result = ':' + result;
+		}
 	}
 
 	return result;
@@ -778,7 +837,12 @@ std::string OvEditor::Core::EditorActions::GetScriptPath(const std::string & p_p
 {
 	std::string result = p_path;
 
-	OvTools::Utils::String::Replace(result, m_context.projectScriptsPath, "");
+	OvTools::Utils::String::Replace(result, m_context.projectScriptsPath.string(), "");
+
+	if (result.starts_with(std::filesystem::path::preferred_separator))
+	{
+		result = result.substr(1);
+	}
 
 	for (auto& extension : OVSERVICE(OvCore::Scripting::ScriptEngine).GetValidExtensions())
 	{

@@ -65,10 +65,10 @@ namespace OvEditor::Core
 	public:
 		const std::filesystem::path projectFolder;
 		const std::filesystem::path projectFile;
-		const std::string engineAssetsPath;
-		const std::string projectAssetsPath;
-		const std::string projectScriptsPath;
-		const std::string editorAssetsPath;
+		const std::filesystem::path engineAssetsPath;
+		const std::filesystem::path projectAssetsPath;
+		const std::filesystem::path projectScriptsPath;
+		const std::filesystem::path editorAssetsPath;
 
 		std::unique_ptr<OvWindowing::Context::Device> device;
 		std::unique_ptr<OvWindowing::Window> window;

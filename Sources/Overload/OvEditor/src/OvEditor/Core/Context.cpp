@@ -10,6 +10,7 @@
 #include <OvCore/Scripting/ScriptEngine.h>
 #include <OvDebug/Assertion.h>
 #include <OvEditor/Core/Context.h>
+#include <OvEditor/Utils/FileSystem.h>
 #include <OvEditor/Utils/ProjectManagement.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvRendering/Entities/Light.h>
@@ -65,13 +66,13 @@ std::array<int, 4> FindBestFitWindowSizeAndPosition(std::array<int, 4> p_workAre
 }
 
 OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
-	projectFolder(p_projectFolder), // TODO not root directory
+	projectFolder(p_projectFolder),
 	projectFile(Utils::ProjectManagement::GetProjectFile(p_projectFolder)),
-	engineAssetsPath(std::filesystem::canonical("Data\\Engine").string() + "\\"),
-	projectAssetsPath((projectFolder / "Assets\\").string()),
-	projectScriptsPath((projectFolder / "Scripts\\").string()),
-	editorAssetsPath("Data\\Editor\\"),
-	sceneManager(projectAssetsPath),
+	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
+	projectAssetsPath(projectFolder / "Assets"),
+	projectScriptsPath(projectFolder / "Scripts"),
+	editorAssetsPath(std::filesystem::current_path() / "Data" / "Editor"),
+	sceneManager(projectAssetsPath.string()),
 	projectSettings(projectFile.string())
 {
 	if (!IsProjectSettingsIntegrityVerified())
@@ -111,35 +112,41 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ true });
 	textureRegistry = std::make_unique<OvEditor::Utils::TextureRegistry>();
 
-	std::filesystem::create_directories(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\");
+	std::filesystem::create_directories(Utils::FileSystem::kEditorDataPath);
 
 	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(),
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
-	uiManager->LoadFont("Ruda_Big", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 16);
-	uiManager->LoadFont("Ruda_Small", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 12);
-	uiManager->LoadFont("Ruda_Medium", editorAssetsPath + "\\Fonts\\Ruda-Bold.ttf", 14);
+
+	const auto fontPath = editorAssetsPath / "Fonts" / "Ruda-Bold.ttf";
+
+	if (!std::filesystem::exists(OvEditor::Utils::FileSystem::kLayoutFilePath))
+	{
+		const auto defaultLayoutPath = std::filesystem::current_path() / "Config" / "layout.ini";
+		uiManager->ResetLayout(defaultLayoutPath.string());
+	}
+
+	uiManager->LoadFont("Ruda_Big", fontPath.string(), 16);
+	uiManager->LoadFont("Ruda_Small", fontPath.string(), 12);
+	uiManager->LoadFont("Ruda_Medium", fontPath.string(), 14);
 	uiManager->UseFont("Ruda_Medium");
-	uiManager->SetEditorLayoutSaveFilename(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\layout.ini");
+	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());
 	uiManager->SetEditorLayoutAutosaveFrequency(60.0f);
 	uiManager->EnableEditorLayoutSave(true);
 	uiManager->EnableDocking(true);
-
-	if (!std::filesystem::exists(OvTools::Utils::SystemCalls::GetPathToAppdata() + "\\OverloadTech\\OvEditor\\layout.ini"))
-		uiManager->ResetLayout("Config\\layout.ini");
 
 	/* Audio */
 	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>();
 
 	/* Editor resources */
-	editorResources = std::make_unique<OvEditor::Core::EditorResources>(editorAssetsPath);
+	editorResources = std::make_unique<OvEditor::Core::EditorResources>(editorAssetsPath.string());
 
 	/* Physics engine */
 	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, -9.81f, 0.0f } });
 
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>();
-	scriptEngine->SetScriptRootFolder(projectScriptsPath);
+	scriptEngine->SetScriptRootFolder(projectScriptsPath.string());
 
 	/* Service Locator providing */
 	ServiceLocator::Provide<OvPhysics::Core::PhysicsEngine>(*physicsEngine);
@@ -177,7 +184,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<std::string>("executable_name", "Game");
 	projectSettings.Add<std::string>("start_scene", "Scene.ovscene");
 	projectSettings.Add<bool>("vsync", true);
-	projectSettings.Add<bool>("multisampling", true);
+	projectSettings.Add<bool>("multisampling", false);
 	projectSettings.Add<int>("samples", 4);
 	projectSettings.Add<bool>("dev_build", true);
 }

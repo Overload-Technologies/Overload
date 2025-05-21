@@ -882,37 +882,28 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 (
 	const std::string& p_title,
 	bool p_opened,
-	const OvUI::Settings::PanelWindowSettings& p_windowSettings,
-	const std::string& p_engineAssetFolder,
-	const std::string& p_projectAssetFolder,
-	const std::string& p_projectScriptFolder
-) :
-	PanelWindow(p_title, p_opened, p_windowSettings),
-	m_engineAssetFolder(p_engineAssetFolder),
-	m_projectAssetFolder(p_projectAssetFolder),
-	m_projectScriptFolder(p_projectScriptFolder)
+	const OvUI::Settings::PanelWindowSettings& p_windowSettings
+) : PanelWindow(p_title, p_opened, p_windowSettings)
 {
-	if (!std::filesystem::exists(m_projectAssetFolder))
-	{
-		std::filesystem::create_directories(m_projectAssetFolder);
+	using namespace OvWindowing::Dialogs;
 
-		OvWindowing::Dialogs::MessageBox message(
+	if (std::filesystem::create_directories(EDITOR_CONTEXT(projectAssetsPath)))
+	{
+		MessageBox message(
 			"Assets folder not found",
 			"The \"Assets/\" folders hasn't been found in your project directory.\nIt has been automatically generated",
-			OvWindowing::Dialogs::MessageBox::EMessageType::WARNING,
-			OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+			MessageBox::EMessageType::WARNING,
+			MessageBox::EButtonLayout::OK
 		);
 	}
 
-	if (!std::filesystem::exists(m_projectScriptFolder))
+	if (std::filesystem::create_directories(EDITOR_CONTEXT(projectScriptsPath)))
 	{
-		std::filesystem::create_directories(m_projectScriptFolder);
-
-		OvWindowing::Dialogs::MessageBox message(
+		MessageBox message(
 			"Scripts folder not found",
 			"The \"Scripts/\" folders hasn't been found in your project directory.\nIt has been automatically generated",
-			OvWindowing::Dialogs::MessageBox::EMessageType::WARNING,
-			OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+			MessageBox::EMessageType::WARNING,
+			MessageBox::EButtonLayout::OK
 		);
 	}
 
@@ -922,7 +913,7 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	refreshButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import asset");
-	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, m_projectAssetFolder);
+	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 
 	m_assetList = &CreateWidget<Layout::Group>();
@@ -933,11 +924,11 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 void OvEditor::Panels::AssetBrowser::Fill()
 {
 	m_assetList->CreateWidget<OvUI::Widgets::Visual::Separator>();
-	ConsiderItem(nullptr, std::filesystem::directory_entry(m_engineAssetFolder), true);
+	ConsiderItem(nullptr, std::filesystem::directory_entry(EDITOR_CONTEXT(engineAssetsPath)), true);
 	m_assetList->CreateWidget<OvUI::Widgets::Visual::Separator>();
-	ConsiderItem(nullptr, std::filesystem::directory_entry(m_projectAssetFolder), false);
+	ConsiderItem(nullptr, std::filesystem::directory_entry(EDITOR_CONTEXT(projectAssetsPath)), false);
 	m_assetList->CreateWidget<OvUI::Widgets::Visual::Separator>();
-	ConsiderItem(nullptr, std::filesystem::directory_entry(m_projectScriptFolder), false, false, true);
+	ConsiderItem(nullptr, std::filesystem::directory_entry(EDITOR_CONTEXT(projectScriptsPath)), false, false, true);
 }
 
 void OvEditor::Panels::AssetBrowser::Clear()
@@ -985,12 +976,6 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 	}
 
 	std::string path = p_entry.path().string();
-
-	// Add '\\' if is directory and backslash is missing
-	if (isDirectory && path.back() != '\\') 
-	{
-		path += '\\';
-	}
 
 	const std::string resourceFormatPath = EDITOR_EXEC(GetResourcePath(path, p_isEngineItem));
 	const bool protectedItem = !p_root || p_isEngineItem;

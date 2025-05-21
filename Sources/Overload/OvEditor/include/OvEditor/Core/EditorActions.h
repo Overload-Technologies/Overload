@@ -381,7 +381,7 @@ namespace OvEditor::Core
 		* @param p_buildPath
 		* @param p_autoRun
 		*/
-		void BuildAtLocation(const std::string& p_configuration, const std::string p_buildPath, bool p_autoRun = false);
+		void BuildAtLocation(const std::string& p_configuration, const std::filesystem::path&, bool p_autoRun = false);
 		#pragma endregion
 
 		#pragma region PROFILNIG

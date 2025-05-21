@@ -48,9 +48,9 @@ namespace OvGame::Core
 		~Context();
 
 	public:
-		const std::string engineAssetsPath;
-		const std::string projectAssetsPath;
-		const std::string projectScriptsPath;
+		const std::filesystem::path engineAssetsPath;
+		const std::filesystem::path projectAssetsPath;
+		const std::filesystem::path projectScriptsPath;
 
 		std::unique_ptr<OvWindowing::Context::Device> device;
 		std::unique_ptr<OvWindowing::Window> window;

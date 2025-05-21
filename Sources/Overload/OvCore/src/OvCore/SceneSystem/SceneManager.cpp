@@ -62,14 +62,19 @@ void OvCore::SceneSystem::SceneManager::LoadDefaultScene()
 
 bool OvCore::SceneSystem::SceneManager::LoadScene(const std::string& p_path, bool p_absolute)
 {
-	std::string completePath = (p_absolute ? "" : m_sceneRootFolder) + p_path;
+	std::filesystem::path path = 
+		p_absolute ?
+		std::filesystem::current_path() :
+		std::filesystem::path{ m_sceneRootFolder };
+
+	path /= p_path;
 
 	tinyxml2::XMLDocument doc;
-	doc.LoadFile(completePath.c_str());
+	doc.LoadFile(path.string().c_str());
 
 	if (LoadSceneFromMemory(doc))
 	{
-		StoreCurrentSceneSourcePath(completePath);
+		StoreCurrentSceneSourcePath(path.string());
 		return true;
 	}
 

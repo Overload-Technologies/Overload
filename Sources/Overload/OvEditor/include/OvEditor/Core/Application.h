@@ -19,9 +19,9 @@ namespace OvEditor::Core
 	public:
 		/**
 		* Constructor
-		* @param p_projectPath
+		* @param p_projectFolder (The folder containing the .ovproject file)
 		*/
-		Application(const std::filesystem::path& p_projectPath);
+		Application(const std::filesystem::path& p_projectFolder);
 
 		/**
 		* Destructor

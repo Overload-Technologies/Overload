@@ -11,6 +11,7 @@
 #include <OvEditor/Core/ProjectHub.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
+#include <OvEditor/Utils/ProjectManagement.h>
 
 #include <OvRendering/Utils/Defines.h>
 
@@ -37,35 +38,7 @@ namespace
 		}
 	}
 
-	void RegisterProject(const std::filesystem::path& p_path)
-	{
-		bool pathAlreadyRegistered = false;
-
-		{
-			std::string line;
-			std::ifstream myfile(OvEditor::Utils::FileSystem::kProjectRegistryFilePath);
-			if (myfile.is_open())
-			{
-				while (getline(myfile, line))
-				{
-					if (line == p_path)
-					{
-						pathAlreadyRegistered = true;
-						break;
-					}
-				}
-				myfile.close();
-			}
-		}
-
-		if (!pathAlreadyRegistered)
-		{
-			std::ofstream projectsFile(OvEditor::Utils::FileSystem::kProjectRegistryFilePath, std::ios::app);
-			projectsFile << p_path.string() << std::endl;
-		}
-	}
-
-	void TryRun(const std::filesystem::path& projectPath)
+	bool TryRun(const std::filesystem::path& projectPath)
 	{
 		const auto errorEvent = [](OvWindowing::Context::EDeviceError, std::string errMsg) {
 			errMsg = "Overload requires OpenGL 4.5 or newer.\r\n" + errMsg;
@@ -85,7 +58,10 @@ namespace
 		if (app)
 		{
 			app->Run();
+			return true;
 		}
+
+		return false;
 	}
 }
 
@@ -95,42 +71,39 @@ int main(int argc, char** argv)
 
 	OvEditor::Settings::EditorSettings::Load();
 
-	std::optional<OvEditor::Core::ProjectHubResult> projectHubResult;
+	std::optional<std::filesystem::path> projectPath;
 
+	if (argc < 2)
 	{
+		// No project file given as argument ==> Open the ProjectHub
 		OvEditor::Core::ProjectHub hub;
 
-		if (argc < 2)
+		if (auto result = hub.Run())
 		{
-			// No project file given as argument ==> Open the ProjectHub
-			projectHubResult = hub.Run();
-		}
-		else
-		{
-			// Project file given as argument ==> Open the project
-			std::filesystem::path projectFile = argv[1];
-
-			if (std::filesystem::exists(projectFile))
-			{
-				if (std::filesystem::is_directory(projectFile))
-				{
-					// Find the first .ovproject file in the directory
-				}
-				else if (projectFile.extension() == ".ovproject")
-				{
-					projectHubResult = {
-						.projectPath = projectFile
-					};
-				}
-			}
+			projectPath = result->projectPath;
 		}
 	}
-
-	if (projectHubResult.has_value())
+	else
 	{
+		// Project file given as argument ==> Open the project
+		projectPath = argv[1];
+	}
+
+	if (projectPath)
+	{
+		if (!OvEditor::Utils::ProjectManagement::IsValidProjectDirectory(projectPath.value()))
+		{
+			// Invalid project path
+			return EXIT_FAILURE;
+		}
+
 		// Make sure the project is registered in the project registry
-		RegisterProject(projectHubResult->projectPath);
-		TryRun(projectHubResult->projectPath);
+		OvEditor::Utils::ProjectManagement::RegisterProject(projectPath.value());
+
+		if (!TryRun(projectPath.value()))
+		{
+			return EXIT_FAILURE;
+		}
 	}
 
 	return EXIT_SUCCESS;

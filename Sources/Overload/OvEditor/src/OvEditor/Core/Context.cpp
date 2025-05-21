@@ -6,14 +6,14 @@
 
 #include <filesystem>
 
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Scripting/ScriptEngine.h>
+#include <OvDebug/Assertion.h>
+#include <OvEditor/Core/Context.h>
+#include <OvEditor/Utils/ProjectManagement.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvRendering/Entities/Light.h>
-#include <OvCore/Global/ServiceLocator.h>
 #include <OvTools/Utils/SystemCalls.h>
-#include <OvDebug/Assertion.h>
-#include <OvCore/Scripting/ScriptEngine.h>
-
-#include "OvEditor/Core/Context.h"
 
 using namespace OvCore::Global;
 using namespace OvCore::ResourceManagement;
@@ -64,9 +64,9 @@ std::array<int, 4> FindBestFitWindowSizeAndPosition(std::array<int, 4> p_workAre
 	return {};
 }
 
-OvEditor::Core::Context::Context(const std::filesystem::path& p_projectPath) :
-	projectFile(p_projectPath),
-	projectFolder(p_projectPath.parent_path()), // TODO not root directory
+OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
+	projectFolder(p_projectFolder), // TODO not root directory
+	projectFile(Utils::ProjectManagement::GetProjectFile(p_projectFolder)),
 	engineAssetsPath(std::filesystem::canonical("Data\\Engine").string() + "\\"),
 	projectAssetsPath((projectFolder / "Assets\\").string()),
 	projectScriptsPath((projectFolder / "Scripts\\").string()),

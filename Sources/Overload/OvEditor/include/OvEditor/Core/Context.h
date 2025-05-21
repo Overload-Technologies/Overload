@@ -37,14 +37,14 @@ namespace OvEditor::Core
 	public:
 		/**
 		* Constructor
-		* @param p_projectPath (including the .ovproject file)
+		* @param p_projectFolder (including the .ovproject file)
 		*/
-		Context(const std::filesystem::path& p_projectPath);
+		Context(const std::filesystem::path& p_projectFolder);
 
 		/**
 		* Destructor
 		*/
-		~Context();
+		virtual ~Context();
 
 		/**
 		* Reset project settings ini file
@@ -63,8 +63,8 @@ namespace OvEditor::Core
 		void ApplyProjectSettings();
 
 	public:
-		const std::filesystem::path projectFile;
 		const std::filesystem::path projectFolder;
+		const std::filesystem::path projectFile;
 		const std::string engineAssetsPath;
 		const std::string projectAssetsPath;
 		const std::string projectScriptsPath;

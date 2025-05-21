@@ -12,6 +12,7 @@
 #include <OvEditor/Core/ProjectHub.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
+#include <OvEditor/Utils/ProjectManagement.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SystemCalls.h>
@@ -54,10 +55,10 @@ namespace OvEditor::Core
 					p_content
 				}.make_preferred().string();
 
-				UpdateGoButton(pathField.content);
+				_UpdateGoButton(pathField.content);
 			};
 
-			UpdateGoButton({});
+			_UpdateGoButton({});
 
 			openProjectButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
 			newProjectButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
@@ -67,11 +68,15 @@ namespace OvEditor::Core
 				dialog.AddFileType("Overload Project", "*.ovproject");
 				dialog.Show();
 
-				const std::filesystem::path projectPath = dialog.GetSelectedFilePath();
+				const std::filesystem::path projectFile = dialog.GetSelectedFilePath();
+				const std::filesystem::path projectFolder = projectFile.parent_path();
 
 				if (dialog.HasSucceeded())
 				{
-					OpenProject(projectPath);
+					if (!_TryFinish({ projectFolder }))
+					{
+						_OnFailedToOpenCorruptedProject(projectFolder);
+					}
 				}
 			};
 
@@ -81,129 +86,78 @@ namespace OvEditor::Core
 				dialog.Show();
 				if (dialog.HasSucceeded())
 				{
-					std::string result = dialog.GetSelectedFilePath();
-					pathField.content = std::string(result.data(), result.data() + result.size() - std::string("..").size()); // remove auto extension
-					pathField.content += "\\";
-					UpdateGoButton(pathField.content);
+					std::string selectedFile = dialog.GetSelectedFilePath();
+
+					if (selectedFile.ends_with(".."))
+					{
+						selectedFile.erase(selectedFile.size() - 2);
+					}
+
+					pathField.content = selectedFile;
+
+					_UpdateGoButton(pathField.content);
 				}
 			};
 
 			m_goButton->ClickedEvent += [this, &pathField] {
-				std::filesystem::path path = pathField.content;
+				const std::filesystem::path path = pathField.content;
 
-				CreateProject(path);
-				OpenProject(path);
+				if (!Utils::ProjectManagement::CreateProject(path) || !_TryFinish({ path }))
+				{
+					_OnFailedToCreateProject(path);
+				}
 			};
 
 			openProjectButton.lineBreak = false;
 			newProjectButton.lineBreak = false;
 			pathField.lineBreak = false;
 
-			CreateWidget<OvUI::Widgets::Layout::Spacing>(4);
+			CreateWidget<OvUI::Widgets::Layout::Spacing>();
 			CreateWidget<OvUI::Widgets::Visual::Separator>();
-			CreateWidget<OvUI::Widgets::Layout::Spacing>(4);
+			CreateWidget<OvUI::Widgets::Layout::Spacing>();
 
 			auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 
 			columns.widths = { 750, 500 };
 
-			std::string line;
-			std::ifstream myfile(OvEditor::Utils::FileSystem::kProjectRegistryFilePath);
-			if (myfile.is_open())
+			// Sanitize the project registry before displaying it, so we avoid showing
+			// corrupted/deleted projects.
+			Utils::ProjectManagement::SanitizeProjectRegistry();
+			const auto registeredProjects = Utils::ProjectManagement::GetRegisteredProjects();
+
+			for (const auto& project : registeredProjects)
 			{
-				while (getline(myfile, line))
-				{
-					if (std::filesystem::exists(line)) // TODO: Delete line from the file
+				auto& text = columns.CreateWidget<OvUI::Widgets::Texts::Text>(project.string());
+				auto& actions = columns.CreateWidget<OvUI::Widgets::Layout::Group>();
+				auto& openButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Open");
+				auto& deleteButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Delete");
+
+				openButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
+				deleteButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
+
+				openButton.ClickedEvent += [this, &text, &actions, project] {
+					if (!_TryFinish({ project }))
 					{
-						auto& text = columns.CreateWidget<OvUI::Widgets::Texts::Text>(line);
-						auto& actions = columns.CreateWidget<OvUI::Widgets::Layout::Group>();
-						auto& openButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Open");
-						auto& deleteButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Delete");
-
-						openButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
-						deleteButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
-
-						openButton.ClickedEvent += [this, line] {
-							OpenProject(line);
-						};
-
-						std::string toErase = line;
-						deleteButton.ClickedEvent += [this, &text, &actions, toErase] {
-							text.Destroy();
-							actions.Destroy();
-
-							std::string line;
-							std::ifstream fin(Utils::FileSystem::kProjectRegistryFilePath);
-							std::ofstream temp("temp");
-
-							while (getline(fin, line))
-							{
-								if (line != toErase)
-								{
-									temp << line << std::endl;
-								}
-							}
-
-							temp.close();
-							fin.close();
-
-							std::filesystem::remove(Utils::FileSystem::kProjectRegistryFilePath);
-							std::filesystem::rename("temp", Utils::FileSystem::kProjectRegistryFilePath);
-						};
-
-						openButton.lineBreak = false;
-						deleteButton.lineBreak;
+						text.Destroy();
+						actions.Destroy();
+						_OnFailedToOpenCorruptedProject(project);
 					}
-				}
-				myfile.close();
-			}
-		}
-
-		std::optional<ProjectHubResult> GetResult() const { return m_result; }
-
-		void UpdateGoButton(const std::string& p_path)
-		{
-			const bool validPath = !p_path.empty();
-			m_goButton->idleBackgroundColor = validPath ? OvUI::Types::Color{ 0.f, 0.5f, 0.0f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
-			m_goButton->disabled = !validPath;
-		}
-
-		void CreateProject(const std::filesystem::path& p_path)
-		{
-			if (!std::filesystem::exists(p_path))
-			{
-				std::filesystem::create_directory(p_path);
-				std::filesystem::create_directory(p_path / "Assets");
-				std::filesystem::create_directory(p_path / "Scripts");
-				const std::string directoryName = p_path.stem().string();
-
-				(void)std::ofstream{ 
-					p_path / std::format("{}.ovproject", directoryName)
-				};
-			}
-		}
-
-		void OpenProject(const std::filesystem::path& p_path)
-		{
-			if (!std::filesystem::exists(p_path))
-			{
-				using namespace OvWindowing::Dialogs;
-
-				MessageBox errorMessage(
-					"Project not found",
-					"The selected project does not exists",
-					MessageBox::EMessageType::ERROR,
-					MessageBox::EButtonLayout::OK
-				);
-			}
-			else
-			{
-				m_result = {
-					.projectPath = p_path,
 				};
 
-				Close();
+				deleteButton.ClickedEvent += [this, &text, &actions, project] {
+					text.Destroy();
+					actions.Destroy();
+					Utils::ProjectManagement::UnregisterProject(project);
+				};
+
+				openButton.lineBreak = false;
+				deleteButton.lineBreak;
 			}
+		}
+
+		std::optional<ProjectHubResult> GetResult() const
+		{
+			return m_result;
 		}
 
 		void Draw() override
@@ -214,6 +168,61 @@ namespace OvEditor::Core
 			OvUI::Panels::PanelWindow::Draw();
 
 			ImGui::PopStyleVar(2);
+		}
+
+	private:
+		void _UpdateGoButton(const std::string& p_path)
+		{
+			const bool validPath = !p_path.empty();
+			m_goButton->idleBackgroundColor = validPath ? OvUI::Types::Color{ 0.f, 0.5f, 0.0f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
+			m_goButton->disabled = !validPath;
+		}
+
+		void _OnFailedToOpenCorruptedProject(const std::filesystem::path& p_projectPath)
+		{
+			Utils::ProjectManagement::UnregisterProject(p_projectPath);
+
+			_ShowError(
+				"Invalid project",
+				"The selected project is invalid or corrupted.\nPlease select another project."
+			);
+		}
+
+		void _OnFailedToCreateProject(const std::filesystem::path& p_projectPath)
+		{
+			_ShowError(
+				"Project creation failed",
+				"Something went wrong while creating the project.\nPlease ensure the path is valid and you have the necessary permissions."
+			);
+		}
+
+		void _ShowError(const std::string& p_title, const std::string& p_message)
+		{
+			using namespace OvWindowing::Dialogs;
+
+			MessageBox errorMessage(
+				p_title,
+				p_message,
+				MessageBox::EMessageType::ERROR,
+				MessageBox::EButtonLayout::OK
+			);
+		}
+
+		bool _ValidateResult(ProjectHubResult& p_result)
+		{
+			return Utils::ProjectManagement::IsValidProjectDirectory(p_result.projectPath);
+		}
+
+		bool _TryFinish(ProjectHubResult p_result)
+		{
+			if (_ValidateResult(p_result))
+			{
+				m_result = p_result;
+				Close();
+				return true;
+			}
+
+			return false;
 		}
 
 	private:
@@ -276,6 +285,7 @@ void OvEditor::Core::ProjectHub::SetupContext()
 	m_uiManager = std::make_unique<OvUI::Core::UIManager>(m_window->GetGlfwWindow(),
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
+
 	m_uiManager->LoadFont("Ruda_Big", "Data\\Editor\\Fonts\\Ruda-Bold.ttf", 18);
 	m_uiManager->UseFont("Ruda_Big");
 	m_uiManager->EnableEditorLayoutSave(false);

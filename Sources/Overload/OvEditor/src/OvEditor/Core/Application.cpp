@@ -9,8 +9,8 @@
 #include <OvEditor/Core/Application.h>
 #include <OvTools/Time/Clock.h>
 
-OvEditor::Core::Application::Application(const std::filesystem::path& p_projectPath) :
-	m_context(p_projectPath),
+OvEditor::Core::Application::Application(const std::filesystem::path& p_projectFolder) :
+	m_context(p_projectFolder),
 	m_editor(m_context)
 {
 }

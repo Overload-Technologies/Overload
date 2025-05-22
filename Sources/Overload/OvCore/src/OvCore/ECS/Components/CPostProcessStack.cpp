@@ -26,7 +26,6 @@ void OvCore::ECS::Components::CPostProcessStack::OnSerialize(tinyxml2::XMLDocume
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "bloom_enabled", bloomSettings.enabled);
-	Helpers::Serializer::SerializeFloat(p_doc, p_node, "bloom_radius", bloomSettings.radius);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "bloom_intensity", bloomSettings.intensity);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "bloom_passes", bloomSettings.passes);
 
@@ -55,7 +54,6 @@ void OvCore::ECS::Components::CPostProcessStack::OnDeserialize(tinyxml2::XMLDocu
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "bloom_enabled", bloomSettings.enabled);
-	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "bloom_radius", bloomSettings.radius);
 	Helpers::Serializer::DeserializeFloat(p_doc, p_node, "bloom_intensity", bloomSettings.intensity);
 	Helpers::Serializer::DeserializeInt(p_doc, p_node, "bloom_passes", bloomSettings.passes);
 
@@ -84,9 +82,8 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Radius", bloomSettings.radius, 0.001f, 0.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, 25.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, 1, 10);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, Rendering::PostProcess::BloomConstants::kMaxBloomIntensity);
+	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, Rendering::PostProcess::BloomConstants::kMinPassCount, Rendering::PostProcess::BloomConstants::kMaxPassCount);
 	
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 	p_root.CreateWidget<OvUI::Widgets::Layout::Spacing>();

@@ -252,7 +252,6 @@ void BindLuaComponents(sol::state& p_luaState)
 
 	p_luaState.new_usertype<OvCore::Rendering::PostProcess::BloomSettings>("BloomSettings",
 		sol::base_classes, sol::bases<OvCore::Rendering::PostProcess::EffectSettings>(),
-		"Radius", &OvCore::Rendering::PostProcess::BloomSettings::radius,
 		"Intensity", &OvCore::Rendering::PostProcess::BloomSettings::intensity,
 		"Passes", &OvCore::Rendering::PostProcess::BloomSettings::passes
 	);

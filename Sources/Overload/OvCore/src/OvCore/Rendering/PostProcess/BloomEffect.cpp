@@ -12,6 +12,12 @@
 
 // Implementation reference: https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
 
+// Additional private constants for the bloom effect
+namespace OvCore::Rendering::PostProcess::BloomConstants
+{
+	constexpr float kFilterRadius = 0.005f;
+}
+
 namespace
 {
 	const auto kBloomTextureDesc = OvRendering::Settings::TextureDesc{
@@ -21,10 +27,10 @@ namespace
 		.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
 		.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
 		.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-		.internalFormat = OvRendering::Settings::EInternalFormat::R11F_G11F_B10F, // High precision format for the bloom effect
+		.internalFormat = OvRendering::Settings::EInternalFormat::RGBA32F,
 		.useMipMaps = false,
 		.mutableDesc = OvRendering::Settings::MutableTextureDesc{
-			.format = OvRendering::Settings::EFormat::RGB,
+			.format = OvRendering::Settings::EFormat::RGBA,
 			.type = OvRendering::Settings::EPixelDataType::FLOAT
 		}
 	};
@@ -107,7 +113,19 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 
 	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
 	const auto preferredPassCount = static_cast<uint32_t>(bloomSettings.passes);
-	const auto maxPassCount = std::min(static_cast<uint32_t>(std::log2(std::min(refX, refY))), 10U); // TODO: Store this value in a constant in the header file.
+
+	// We want to make sure we don't downsample too much (shouldn't go past 1x1).
+	const auto maxPassCountForCurrentResolution = std::max(
+		static_cast<uint32_t>(std::log2(refX)),
+		static_cast<uint32_t>(std::log2(refY))
+	);
+
+	const auto maxPassCount = std::clamp(
+		preferredPassCount,
+		BloomConstants::kMinPassCount,
+		std::min(maxPassCountForCurrentResolution, BloomConstants::kMaxPassCount)
+	);
+
 	const auto passCount = std::min(preferredPassCount, maxPassCount);
 
 	std::vector<BloomPass> bloomMips;
@@ -165,8 +183,7 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	upsamplingPSO.blendingDestFactor = OvRendering::Settings::EBlendingFactor::ONE;
 	upsamplingPSO.blendingEquation = OvRendering::Settings::EBlendingEquation::FUNC_ADD;
 
-	m_upsamplingMaterial.SetProperty("_FilterRadius", bloomSettings.radius, true);
-	m_upsamplingMaterial.SetBlendable(true); // Need to enable additive blending for the upsampling pass
+	m_upsamplingMaterial.SetProperty("_FilterRadius", BloomConstants::kFilterRadius, true);
 
 	auto upsamplingPass = [&](
 		OvRendering::HAL::Framebuffer& p_src,

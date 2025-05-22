@@ -13,14 +13,20 @@
 
 namespace OvCore::Rendering::PostProcess
 {
+	namespace BloomConstants
+	{
+		constexpr uint32_t kMinPassCount = 1;
+		constexpr uint32_t kMaxPassCount = 10;
+		constexpr float kMaxBloomIntensity = 1.0f / 0.04f; // 0.04f being the default internal interpolation factor.
+	}
+
 	/**
 	* Settings for the BloomEffect
 	*/
 	struct BloomSettings : public EffectSettings
 	{
-		float radius = 0.005f;
 		float intensity = 1.0f;
-		int passes = 5;
+		int passes = 6;
 	};
 
 	/**
@@ -59,7 +65,7 @@ namespace OvCore::Rendering::PostProcess
 		) override;
 
 	private:
-		std::array<OvRendering::HAL::Framebuffer, 10> m_bloomSamplingBuffers;
+		std::array<OvRendering::HAL::Framebuffer, BloomConstants::kMaxPassCount> m_bloomSamplingBuffers;
 		OvRendering::HAL::Framebuffer m_bloomOutputBuffer;
 		OvRendering::Data::Material m_downsamplingMaterial;
 		OvRendering::Data::Material m_upsamplingMaterial;

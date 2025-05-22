@@ -14,12 +14,9 @@
 
 OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
 	AEffect(p_renderer),
-	m_bloomPingPong{
-		OvRendering::HAL::Framebuffer{"BloomPingPong0"},
-		OvRendering::HAL::Framebuffer{"BloomPingPong1"}
-	}
+	m_bloomPingPong{ "Bloom" }
 {
-	for (auto& buffer : m_bloomPingPong)
+	for (auto& buffer : m_bloomPingPong.GetFramebuffers())
 	{
 		FramebufferUtil::SetupFramebuffer(
 			buffer, 1, 1, false, false, false
@@ -52,34 +49,34 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	ZoneScoped;
 	TracyGpuZone("BloomEffect");
 
-	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
+	using enum OvRendering::Settings::EBlitFlags;
 
-	const auto passCount = static_cast<uint32_t>(bloomSettings.passes);
+	const auto [refX, refY] = p_src.GetSize();
+
+	OVASSERT(refX > 0 && refY > 0, "Invalid source framebuffer size");
+
+	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
+	const auto preferredPassCount = static_cast<uint32_t>(bloomSettings.passes);
+	const auto maxPassCount = static_cast<uint32_t>(std::log2(std::min(refX, refY)));
+	const auto passCount = std::min(preferredPassCount, maxPassCount);
 
 	// Build the resolution chain.
-	const auto [refX, refY] = p_src.GetSize();
-	std::vector<std::pair<uint16_t, uint16_t>> resolutions{ p_src.GetSize() };
-	resolutions.reserve(resolutions.size() + passCount);
-	for (uint32_t i = 0; i < passCount; ++i)
+	std::vector<std::pair<uint16_t, uint16_t>> resolutions;
+	for (uint32_t i = 0; i < passCount + 1; ++i)
 	{
-		const uint32_t factor = 2ULL << i;
-		resolutions.emplace_back(refX / factor, refY / factor);
+		resolutions.emplace_back(refX >> i, refY >> i); // >> i is equivalent to dividing by 2^i
 	}
-
-	uint32_t pingPongIndex = 0;
 
 	p_pso.blending = true;
 	glBlendFunc(GL_ONE, GL_ONE);
 	glBlendEquation(GL_FUNC_ADD);
 
-	OVASSERT(resolutions.size() == passCount + 1, "Resolution list should match the pass count size + 1");
-
 	// Downsample the input n times.
 	for (uint32_t i = 0; i < passCount; ++i)
 	{
 		const bool isFirstPass = i == 0;
-		auto& src = isFirstPass ? p_src : m_bloomPingPong[pingPongIndex % 2];
-		auto& dst = m_bloomPingPong[(pingPongIndex + 1) % 2];
+		auto& src = isFirstPass ? p_src : m_bloomPingPong[0];
+		auto& dst = m_bloomPingPong[1];
 
 		m_downsamplingMaterial.SetFeatures(
 			isFirstPass ?
@@ -99,15 +96,9 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 			resolutions[i + 1].second
 		);
 		
-		m_renderer.Blit(
-			p_pso,
-			src,
-			dst,
-			m_downsamplingMaterial,
-			OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC
-		);
+		m_renderer.Blit(p_pso, src, dst, m_downsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
 
-		++pingPongIndex;
+		++m_bloomPingPong;
 	}
 
 	p_pso.blending = false;
@@ -116,31 +107,26 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	// Blur and upsample back to the original resolution
 	for (uint32_t i = 0; i < passCount; ++i)
 	{
-		auto& src = m_bloomPingPong[pingPongIndex % 2];
-		auto& dst = m_bloomPingPong[(pingPongIndex + 1) % 2];
+		auto& src = m_bloomPingPong[0];
+		auto& dst = m_bloomPingPong[1];
 
 		m_upsamplingMaterial.SetProperty("_FilterRadius", bloomSettings.radius, true);
 
 		// Destination size (upsampled)
 		const uint32_t resolutionIndex = passCount - 1 - i;
+
 		dst.Resize(
 			resolutions[resolutionIndex].first,
 			resolutions[resolutionIndex].second
 		);
 
-		m_renderer.Blit(
-			p_pso,
-			src,
-			dst,
-			m_upsamplingMaterial,
-			OvRendering::Settings::EBlitFlags::DEFAULT & ~OvRendering::Settings::EBlitFlags::RESIZE_DST_TO_MATCH_SRC
-		);
+		m_renderer.Blit(p_pso, src, dst, m_upsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
 
-		++pingPongIndex;
+		++m_bloomPingPong;
 	}
 
-	// Final pass, interpolate bloom result with the original frame
-	const auto bloomTex = m_bloomPingPong[pingPongIndex % 2].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	// Final pass, interpolate bloom result with the input image
+	const auto bloomTex = m_bloomPingPong[0].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
 	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value());
 	m_bloomMaterial.SetProperty("_BloomStrength", bloomSettings.intensity * 0.04f);
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);

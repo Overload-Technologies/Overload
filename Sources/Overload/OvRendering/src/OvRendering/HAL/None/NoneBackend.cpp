@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-#pragma once
-
 /**
 * Although this is intended as a Null implementation, certain components of the engine rely on OpenGL,
 * such as resource creation, binding, and the user interface. Consequently, GLAD must be initialized to
@@ -85,6 +83,14 @@ namespace OvRendering::HAL
 
 	template<>
 	void NoneBackend::SetStencilOperations(Settings::EOperation p_stencilFail, Settings::EOperation p_depthFail, Settings::EOperation p_bothPass)
+	{}
+
+	template<>
+	void NoneBackend::SetBlendingFunction(Settings::EBlendingFactor p_sourceFactor, Settings::EBlendingFactor p_destinationFactor)
+	{}
+
+	template<>
+	void NoneBackend::SetBlendingEquation(Settings::EBlendingEquation p_equation)
 	{}
 
 	template<>

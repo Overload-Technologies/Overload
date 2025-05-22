@@ -9,21 +9,23 @@
 #include <cstdint>
 #include <bitset>
 
-#include "OvRendering/Settings/ERenderingCapability.h"
-#include "OvRendering/Settings/EPrimitiveMode.h"
-#include "OvRendering/Settings/ERasterizationMode.h"
-#include "OvRendering/Settings/EComparaisonAlgorithm.h"
-#include "OvRendering/Settings/EOperation.h"
-#include "OvRendering/Settings/ECullFace.h"
-#include "OvRendering/Settings/ECullingOptions.h"
-#include "OvRendering/Settings/EPixelDataFormat.h"
-#include "OvRendering/Settings/EPixelDataType.h"
+#include <OvRendering/Settings/EBlendingEquation.h>
+#include <OvRendering/Settings/EBlendingFactor.h>
+#include <OvRendering/Settings/EComparaisonAlgorithm.h>
+#include <OvRendering/Settings/ECullFace.h>
+#include <OvRendering/Settings/ECullingOptions.h>
+#include <OvRendering/Settings/EOperation.h>
+#include <OvRendering/Settings/EPixelDataFormat.h>
+#include <OvRendering/Settings/EPixelDataType.h>
+#include <OvRendering/Settings/EPrimitiveMode.h>
+#include <OvRendering/Settings/ERasterizationMode.h>
+#include <OvRendering/Settings/ERenderingCapability.h>
 
 namespace OvRendering::Data
 {
 	/**
 	* Represents the current state of the driver and allow for efficient context switches
-	* @note because we target 64-bit architecture, the data bus can expected to be 8 bytes wide
+	* @note because we target 64-bit architecture, the data bus can be expected to be 8 bytes wide
 	* so copying 4 bytes will end-up copying 8 bytes. Therefore, we should try to align this struct
 	* to take a multiple of 8 bytes.
 	*/
@@ -56,10 +58,9 @@ namespace OvRendering::Data
 
 				// B5
 				uint8_t lineWidthPow2 : 3;
-				Settings::EComparaisonAlgorithm depthFunc : 2;
+				Settings::EComparaisonAlgorithm depthFunc : 3;
 				bool depthWriting : 1;
 				bool blending : 1;
-				bool userInterface : 1;
 
 				// B6
 				bool culling : 1;
@@ -84,11 +85,22 @@ namespace OvRendering::Data
 
 					uint8_t mask : 4;
 				} colorWriting;
+				// 4 bytes left in B7
+
+				// B8
+				Settings::EBlendingFactor blendingSrcFactor : 5;
+				Settings::EBlendingEquation blendingEquation : 3;
+
+				// B9
+				Settings::EBlendingFactor blendingDestFactor : 5;
+				// 3 bytes left in B9
 			};
 
-			std::bitset<64> bits;
+			// Please don't access this directly, the layout is not guaranteed to stay the same!
+			std::bitset<128> _bits;
 
-			uint8_t bytes[8];
+			// Same as above, don't access this directly!
+			uint8_t _bytes[16];
 		};
 	};
 }

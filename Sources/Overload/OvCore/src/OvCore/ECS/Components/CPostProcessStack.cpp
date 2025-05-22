@@ -85,7 +85,7 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Radius", bloomSettings.radius, 0.001f, 0.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, 25.0f);
 	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, 1, 10);
 	
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();

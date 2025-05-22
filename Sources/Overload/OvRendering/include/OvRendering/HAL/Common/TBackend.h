@@ -172,6 +172,24 @@ namespace OvRendering::HAL
 		);
 
 		/**
+		* Sets the blending function for rendering.
+		* @param p_sourceFactor The source blending factor.
+		* @param p_destinationFactor The destination blending factor.
+		*/
+		void SetBlendingFunction(
+			Settings::EBlendingFactor p_sourceFactor,
+			Settings::EBlendingFactor p_destinationFactor
+		);
+
+		/**
+		* Sets the blending equation for rendering.
+		* @param p_equation The blending equation to use.
+		*/
+		void SetBlendingEquation(
+			Settings::EBlendingEquation p_equation
+		);
+
+		/**
 		* Specifies whether front- or back-facing facets can be culled.
 		* @param p_cullFace Specifies the faces to cull.
 		*/

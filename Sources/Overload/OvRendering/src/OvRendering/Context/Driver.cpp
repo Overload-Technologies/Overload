@@ -7,12 +7,14 @@
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 
-#include "OvRendering/Context/Driver.h"
-#include "OvRendering/Utils/Conversions.h"
+#include <OvRendering/Context/Driver.h>
+#include <OvRendering/HAL/Backend.h>
+#include <OvRendering/Utils/Conversions.h>
 
-#include "OvRendering/HAL/Backend.h"
-
-std::unique_ptr<OvRendering::HAL::Backend> m_gfxBackend;
+namespace
+{
+	std::unique_ptr<OvRendering::HAL::Backend> m_gfxBackend;
+}
 
 OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings& p_driverSettings)
 {
@@ -126,7 +128,7 @@ void OvRendering::Context::Driver::SetPipelineState(OvRendering::Data::PipelineS
 {
 	using namespace OvRendering::Settings;
 
-	if (p_state.bits != m_pipelineState.bits)
+	if (p_state._bits != m_pipelineState._bits)
 	{
 		auto& i = p_state;
 		auto& c = m_pipelineState;
@@ -156,6 +158,12 @@ void OvRendering::Context::Driver::SetPipelineState(OvRendering::Data::PipelineS
 
 		if (i.stencilWriteMask != c.stencilWriteMask) m_gfxBackend->SetStencilMask(i.stencilWriteMask);
 		if (i.stencilOpFail != c.stencilOpFail || i.depthOpFail != c.depthOpFail || i.bothOpFail != c.bothOpFail) m_gfxBackend->SetStencilOperations(i.stencilOpFail, i.depthOpFail, i.bothOpFail);
+
+		// Blending equation & function
+		if (i.blendingEquation != c.blendingEquation) m_gfxBackend->SetBlendingEquation(i.blendingEquation);
+		if (i.blendingSrcFactor != c.blendingSrcFactor ||
+			i.blendingDestFactor != c.blendingDestFactor)
+			m_gfxBackend->SetBlendingFunction(i.blendingSrcFactor, i.blendingDestFactor);
 
 		// Depth
 		if (i.depthFunc != c.depthFunc) m_gfxBackend->SetDepthAlgorithm(i.depthFunc);

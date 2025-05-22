@@ -418,7 +418,6 @@ const OvRendering::Data::StateMask OvRendering::Data::Material::GenerateStateMas
 	stateMask.colorWriting = m_colorWriting;
 	stateMask.blendable = m_blendable;
 	stateMask.depthTest = m_depthTest;
-	stateMask.userInterface = m_userInterface;
 	stateMask.frontfaceCulling = m_frontfaceCulling;
 	stateMask.backfaceCulling = m_backfaceCulling;
 	return stateMask;

@@ -8,24 +8,26 @@
 
 #include <glad.h>
 
+#include <OvRendering/Settings/EAccessSpecifier.h>
+#include <OvRendering/Settings/EBlendingEquation.h>
+#include <OvRendering/Settings/EBlendingFactor.h>
+#include <OvRendering/Settings/EBufferType.h>
+#include <OvRendering/Settings/EComparaisonAlgorithm.h>
 #include <OvRendering/Settings/ECullFace.h>
+#include <OvRendering/Settings/EDataType.h>
+#include <OvRendering/Settings/EFormat.h>
+#include <OvRendering/Settings/EFramebufferAttachment.h>
+#include <OvRendering/Settings/EInternalFormat.h>
+#include <OvRendering/Settings/EOperation.h>
+#include <OvRendering/Settings/EPrimitiveMode.h>
+#include <OvRendering/Settings/ERasterizationMode.h>
+#include <OvRendering/Settings/ERenderingCapability.h>
+#include <OvRendering/Settings/EShaderType.h>
 #include <OvRendering/Settings/ETextureFilteringMode.h>
 #include <OvRendering/Settings/ETextureWrapMode.h>
-#include <OvRendering/Settings/ERasterizationMode.h>
-#include <OvRendering/Settings/EPrimitiveMode.h>
-#include <OvRendering/Settings/ERenderingCapability.h>
-#include <OvRendering/Settings/EOperation.h>
-#include <OvRendering/Settings/EComparaisonAlgorithm.h>
-#include <OvRendering/Settings/EFormat.h>
-#include <OvRendering/Settings/EInternalFormat.h>
+#include <OvRendering/Settings/EUniformType.h>
 #include <OvRendering/Settings/EPixelDataFormat.h>
 #include <OvRendering/Settings/EPixelDataType.h>
-#include <OvRendering/Settings/EDataType.h>
-#include <OvRendering/Settings/EAccessSpecifier.h>
-#include <OvRendering/Settings/EShaderType.h>
-#include <OvRendering/Settings/EUniformType.h>
-#include <OvRendering/Settings/EFramebufferAttachment.h>
-#include <OvRendering/Settings/EBufferType.h>
 #include <OvTools/Utils/EnumMapper.h>
 
 namespace OvRendering::HAL
@@ -56,6 +58,46 @@ struct OvTools::Utils::MappingFor<OvRendering::Settings::EComparaisonAlgorithm, 
 		EnumValuePair<EnumType::NOTEQUAL, GL_NOTEQUAL>,
 		EnumValuePair<EnumType::GREATER_EQUAL, GL_GEQUAL>,
 		EnumValuePair<EnumType::ALWAYS, GL_ALWAYS>
+	>;
+};
+
+template <>
+struct OvTools::Utils::MappingFor<OvRendering::Settings::EBlendingEquation, GLenum>
+{
+	using EnumType = OvRendering::Settings::EBlendingEquation;
+	using type = std::tuple<
+		EnumValuePair<EnumType::FUNC_ADD, GL_FUNC_ADD>,
+		EnumValuePair<EnumType::FUNC_SUBTRACT, GL_FUNC_SUBTRACT>,
+		EnumValuePair<EnumType::FUNC_REVERSE_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT>,
+		EnumValuePair<EnumType::MIN, GL_MIN>,
+		EnumValuePair<EnumType::MAX, GL_MAX>
+	>;
+};
+
+template <>
+struct OvTools::Utils::MappingFor<OvRendering::Settings::EBlendingFactor, GLenum>
+{
+	using EnumType = OvRendering::Settings::EBlendingFactor;
+	using type = std::tuple<
+		EnumValuePair<EnumType::ZERO, GL_ZERO>,
+		EnumValuePair<EnumType::ONE, GL_ONE>,
+		EnumValuePair<EnumType::SRC_COLOR, GL_SRC_COLOR>,
+		EnumValuePair<EnumType::ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR>,
+		EnumValuePair<EnumType::DST_COLOR, GL_DST_COLOR>,
+		EnumValuePair<EnumType::ONE_MINUS_DST_COLOR, GL_ONE_MINUS_DST_COLOR>,
+		EnumValuePair<EnumType::SRC_ALPHA, GL_SRC_ALPHA>,
+		EnumValuePair<EnumType::ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA>,
+		EnumValuePair<EnumType::DST_ALPHA, GL_DST_ALPHA>,
+		EnumValuePair<EnumType::ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA>,
+		EnumValuePair<EnumType::CONSTANT_COLOR, GL_CONSTANT_COLOR>,
+		EnumValuePair<EnumType::ONE_MINUS_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR>,
+		EnumValuePair<EnumType::CONSTANT_ALPHA, GL_CONSTANT_ALPHA>,
+		EnumValuePair<EnumType::ONE_MINUS_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA>,
+		EnumValuePair<EnumType::SRC_ALPHA_SATURATE, GL_SRC_ALPHA_SATURATE>,
+		EnumValuePair<EnumType::SRC1_COLOR, GL_SRC1_COLOR>,
+		EnumValuePair<EnumType::ONE_MINUS_SRC1_COLOR, GL_ONE_MINUS_SRC1_COLOR>,
+		EnumValuePair<EnumType::SRC1_ALPHA, GL_SRC1_ALPHA>,
+		EnumValuePair<EnumType::ONE_MINUS_SRC1_ALPHA, GL_ONE_MINUS_SRC1_ALPHA>
 	>;
 };
 

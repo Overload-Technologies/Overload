@@ -67,7 +67,16 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 		resolutions.emplace_back(refX >> i, refY >> i); // >> i is equivalent to dividing by 2^i
 	}
 
-	p_pso.blending = true;
+	// Clear the ping-pong buffers, since we use additive blending
+	for (auto& buffer : m_bloomPingPong.GetFramebuffers())
+	{
+		buffer.Bind();
+		m_renderer.Clear(true, true, true);
+		buffer.Unbind();
+	}
+
+	// p_pso.blending = true;
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 	glBlendEquation(GL_FUNC_ADD);
 
@@ -101,7 +110,8 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 		++m_bloomPingPong;
 	}
 
-	p_pso.blending = false;
+	// p_pso.blending = false;
+	glDisable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Blur and upsample back to the original resolution

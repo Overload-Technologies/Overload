@@ -16,11 +16,24 @@ OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::Comp
 	AEffect(p_renderer),
 	m_bloomPingPong{ "Bloom" }
 {
+	const auto mipMapDesc = OvRendering::Settings::TextureDesc{
+		.width = 1, // Unknown size at this point
+		.height = 1,
+		.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
+		.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
+		.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
+		.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
+		.internalFormat = OvRendering::Settings::EInternalFormat::R11F_G11F_B10F, // High precision format for the bloom effect
+		.useMipMaps = false,
+		.mutableDesc = OvRendering::Settings::MutableTextureDesc{
+			.format = OvRendering::Settings::EFormat::RGB,
+			.type = OvRendering::Settings::EPixelDataType::FLOAT
+		}
+	};
+
 	for (auto& buffer : m_bloomPingPong.GetFramebuffers())
 	{
-		FramebufferUtil::SetupFramebuffer(
-			buffer, 1, 1, false, false, false
-		);
+		OvCore::Rendering::FramebufferUtil::SetupFramebuffer(buffer, mipMapDesc, false, false);
 	}
 
 	auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
@@ -29,14 +42,14 @@ OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::Comp
 	m_upsamplingMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\BloomUpsampling.ovfx"]);
 	m_bloomMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Bloom.ovfx"]);
 
-	// Since we want to use blending during the downsampling pass, we need to set up the material
+	// Since we want to use blending during the upsampling pass, we need to set up the material
 	// manually. The EBlitFlag::USE_MATERIAL_STATE_MASK will be used to enforce these settings.
-	m_downsamplingMaterial.SetDepthWriting(false);
-	m_downsamplingMaterial.SetColorWriting(true);
-	m_downsamplingMaterial.SetBlendable(true);
-	m_downsamplingMaterial.SetFrontfaceCulling(false);
-	m_downsamplingMaterial.SetBackfaceCulling(false);
-	m_downsamplingMaterial.SetDepthTest(false);
+	m_upsamplingMaterial.SetDepthWriting(false);
+	m_upsamplingMaterial.SetColorWriting(true);
+	m_upsamplingMaterial.SetBlendable(true);
+	m_upsamplingMaterial.SetFrontfaceCulling(false);
+	m_upsamplingMaterial.SetBackfaceCulling(false);
+	m_upsamplingMaterial.SetDepthTest(false);
 }
 
 bool OvCore::Rendering::PostProcess::BloomEffect::IsApplicable(const EffectSettings& p_settings) const
@@ -84,14 +97,6 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 		buffer.Unbind();
 	}
 
-	// Custom PSO for the downsampling pass, allowing us to use additive blending (accumulation)
-	auto downsamplingPSO = p_pso;
-	downsamplingPSO.blendingSrcFactor = OvRendering::Settings::EBlendingFactor::ONE;
-	downsamplingPSO.blendingDestFactor = OvRendering::Settings::EBlendingFactor::ONE;
-	downsamplingPSO.blendingEquation = OvRendering::Settings::EBlendingEquation::FUNC_ADD;
-
-	m_downsamplingMaterial.SetBlendable(bloomSettings.intensity > 2.0f);
-
 	// Downsample the input n times.
 	for (uint32_t i = 0; i < passCount; ++i)
 	{
@@ -117,10 +122,16 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 			resolutions[i + 1].second
 		);
 		
-		m_renderer.Blit(downsamplingPSO, src, dst, m_downsamplingMaterial, (DEFAULT & ~RESIZE_DST_TO_MATCH_SRC) | USE_MATERIAL_STATE_MASK);
+		m_renderer.Blit(p_pso, src, dst, m_downsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
 
 		++m_bloomPingPong;
 	}
+
+	// Custom PSO for the upsampling pass, allowing us to use additive blending (accumulation)
+	auto upsamplingPSO = p_pso;
+	upsamplingPSO.blendingSrcFactor = OvRendering::Settings::EBlendingFactor::ONE;
+	upsamplingPSO.blendingDestFactor = OvRendering::Settings::EBlendingFactor::ONE;
+	upsamplingPSO.blendingEquation = OvRendering::Settings::EBlendingEquation::FUNC_ADD;
 
 	// Blur and upsample back to the original resolution
 	for (uint32_t i = 0; i < passCount; ++i)
@@ -138,7 +149,7 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 			resolutions[resolutionIndex].second
 		);
 
-		m_renderer.Blit(p_pso, src, dst, m_upsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
+		m_renderer.Blit(upsamplingPSO, src, dst, m_upsamplingMaterial, (DEFAULT & ~RESIZE_DST_TO_MATCH_SRC) | USE_MATERIAL_STATE_MASK);
 
 		++m_bloomPingPong;
 	}

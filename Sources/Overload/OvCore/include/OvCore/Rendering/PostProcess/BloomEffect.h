@@ -59,9 +59,11 @@ namespace OvCore::Rendering::PostProcess
 		) override;
 
 	private:
-		PingPongFramebuffer m_bloomPingPong;
+		std::array<OvRendering::HAL::Framebuffer, 10> m_bloomSamplingBuffers;
+		OvRendering::HAL::Framebuffer m_bloomOutputBuffer;
 		OvRendering::Data::Material m_downsamplingMaterial;
 		OvRendering::Data::Material m_upsamplingMaterial;
 		OvRendering::Data::Material m_bloomMaterial;
+		OvRendering::Data::Material m_blitMaterial;
 	};
 }

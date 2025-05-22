@@ -12,11 +12,9 @@
 
 // Implementation reference: https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
 
-OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
-	AEffect(p_renderer),
-	m_bloomPingPong{ "Bloom" }
+namespace
 {
-	const auto mipMapDesc = OvRendering::Settings::TextureDesc{
+	const auto kBloomTextureDesc = OvRendering::Settings::TextureDesc{
 		.width = 1, // Unknown size at this point
 		.height = 1,
 		.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
@@ -31,16 +29,46 @@ OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::Comp
 		}
 	};
 
-	for (auto& buffer : m_bloomPingPong.GetFramebuffers())
+	struct BloomPass
 	{
-		OvCore::Rendering::FramebufferUtil::SetupFramebuffer(buffer, mipMapDesc, false, false);
+		uint16_t width;
+		uint16_t height;
+		OvRendering::HAL::Framebuffer& target;
+	};
+}
+
+OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
+	AEffect(p_renderer),
+	m_bloomSamplingBuffers{
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer0"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer1"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer2"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer3"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer4"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer5"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer6"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer7"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer8"},
+		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer9"}
+	},
+	m_bloomOutputBuffer{ "BloomOutputBuffer" }
+{
+	// Prepare sampling buffers (for downsampling and upsampling).
+	// We don't use a ping-pong buffer here, since we need to keep all the intermediate results.
+	for (auto& buffer : m_bloomSamplingBuffers)
+	{
+		FramebufferUtil::SetupFramebuffer(buffer, kBloomTextureDesc, false, false);
 	}
+
+	// Prepare bloom output buffer.
+	FramebufferUtil::SetupFramebuffer(m_bloomOutputBuffer, kBloomTextureDesc, false, false);
 
 	auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 
 	m_downsamplingMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\BloomDownsampling.ovfx"]);
 	m_upsamplingMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\BloomUpsampling.ovfx"]);
 	m_bloomMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Bloom.ovfx"]);
+	m_blitMaterial.SetShader(shaderManager[":Shaders\\PostProcess\\Blit.ovfx"]);
 
 	// Since we want to use blending during the upsampling pass, we need to set up the material
 	// manually. The EBlitFlag::USE_MATERIAL_STATE_MASK will be used to enforce these settings.
@@ -79,52 +107,56 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 
 	const auto& bloomSettings = static_cast<const BloomSettings&>(p_settings);
 	const auto preferredPassCount = static_cast<uint32_t>(bloomSettings.passes);
-	const auto maxPassCount = static_cast<uint32_t>(std::log2(std::min(refX, refY)));
+	const auto maxPassCount = std::min(static_cast<uint32_t>(std::log2(std::min(refX, refY))), 10U); // TODO: Store this value in a constant in the header file.
 	const auto passCount = std::min(preferredPassCount, maxPassCount);
 
-	// Build the resolution chain.
-	std::vector<std::pair<uint16_t, uint16_t>> resolutions;
-	for (uint32_t i = 0; i < passCount + 1; ++i)
-	{
-		resolutions.emplace_back(refX >> i, refY >> i); // >> i is equivalent to dividing by 2^i
-	}
+	std::vector<BloomPass> bloomMips;
+	bloomMips.reserve(passCount);
 
-	// Clear the ping-pong buffers, since we use additive blending
-	for (auto& buffer : m_bloomPingPong.GetFramebuffers())
-	{
-		buffer.Bind();
-		m_renderer.Clear(true, true, true);
-		buffer.Unbind();
-	}
-
-	// Downsample the input n times.
 	for (uint32_t i = 0; i < passCount; ++i)
 	{
-		const bool isFirstPass = i == 0;
-		auto& src = isFirstPass ? p_src : m_bloomPingPong[0];
-		auto& dst = m_bloomPingPong[1];
+		// (value >> i) is equivalent to (value / 2^i),
+		// so we essentially get half the resolution each time.
+		const uint16_t width = refX >> (i + 1);
+		const uint16_t height = refY >> (i + 1);
+		auto& target = m_bloomSamplingBuffers[i];
+		target.Resize(width, height);
+		bloomMips.emplace_back(width, height, target);
+	}
 
-		m_downsamplingMaterial.SetFeatures(
-			isFirstPass ?
-			OvRendering::Data::FeatureSet{ "KARIS_AVERAGE" } :
-			OvRendering::Data::FeatureSet{}
-		);
+	// First we want to copy the input image to another buffer to avoid modifying the original image.
+	// This could also be made into a filtering pass, so we can exclude low luminance pixels.
+	m_renderer.Blit(p_pso, p_src, m_bloomOutputBuffer, m_blitMaterial);
 
-		// Provide source size to the shader
-		m_downsamplingMaterial.SetProperty("_InputResolution", OvMaths::FVector2{
-			static_cast<float>(resolutions[i].first),
-			static_cast<float>(resolutions[i].second)
-		}, true);
+	auto downsamplingPass = [&](
+		OvRendering::HAL::Framebuffer& p_src,
+		OvRendering::HAL::Framebuffer& p_dst,
+		const OvMaths::FVector2& p_srcRes 
+	) {
+		m_downsamplingMaterial.SetProperty("_InputResolution", p_srcRes, true);
+		m_renderer.Blit(p_pso, p_src, p_dst, m_downsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
+	};
 
-		// Destination size (downsampled)
-		dst.Resize(
-			resolutions[i + 1].first,
-			resolutions[i + 1].second
-		);
-		
-		m_renderer.Blit(p_pso, src, dst, m_downsamplingMaterial, DEFAULT & ~RESIZE_DST_TO_MATCH_SRC);
+	// First downsample pass, using karis average filter
+	m_downsamplingMaterial.SetFeatures({ "KARIS_AVERAGE" });
+	downsamplingPass(m_bloomOutputBuffer, bloomMips[0].target, {
+		static_cast<float>(refX),
+		static_cast<float>(refY)
+	});
 
-		++m_bloomPingPong;
+	// Subsequent downsample passes don't need the karis average filter
+	m_downsamplingMaterial.SetFeatures({});
+
+	// Downsample the remaining passes (passCount - 1)
+	for (uint32_t i = 1; i < passCount; ++i)
+	{
+		auto& src = bloomMips[i - 1];
+		auto& dst = bloomMips[i];
+
+		downsamplingPass(src.target, dst.target, {
+			static_cast<float>(src.width),
+			static_cast<float>(src.height)
+		});
 	}
 
 	// Custom PSO for the upsampling pass, allowing us to use additive blending (accumulation)
@@ -133,29 +165,26 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	upsamplingPSO.blendingDestFactor = OvRendering::Settings::EBlendingFactor::ONE;
 	upsamplingPSO.blendingEquation = OvRendering::Settings::EBlendingEquation::FUNC_ADD;
 
+	m_upsamplingMaterial.SetProperty("_FilterRadius", bloomSettings.radius, true);
+	m_upsamplingMaterial.SetBlendable(true); // Need to enable additive blending for the upsampling pass
+
+	auto upsamplingPass = [&](
+		OvRendering::HAL::Framebuffer& p_src,
+		OvRendering::HAL::Framebuffer& p_dst
+	) {
+		m_renderer.Blit(upsamplingPSO, p_src, p_dst, m_upsamplingMaterial, (DEFAULT & ~RESIZE_DST_TO_MATCH_SRC) | USE_MATERIAL_STATE_MASK);
+	};
+
 	// Blur and upsample back to the original resolution
-	for (uint32_t i = 0; i < passCount; ++i)
+	for (int32_t i = passCount - 1; i > 0; --i)
 	{
-		auto& src = m_bloomPingPong[0];
-		auto& dst = m_bloomPingPong[1];
-
-		m_upsamplingMaterial.SetProperty("_FilterRadius", bloomSettings.radius, true);
-
-		// Destination size (upsampled)
-		const uint32_t resolutionIndex = passCount - 1 - i;
-
-		dst.Resize(
-			resolutions[resolutionIndex].first,
-			resolutions[resolutionIndex].second
-		);
-
-		m_renderer.Blit(upsamplingPSO, src, dst, m_upsamplingMaterial, (DEFAULT & ~RESIZE_DST_TO_MATCH_SRC) | USE_MATERIAL_STATE_MASK);
-
-		++m_bloomPingPong;
+		upsamplingPass(bloomMips[i].target, bloomMips[i - 1].target);
 	}
 
+	upsamplingPass(bloomMips[0].target, m_bloomOutputBuffer);
+
 	// Final pass, interpolate bloom result with the input image
-	const auto bloomTex = m_bloomPingPong[0].GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
+	const auto bloomTex = m_bloomOutputBuffer.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
 	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value());
 	m_bloomMaterial.SetProperty("_BloomStrength", std::min(bloomSettings.intensity * 0.04f, 1.0f));
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);

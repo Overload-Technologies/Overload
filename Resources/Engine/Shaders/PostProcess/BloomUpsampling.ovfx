@@ -16,7 +16,7 @@ void main()
 #version 450 core
 
 in vec2 TexCoords;
-out vec3 upsample;
+out vec4 FRAGMENT_COLOR;
 
 uniform sampler2D _InputTexture;
 uniform float _FilterRadius;
@@ -47,8 +47,10 @@ void main()
     //  1   | 1 2 1 |
     // -- * | 2 4 2 |
     // 16   | 1 2 1 |
-    upsample = e*4.0;
+    vec3 upsample = e*4.0;
     upsample += (b+d+f+h)*2.0;
     upsample += (a+c+g+i);
     upsample *= 1.0 / 16.0;
+
+    FRAGMENT_COLOR = vec4(upsample, 1.0);
 }

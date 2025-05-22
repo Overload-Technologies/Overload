@@ -81,21 +81,21 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 	auto& fxaaSettings = m_settings.Get<Rendering::PostProcess::FXAAEffect, Rendering::PostProcess::FXAASettings>();
 	auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 
-	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, Rendering::PostProcess::BloomConstants::kMaxBloomIntensity);
-	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, Rendering::PostProcess::BloomConstants::kMinPassCount, Rendering::PostProcess::BloomConstants::kMaxPassCount);
-	
-	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
-	p_root.CreateWidget<OvUI::Widgets::Layout::Spacing>();
-
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Auto Exposure Enabled", autoExposureSettings.enabled);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Center Weight Bias", autoExposureSettings.centerWeightBias, 0.1f, 0.0f, 1.0f);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Min Luminance (EV)", autoExposureSettings.minLuminanceEV, 1.0f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Max Luminance (EV)", autoExposureSettings.maxLuminanceEV, 1.0f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
-	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Exposure Compensation (EV)", autoExposureSettings.exposureCompensationEV, 1.0f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Min Luminance (EV)", autoExposureSettings.minLuminanceEV, 0.1f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Max Luminance (EV)", autoExposureSettings.maxLuminanceEV, 0.1f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Exposure Compensation (EV)", autoExposureSettings.exposureCompensationEV, 0.1f, OvCore::Helpers::GUIDrawer::_MIN_FLOAT, OvCore::Helpers::GUIDrawer::_MAX_FLOAT);
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Auto Exposure Progressive", autoExposureSettings.progressive);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Speed Up", autoExposureSettings.speedUp);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Speed Down", autoExposureSettings.speedDown);
+
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
+	p_root.CreateWidget<OvUI::Widgets::Layout::Spacing>();
+
+	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
+	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, Rendering::PostProcess::BloomConstants::kMaxBloomIntensity);
+	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, Rendering::PostProcess::BloomConstants::kMinPassCount, Rendering::PostProcess::BloomConstants::kMaxPassCount);
 
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 	p_root.CreateWidget<OvUI::Widgets::Layout::Spacing>();
@@ -112,8 +112,7 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 		{ 4, "Uncharted 2 (Filmic)" },
 		{ 5, "ACES" }
 	};
-	tonemappingMode.ValueChangedEvent += [this](int p_choice)
-	{
+	tonemappingMode.ValueChangedEvent += [this](int p_choice) {
 		auto& tonemappingSettings = m_settings.Get<Rendering::PostProcess::TonemappingEffect, Rendering::PostProcess::TonemappingSettings>();
 		tonemappingSettings.mode = static_cast<OvCore::Rendering::PostProcess::ETonemappingMode>(p_choice);
 	};

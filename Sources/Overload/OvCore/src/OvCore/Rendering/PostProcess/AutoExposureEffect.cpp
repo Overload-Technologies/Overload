@@ -18,12 +18,9 @@ OvCore::Rendering::PostProcess::AutoExposureEffect::AutoExposureEffect(
 	OvRendering::Core::CompositeRenderer& p_renderer
 ) :	AEffect(p_renderer),
 	m_luminanceBuffer{ "Luminance" },
-	m_exposurePingPongBuffer{
-		OvRendering::HAL::Framebuffer{"ExposurePingPong0"},
-		OvRendering::HAL::Framebuffer{"ExposurePingPong1"}
-	}
+	m_exposurePingPongBuffer{ "Exposure" }
 {
-	for (auto& buffer : m_exposurePingPongBuffer)
+	for (auto& buffer : m_exposurePingPongBuffer.GetFramebuffers())
 	{
 		FramebufferUtil::SetupFramebuffer(
 			buffer,
@@ -76,9 +73,9 @@ void OvCore::Rendering::PostProcess::AutoExposureEffect::Draw(
 	}
 	m_previousTime = currentTime;
 
-	auto& previousExposure = m_exposurePingPongBuffer[(m_exposurePingPongIndex + 1) % 2];
-	auto& currentExposure = m_exposurePingPongBuffer[m_exposurePingPongIndex];
-	m_exposurePingPongIndex = (m_exposurePingPongIndex + 1) % 2;
+	auto& previousExposure = m_exposurePingPongBuffer[0];
+	auto& currentExposure = m_exposurePingPongBuffer[1];
+	++m_exposurePingPongBuffer;
 
 	// Exposure adaptation
 	m_exposureMaterial.SetProperty("_LuminanceTexture", &luminanceTex.value(), true);

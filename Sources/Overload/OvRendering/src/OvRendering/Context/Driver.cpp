@@ -51,6 +51,10 @@ OvRendering::Context::Driver::~Driver()
 void OvRendering::Context::Driver::OnFrameCompleted()
 {
 	m_gfxBackend->OnFrameCompleted();
+
+	// Prevents state leak between frames, and especially useful when external code (like ImGui)
+	// requires a "neutral" pipeline state.
+	ResetPipelineState();
 }
 
 void OvRendering::Context::Driver::SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height)

@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <OvCore/Rendering/PingPongFramebuffer.h>
 #include <OvCore/Rendering/PostProcess/AEffect.h>
 #include <OvRendering/Data/Material.h>
 #include <OvRendering/HAL/Framebuffer.h>

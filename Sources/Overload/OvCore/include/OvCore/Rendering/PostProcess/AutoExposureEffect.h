@@ -8,6 +8,7 @@
 
 #include <chrono>
 
+#include <OvCore/Rendering/PingPongFramebuffer.h>
 #include <OvCore/Rendering/PostProcess/AEffect.h>
 #include <OvRendering/Data/Material.h>
 
@@ -57,8 +58,7 @@ namespace OvCore::Rendering::PostProcess
 	private:
 		std::optional<std::chrono::high_resolution_clock::time_point> m_previousTime;
 		OvRendering::HAL::Framebuffer m_luminanceBuffer;
-		std::array<OvRendering::HAL::Framebuffer, 2> m_exposurePingPongBuffer;
-		uint8_t m_exposurePingPongIndex = 0;
+		PingPongFramebuffer m_exposurePingPongBuffer;
 		OvRendering::Data::Material m_luminanceMaterial;
 		OvRendering::Data::Material m_exposureMaterial;
 		OvRendering::Data::Material m_compensationMaterial;

@@ -18,12 +18,9 @@
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),
-	m_pingPongBuffers{
-		OvRendering::HAL::Framebuffer{"PostProcessBlitPingPong0"},
-		OvRendering::HAL::Framebuffer{"PostProcessBlitPingPong1"}
-	}
+	m_pingPongBuffers{ "PostProcessBlit" }
 {
-	for (auto& buffer : m_pingPongBuffers)
+	for (auto& buffer : m_pingPongBuffers.GetFramebuffers())
 	{
 		OvCore::Rendering::FramebufferUtil::SetupFramebuffer(
 			buffer, 1, 1, false, false, false
@@ -65,12 +62,8 @@ void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineS
 
 	if (auto stack = FindPostProcessStack(scene))
 	{
-		uint32_t passIndex = 0;
-
 		auto& framebuffer = m_renderer.GetFrameDescriptor().outputBuffer.value();
 
-		const uint64_t kPingPongBufferSize = m_pingPongBuffers.size();
-		
 		m_renderer.Blit(p_pso, framebuffer, m_pingPongBuffers[0], m_blitMaterial);
 
 		for (auto& effect : m_effects)
@@ -81,17 +74,15 @@ void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineS
 			{
 				effect->Draw(
 					p_pso,
-					m_pingPongBuffers[passIndex % kPingPongBufferSize],
-					m_pingPongBuffers[(passIndex + 1) % kPingPongBufferSize],
+					m_pingPongBuffers[0],
+					m_pingPongBuffers[1],
 					settings
 				);
 
-				++passIndex;
+				++m_pingPongBuffers;
 			}
 		}
 
-		const uint64_t lastIndex = passIndex % kPingPongBufferSize;
-
-		m_renderer.Blit(p_pso, m_pingPongBuffers[lastIndex], framebuffer, m_blitMaterial);
+		m_renderer.Blit(p_pso, m_pingPongBuffers[0], framebuffer, m_blitMaterial);
 	}
 }

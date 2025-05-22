@@ -18,7 +18,7 @@ void main()
 #version 450 core
 
 in vec2 TexCoords;
-out vec3 downsample;
+out vec4 FRAGMENT_COLOR;
 
 uniform sampler2D _InputTexture;
 uniform vec2 _InputResolution;
@@ -88,6 +88,8 @@ void main()
     // to effectively yield this sum. We get:
     // 0.125*5 + 0.03125*4 + 0.0625*4 = 1
 
+    vec3 downsample = vec3(0.0);
+
     // Check if we need to perform Karis average on each block of 4 samples
 #if defined(KARIS_AVERAGE)
     vec3 groups[5];
@@ -112,4 +114,6 @@ void main()
     downsample += (b+d+f+h)*0.0625;      // ok
     downsample += (j+k+l+m)*0.125;       // ok
 #endif
+
+    FRAGMENT_COLOR = vec4(downsample, 1.0);
 }

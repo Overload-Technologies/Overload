@@ -417,19 +417,19 @@ void OvEditor::Core::CameraController::HandleMousePressed()
 
 void OvEditor::Core::CameraController::HandleMouseReleased()
 {
-	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
+	if (m_leftMousePressed && m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
 	{
 		m_leftMousePressed = false;
 		m_firstMouse = true;
 	}
 
-	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
+	if (m_middleMousePressed && m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
 	{
 		m_middleMousePressed = false;
 		m_firstMouse = true;
 	}
 
-	if (m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
+	if (m_rightMousePressed && m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
 	{
 		m_rightMousePressed = false;
 		m_firstMouse = true;

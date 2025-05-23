@@ -121,7 +121,8 @@ public:
 		m_cameraMaterial.SetProperty("u_Albedo", FVector4{ 0.0f, 0.447f, 1.0f, 1.0f });
 		m_cameraMaterial.SetProperty("u_Metallic", 0.0f);
 		m_cameraMaterial.SetProperty("u_Roughness", 0.25f);
-		m_cameraMaterial.AddFeature("GAMMA_CORRECTION");
+		m_cameraMaterial.SetProperty("u_BuiltInGammaCorrection", true);
+		m_cameraMaterial.SetProperty("u_BuiltInToneMapping", true);
 	}
 
 protected:

@@ -23,9 +23,11 @@ uniform float _Exposure;
 uniform int _Mode;
 uniform int _GammaCorrection;
 
+const float EPSILON = 0.0001;
+
 float luminance(vec3 v)
 {
-    return dot(v, vec3(0.2126, 0.7152, 0.0722));
+    return max(dot(v, vec3(0.2126, 0.7152, 0.0722)), EPSILON);
 }
 
 vec3 applyGammaCorrection(vec3 color)
@@ -62,18 +64,18 @@ vec3 reinhard(vec3 v)
 vec3 reinhard_jodie(vec3 v)
 {
     float l = luminance(v);
-    vec3 tv = v / (1.0f + v);
-    return mix(v / (1.0f + l), tv, tv);
+    vec3 tv = v / (1.0 + v);
+    return mix(v / (1.0 + l), tv, tv);
 }
 
 vec3 uncharted2_tonemap_partial(vec3 x)
 {
-    const float A = 0.15f;
-    const float B = 0.50f;
-    const float C = 0.10f;
-    const float D = 0.20f;
-    const float E = 0.02f;
-    const float F = 0.30f;
+    const float A = 0.15;
+    const float B = 0.50;
+    const float C = 0.10;
+    const float D = 0.20;
+    const float E = 0.02;
+    const float F = 0.30;
     return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 

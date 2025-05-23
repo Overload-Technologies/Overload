@@ -54,29 +54,9 @@ namespace OvEditor::Panels
 		void UnFocus();
 
 		/**
-		* Unfocus the currently targeted actor without removing listeners attached to this actor
-		*/
-		void SoftUnFocus();
-
-		/**
 		* Returns the currently selected actor
 		*/
-		OvCore::ECS::Actor* GetTargetActor() const;
-
-		/**
-		* Create the actor inspector for the given actor
-		*/
-		void CreateActorInspector(OvCore::ECS::Actor& p_target);
-
-		/**
-		* Draw the given component in inspector
-		*/
-		void DrawComponent(OvCore::ECS::Components::AComponent& p_component);
-
-		/**
-		* Draw the given behaviour in inspector
-		*/
-		void DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour);
+		OvTools::Utils::OptRef<OvCore::ECS::Actor> GetTargetActor() const;
 
 		/**
 		* Refresh the inspector
@@ -84,11 +64,31 @@ namespace OvEditor::Panels
 		void Refresh();
 
 	private:
-		OvCore::ECS::Actor* m_targetActor = nullptr;
-		OvUI::Widgets::Layout::Group* m_actorInfo;
-		OvUI::Widgets::Layout::Group* m_inspectorHeader;
-		OvUI::Widgets::Selection::ComboBox* m_componentSelectorWidget;
-        OvUI::Widgets::InputFields::InputText* m_scriptSelectorWidget;
+		void _Populate();
+		void _PopulateActorInfo();
+		void _PopulateActorComponents();
+		void _PopulateActorBehaviours();
+		void _DrawAddComponentSection();
+		void _DrawAddScriptSection();
+		void _DrawComponent(OvCore::ECS::Components::AComponent& p_component);
+		void _DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour);
+		void _UpdateAddComponentButton();
+		void _UpdateAddScriptButton();
+
+	private:
+		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_targetActor = std::nullopt;
+		OvUI::Widgets::Layout::Group* m_content;
+
+		OvTools::Utils::OptRef<OvUI::Widgets::Buttons::Button> m_addComponentButton;
+		OvTools::Utils::OptRef<OvUI::Widgets::Buttons::Button> m_addScriptButton;
+
+		// We store this here so that re-creating the inspector doesn't
+		// reset the selected component.
+		int m_selectedComponent = 0;
+
+		// Same as the selected component above, we want to keep the value
+		// of the selected script even if the inspector is re-created
+		std::string m_selectedScript;
 
 		uint64_t m_componentAddedListener	= 0;
 		uint64_t m_componentRemovedListener = 0;

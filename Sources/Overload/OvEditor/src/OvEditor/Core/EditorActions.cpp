@@ -683,7 +683,7 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 		DuplicateActor(*child, &newActor, false);
 }
 
-void OvEditor::Core::EditorActions::SelectActor(OvCore::ECS::Actor & p_target)
+void OvEditor::Core::EditorActions::SelectActor(OvCore::ECS::Actor& p_target)
 {
 	EDITOR_PANEL(Panels::Inspector, "Inspector").FocusActor(p_target);
 }
@@ -695,12 +695,12 @@ void OvEditor::Core::EditorActions::UnselectActor()
 
 bool OvEditor::Core::EditorActions::IsAnyActorSelected() const
 {
-	return EDITOR_PANEL(Panels::Inspector, "Inspector").GetTargetActor();
+	return EDITOR_PANEL(Panels::Inspector, "Inspector").GetTargetActor().has_value();
 }
 
-OvCore::ECS::Actor & OvEditor::Core::EditorActions::GetSelectedActor() const
+OvCore::ECS::Actor& OvEditor::Core::EditorActions::GetSelectedActor() const
 {
-	return *EDITOR_PANEL(Panels::Inspector, "Inspector").GetTargetActor();
+	return EDITOR_PANEL(Panels::Inspector, "Inspector").GetTargetActor().value();
 }
 
 void OvEditor::Core::EditorActions::MoveToTarget(OvCore::ECS::Actor& p_target)

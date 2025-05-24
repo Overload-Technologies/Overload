@@ -12,7 +12,7 @@ OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneT
 OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::DestructionEvent;
 
 template<>
-OvRendering::HAL::NoneTexture::TTexture(std::string_view p_debugName) : TTextureHandle{ 0 }
+OvRendering::HAL::NoneTexture::TTexture(Settings::ETextureType p_type, std::string_view p_debugName) : TTextureHandle{ p_type, 0 }
 {
 	m_textureContext.debugName = p_debugName;
 	CreationEvent.Invoke(*this);

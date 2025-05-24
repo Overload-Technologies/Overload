@@ -9,6 +9,7 @@
 #include <optional>
 
 #include <OvRendering/Settings/EGraphicsBackend.h>
+#include <OvRendering/Settings/ETextureType.h>
 
 namespace OvRendering::HAL
 {
@@ -37,8 +38,8 @@ namespace OvRendering::HAL
 		uint32_t GetID() const;
 
 	protected:
-		TTextureHandle();
-		TTextureHandle(uint32_t p_id);
+		TTextureHandle(Settings::ETextureType p_type);
+		TTextureHandle(Settings::ETextureType p_type, uint32_t p_id);
 
 	protected:
 		Context m_context;

@@ -50,7 +50,7 @@ namespace
 	constexpr float kHoveredOutlineWidth = 2.5f;
 	constexpr float kSelectedOutlineWidth = 5.0f;
 
-	OvMaths::FMatrix4 CalculateCameraModelMatrix(OvCore::ECS::Actor& p_actor)
+	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
 	{
 		auto translation = FMatrix4::Translation(p_actor.transform.GetWorldPosition());
 		auto rotation = FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
@@ -155,7 +155,7 @@ protected:
 			if (actor.IsActive())
 			{
 				auto& model = *EDITOR_CONTEXT(editorResources)->GetModel("Camera");
-				auto modelMatrix = CalculateCameraModelMatrix(actor);
+				auto modelMatrix = CalculateUnscaledModelMatrix(actor);
 
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_cameraMaterial, modelMatrix);
@@ -171,6 +171,71 @@ protected:
 
 private:
 	OvCore::Resources::Material m_cameraMaterial;
+	std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_fakeLightsBuffer;
+};
+
+class DebugReflectionProbesRenderPass : public OvRendering::Core::ARenderPass
+{
+public:
+	DebugReflectionProbesRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) : OvRendering::Core::ARenderPass(p_renderer)
+	{
+		m_fakeLightsBuffer = CreateDebugLightBuffer();
+
+		m_reflectiveMaterial.SetDepthTest(false);
+		m_reflectiveMaterial.SetShader(EDITOR_CONTEXT(shaderManager)[":Shaders\\Standard.ovfx"]);
+		m_reflectiveMaterial.SetProperty("u_Albedo", FVector4{ 1.0, 1.0f, 1.0f, 1.0f });
+		m_reflectiveMaterial.SetProperty("u_Metallic", 1.0f);
+		m_reflectiveMaterial.SetProperty("u_Roughness", 0.0f);
+		m_reflectiveMaterial.SetProperty("u_BuiltInGammaCorrection", true);
+		m_reflectiveMaterial.SetProperty("u_BuiltInToneMapping", true);
+	}
+
+protected:
+	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
+	{
+		ZoneScoped;
+		TracyGpuZone("DebugReflectionProbesRenderPass");
+
+		using namespace OvRendering::Features;
+
+		const auto lightingRenderFeature = OvTools::Utils::OptRef<LightingRenderFeature>{
+			m_renderer.HasFeature<LightingRenderFeature>() ?
+			m_renderer.GetFeature<LightingRenderFeature>() :
+			OvTools::Utils::OptRef<LightingRenderFeature>{std::nullopt}
+		};
+
+		// Override the light buffer with fake lights
+		m_fakeLightsBuffer->Bind(
+			lightingRenderFeature ?
+			lightingRenderFeature->GetBufferBindingPoint() :
+			0
+		);
+
+		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+
+		for (auto reflectionProbe : sceneDescriptor.scene.GetFastAccessComponents().reflectionProbes)
+		{
+			auto& actor = reflectionProbe->owner;
+
+			if (actor.IsActive())
+			{
+				auto& model = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
+				auto modelMatrix = CalculateUnscaledModelMatrix(actor) * OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+
+				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
+					.DrawModelWithSingleMaterial(p_pso, model, m_reflectiveMaterial, modelMatrix);
+			}
+		}
+
+		if (lightingRenderFeature)
+		{
+			// Bind back the original light buffer
+			lightingRenderFeature->Bind();
+		}
+	}
+
+private:
+	OvCore::Resources::Material m_reflectiveMaterial;
 	std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_fakeLightsBuffer;
 };
 
@@ -301,7 +366,7 @@ protected:
 			/* Render camera component outline */
 			if (auto cameraComponent = p_actor.GetComponent<OvCore::ECS::Components::CCamera>(); cameraComponent)
 			{
-				auto model = CalculateCameraModelMatrix(p_actor);
+				auto model = CalculateUnscaledModelMatrix(p_actor);
 				DrawCameraFrustum(*cameraComponent);
 			}
 
@@ -647,6 +712,7 @@ OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context
 
 	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddPass<DebugReflectionProbesRenderPass>("Debug Reflection Probes", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);
 	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::Debug);

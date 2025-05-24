@@ -52,6 +52,13 @@ void OvCore::SceneSystem::Scene::AddDefaultLights()
 	ambientLight.AddComponent<ECS::Components::CAmbientSphereLight>().SetRadius(10000.0f);
 }
 
+void OvCore::SceneSystem::Scene::AddDefaultReflections()
+{
+	auto& reflectionProbe = CreateActor("Reflection Probe");
+	reflectionProbe.AddComponent<ECS::Components::CReflectionProbe>();
+	reflectionProbe.transform.SetLocalPosition({ 0.0f, 3.0f, 0.0f });
+}
+
 void OvCore::SceneSystem::Scene::AddDefaultPostProcessStack()
 {
 	auto& postProcessStack = CreateActor("Post Process Stack");
@@ -285,6 +292,9 @@ void OvCore::SceneSystem::Scene::OnComponentAdded(ECS::Components::AComponent& p
 
 	if (auto result = dynamic_cast<ECS::Components::CPostProcessStack*>(&p_compononent))
 		m_fastAccessComponents.postProcessStacks.push_back(result);
+
+	if (auto result = dynamic_cast<ECS::Components::CReflectionProbe*>(&p_compononent))
+		m_fastAccessComponents.reflectionProbes.push_back(result);
 }
 
 void OvCore::SceneSystem::Scene::OnComponentRemoved(ECS::Components::AComponent& p_compononent)
@@ -300,6 +310,9 @@ void OvCore::SceneSystem::Scene::OnComponentRemoved(ECS::Components::AComponent&
 
 	if (auto result = dynamic_cast<ECS::Components::CPostProcessStack*>(&p_compononent))
 		m_fastAccessComponents.postProcessStacks.erase(std::remove(m_fastAccessComponents.postProcessStacks.begin(), m_fastAccessComponents.postProcessStacks.end(), result), m_fastAccessComponents.postProcessStacks.end());
+
+	if (auto result = dynamic_cast<ECS::Components::CReflectionProbe*>(&p_compononent))
+		m_fastAccessComponents.reflectionProbes.erase(std::remove(m_fastAccessComponents.reflectionProbes.begin(), m_fastAccessComponents.reflectionProbes.end(), result), m_fastAccessComponents.reflectionProbes.end());
 }
 
 std::vector<OvCore::ECS::Actor*>& OvCore::SceneSystem::Scene::GetActors()

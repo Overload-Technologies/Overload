@@ -20,6 +20,7 @@
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
+#include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -92,7 +93,8 @@ namespace
 		CreateComponentInfo<CMaterialRenderer>("Material Renderer"),
 		CreateComponentInfo<CAudioSource>("Audio Source"),
 		CreateComponentInfo<CAudioListener>("Audio Listener"),
-		CreateComponentInfo<CPostProcessStack>("Post Process Stack")
+		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),
+		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
 	});
 
 	OvTools::Utils::OptRef<IComponentInfo> GetComponentInfo(size_t p_index)

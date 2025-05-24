@@ -33,9 +33,9 @@ namespace
 }
 
 template<>
-OvRendering::HAL::GLTexture::TTexture(std::string_view p_debugName)
+OvRendering::HAL::GLTexture::TTexture(Settings::ETextureType p_type, std::string_view p_debugName) : GLTextureHandle(p_type)
 {
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_context.id);
+	glCreateTextures(m_context.type, 1, &m_context.id);
 	m_textureContext.debugName = p_debugName;
 	CreationEvent.Invoke(*this);
 }
@@ -64,7 +64,7 @@ void OvRendering::HAL::GLTexture::Allocate(const Settings::TextureDesc& p_desc)
 		// so we need to Bind/Unbind the texture.
 		Bind(); 
 		glTexImage2D(
-			GL_TEXTURE_2D,
+			m_context.type,
 			0,
 			EnumToValue<GLenum>(desc.internalFormat),
 			desc.width,

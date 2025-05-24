@@ -23,10 +23,13 @@ namespace OvCore::Rendering::FramebufferUtil
 		using namespace OvRendering::HAL;
 		using namespace OvRendering::Settings;
 
-		const auto renderTexture = std::make_shared<Texture>(std::format(
-			"{}/Color",
-			p_framebuffer.GetDebugName()
-		));
+		const auto renderTexture = std::make_shared<Texture>(
+			ETextureType::TEXTURE_2D,
+			std::format(
+				"{}/Color",
+				p_framebuffer.GetDebugName()
+			)
+		);
 
 		renderTexture->Allocate(p_textureDesc);
 		p_framebuffer.Attach(renderTexture, EFramebufferAttachment::COLOR);

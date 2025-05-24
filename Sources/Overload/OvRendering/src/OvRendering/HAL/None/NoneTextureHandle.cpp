@@ -7,12 +7,12 @@
 #include <OvRendering/HAL/None/NoneTextureHandle.h>
 
 template<>
-OvRendering::HAL::NoneTextureHandle::TTextureHandle()
+OvRendering::HAL::NoneTextureHandle::TTextureHandle(Settings::ETextureType p_type)
 {
 }
 
 template<>
-OvRendering::HAL::NoneTextureHandle::TTextureHandle(uint32_t p_id)
+OvRendering::HAL::NoneTextureHandle::TTextureHandle(Settings::ETextureType p_type, uint32_t p_id)
 {
 }
 

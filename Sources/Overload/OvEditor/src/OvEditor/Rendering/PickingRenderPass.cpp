@@ -56,6 +56,9 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
 	m_gizmoPickingMaterial.SetDepthTest(true);
 
+	m_reflectionProbeMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
+	m_reflectionProbeMaterial.SetDepthTest(false);
+
 	/* Picking Material */
 	m_actorPickingFallbackMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
 }
@@ -121,6 +124,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 
 	DrawPickableModels(pso, scene);
 	DrawPickableCameras(pso, scene);
+	DrawPickableReflectionProbes(pso, scene);
 	DrawPickableLights(pso, scene);
 
 	// Clear depth, gizmos are rendered on top of everything else
@@ -223,6 +227,27 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableCameras(
 
 			m_renderer.GetFeature<DebugModelRenderFeature>()
 				.DrawModelWithSingleMaterial(p_pso, cameraModel, m_actorPickingFallbackMaterial, modelMatrix);
+		}
+	}
+}
+
+void OvEditor::Rendering::PickingRenderPass::DrawPickableReflectionProbes(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene)
+{
+	for (auto reflectionProbe : p_scene.GetFastAccessComponents().reflectionProbes)
+	{
+		auto& actor = reflectionProbe->owner;
+
+		if (actor.IsActive())
+		{
+			PreparePickingMaterial(actor, m_reflectionProbeMaterial);
+			auto& reflectionProbeModel = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
+			const auto translation = OvMaths::FMatrix4::Translation(actor.transform.GetWorldPosition());
+			const auto rotation = OvMaths::FQuaternion::ToMatrix4(actor.transform.GetWorldRotation());
+			const auto scaling = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+			auto modelMatrix = translation * rotation * scaling;
+
+			m_renderer.GetFeature<DebugModelRenderFeature>()
+				.DrawModelWithSingleMaterial(p_pso, reflectionProbeModel, m_reflectionProbeMaterial, modelMatrix);
 		}
 	}
 }

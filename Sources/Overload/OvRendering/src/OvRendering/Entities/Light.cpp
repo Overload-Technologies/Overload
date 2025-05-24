@@ -20,10 +20,13 @@ namespace
 		using namespace OvRendering::HAL;
 		using namespace OvRendering::Settings;
 
-		const auto renderTexture = std::make_shared<Texture>(std::format(
-			"{}/Depth",
-			p_framebuffer.GetDebugName()
-		));
+		const auto renderTexture = std::make_shared<Texture>(
+			ETextureType::TEXTURE_2D,
+			std::format(
+				"{}/Depth",
+				p_framebuffer.GetDebugName()
+			)
+		);
 
 		TextureDesc renderTextureDesc{
 			.width = p_resolution,

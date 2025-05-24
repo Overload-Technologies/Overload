@@ -25,9 +25,10 @@ namespace OvRendering::HAL
 	public:
 		/**
 		* Creates a texture.
+		* @param p_type The type of the texture (2D, Cube, etc.)
 		* @param p_debugName A name used to identify the texture for debugging purposes
 		*/
-		TTexture(std::string_view p_debugName = std::string_view{});
+		TTexture(Settings::ETextureType p_type, std::string_view p_debugName = std::string_view{});
 
 		/**
 		* Destroys the texture.

@@ -7,13 +7,13 @@
 #pragma once
 
 
-#include "OvCore/ECS/Actor.h"
-#include "OvCore/API/ISerializable.h"
-
-#include "OvCore/ECS/Components/CModelRenderer.h"
-#include "OvCore/ECS/Components/CCamera.h"
-#include "OvCore/ECS/Components/CLight.h"
-#include "OvCore/ECS/Components/CPostProcessStack.h"
+#include <OvCore/API/ISerializable.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/ECS/Components/CLight.h>
+#include <OvCore/ECS/Components/CModelRenderer.h>
+#include <OvCore/ECS/Components/CPostProcessStack.h>
+#include <OvCore/ECS/Components/CReflectionProbe.h>
 
 namespace OvCore::SceneSystem
 {
@@ -29,10 +29,11 @@ namespace OvCore::SceneSystem
 		*/
 		struct FastAccessComponents
 		{
-			std::vector<ECS::Components::CModelRenderer*>	modelRenderers;
-			std::vector<ECS::Components::CCamera*>			cameras;
-			std::vector<ECS::Components::CLight*>			lights;
+			std::vector<ECS::Components::CModelRenderer*> modelRenderers;
+			std::vector<ECS::Components::CCamera*> cameras;
+			std::vector<ECS::Components::CLight*> lights;
 			std::vector<ECS::Components::CPostProcessStack*> postProcessStacks;
+			std::vector<ECS::Components::CReflectionProbe*> reflectionProbes;
 		};
 
 		/**
@@ -54,6 +55,11 @@ namespace OvCore::SceneSystem
 		* Add default lights to the scene
 		*/
 		void AddDefaultLights();
+
+		/**
+		* Add default lights to the scene
+		*/
+		void AddDefaultReflections();
 
 		/**
 		* Add default post-process stack to the scene

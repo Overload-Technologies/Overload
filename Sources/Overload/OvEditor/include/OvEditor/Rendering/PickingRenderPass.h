@@ -32,7 +32,7 @@ namespace OvEditor::Rendering
 			std::optional<
 			std::variant<OvTools::Utils::OptRef<OvCore::ECS::Actor>,
 			OvEditor::Core::GizmoBehaviour::EDirection>
-			>;
+		>;
 
 		/**
 		* Constructor
@@ -56,6 +56,7 @@ namespace OvEditor::Rendering
 		virtual void Draw(OvRendering::Data::PipelineState p_pso) override;
 		void DrawPickableModels(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
 		void DrawPickableCameras(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
+		void DrawPickableReflectionProbes(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
 		void DrawPickableLights(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
 		void DrawPickableGizmo(
 			OvRendering::Data::PipelineState p_pso,
@@ -67,6 +68,7 @@ namespace OvEditor::Rendering
 	private:
 		OvRendering::HAL::Framebuffer m_actorPickingFramebuffer;
 		OvCore::Resources::Material m_actorPickingFallbackMaterial;
+		OvCore::Resources::Material m_reflectionProbeMaterial;
 		OvCore::Resources::Material m_lightMaterial;
 		OvCore::Resources::Material m_gizmoPickingMaterial;
 	};

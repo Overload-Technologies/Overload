@@ -91,7 +91,10 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 {
 	if (Image image{ p_filepath })
 	{
-		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filepath));
+		auto texture = std::make_unique<HAL::Texture>(
+			Settings::ETextureType::TEXTURE_2D,
+			OvTools::Utils::PathParser::GetElementName(p_filepath)
+		);
 
 		PrepareTexture(
 			*texture,
@@ -142,7 +145,7 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	bool p_generateMipmap
 )
 {
-	auto texture = std::make_unique<HAL::Texture>("FromMemory");
+	auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromMemory");
 
 	PrepareTexture(
 		*texture,
@@ -172,7 +175,10 @@ void OvRendering::Resources::Loaders::TextureLoader::Reload(
 {
 	if (Image image{ p_filePath })
 	{
-		auto texture = std::make_unique<HAL::Texture>(OvTools::Utils::PathParser::GetElementName(p_filePath));
+		auto texture = std::make_unique<HAL::Texture>(
+			Settings::ETextureType::TEXTURE_2D,
+			OvTools::Utils::PathParser::GetElementName(p_filePath)
+		);
 
 		PrepareTexture(
 			*texture,

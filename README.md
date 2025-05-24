@@ -51,6 +51,19 @@ Overload pillars are:
 
 Check out our [issues](https://github.com/Overload-Technologies/Overload/issues) and [pull requests](https://github.com/Overload-Technologies/Overload/pulls) to learn more about what's coming next!
 
+# Quick Start (TL;DR)
+*Assuming you are on Windows, have Visual Studio 2022 installed, and have about 5 minutes to spare!*
+1. Clone Overload
+2. Inside of the repository folder, run `OpenInVisualStudio.bat`
+3. Build the project, voilà!
+
+- **⭐ Bonus:** get one of Overload's [sample projects](https://github.com/Overload-Technologies/Overload/wiki/Sample-Projects)!
+- **✨ Extra Bonus:** check-out the [documentation](https://github.com/Overload-Technologies/Overload/wiki).
+
+More in-depth guide on getting started available [here](#getting-started).
+
+In a rush? [Get the latest release](https://github.com/Overload-Technologies/Overload/releases)!
+
 # Architecture
 Overload is divided into 11 modules: 9 libraries (SDK), and 2 executables (Applications).
 
@@ -76,7 +89,7 @@ Overload applications use the Overload SDK to operate.
 
 ## Dependencies
 Overload depends on a few third-party libraries:
-- OpenGL with [GLAD](https://github.com/Dav1dde/glad) (Graphics API)
+- [GLAD](https://github.com/Dav1dde/glad) (OpengGL Graphics API)
 - [GLFW](https://github.com/glfw/glfw) (Windowing and inputs)
 - [Assimp](https://github.com/assimp/assimp) (3D model loader)
 - [Bullet3](https://github.com/bulletphysics/bullet3) (Physics)

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <OvCore/ECS/Components/AComponent.h>
+#include <OvRendering/HAL/Texture.h>
 
 namespace OvCore::ECS { class Actor; }
 
@@ -30,6 +31,17 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Sets the size of the reflection probe volume
+		* @param p_size
+		*/
+		void SetSize(const OvMaths::FVector3& p_size);
+
+		/**
+		* Returns the size of the reflection probe volume
+		*/
+		const OvMaths::FVector3& GetSize() const;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -48,5 +60,9 @@ namespace OvCore::ECS::Components
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+
+	private:
+		std::unique_ptr<OvRendering::HAL::Texture> m_cubemap;
+		OvMaths::FVector3 m_size;
 	};
 }

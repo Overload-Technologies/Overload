@@ -60,6 +60,8 @@ void OvRendering::HAL::GLTexture::Allocate(const Settings::TextureDesc& p_desc)
 	{
 		const auto& mutableDesc = desc.mutableDesc.value();
 
+		OVASSERT(m_context.type == GL_TEXTURE_2D, "Mutable textures are only supported for 2D textures");
+
 		// No DSA version for glTexImage2D (mutable texture),
 		// so we need to Bind/Unbind the texture.
 		Bind(); 
@@ -78,6 +80,8 @@ void OvRendering::HAL::GLTexture::Allocate(const Settings::TextureDesc& p_desc)
 	}
 	else
 	{
+		// If the underlying texture is a cube map, this will allocate all 6 sides.
+		// No need to iterate over each side.
 		glTextureStorage2D(
 			m_context.id,
 			desc.useMipMaps ? CalculateMipMapLevels(desc.width, desc.height) : 1,
@@ -125,17 +129,37 @@ void OvRendering::HAL::GLTexture::Upload(const void* p_data, Settings::EFormat p
 	}
 	else
 	{
-		glTextureSubImage2D(
-			m_context.id,
-			0,
-			0,
-			0,
-			m_textureContext.desc.width,
-			m_textureContext.desc.height,
-			EnumToValue<GLenum>(p_format),
-			EnumToValue<GLenum>(p_type),
-			p_data
-		);
+		if (m_context.type == GL_TEXTURE_CUBE_MAP)
+		{
+			for (uint32_t i = 0; i < 6; ++i)
+			{
+				glTextureSubImage2D(
+					m_context.id,
+					0,
+					0,
+					0,
+					m_textureContext.desc.width,
+					m_textureContext.desc.height,
+					EnumToValue<GLenum>(p_format),
+					EnumToValue<GLenum>(p_type),
+					p_data
+				);
+			}
+		}
+		else
+		{
+			glTextureSubImage2D(
+				m_context.id,
+				0,
+				0,
+				0,
+				m_textureContext.desc.width,
+				m_textureContext.desc.height,
+				EnumToValue<GLenum>(p_format),
+				EnumToValue<GLenum>(p_type),
+				p_data
+			);
+		}
 	}
 }
 

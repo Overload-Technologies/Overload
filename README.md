@@ -1,4 +1,5 @@
-![Overload Logo](https://user-images.githubusercontent.com/33324216/94352497-cc8c2200-0033-11eb-93e1-1a30386133b9.png)
+![image](https://github.com/user-attachments/assets/f40952fe-e9f4-4eac-b1fc-c16aef994313)
+
 
 <p align="center">
   <a href="https://github.com/Overload-Technologies/Overload/releases">Releases</a> |
@@ -85,7 +86,7 @@ Overload applications use the Overload SDK to operate.
 - `OvGame`: A data-driven executable for any game built with Overload.
 - `OvEditor`: An editor for building your game.
 
-![Editor](https://user-images.githubusercontent.com/33324216/94352908-fd228a80-0038-11eb-849a-c076bde4c7c6.PNG)
+![image](https://github.com/user-attachments/assets/3e59ee31-f124-453e-a7e6-2afd79be0e0d)
 
 ## Dependencies
 Overload depends on a few third-party libraries:

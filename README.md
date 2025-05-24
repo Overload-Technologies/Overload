@@ -1,5 +1,4 @@
-![image](https://github.com/user-attachments/assets/f40952fe-e9f4-4eac-b1fc-c16aef994313)
-
+![overload-banner](https://github.com/user-attachments/assets/b9f05587-c837-4554-8aa8-394f5faa5f80)
 
 <p align="center">
   <a href="https://github.com/Overload-Technologies/Overload/releases">Releases</a> |

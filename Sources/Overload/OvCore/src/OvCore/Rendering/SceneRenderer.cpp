@@ -261,7 +261,6 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 		if (!materialRenderer) continue;
 				
 		const auto& transform = owner.transform.GetFTransform();
-		const auto& modelBoundingSphere = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::CULL_CUSTOM ? modelRenderer->GetCustomBoundingSphere() : model->GetBoundingSphere();
 		const auto& materials = materialRenderer->GetMaterials();
 
 		for (auto& mesh : model->GetMeshes())
@@ -273,23 +272,25 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				material = materials.at(mesh->GetMaterialIndex());
 			}
 
-			OvRendering::Entities::Drawable drawable;
-			// TODO: Store culling policy
-			drawable.mesh = *mesh;
-			drawable.material = material;
-			drawable.stateMask = material->GenerateStateMask();
-			drawable.transform = transform;
-			drawable.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
-				OvRendering::Entities::ECullingPolicy::NEVER :
-				OvRendering::Entities::ECullingPolicy::ALWAYS;
+			OvRendering::Entities::Drawable drawable{
+				.mesh = *mesh,
+				.material = material,
+				.stateMask =material.value().GenerateStateMask()
+			};
 
-			drawable.type = [&]() ->OvRendering::Entities::EDrawableType {
-				using enum OvRendering::Entities::EDrawableType;
-				const bool isUI = material->IsUserInterface();
-				const bool isBlendable = material->IsBlendable();
-				return isUI ? UI : isBlendable ? TRANSPARENT : OPAQUE;
-			}();
-
+			drawable.AddDescriptor<SceneDrawableDescriptor>({
+				.actor = modelRenderer->owner,
+				.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
+					ECullingPolicy::NEVER :
+					ECullingPolicy::ALWAYS,
+				.type = [&]() ->EDrawableType {
+					using enum EDrawableType;
+					const bool isUI = material->IsUserInterface();
+					const bool isBlendable = material->IsBlendable();
+					return isUI ? UI : isBlendable ? TRANSPARENT : OPAQUE;
+				}()
+			});
+			
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
 				transform.GetWorldMatrix(),
 				materialRenderer->GetUserMatrix()
@@ -326,14 +327,24 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 	// Process each drawable
 	for (const auto& drawable : p_drawables.drawables)
 	{
+		const auto& desc = drawable.GetDescriptor<SceneDrawableDescriptor>();
+
+		// TODO: useuless right now, we need to implement a way to override the material in the drawable descriptor.
+		// Maybe another function (ProcessDrawable) that would allow to override the material based on the drawable descriptor?
+		// I don't believe this should be done here, as this is a filtering function.
+		const auto targetMaterial = 
+			p_filteringInput.overrideMaterial.has_value() ?
+			p_filteringInput.overrideMaterial.value() :
+			(drawable.material.has_value() ? drawable.material.value() : p_filteringInput.fallbackMaterial);
+
 		// Skip if material is invalid
-		if (!drawable.material || !drawable.material->IsValid())
-		{
-			continue;
-		}
+		if (!targetMaterial || !targetMaterial->IsValid()) continue;
+		if (desc.type == EDrawableType::UI && !p_filteringInput.includeUI) continue;
+		if (desc.type == EDrawableType::OPAQUE && !p_filteringInput.includeOpaque) continue;
+		if (desc.type == EDrawableType::TRANSPARENT && !p_filteringInput.includeTransparent) continue;
 
 		// Perform frustum culling if enabled
-		if (frustum && drawable.cullingPolicy == OvRendering::Entities::ECullingPolicy::ALWAYS)
+		if (frustum && desc.cullingPolicy == ECullingPolicy::ALWAYS)
 		{
 			ZoneScopedN("Frustum Culling");
 
@@ -343,7 +354,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 			// Calculate bounding sphere in world space
 			const auto& meshBoundingSphere = drawable.mesh->GetBoundingSphere();
 
-			if (!frustum->BoundingSphereInFrustum(meshBoundingSphere, drawable.transform))
+			if (!frustum->BoundingSphereInFrustum(meshBoundingSphere, desc.actor.transform.GetFTransform()))
 			{
 				continue; // Skip this drawable as it's outside the frustum
 			}
@@ -351,26 +362,26 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 
 		// Calculate distance to camera for sorting
 		const float distanceToCamera = OvMaths::FVector3::Distance(
-			drawable.transform.GetWorldPosition(),
+			desc.actor.transform.GetWorldPosition(),
 			camera.GetPosition()
 		);
 
 		// Categorize drawable based on their type
-		if (drawable.type == OvRendering::Entities::EDrawableType::UI)
+		if (desc.type == EDrawableType::UI)
 		{
 			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
 				.order = drawable.material->GetDrawOrder(),
 					.distance = distanceToCamera
 			}, drawable);
 		}
-		else if (drawable.type == OvRendering::Entities::EDrawableType::TRANSPARENT)
+		else if (desc.type == EDrawableType::TRANSPARENT)
 		{
 			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
 				.order = drawable.material->GetDrawOrder(),
 					.distance = distanceToCamera
 			}, drawable);
 		}
-		else if (drawable.type == OvRendering::Entities::EDrawableType::OPAQUE)
+		else if (desc.type == EDrawableType::OPAQUE)
 		{
 			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
 				.order = drawable.material->GetDrawOrder(),

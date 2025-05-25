@@ -34,6 +34,20 @@ namespace OvCore::Rendering
 			FRONT_TO_BACK,
 		};
 
+		enum class EDrawableType
+		{
+			UNDEFINED,
+			OPAQUE,
+			TRANSPARENT,
+			UI
+		};
+
+		enum class ECullingPolicy
+		{
+			NEVER,
+			ALWAYS
+		};
+
 		template<EOrderingMode OrderingMode>
 		struct DrawOrder
 		{
@@ -93,6 +107,16 @@ namespace OvCore::Rendering
 		};
 
 		/**
+		* Additional information for a drawable computed by the scene renderer.
+		*/
+		struct SceneDrawableDescriptor
+		{
+			OvCore::ECS::Actor& actor;
+			ECullingPolicy cullingPolicy = ECullingPolicy::ALWAYS;
+			EDrawableType type = EDrawableType::UNDEFINED;
+		};
+
+		/**
 		* Filtered drawables for the scene, categorized by their render pass, and sorted by their draw order.
 		*/
 		struct SceneFilteredDrawablesDescriptor
@@ -108,6 +132,9 @@ namespace OvCore::Rendering
 			OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustumOverride;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> overrideMaterial;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> fallbackMaterial;
+			bool includeUI = true; // Whether to include UI drawables in the filtering
+			bool includeTransparent = true; // Whether to include transparent drawables in the filtering
+			bool includeOpaque = true; // Whether to include opaque drawables in the filtering
 		};
 
 		/**

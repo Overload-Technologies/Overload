@@ -13,20 +13,6 @@
 
 namespace OvRendering::Entities
 {
-	enum class EDrawableType
-	{
-		UNDEFINED,
-		OPAQUE,
-		TRANSPARENT,
-		UI
-	};
-
-	enum class ECullingPolicy
-	{
-		NEVER,
-		ALWAYS
-	};
-
 	/**
 	* Drawable entity
 	*/
@@ -34,9 +20,6 @@ namespace OvRendering::Entities
 	{
 		OvTools::Utils::OptRef<OvRendering::Resources::IMesh> mesh;
 		OvTools::Utils::OptRef<OvRendering::Data::Material> material;
-		OvMaths::FTransform transform = OvMaths::FVector3::Zero;
-		ECullingPolicy cullingPolicy = ECullingPolicy::ALWAYS;
-		EDrawableType type = EDrawableType::UNDEFINED;
 		Data::StateMask stateMask;
 		Settings::EPrimitiveMode primitiveMode = OvRendering::Settings::EPrimitiveMode::TRIANGLES;
 		std::optional<std::string> pass = std::nullopt;

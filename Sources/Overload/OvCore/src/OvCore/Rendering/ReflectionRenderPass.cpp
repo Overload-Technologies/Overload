@@ -109,7 +109,8 @@ void OvCore::Rendering::ReflectionRenderPass::_DrawReflections(
 			.camera = p_camera,
 			.frustumOverride = std::nullopt, // No frustum override for reflections
 			.overrideMaterial = std::nullopt, // No override material for reflections
-			.fallbackMaterial = std::nullopt // No fallback material for reflections
+			.fallbackMaterial = std::nullopt, // No fallback material for reflections
+			.includeUI = false, // Exclude UI elements from contribution
 		}
 	);
 

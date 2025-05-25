@@ -80,9 +80,10 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			m_renderer.SetViewport(0, 0, width, height);
 			m_renderer.Clear(true, true, true);
 			_DrawReflections(pso, reflectionCamera);
-			reflectionProbe.GetCubemap()->GenerateMipmaps();
 			reflectionProbe.GetFramebuffer().Unbind();
 		}
+
+		reflectionProbe.GetCubemap()->GenerateMipmaps();
 
 		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 	}
@@ -116,13 +117,13 @@ void OvCore::Rendering::ReflectionRenderPass::_DrawReflections(
 	{
 		auto drawableCopy = drawable;
 		drawableCopy.pass = "REFLECTION_PASS";
-		m_renderer.DrawEntity(p_pso, drawable);
+		m_renderer.DrawEntity(p_pso, drawableCopy);
 	}
 
 	for (const auto& drawable : filteredDrawables.transparents | std::views::values)
 	{
 		auto drawableCopy = drawable;
 		drawableCopy.pass = "REFLECTION_PASS";
-		m_renderer.DrawEntity(p_pso, drawable);
+		m_renderer.DrawEntity(p_pso, drawableCopy);
 	}
 }

@@ -10,6 +10,7 @@
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvDebug/Assertion.h>
+#include <OvRendering/HAL/Renderbuffer.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -170,6 +171,12 @@ void OvCore::ECS::Components::CReflectionProbe::_CreateCubemap()
 			i // Each face of the cubemap is accessed by its layer index
 		);
 	}
+
+	// Depth buffer
+	const auto renderbuffer = std::make_shared<OvRendering::HAL::Renderbuffer>();
+	const auto internalFormat = OvRendering::Settings::EInternalFormat::DEPTH_COMPONENT;
+	renderbuffer->Allocate(m_resolution, m_resolution, internalFormat);
+	m_framebuffer->Attach(renderbuffer, OvRendering::Settings::EFramebufferAttachment::DEPTH);
 
 	m_framebuffer->Validate();
 }

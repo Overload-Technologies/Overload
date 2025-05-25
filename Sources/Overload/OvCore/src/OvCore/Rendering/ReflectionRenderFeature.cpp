@@ -4,13 +4,12 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/ReflectionRenderFeature.h>
-
 #include <OvDebug/Logger.h>
-
 #include <OvRendering/Features/LightingRenderFeature.h>
 
 OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
@@ -20,6 +19,8 @@ OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(OvRendering:
 
 void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
 {
+	ZoneScoped;
+
 	auto& material = p_drawable.material.value();
 
 	// TODO: Check if material is set to receive reflections

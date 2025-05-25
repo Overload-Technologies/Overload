@@ -4,12 +4,11 @@
 * @licence: MIT
 */
 
+#include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/ShadowRenderFeature.h>
-
 #include <OvDebug/Logger.h>
-
 #include <OvRendering/Features/LightingRenderFeature.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
@@ -21,6 +20,8 @@ OvCore::Rendering::ShadowRenderFeature::ShadowRenderFeature(OvRendering::Core::C
 
 void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
 {
+	ZoneScoped;
+
 	auto& material = p_drawable.material.value();
 
 	if (material.IsShadowReceiver())

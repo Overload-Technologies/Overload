@@ -4,10 +4,11 @@
 * @licence: MIT
 */
 
-#include <OvRendering/Core/CompositeRenderer.h>
+#include <tracy/Tracy.hpp>
 
-#include "OvCore/Rendering/EngineBufferRenderFeature.h"
-#include "OvCore/Rendering/EngineDrawableDescriptor.h"
+#include <OvCore/Rendering/EngineBufferRenderFeature.h>
+#include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvRendering/Core/CompositeRenderer.h>
 
 namespace
 {
@@ -82,6 +83,8 @@ void OvCore::Rendering::EngineBufferRenderFeature::OnEndFrame()
 
 void OvCore::Rendering::EngineBufferRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
 {
+	ZoneScoped;
+
 	OvTools::Utils::OptRef<const EngineDrawableDescriptor> descriptor;
 
 	if (p_drawable.TryGetDescriptor<EngineDrawableDescriptor>(descriptor))

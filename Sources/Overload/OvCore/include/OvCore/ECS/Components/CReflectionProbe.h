@@ -7,6 +7,7 @@
 #pragma once
 
 #include <OvCore/ECS/Components/AComponent.h>
+#include <OvRendering/HAL/Framebuffer.h>
 #include <OvRendering/HAL/Texture.h>
 
 namespace OvCore::ECS { class Actor; }
@@ -42,6 +43,16 @@ namespace OvCore::ECS::Components
 		const OvMaths::FVector3& GetSize() const;
 
 		/**
+		* Returns the cubemap texture
+		*/
+		std::shared_ptr<OvRendering::HAL::Texture> GetCubemap() const;
+
+		/**
+		* Returns the framebuffer used for rendering the cubemap
+		*/
+		OvRendering::HAL::Framebuffer& GetFramebuffer() const;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -62,7 +73,8 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
-		std::unique_ptr<OvRendering::HAL::Texture> m_cubemap;
+		std::unique_ptr<OvRendering::HAL::Framebuffer> m_framebuffer;
+		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
 		OvMaths::FVector3 m_size;
 	};
 }

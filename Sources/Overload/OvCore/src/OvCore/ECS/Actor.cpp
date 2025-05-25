@@ -22,6 +22,7 @@
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
+#include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 
 OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::DestroyedEvent;
@@ -466,6 +467,7 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 				else if (componentType == typeid(Components::CAmbientBoxLight).name())		component = &AddComponent<OvCore::ECS::Components::CAmbientBoxLight>();
 				else if (componentType == typeid(Components::CAmbientSphereLight).name())	component = &AddComponent<OvCore::ECS::Components::CAmbientSphereLight>();
 				else if (componentType == typeid(Components::CPostProcessStack).name())		component = &AddComponent<OvCore::ECS::Components::CPostProcessStack>();
+				else if (componentType == typeid(Components::CReflectionProbe).name())		component = &AddComponent<OvCore::ECS::Components::CReflectionProbe>();
 
 				if (component)
 					component->OnDeserialize(p_doc, currentComponent->FirstChildElement("data"));

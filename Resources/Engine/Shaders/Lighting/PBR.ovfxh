@@ -76,13 +76,32 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix)
+// Modified Fresnel-Schlick approximation that includes roughness term for IBL
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// BRDF integration approximation for IBL specular
+vec2 EnvBRDFApprox(float NdotV, float roughness)
+{
+    // Approximation from "Moving Frostbite to PBR" by Lagarde & de Rousiers
+    const vec4 c0 = vec4(-1, -0.0275, -0.572, 0.022);
+    const vec4 c1 = vec4(1, 0.0425, 1.04, -0.04);
+    vec4 r = roughness * c0 + c1;
+    float a004 = min(r.x * r.x, exp2(-9.28 * NdotV)) * r.x + r.y;
+    vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
+    return AB;
+}
+
+vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube reflectionProbe)
 {
     // Gamma correction of the albedo color (assuming the albedo is in sRGB space)
     albedo = pow(albedo, vec3(2.2));
 
     const vec3 N = normalize(normal);
     const vec3 V = normalize(viewPos - fragPos);
+    const float NdotV = max(dot(N, V), 0.0);
 
     const vec3 F0 = mix(vec3(0.04), albedo, metallic); 
                
@@ -168,33 +187,37 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
         }
     }
 
-    const vec3 ambient = ambientSum * albedo * ao;
-    const vec3 color = ambient + Lo;
+    // IBL (Image-Based Lighting)
+    // ------------------------------------------------
+    
+    // 1. Calculate reflection vector
+    vec3 R = reflect(-V, N);
+    
+    // 2. Diffuse irradiance (environment lighting)
+    vec3 irradiance = textureLod(reflectionProbe, N, 5.0).rgb; // High mip level for diffuse
+    
+    // 3. Specular reflection
+    const float MAX_REFLECTION_LOD = 9.0;
+    vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * MAX_REFLECTION_LOD).rgb;
+    
+    // 4. Apply BRDF
+    vec2 brdf = EnvBRDFApprox(NdotV, roughness);
+    
+    // 5. Calculate Fresnel for IBL
+    vec3 F_IBL = FresnelSchlickRoughness(NdotV, F0, roughness);
+    
+    // 6. Calculate specular and diffuse IBL components
+    vec3 kS_IBL = F_IBL;
+    vec3 kD_IBL = (1.0 - kS_IBL) * (1.0 - metallic);
+    
+    vec3 diffuseIBL = kD_IBL * irradiance * albedo;
+    vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
+    
+    // 7. Combine all lighting components
+    vec3 ambient = ambientSum * albedo * ao;  // Existing ambient from local lights
+    ambient += (diffuseIBL + specularIBL) * ao;  // Add IBL contribution
+    
+    vec3 color = ambient + Lo;
 
     return color;
-}
-
-// [Deprecated]
-// Internally sample the albedo, metallic, roughness and ao maps, which isn't recommended for performance and flexibility reasons.
-// Instead, use the PBRLightingModel function directly with the sampled values.
-vec4 ComputePBRLighting(vec2 texCoords, vec3 normal, vec3 viewPos, vec3 fragPos, vec4 inAlbedo, float inMetallic, float inRoughness, sampler2D albedoMap, sampler2D metallicMap, sampler2D roughnessMap, sampler2D aoMap, sampler2D shadowMap, mat4 lightSpaceMatrix)
-{
-    const vec4 albedo = texture(albedoMap, texCoords) * inAlbedo;
-    const float metallic = texture(metallicMap, texCoords).r * inMetallic;
-    const float roughness = texture(roughnessMap, texCoords).r * inRoughness;
-    const float ao = texture(aoMap, texCoords).r;
-
-    const vec3 pbr = PBRLightingModel(
-        albedo.rgb,
-        metallic,
-        roughness,
-        ao,
-        normal,
-        viewPos,
-        fragPos,
-        shadowMap,
-        lightSpaceMatrix
-    );
-
-    return vec4(pbr, albedo.a);
 }

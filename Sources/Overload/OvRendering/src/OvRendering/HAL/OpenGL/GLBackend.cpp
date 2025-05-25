@@ -239,6 +239,8 @@ namespace OvRendering::HAL
 			glDebugMessageCallback(GLDebugMessageCallback, nullptr);
 		}
 
+		// Seamless cubemap (always on)
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glCullFace(GL_BACK);
 

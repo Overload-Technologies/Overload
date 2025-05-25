@@ -12,6 +12,8 @@
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/PostProcessRenderPass.h>
+#include <OvCore/Rendering/ReflectionRenderFeature.h>
+#include <OvCore/Rendering/ReflectionRenderPass.h>
 #include <OvCore/Rendering/SceneRenderer.h>
 #include <OvCore/Rendering/ShadowRenderFeature.h>
 #include <OvCore/Rendering/ShadowRenderPass.h>
@@ -121,36 +123,54 @@ protected:
 	}
 };
 
+namespace
+{
+	OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const OvCore::SceneSystem::Scene& p_scene)
+	{
+		OvRendering::Features::LightingRenderFeature::LightSet lights;
+
+		const auto& facs = p_scene.GetFastAccessComponents();
+
+		for (auto light : facs.lights)
+		{
+			if (light->owner.IsActive())
+			{
+				lights.push_back(std::ref(light->GetData()));
+			}
+		}
+
+		return lights;
+	}
+
+	std::vector<std::reference_wrapper<OvCore::ECS::Components::CReflectionProbe>> FindActiveReflectionProbes(const OvCore::SceneSystem::Scene& p_scene)
+	{
+		std::vector<std::reference_wrapper<OvCore::ECS::Components::CReflectionProbe>> probes;
+		const auto& facs = p_scene.GetFastAccessComponents();
+		for (auto probe : facs.reflectionProbes)
+		{
+			if (probe->owner.IsActive())
+			{
+				probes.push_back(*probe);
+			}
+		}
+		return probes;
+	}
+}
 
 OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_driver, bool p_stencilWrite)
 	: OvRendering::Core::CompositeRenderer(p_driver)
 {
 	AddFeature<EngineBufferRenderFeature>();
 	AddFeature<OvRendering::Features::LightingRenderFeature>();
+	AddFeature<ReflectionRenderFeature>();
 	AddFeature<ShadowRenderFeature>();
 
 	AddPass<ShadowRenderPass>("Shadows", OvRendering::Settings::ERenderPassOrder::Shadows);
+	AddPass<ReflectionRenderPass>("ReflectionRenderPass", OvRendering::Settings::ERenderPassOrder::Shadows + 1); // TODO: Create a proper pass order name.
 	AddPass<OpaqueRenderPass>("Opaques", OvRendering::Settings::ERenderPassOrder::Opaque, p_stencilWrite);
 	AddPass<TransparentRenderPass>("Transparents", OvRendering::Settings::ERenderPassOrder::Transparent, p_stencilWrite);
 	AddPass<PostProcessRenderPass>("Post-Process", OvRendering::Settings::ERenderPassOrder::PostProcessing);
 	AddPass<UIRenderPass>("UI", OvRendering::Settings::ERenderPassOrder::UI);
-}
-
-OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const OvCore::SceneSystem::Scene& p_scene)
-{
-	OvRendering::Features::LightingRenderFeature::LightSet lights;
-
-	const auto& facs = p_scene.GetFastAccessComponents();
-
-	for (auto light : facs.lights)
-	{
-		if (light->owner.IsActive())
-		{
-			lights.push_back(std::ref(light->GetData()));
-		}
-	}
-
-	return lights;
 }
 
 void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
@@ -166,6 +186,10 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 	AddDescriptor<OvRendering::Features::LightingRenderFeature::LightingDescriptor>({
 		FindActiveLights(sceneDescriptor.scene),
 		frustumLightCulling ? sceneDescriptor.frustumOverride : std::nullopt
+	});
+
+	AddDescriptor<OvCore::Rendering::ReflectionRenderFeature::ReflectionDescriptor>({
+		FindActiveReflectionProbes(sceneDescriptor.scene)
 	});
 
 	OvRendering::Core::CompositeRenderer::BeginFrame(p_frameDescriptor);

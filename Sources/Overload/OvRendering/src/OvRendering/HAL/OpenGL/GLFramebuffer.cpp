@@ -17,10 +17,12 @@ template<>
 void OvRendering::HAL::GLFramebuffer::Attach(
 	std::shared_ptr<GLRenderbuffer> p_toAttach,
 	Settings::EFramebufferAttachment p_attachment,
-	uint32_t p_index
+	uint32_t p_index,
+	std::optional<uint32_t> p_layer
 )
 {
 	OVASSERT(p_toAttach != nullptr, "Cannot attach a null renderbuffer");
+	OVASSERT(!p_layer.has_value(), "Renderbuffer cannot use layers");
 
 	const auto attachmentIndex = EnumToValue<GLenum>(p_attachment) + static_cast<GLenum>(p_index);
 	glNamedFramebufferRenderbuffer(m_context.id, attachmentIndex, GL_RENDERBUFFER, p_toAttach->GetID());
@@ -32,13 +34,24 @@ template<>
 void OvRendering::HAL::GLFramebuffer::Attach(
 	std::shared_ptr<GLTexture> p_toAttach,
 	Settings::EFramebufferAttachment p_attachment,
-	uint32_t p_index
+	uint32_t p_index,
+	std::optional<uint32_t> p_layer
 )
 {
 	OVASSERT(p_toAttach != nullptr, "Cannot attach a null texture");
 
 	const auto attachmentIndex = EnumToValue<GLenum>(p_attachment) + static_cast<GLenum>(p_index);
-	glNamedFramebufferTexture(m_context.id, attachmentIndex, p_toAttach->GetID(), 0);
+	constexpr uint32_t kMipMapLevel = 0;
+
+	if (p_layer.has_value())
+	{
+		glNamedFramebufferTextureLayer(m_context.id, attachmentIndex, p_toAttach->GetID(), kMipMapLevel, p_layer.value());
+	}
+	else
+	{
+		glNamedFramebufferTexture(m_context.id, attachmentIndex, p_toAttach->GetID(), kMipMapLevel);
+	}
+
 	m_context.attachments[attachmentIndex] = p_toAttach;
 }
 

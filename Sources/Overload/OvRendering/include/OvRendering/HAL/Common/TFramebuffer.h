@@ -93,12 +93,14 @@ namespace OvRendering::HAL
 		* @param p_toAttach must be a texture or a render buffer.
 		* @param p_attachment
 		* @param p_index (optional) useful when specifying multiple color attachments.
+		* @param p_layer (optional) useful when specifying multiple layers in a texture (e.g. cubemap or 3D texture).
 		*/
 		template<class T>
 			requires IsSupportedAttachmentType<T>
 		void Attach(std::shared_ptr<T> p_toAttach,
 			Settings::EFramebufferAttachment p_attachment,
-			uint32_t p_index = 0
+			uint32_t p_index = 0,
+			std::optional<uint32_t> p_layer = std::nullopt
 		);
 
 		/**

@@ -10,16 +10,17 @@
 
 template<>
 template<>
-void OvRendering::HAL::NoneFramebuffer::Attach(std::shared_ptr<NoneRenderbuffer> p_toAttach, Settings::EFramebufferAttachment p_attachment, uint32_t p_index)
+void OvRendering::HAL::NoneFramebuffer::Attach(std::shared_ptr<NoneRenderbuffer> p_toAttach, Settings::EFramebufferAttachment p_attachment, uint32_t p_index, std::optional<uint32_t> p_layer)
 {
 	OVASSERT(p_toAttach != nullptr, "Cannot attach a null renderbuffer");
+	OVASSERT(!p_layer.has_value(), "Renderbuffer cannot use layers");
 	const auto index = std::underlying_type_t<Settings::EFramebufferAttachment>(p_attachment);
 	m_context.attachments[index] = p_toAttach;
 }
 
 template<>
 template<>
-void OvRendering::HAL::NoneFramebuffer::Attach(std::shared_ptr<NoneTexture> p_toAttach, Settings::EFramebufferAttachment p_attachment, uint32_t p_index)
+void OvRendering::HAL::NoneFramebuffer::Attach(std::shared_ptr<NoneTexture> p_toAttach, Settings::EFramebufferAttachment p_attachment, uint32_t p_index, std::optional<uint32_t> p_layer)
 {
 	OVASSERT(p_toAttach != nullptr, "Cannot attach a null texture");
 	const auto index = std::underlying_type_t<Settings::EFramebufferAttachment>(p_attachment);

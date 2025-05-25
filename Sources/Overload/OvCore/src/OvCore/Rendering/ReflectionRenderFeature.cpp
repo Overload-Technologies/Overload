@@ -51,7 +51,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 		targetProbe.value()
 	))
 	{
-		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
+		material.SetProperty("_ReflectionProbe", targetProbe->_GetCubemap().get(), true);
 	}
 }
 

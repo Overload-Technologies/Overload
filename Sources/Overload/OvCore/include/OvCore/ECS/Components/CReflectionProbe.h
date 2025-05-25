@@ -12,6 +12,12 @@
 
 namespace OvCore::ECS { class Actor; }
 
+namespace OvCore::Rendering
+{
+	class ReflectionRenderPass;
+	class ReflectionRenderFeature;
+}
+
 namespace OvCore::ECS::Components
 {
 	/**
@@ -20,6 +26,13 @@ namespace OvCore::ECS::Components
 	class CReflectionProbe : public AComponent
 	{
 	public:
+		enum class ERefreshMode : int // do not change the type `int`, serialization depends on it
+		{
+			REALTIME,
+			ONCE,
+			MANUAL
+		};
+
 		/**
 		* Constructor
 		* @param p_owner
@@ -30,6 +43,28 @@ namespace OvCore::ECS::Components
 		* Returns the name of the component
 		*/
 		std::string GetName() override;
+
+		/**
+		* Sets the refresh mode of the reflection probe
+		* @param p_mode
+		*/
+		void SetRefreshMode(ERefreshMode p_mode);
+
+		/**
+		* Returns the refresh mode of the reflection probe
+		*/
+		ERefreshMode GetRefreshMode() const;
+
+		/**
+		* Determines if the reflection probe should capture dynamic objects
+		* @param p_capture
+		*/
+		void SetCaptureDynamicObjects(bool p_capture);
+
+		/**
+		* Returns true if the reflection probe should capture dynamic objects
+		*/
+		bool GetCaptureDynamicObjects() const;
 
 		/**
 		* Sets the size of the influence volume of the reflection probe
@@ -66,14 +101,9 @@ namespace OvCore::ECS::Components
 		uint32_t GetCubemapResolution() const;
 
 		/**
-		* Returns the cubemap texture
+		* Requests the cubemap to be updated
 		*/
-		std::shared_ptr<OvRendering::HAL::Texture> GetCubemap() const;
-
-		/**
-		* Returns the framebuffer used for rendering the cubemap
-		*/
-		OvRendering::HAL::Framebuffer& GetFramebuffer() const;
+		void RequestCapture();
 
 		/**
 		* Serialize the component
@@ -95,14 +125,27 @@ namespace OvCore::ECS::Components
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
+	protected:
+		virtual void OnEnable() override;
+
 	private:
+		bool _IsCaptureRequested() const;
+		void _MarkCaptureRequestComplete();
 		void _CreateCubemap();
+		std::shared_ptr<OvRendering::HAL::Texture> _GetCubemap() const;
+		OvRendering::HAL::Framebuffer& _GetFramebuffer() const;
+
+		friend class OvCore::Rendering::ReflectionRenderPass;
+		friend class OvCore::Rendering::ReflectionRenderFeature;
 
 	private:
 		std::unique_ptr<OvRendering::HAL::Framebuffer> m_framebuffer;
 		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
-		uint32_t m_resolution;
-		OvMaths::FVector3 m_influenceSize;
-		OvMaths::FVector3 m_influenceOffset;
+		ERefreshMode m_refreshMode = ERefreshMode::ONCE;
+		bool m_captureRequested = false;
+		bool m_captureDynamicObjects = false;
+		uint32_t m_resolution = 512;
+		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
+		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
 	};
 }

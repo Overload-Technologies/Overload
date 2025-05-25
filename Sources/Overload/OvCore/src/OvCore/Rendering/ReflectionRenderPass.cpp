@@ -60,6 +60,14 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 	{
 		auto& reflectionProbe = reflectionProbeReference.get();
 
+		const bool isRealtime = reflectionProbe.GetRefreshMode() == ECS::Components::CReflectionProbe::ERefreshMode::REALTIME;
+
+		// Skip if the probe is not set to be updated in this frame.
+		if (!isRealtime && !reflectionProbe._IsCaptureRequested())
+		{
+			continue;
+		}
+
 		OvRendering::Entities::Camera reflectionCamera;
 		reflectionCamera.SetPosition(reflectionProbe.owner.transform.GetWorldPosition());
 		reflectionCamera.SetFov(90.0f);
@@ -68,22 +76,23 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 		for (uint32_t faceIndex = 0U; faceIndex < kProbeFaceCount; ++faceIndex)
 		{
 			reflectionCamera.SetRotation(OvMaths::FQuaternion{ kCubeFaceRotations[faceIndex] });
-			const auto [width, height] = reflectionProbe.GetFramebuffer().GetSize();
+			const auto [width, height] = reflectionProbe._GetFramebuffer().GetSize();
 
 			reflectionCamera.CacheMatrices(width, height);
 
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
 
-			reflectionProbe.GetFramebuffer().SetTargetDrawBuffer(faceIndex);
+			reflectionProbe._GetFramebuffer().SetTargetDrawBuffer(faceIndex);
 
-			reflectionProbe.GetFramebuffer().Bind();
+			reflectionProbe._GetFramebuffer().Bind(); // TODO: Bind/Unbind outside of the for loop?
 			m_renderer.SetViewport(0, 0, width, height);
 			m_renderer.Clear(true, true, true);
 			_DrawReflections(pso, reflectionCamera);
-			reflectionProbe.GetFramebuffer().Unbind();
+			reflectionProbe._GetFramebuffer().Unbind();
 		}
 
-		reflectionProbe.GetCubemap()->GenerateMipmaps();
+		reflectionProbe._GetCubemap()->GenerateMipmaps();
+		reflectionProbe._MarkCaptureRequestComplete();
 
 		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 	}

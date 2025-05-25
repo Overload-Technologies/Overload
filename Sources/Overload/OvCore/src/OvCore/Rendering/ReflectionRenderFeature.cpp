@@ -7,6 +7,7 @@
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/ReflectionRenderFeature.h>
+#include <OvCore/Rendering/EngineDrawableDescriptor.h>
 
 #include <OvDebug/Logger.h>
 
@@ -28,6 +29,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 	}
 
 	OVASSERT(m_renderer.HasDescriptor<ReflectionRenderFeature::ReflectionDescriptor>(), "Cannot find ReflectionDescriptor attached to this renderer");
+	OVASSERT(p_drawable.HasDescriptor<OvCore::Rendering::EngineDrawableDescriptor>(), "Cannot find EngineDrawableDescriptor attached to this drawable");
 
 	const auto& reflectionDescriptor = m_renderer.GetDescriptor<ReflectionRenderFeature::ReflectionDescriptor>();
 
@@ -40,7 +42,13 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 		return std::nullopt;
 	}();
 
-	if (targetProbe.has_value() && _IsAffectedByReflectionProbe(p_drawable.mesh->GetBoundingSphere(), targetProbe.value()))
+	const auto& engineDrawableDesc = p_drawable.GetDescriptor<OvCore::Rendering::EngineDrawableDescriptor>();
+
+	if (targetProbe.has_value() && _IsAffectedByReflectionProbe(
+		engineDrawableDesc.modelMatrix,
+		p_drawable.mesh->GetBoundingSphere(),
+		targetProbe.value()
+	))
 	{
 		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
 	}
@@ -51,9 +59,58 @@ void OvCore::Rendering::ReflectionRenderFeature::OnAfterDraw(OvRendering::Data::
 
 }
 
-bool OvCore::Rendering::ReflectionRenderFeature::_IsAffectedByReflectionProbe(const OvRendering::Geometry::BoundingSphere& p_bounds, OvCore::ECS::Components::CReflectionProbe& p_probe) const
+bool OvCore::Rendering::ReflectionRenderFeature::_IsAffectedByReflectionProbe(
+	const OvMaths::FMatrix4& p_modelMatrix,
+	const OvRendering::Geometry::BoundingSphere& p_bounds,
+	OvCore::ECS::Components::CReflectionProbe& p_probe
+) const
 {
-	// TODO: Implement
-	return true;
-}
+	// Transform the bounding sphere to world space using the model matrix
+	const auto worldSphereCenter = p_modelMatrix * OvMaths::FVector4(p_bounds.position, 1.0f);
 
+	// Calculate the world space radius by applying the model matrix scale
+	// Extract the scale from the model matrix (assuming uniform scaling for simplicity)
+	const auto scaleX = OvMaths::FVector3::Length({ p_modelMatrix.data[0], p_modelMatrix.data[1], p_modelMatrix.data[2] });
+	const auto scaleY = OvMaths::FVector3::Length({ p_modelMatrix.data[4], p_modelMatrix.data[5], p_modelMatrix.data[6] });
+	const auto scaleZ = OvMaths::FVector3::Length({ p_modelMatrix.data[8], p_modelMatrix.data[9], p_modelMatrix.data[10] });
+	const auto maxScale = std::max({ scaleX, scaleY, scaleZ });
+	const auto worldSphereRadius = p_bounds.radius * maxScale;
+
+	// Get the probe's transform to construct the OBB
+	const auto& probeTransform = p_probe.owner.transform;
+	// Get the probe's influence position
+	const auto& probeInfluencePosition =
+		probeTransform.GetWorldPosition() +
+		p_probe.GetInfluenceOffset();
+	// Get the rotation matrix from the probe's transform
+	const auto probeRotation = probeTransform.GetWorldRotation();
+
+	// Convert sphere center to probe's local space
+	const auto sphereCenterLocal = OvMaths::FVector3{
+		worldSphereCenter.x,
+		worldSphereCenter.y,
+		worldSphereCenter.z
+	} - probeInfluencePosition;
+
+	// Rotate the sphere center into the OBB's local coordinate system
+	const auto rotationMatrix = OvMaths::FMatrix4::Rotation(probeRotation);
+	const auto sphereCenterOBBLocal = OvMaths::FMatrix4::Transpose(rotationMatrix) * sphereCenterLocal;
+
+	// Half extents of the OBB (the size is already expressed as half extents)
+	const auto halfExtents = p_probe.GetInfluenceSize();
+
+	// Find the closest point on the AABB (in OBB local space) to the sphere center
+	auto closestPoint = sphereCenterOBBLocal;
+
+	// Clamp to AABB bounds
+	closestPoint.x = std::max(-halfExtents.x, std::min(halfExtents.x, closestPoint.x));
+	closestPoint.y = std::max(-halfExtents.y, std::min(halfExtents.y, closestPoint.y));
+	closestPoint.z = std::max(-halfExtents.z, std::min(halfExtents.z, closestPoint.z));
+
+	// Calculate distance squared from sphere center to closest point on OBB
+	const auto diff = sphereCenterOBBLocal - closestPoint;
+	const auto distanceSquared = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+
+	// Check if distance is less than sphere radius
+	return distanceSquared <= (worldSphereRadius * worldSphereRadius);
+}

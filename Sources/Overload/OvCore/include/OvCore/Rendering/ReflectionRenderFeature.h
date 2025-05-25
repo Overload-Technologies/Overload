@@ -41,6 +41,7 @@ namespace OvCore::Rendering
 
 	private:
 		bool _IsAffectedByReflectionProbe(
+			const OvMaths::FMatrix4& p_modelMatrix,
 			const OvRendering::Geometry::BoundingSphere& p_bounds,
 			OvCore::ECS::Components::CReflectionProbe& p_probe
 		) const;

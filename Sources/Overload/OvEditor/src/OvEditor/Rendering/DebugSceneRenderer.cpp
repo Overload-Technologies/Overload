@@ -363,11 +363,16 @@ protected:
 				}
 			}
 
-			/* Render camera component outline */
+			/* Render camera component frustum */
 			if (auto cameraComponent = p_actor.GetComponent<OvCore::ECS::Components::CCamera>(); cameraComponent)
 			{
-				auto model = CalculateUnscaledModelMatrix(p_actor);
 				DrawCameraFrustum(*cameraComponent);
+			}
+
+			/* Render camera component frustum */
+			if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
+			{
+				DrawReflectionProbeInfluenceVolume(*reflectionProbeComponent);
 			}
 
 			/* Render the actor collider */
@@ -530,6 +535,23 @@ protected:
 			DrawCameraPerspectiveFrustum(gameViewSize, p_camera);
 			break;
 		}
+	}
+
+	void DrawReflectionProbeInfluenceVolume(OvCore::ECS::Components::CReflectionProbe& p_reflectionProbe)
+	{
+		auto pso = m_renderer.CreatePipelineState();
+		pso.depthTest = false;
+		const auto& offset = p_reflectionProbe.GetInfluenceOffset();
+		const auto& size = p_reflectionProbe.GetInfluenceSize();
+		const auto finalPosition = p_reflectionProbe.owner.transform.GetWorldPosition() + offset;
+		m_debugShapeFeature.DrawBox(
+			pso,
+			finalPosition,
+			p_reflectionProbe.owner.transform.GetWorldRotation(),
+			size,
+			kDebugBoundsColor,
+			1.0f
+		);
 	}
 
 	void DrawActorCollider(OvCore::ECS::Actor& p_actor)

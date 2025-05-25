@@ -7,8 +7,7 @@
 #pragma once
 
 #include <OvDebug/Assertion.h>
-
-#include "OvRendering/Data/Describable.h"
+#include <OvRendering/Data/Describable.h>
 
 namespace OvRendering::Data
 {
@@ -22,10 +21,8 @@ namespace OvRendering::Data
 	template<typename T>
 	inline void Describable::RemoveDescriptor()
 	{
-		OVASSERT(!HasDescriptor<T>(), "Descriptor doesn't exist.");
-
-		auto it = m_descriptors.find(typeid(T));
-		if (it != m_descriptors.end())
+		OVASSERT(HasDescriptor<T>(), "Descriptor doesn't exist.");
+		if (auto it = m_descriptors.find(typeid(T)); it != m_descriptors.end())
 		{
 			m_descriptors.erase(it);
 		}
@@ -34,8 +31,7 @@ namespace OvRendering::Data
 	template<typename T>
 	inline bool Describable::HasDescriptor() const
 	{
-		auto it = m_descriptors.find(typeid(T));
-		return it != m_descriptors.end();
+		return m_descriptors.contains(typeid(T));
 	}
 
 	template<typename T>
@@ -49,8 +45,7 @@ namespace OvRendering::Data
 	template<typename T>
 	inline bool Describable::TryGetDescriptor(OvTools::Utils::OptRef<const T>& p_outDescriptor) const
 	{
-		auto it = m_descriptors.find(typeid(T));
-		if (it != m_descriptors.end())
+		if (auto it = m_descriptors.find(typeid(T)); it != m_descriptors.end())
 		{
 			p_outDescriptor = std::any_cast<const T&>(it->second);
 			return true;

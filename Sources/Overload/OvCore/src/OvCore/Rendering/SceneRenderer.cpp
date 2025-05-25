@@ -202,9 +202,9 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 		})
 	});
 
-	// Default filtered drawables descriptor (used by most render passes).
+	// Default filtered drawables descriptor using the main camera (used by most render passes).
 	// Some other render passes can decide to filter the drawables themselves, using the 
-	// SceneDrawablesDescriptor instead.
+	// SceneDrawablesDescriptor instead of the SceneFilteredDrawablesDescriptor one.
 	AddDescriptor<SceneFilteredDrawablesDescriptor>({
 		FilterDrawables(
 			GetDescriptor<SceneDrawablesDescriptor>(),
@@ -275,20 +275,14 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 			OvRendering::Entities::Drawable drawable{
 				.mesh = *mesh,
 				.material = material,
-				.stateMask =material.value().GenerateStateMask()
+				.stateMask = material.has_value() ? material->GenerateStateMask() : OvRendering::Data::StateMask{},
 			};
 
 			drawable.AddDescriptor<SceneDrawableDescriptor>({
 				.actor = modelRenderer->owner,
 				.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
 					ECullingPolicy::NEVER :
-					ECullingPolicy::ALWAYS,
-				.type = [&]() ->EDrawableType {
-					using enum EDrawableType;
-					const bool isUI = material->IsUserInterface();
-					const bool isBlendable = material->IsBlendable();
-					return isUI ? UI : isBlendable ? TRANSPARENT : OPAQUE;
-				}()
+					ECullingPolicy::ALWAYS
 			});
 			
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
@@ -339,9 +333,10 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 
 		// Skip if material is invalid
 		if (!targetMaterial || !targetMaterial->IsValid()) continue;
-		if (desc.type == EDrawableType::UI && !p_filteringInput.includeUI) continue;
-		if (desc.type == EDrawableType::OPAQUE && !p_filteringInput.includeOpaque) continue;
-		if (desc.type == EDrawableType::TRANSPARENT && !p_filteringInput.includeTransparent) continue;
+		const bool isUI = targetMaterial->IsUserInterface();
+		if (isUI && !p_filteringInput.includeUI) continue;
+		if (!isUI && !targetMaterial->IsBlendable() && !p_filteringInput.includeOpaque) continue;
+		if (!isUI && targetMaterial->IsBlendable() && !p_filteringInput.includeTransparent) continue;
 
 		// Perform frustum culling if enabled
 		if (frustum && desc.cullingPolicy == ECullingPolicy::ALWAYS)
@@ -366,27 +361,35 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 			camera.GetPosition()
 		);
 
-		// Categorize drawable based on their type
-		if (desc.type == EDrawableType::UI)
+		// At this point we want to copy the drawable to avoid modifying the original one.
+		// The copy will use the updated material.
+		// At this point, the filtered drawable should be guaranteed to have a valid material.
+		auto drawableCopy = drawable;
+		drawableCopy.material = targetMaterial;
+
+		// Categorize drawable based on their type.
+		// This is also where sorting happens, using
+		// the multimap key.
+		if (drawableCopy.material->IsUserInterface())
 		{
 			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
-				.order = drawable.material->GetDrawOrder(),
-					.distance = distanceToCamera
-			}, drawable);
+				.order = drawableCopy.material->GetDrawOrder(),
+				.distance = distanceToCamera
+			}, drawableCopy);
 		}
-		else if (desc.type == EDrawableType::TRANSPARENT)
+		else if (drawableCopy.material->IsBlendable())
 		{
 			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
-				.order = drawable.material->GetDrawOrder(),
-					.distance = distanceToCamera
-			}, drawable);
+				.order = drawableCopy.material->GetDrawOrder(),
+				.distance = distanceToCamera
+			}, drawableCopy);
 		}
-		else if (desc.type == EDrawableType::OPAQUE)
+		else
 		{
 			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
-				.order = drawable.material->GetDrawOrder(),
-					.distance = distanceToCamera
-			}, drawable);
+				.order = drawableCopy.material->GetDrawOrder(),
+				.distance = distanceToCamera
+			}, drawableCopy);
 		}
 	}
 

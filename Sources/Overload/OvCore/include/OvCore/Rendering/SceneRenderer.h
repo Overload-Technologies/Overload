@@ -34,14 +34,6 @@ namespace OvCore::Rendering
 			FRONT_TO_BACK,
 		};
 
-		enum class EDrawableType
-		{
-			UNDEFINED,
-			OPAQUE,
-			TRANSPARENT,
-			UI
-		};
-
 		enum class ECullingPolicy
 		{
 			NEVER,
@@ -113,7 +105,6 @@ namespace OvCore::Rendering
 		{
 			OvCore::ECS::Actor& actor;
 			ECullingPolicy cullingPolicy = ECullingPolicy::ALWAYS;
-			EDrawableType type = EDrawableType::UNDEFINED;
 		};
 
 		/**

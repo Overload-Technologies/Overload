@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include <vector>
-
-#include "OvRendering/HAL/VertexArray.h"
+#include <OvRendering/HAL/VertexArray.h>
+#include <OvRendering/Geometry/BoundingSphere.h>
 
 namespace OvRendering::Resources
 {
@@ -22,5 +21,6 @@ namespace OvRendering::Resources
 		virtual void Unbind() const = 0;
 		virtual uint32_t GetVertexCount() const = 0;
 		virtual uint32_t GetIndexCount() const = 0;
+		virtual const OvRendering::Geometry::BoundingSphere& GetBoundingSphere() const = 0;
 	};
 }

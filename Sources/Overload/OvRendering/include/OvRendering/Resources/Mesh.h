@@ -56,14 +56,14 @@ namespace OvRendering::Resources
 		virtual uint32_t GetIndexCount() const override;
 
 		/**
+		* Returns the bounding sphere of the mesh
+		*/
+		virtual const OvRendering::Geometry::BoundingSphere& GetBoundingSphere() const override;
+
+		/**
 		* Returns the material index of the mesh
 		*/
 		uint32_t GetMaterialIndex() const;
-
-		/**
-		* Returns the bounding sphere of the mesh
-		*/
-		const OvRendering::Geometry::BoundingSphere& GetBoundingSphere() const;
 
 	private:
 		void Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices);

@@ -42,14 +42,14 @@ uint32_t OvRendering::Resources::Mesh::GetIndexCount() const
 	return m_indicesCount;
 }
 
-uint32_t OvRendering::Resources::Mesh::GetMaterialIndex() const
-{
-	return m_materialIndex;
-}
-
 const OvRendering::Geometry::BoundingSphere& OvRendering::Resources::Mesh::GetBoundingSphere() const
 {
 	return m_boundingSphere;
+}
+
+uint32_t OvRendering::Resources::Mesh::GetMaterialIndex() const
+{
+	return m_materialIndex;
 }
 
 void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices)

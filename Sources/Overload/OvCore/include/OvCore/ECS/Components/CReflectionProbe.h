@@ -32,15 +32,38 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
-		* Sets the size of the reflection probe volume
+		* Sets the size of the influence volume of the reflection probe
 		* @param p_size
 		*/
-		void SetSize(const OvMaths::FVector3& p_size);
+		void SetInfluenceSize(const OvMaths::FVector3& p_size);
 
 		/**
 		* Returns the size of the reflection probe volume
 		*/
-		const OvMaths::FVector3& GetSize() const;
+		const OvMaths::FVector3& GetInfluenceSize() const;
+
+		/**
+		* Sets the position offset of the influence volume of the reflection probe, based on the actor position
+		* @param p_offset
+		*/
+		void SetInfluenceOffset(const OvMaths::FVector3& p_offset);
+
+		/**
+		* Returns the position offset of the reflection probe volume
+		*/
+		const OvMaths::FVector3& GetInfluenceOffset() const;
+
+		/**
+		* Sets the cubemap resolution
+		* @note The resolution must be a power of 2!
+		* @param p_resolution
+		*/
+		void SetCubemapResolution(uint32_t p_resolution);
+
+		/**
+		* Returns the cubemap resolution
+		*/
+		uint32_t GetCubemapResolution() const;
 
 		/**
 		* Returns the cubemap texture
@@ -73,8 +96,13 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
+		void _CreateCubemap();
+
+	private:
 		std::unique_ptr<OvRendering::HAL::Framebuffer> m_framebuffer;
 		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
-		OvMaths::FVector3 m_size;
+		uint32_t m_resolution;
+		OvMaths::FVector3 m_influenceSize;
+		OvMaths::FVector3 m_influenceOffset;
 	};
 }

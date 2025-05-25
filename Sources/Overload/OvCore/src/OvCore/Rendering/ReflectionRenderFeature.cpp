@@ -40,7 +40,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 		return std::nullopt;
 	}();
 
-	if (targetProbe.has_value())
+	if (targetProbe.has_value() && _IsAffectedByReflectionProbe(p_drawable.mesh->GetBoundingSphere(), targetProbe.value()))
 	{
 		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
 	}
@@ -49,5 +49,11 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 void OvCore::Rendering::ReflectionRenderFeature::OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
 {
 
+}
+
+bool OvCore::Rendering::ReflectionRenderFeature::_IsAffectedByReflectionProbe(const OvRendering::Geometry::BoundingSphere& p_bounds, OvCore::ECS::Components::CReflectionProbe& p_probe) const
+{
+	// TODO: Implement
+	return true;
 }
 

@@ -1,4 +1,5 @@
 #pass SHADOW_PASS
+#pass REFLECTION_PASS
 
 #feature PARALLAX_MAPPING
 #feature NORMAL_MAPPING
@@ -47,6 +48,13 @@ void main()
 
 #shader fragment
 #version 450 core
+
+#if defined(REFLECTION_PASS)
+// Disable IBL for the reflection capture pass, otherwise reflective objects will
+// bounce infinitely, causing some artifacts. This define must be set before the PBR
+// shader is included, so it must be defined here.
+#define DISABLE_IMAGE_BASED_LIGHTING
+#endif
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
 #include ":Shaders/Lighting/PBR.ovfxh"

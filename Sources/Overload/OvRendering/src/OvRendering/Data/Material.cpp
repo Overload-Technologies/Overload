@@ -105,10 +105,10 @@ void OvRendering::Data::Material::FillUniform()
 	{
 		for (const auto& variant : featureVariants | std::views::values)
 		{
-			for (const auto& uniform : variant->GetUniforms())
+			for (const auto& [name, uniformInfo] : variant->GetUniforms())
 			{
-				m_properties.emplace(uniform.name, MaterialProperty{
-					.value = UniformToPropertyValue(uniform.defaultValue),
+				m_properties.emplace(name, MaterialProperty{
+					.value = UniformToPropertyValue(uniformInfo.defaultValue),
 					.singleUse = false
 				});
 			}
@@ -116,6 +116,8 @@ void OvRendering::Data::Material::FillUniform()
 	}
 }
 
+// Note: this function is critical for performance, as it may be called many times during a frame.
+// Avoid using any heavy operations or allocations inside this function.
 void OvRendering::Data::Material::Bind(
 	HAL::Texture* p_emptyTexture,
 	HAL::Texture* p_emptyTextureCube,
@@ -152,78 +154,54 @@ void OvRendering::Data::Material::Bind(
 		auto& value = prop.value;
 		auto uniformType = uniformData->type;
 
-		// Visitor to handle each variant type
-		auto visitor = [&](auto&& arg) {
-			using PropertyType = std::decay_t<decltype(arg)>;
+		// Iterating over the properties to set them in the shader.
+		// This could have been cleaner with a visitor, but the performance impact
+		// is not worth it. This is a critical path in the rendering pipeline.
 
-			if constexpr (std::same_as<PropertyType, bool>)
+		if (uniformType == BOOL)
+		{
+			program.SetUniform<int>(name, static_cast<int>(std::get<bool>(value)));
+		}
+		else if (uniformType == INT)
+		{
+			program.SetUniform<int>(name, std::get<int>(value));
+		}
+		else if (uniformType == FLOAT)
+		{
+			program.SetUniform<float>(name, std::get<float>(value));
+		}
+		else if (uniformType == FLOAT_VEC2)
+		{
+			program.SetUniform<FVector2>(name, std::get<FVector2>(value));
+		}
+		else if (uniformType == FLOAT_VEC3)
+		{
+			program.SetUniform<FVector3>(name, std::get<FVector3>(value));
+		}
+		else if (uniformType == FLOAT_VEC4)
+		{
+			program.SetUniform<FVector4>(name, std::get<FVector4>(value));
+		}
+		else if (uniformType == FLOAT_MAT4)
+		{
+			program.SetUniform<FMatrix4>(name, std::get<FMatrix4>(value));
+		}
+		else if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
+		{
+			HAL::TextureHandle* handle = nullptr;
+			if (auto textureHandle = std::get_if<HAL::TextureHandle*>(&value))
 			{
-				if (uniformType == BOOL)
+				handle = *textureHandle;
+			}
+			else if (auto texture = std::get_if<Resources::Texture*>(&value))
+			{
+				if (*texture != nullptr)
 				{
-					program.SetUniform<int>(name, arg);
+					handle = &(*texture)->GetTexture();
 				}
 			}
-			else if constexpr (std::same_as<PropertyType, int>)
-			{
-				if (uniformType == INT)
-				{
-					program.SetUniform<int>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, float>)
-			{
-				if (uniformType == FLOAT)
-				{
-					program.SetUniform<float>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, FVector2>)
-			{
-				if (uniformType == FLOAT_VEC2)
-				{
-					program.SetUniform<FVector2>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, FVector3>)
-			{
-				if (uniformType == FLOAT_VEC3)
-				{
-					program.SetUniform<FVector3>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, FVector4>)
-			{
-				if (uniformType == FLOAT_VEC4)
-				{
-					program.SetUniform<FVector4>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, FMatrix4>)
-			{
-				if (uniformType == FLOAT_MAT4)
-				{
-					program.SetUniform<FMatrix4>(name, arg);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, HAL::TextureHandle*>)
-			{
-				if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
-				{
-					const auto emptyTexture = uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube;
-					BindTexture(program, name, arg, emptyTexture, textureSlot);
-				}
-			}
-			else if constexpr (std::same_as<PropertyType, Resources::Texture*>)
-			{
-				if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
-				{
-					const auto emptyTexture = uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube;
-					BindTexture(program, name, arg ? &arg->GetTexture() : nullptr, emptyTexture, textureSlot);
-				}
-			}
-		};
-
-		std::visit(visitor, value);
+			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube, textureSlot);
+		}
 
 		if (prop.singleUse)
 		{

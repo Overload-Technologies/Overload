@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <ranges>
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
@@ -19,8 +21,8 @@
 namespace
 {
 	void PreparePickingMaterial(
-		OvCore::ECS::Actor& p_actor,
-		OvCore::Resources::Material& p_material,
+		const OvCore::ECS::Actor& p_actor,
+		OvRendering::Data::Material& p_material,
 		const std::string& p_uniformName = "_PickingColor"
 	)
 	{
@@ -155,57 +157,43 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 	OvCore::SceneSystem::Scene& p_scene
 )
 {
-	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
-	{
-		auto& actor = modelRenderer->owner;
+	const auto& filteredDrawables = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneFilteredDrawablesDescriptor>();
 
-		if (actor.IsActive())
+	auto drawPickableModels = [&](auto drawables) {
+		for (auto& drawable : drawables)
 		{
-			if (auto model = modelRenderer->GetModel())
-			{
-				if (auto materialRenderer = modelRenderer->owner.GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
-				{
-					const auto& materials = materialRenderer->GetMaterials();
-					const auto& modelMatrix = actor.transform.GetWorldMatrix();
+			const std::string pickingPassName = "PICKING_PASS";
 
-					for (auto mesh : model->GetMeshes())
-					{
-						const std::string pickingPassName = "PICKING_PASS";
+			// If the material has picking pass, use it, otherwise use the picking fallback material
+			auto& targetMaterial =
+				(drawable.material && drawable.material->IsValid() && drawable.material->HasPass(pickingPassName)) ?
+				drawable.material.value() :
+				m_actorPickingFallbackMaterial;
 
-						auto customMaterial = materials.at(mesh->GetMaterialIndex());
+			const auto& actor = drawable.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
 
-						// If the material has picking pass, use it, otherwise use the picking fallback material
-						auto& targetMaterial =
-							(customMaterial && customMaterial->IsValid() && customMaterial->HasPass(pickingPassName)) ?
-							*customMaterial :
-							m_actorPickingFallbackMaterial;
+			PreparePickingMaterial(actor, targetMaterial);
 
-						PreparePickingMaterial(actor, targetMaterial);
+			// Prioritize using the actual material state mask.
+			auto stateMask = 
+				drawable.material && drawable.material->IsValid() ?
+				drawable.material->GenerateStateMask() :
+				targetMaterial.GenerateStateMask();
 
-						// Prioritize using the actual material state mask.
-						auto stateMask =
-							customMaterial && customMaterial->IsValid() ?
-							customMaterial->GenerateStateMask() :
-							targetMaterial.GenerateStateMask();
+			OvRendering::Entities::Drawable finalDrawable = drawable;
+			finalDrawable.material = targetMaterial;
+			finalDrawable.stateMask = stateMask;
+			finalDrawable.stateMask.frontfaceCulling = false;
+			finalDrawable.stateMask.backfaceCulling = false;
+			finalDrawable.pass = pickingPassName;
 
-						OvRendering::Entities::Drawable drawable;
-						drawable.mesh = *mesh;
-						drawable.material = targetMaterial;
-						drawable.stateMask = stateMask;
-						drawable.stateMask.frontfaceCulling = false;
-						drawable.stateMask.backfaceCulling = false;
-						drawable.pass = pickingPassName;
-
-						drawable.AddDescriptor<OvCore::Rendering::EngineDrawableDescriptor>({
-							modelMatrix
-						});
-
-						m_renderer.DrawEntity(p_pso, drawable);
-					}
-				}
-			}
+			m_renderer.DrawEntity(p_pso, finalDrawable);
 		}
-	}
+	};
+
+	drawPickableModels(filteredDrawables.opaques | std::views::values);
+	drawPickableModels(filteredDrawables.transparents | std::views::values);
+	drawPickableModels(filteredDrawables.ui | std::views::values);
 }
 
 void OvEditor::Rendering::PickingRenderPass::DrawPickableCameras(

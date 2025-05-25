@@ -8,6 +8,7 @@
 
 #include <glad.h>
 
+#include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 #include <OvRendering/HAL/OpenGL/GLShaderProgram.h>
 #include <OvRendering/HAL/OpenGL/GLTexture.h>
@@ -115,12 +116,15 @@ OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::GLShaderProgram::Li
 #define DECLARE_GET_UNIFORM_FUNCTION(type, glType, func) \
 template<> \
 template<> \
-type OvRendering::HAL::GLShaderProgram::GetUniform<type>(std::string_view p_name) \
+type OvRendering::HAL::GLShaderProgram::GetUniform<type>(const std::string& p_name) \
 { \
-	type result; \
-	if (const uint32_t location = m_context.GetUniformLocation(p_name); location != -1) \
+	type result{}; \
+	if (m_context.uniforms.contains(p_name)) \
 	{ \
-		func(m_context.id, location, reinterpret_cast<glType*>(&result)); \
+		if (const uint32_t location = m_context.uniforms.at(p_name).location) \
+		{ \
+			func(m_context.id, location, reinterpret_cast<glType*>(&result)); \
+		} \
 	} \
 	return result; \
 }
@@ -135,11 +139,11 @@ DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FMatrix4, GLfloat, glGetUniformfv);
 #define DECLARE_SET_UNIFORM_FUNCTION(type, func, ...) \
 template<> \
 template<> \
-void OvRendering::HAL::GLShaderProgram::SetUniform<type>(std::string_view p_name, const type& value) \
+void OvRendering::HAL::GLShaderProgram::SetUniform<type>(const std::string& p_name, const type& value) \
 { \
-	if (const uint32_t location = m_context.GetUniformLocation(p_name); location != -1) \
+	if (m_context.uniforms.contains(p_name)) \
 	{ \
-		func(location, __VA_ARGS__); \
+		func(m_context.uniforms.at(p_name).location, __VA_ARGS__); \
 	} \
 }
 
@@ -149,25 +153,6 @@ DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector2, glUniform2f, value.x, value.y);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector3, glUniform3f, value.x, value.y, value.z);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector4, glUniform4f, value.x, value.y, value.z, value.w);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FMatrix4, glUniformMatrix4fv, 1, GL_TRUE, &value.data[0]);
-
-uint32_t OvRendering::HAL::GLShaderProgramContext::GetUniformLocation(std::string_view p_name)
-{
-	if (uniformLocationCache.find(p_name.data()) != uniformLocationCache.end())
-	{
-		return uniformLocationCache.at(p_name.data());
-	}
-
-	const GLint location = glGetUniformLocation(id, p_name.data());
-
-	if (location == -1)
-	{
-		OVLOG_WARNING("Uniform: '" + std::string{ p_name } + "' doesn't exist");
-	}
-
-	uniformLocationCache[p_name.data()] = location;
-
-	return location;
-}
 
 template<>
 void OvRendering::HAL::GLShaderProgram::QueryUniforms()
@@ -190,54 +175,58 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 		const auto name = std::string{ nameBuffer.data(), static_cast<size_t>(actualLength) };
 		const auto uniformType = ValueToEnum<Settings::EUniformType>(type);
 
-		if (!IsEngineUBOMember(name))
+		// Skip reserved uniforms (e.g., ubo_ prefix)
+		if (IsEngineUBOMember(name))
 		{
-			const std::any uniformValue = [&]() -> std::any {
-				switch (uniformType)
-				{
-					using enum Settings::EUniformType;
-					case BOOL: return static_cast<bool>(GetUniform<int>(name));
-					case INT: return GetUniform<int>(name);
-					case FLOAT: return GetUniform<float>(name);
-					case FLOAT_VEC2: return GetUniform<OvMaths::FVector2>(name);
-					case FLOAT_VEC3: return GetUniform<OvMaths::FVector3>(name);
-					case FLOAT_VEC4: return GetUniform<OvMaths::FVector4>(name);
-					case FLOAT_MAT4: return GetUniform<OvMaths::FMatrix4>(name);
-					case SAMPLER_2D: return std::make_any<Resources::Texture*>(nullptr);
-					case SAMPLER_CUBE: return std::make_any<Resources::Texture*>(nullptr);
-					default: return std::nullopt;
-				}
-			}();
+			continue;
+		}
 
-			// Only add the uniform if it has a value (unsupported uniform types will be ignored)
-			if (uniformValue.has_value())
+		const auto location = glGetUniformLocation(m_context.id, name.c_str());
+		OVASSERT(location != -1, "Failed to get uniform location for: " + name);
+
+		const std::any uniformValue = [&]() -> std::any {
+			switch (uniformType)
 			{
-				m_context.uniforms.push_back(Settings::UniformInfo{
-					.type = uniformType,
-					.name = name,
-					.location = m_context.GetUniformLocation(name),
-					.defaultValue = uniformValue
-				});
+				using enum Settings::EUniformType;
+				case BOOL: return static_cast<bool>(GetUniform<int>(name));
+				case INT: return GetUniform<int>(name);
+				case FLOAT: return GetUniform<float>(name);
+				case FLOAT_VEC2: return GetUniform<OvMaths::FVector2>(name);
+				case FLOAT_VEC3: return GetUniform<OvMaths::FVector3>(name);
+				case FLOAT_VEC4: return GetUniform<OvMaths::FVector4>(name);
+				case FLOAT_MAT4: return GetUniform<OvMaths::FMatrix4>(name);
+				case SAMPLER_2D: return std::make_any<Resources::Texture*>(nullptr);
+				case SAMPLER_CUBE: return std::make_any<Resources::Texture*>(nullptr);
+				default: return std::nullopt;
 			}
+		}();
+
+		// Only add the uniform if it has a value (unsupported uniform types will be ignored)
+		if (uniformValue.has_value())
+		{
+			m_context.uniforms.emplace(name, Settings::UniformInfo{
+				.type = uniformType,
+				.name = name,
+				.location = static_cast<uint32_t>(location),
+				.defaultValue = uniformValue
+			});
 		}
 	}
 }
 
 template<>
-OvTools::Utils::OptRef<const OvRendering::Settings::UniformInfo> OvRendering::HAL::GLShaderProgram::GetUniformInfo(std::string_view p_name) const
+OvTools::Utils::OptRef<const OvRendering::Settings::UniformInfo> OvRendering::HAL::GLShaderProgram::GetUniformInfo(const std::string& p_name) const
 {
-	if (const auto found = std::ranges::find_if(m_context.uniforms, [p_name](const auto& e) {
-		return p_name.compare(e.name) == 0;
-	}); found != m_context.uniforms.end())
+	if (m_context.uniforms.contains(p_name))
 	{
-		return *found;
+		return m_context.uniforms.at(p_name);
 	}
 
 	return std::nullopt;
 }
 
 template<>
-std::span<const OvRendering::Settings::UniformInfo> OvRendering::HAL::GLShaderProgram::GetUniforms() const
+const std::unordered_map<std::string, OvRendering::Settings::UniformInfo>& OvRendering::HAL::GLShaderProgram::GetUniforms() const
 {
 	return m_context.uniforms;
 }

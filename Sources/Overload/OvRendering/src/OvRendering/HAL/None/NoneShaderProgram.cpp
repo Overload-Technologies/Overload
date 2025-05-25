@@ -7,6 +7,11 @@
 #include <OvRendering/HAL/None/NoneShaderProgram.h>
 #include <OvRendering/HAL/None/NoneTexture.h>
 
+namespace
+{
+	std::unordered_map<std::string, OvRendering::Settings::UniformInfo> emptyUniforms;
+}
+
 template<>
 OvRendering::HAL::NoneShaderProgram::TShaderProgram() 
 {
@@ -60,14 +65,14 @@ OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::NoneShaderProgram::
 #define DECLARE_SET_UNIFORM_FUNCTION(type) \
 template<> \
 template<> \
-void OvRendering::HAL::NoneShaderProgram::SetUniform<type>(std::string_view p_name, const type& p_value) \
+void OvRendering::HAL::NoneShaderProgram::SetUniform<type>(const std::string&, const type&) \
 { \
 }
 
 #define DECLARE_GET_UNIFORM_FUNCTION(type) \
 template<> \
 template<> \
-type OvRendering::HAL::NoneShaderProgram::GetUniform<type>(std::string_view p_name) \
+type OvRendering::HAL::NoneShaderProgram::GetUniform<type>(const std::string&) \
 { \
 	return type{}; \
 }
@@ -92,13 +97,13 @@ void OvRendering::HAL::NoneShaderProgram::QueryUniforms()
 }
 
 template<>
-OvTools::Utils::OptRef<const OvRendering::Settings::UniformInfo> OvRendering::HAL::NoneShaderProgram::GetUniformInfo(std::string_view p_name) const
+OvTools::Utils::OptRef<const OvRendering::Settings::UniformInfo> OvRendering::HAL::NoneShaderProgram::GetUniformInfo(const std::string& p_name) const
 {
 	return std::nullopt;
 }
 
 template<>
-std::span<const OvRendering::Settings::UniformInfo> OvRendering::HAL::NoneShaderProgram::GetUniforms() const
+const std::unordered_map<std::string, OvRendering::Settings::UniformInfo>& OvRendering::HAL::NoneShaderProgram::GetUniforms() const
 {
-	return {};
+	return emptyUniforms;
 }

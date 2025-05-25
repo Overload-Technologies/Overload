@@ -20,7 +20,6 @@ namespace OvRendering::Settings
 	{
 		EUniformType type;
 		std::string name;
-		uint32_t location;
 		std::any defaultValue;
 	};
 }

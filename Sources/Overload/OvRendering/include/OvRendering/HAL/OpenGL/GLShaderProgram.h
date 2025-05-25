@@ -18,6 +18,7 @@ namespace OvRendering::HAL
 	{
 		const uint32_t id;
 		std::unordered_map<std::string, Settings::UniformInfo> uniforms;
+		std::unordered_map<std::string, uint32_t> uniformsLocationCache;
 		std::vector<std::reference_wrapper<const GLShaderStage>> attachedShaders;
 
 		uint32_t GetUniformLocation(std::string_view p_name);

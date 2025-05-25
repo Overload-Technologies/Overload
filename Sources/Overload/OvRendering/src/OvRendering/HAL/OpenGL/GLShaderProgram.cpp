@@ -119,9 +119,9 @@ template<> \
 type OvRendering::HAL::GLShaderProgram::GetUniform<type>(const std::string& p_name) \
 { \
 	type result{}; \
-	if (m_context.uniforms.contains(p_name)) \
+	if (m_context.uniformsLocationCache.contains(p_name)) \
 	{ \
-		if (const uint32_t location = m_context.uniforms.at(p_name).location) \
+		if (const uint32_t location = m_context.uniformsLocationCache.at(p_name)) \
 		{ \
 			func(m_context.id, location, reinterpret_cast<glType*>(&result)); \
 		} \
@@ -141,9 +141,9 @@ template<> \
 template<> \
 void OvRendering::HAL::GLShaderProgram::SetUniform<type>(const std::string& p_name, const type& value) \
 { \
-	if (m_context.uniforms.contains(p_name)) \
+	if (m_context.uniformsLocationCache.contains(p_name)) \
 	{ \
-		func(m_context.uniforms.at(p_name).location, __VA_ARGS__); \
+		func(m_context.uniformsLocationCache.at(p_name), __VA_ARGS__); \
 	} \
 }
 
@@ -183,6 +183,7 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 
 		const auto location = glGetUniformLocation(m_context.id, name.c_str());
 		OVASSERT(location != -1, "Failed to get uniform location for: " + name);
+		m_context.uniformsLocationCache.emplace(name, static_cast<uint32_t>(location));
 
 		const std::any uniformValue = [&]() -> std::any {
 			switch (uniformType)
@@ -207,7 +208,6 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 			m_context.uniforms.emplace(name, Settings::UniformInfo{
 				.type = uniformType,
 				.name = name,
-				.location = static_cast<uint32_t>(location),
 				.defaultValue = uniformValue
 			});
 		}

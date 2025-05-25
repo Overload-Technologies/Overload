@@ -29,19 +29,34 @@ namespace
 		0, 1, 2, // First triangle
 		0, 2, 3  // Second triangle
 	});
+
+	constexpr auto kWhitePixel = std::to_array<uint8_t>({ 255, 255, 255, 255 });
+	constexpr auto kBlackPixel = std::to_array<uint8_t, 6 * 4>({ 0 });
 }
 
 OvRendering::Core::ABaseRenderer::ABaseRenderer(Context::Driver& p_driver) : 
 	m_driver(p_driver),
 	m_isDrawing(false),
-	m_emptyTexture(OvRendering::Resources::Loaders::TextureLoader::CreatePixel(255, 255, 255, 255)),
+	m_emptyTexture2D{ Settings::ETextureType::TEXTURE_2D },
+	m_emptyTextureCube{ Settings::ETextureType::TEXTURE_CUBE },
 	m_unitQuad(kUnitQuadVertices, kUnitQuadIndices)
 {
-}
+	const auto kEmptyTextureDesc = Settings::TextureDesc{
+		.width = 1,
+		.height = 1,
+		.minFilter = Settings::ETextureFilteringMode::NEAREST,
+		.magFilter = Settings::ETextureFilteringMode::NEAREST,
+		.horizontalWrap = Settings::ETextureWrapMode::REPEAT,
+		.verticalWrap = Settings::ETextureWrapMode::REPEAT,
+		.internalFormat = Settings::EInternalFormat::RGBA8,
+		.useMipMaps = false
+	};
 
-OvRendering::Core::ABaseRenderer::~ABaseRenderer()
-{
-	OvRendering::Resources::Loaders::TextureLoader::Destroy(m_emptyTexture);
+	m_emptyTexture2D.Allocate(kEmptyTextureDesc);
+	m_emptyTexture2D.Upload(kWhitePixel.data(), Settings::EFormat::RGBA, Settings::EPixelDataType::UNSIGNED_BYTE);
+
+	m_emptyTextureCube.Allocate(kEmptyTextureDesc);
+	m_emptyTextureCube.Upload(kBlackPixel.data(), Settings::EFormat::RGBA, Settings::EPixelDataType::UNSIGNED_BYTE);
 }
 
 void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
@@ -216,7 +231,8 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 	}
 
 	p_drawable.material->Bind(
-		&m_emptyTexture->GetTexture(),
+		&m_emptyTexture2D,
+		&m_emptyTextureCube,
 		p_drawable.pass,
 		p_drawable.featureSetOverride.has_value() ?
 		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :

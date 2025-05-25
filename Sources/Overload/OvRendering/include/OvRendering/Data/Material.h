@@ -78,12 +78,14 @@ namespace OvRendering::Data
 
 		/**
 		* Bind the material and send its uniform data to the GPU
-		* @param p_emptyTexture (The texture to use if a texture uniform is null)
+		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
+		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
 		* @param p_pass
 		* @param p_featureSetOverride
 		*/
 		void Bind(
-			HAL::Texture* p_emptyTexture = nullptr,
+			HAL::Texture* p_emptyTexture2D = nullptr,
+			HAL::Texture* p_emptyTextureCube = nullptr,
 			std::optional<const std::string_view> p_pass = std::nullopt,
 			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
 		);

@@ -17,13 +17,14 @@
 
 namespace
 {
-	const OvMaths::FVector3 kCubeFaceRotations[6] = {
-		{ 0.0f, -90.0f, 180.0f },    // (Right)
-		{ 0.0f, 90.0f, 180.0f },   // (Left)
-		{ 90.0f, 0.0f, 180.0f },   // (Top)
-		{ -90.0f, 0.0f, 180.0f },    // (Bottom)
-		{ 0.0f, 0.0f, 180.0f },     // (Front)
-		{ 0.0f, -180.0f, 180.0f }    // (Back)
+	constexpr uint32_t kProbeFaceCount = 6;
+	const OvMaths::FVector3 kCubeFaceRotations[kProbeFaceCount] = {
+		{ 0.0f, -90.0f, 180.0f },	// (Right)
+		{ 0.0f, 90.0f, 180.0f },	// (Left)
+		{ 90.0f, 0.0f, 180.0f },	// (Top)
+		{ -90.0f, 0.0f, 180.0f },	// (Bottom)
+		{ 0.0f, 0.0f, 180.0f },		// (Front)
+		{ 0.0f, -180.0f, 180.0f }	// (Back)
 	};
 }
 
@@ -63,15 +64,12 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 		reflectionCamera.SetFov(90.0f);
 
 		// For each face
-		for (uint32_t faceIndex = 0U; faceIndex < 6U; ++faceIndex)
+		for (uint32_t faceIndex = 0U; faceIndex < kProbeFaceCount; ++faceIndex)
 		{
 			reflectionCamera.SetRotation(OvMaths::FQuaternion{ kCubeFaceRotations[faceIndex] });
 			const auto [width, height] = reflectionProbe.GetFramebuffer().GetSize();
 
-			reflectionCamera.CacheMatrices(
-				width,
-				height
-			);
+			reflectionCamera.CacheMatrices(width, height);
 
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
 

@@ -42,12 +42,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 
 	if (targetProbe.has_value())
 	{
-		material.TrySetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
-	}
-	else
-	{
-		// This is necessary to "stop" the material from using the previous probe.
-		material.TrySetProperty("_ReflectionProbe", static_cast<OvRendering::HAL::Texture*>(nullptr), true);
+		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
 	}
 }
 

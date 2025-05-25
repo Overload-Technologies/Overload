@@ -34,7 +34,7 @@ namespace OvRendering::Core
 		/**
 		* Destructor of the base renderer
 		*/
-		virtual ~ABaseRenderer();
+		virtual ~ABaseRenderer() = default;
 
 		/**
 		* Begin Frame
@@ -123,7 +123,8 @@ namespace OvRendering::Core
 	protected:
 		Data::FrameDescriptor m_frameDescriptor;
 		Context::Driver& m_driver;
-		OvRendering::Resources::Texture* m_emptyTexture;
+		OvRendering::HAL::Texture m_emptyTexture2D;
+		OvRendering::HAL::Texture m_emptyTextureCube;
 		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;

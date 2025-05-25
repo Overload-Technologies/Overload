@@ -133,13 +133,15 @@ void OvRendering::HAL::GLTexture::Upload(const void* p_data, Settings::EFormat p
 		{
 			for (uint32_t i = 0; i < 6; ++i)
 			{
-				glTextureSubImage2D(
+				glTextureSubImage3D(
 					m_context.id,
+					0,
 					0,
 					0,
 					0,
 					m_textureContext.desc.width,
 					m_textureContext.desc.height,
+					i,
 					EnumToValue<GLenum>(p_format),
 					EnumToValue<GLenum>(p_type),
 					p_data

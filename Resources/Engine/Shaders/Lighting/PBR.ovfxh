@@ -197,7 +197,7 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
     vec3 irradiance = textureLod(reflectionProbe, N, 5.0).rgb; // High mip level for diffuse
     
     // 3. Specular reflection
-    const float MAX_REFLECTION_LOD = 9.0;
+    const int MAX_REFLECTION_LOD = textureQueryLevels(reflectionProbe) - 1;
     vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * MAX_REFLECTION_LOD).rgb;
     
     // 4. Apply BRDF

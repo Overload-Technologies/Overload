@@ -117,7 +117,8 @@ void OvRendering::Data::Material::FillUniform()
 }
 
 void OvRendering::Data::Material::Bind(
-	OvRendering::HAL::Texture* p_emptyTexture,
+	HAL::Texture* p_emptyTexture,
+	HAL::Texture* p_emptyTextureCube,
 	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
 )
@@ -208,14 +209,16 @@ void OvRendering::Data::Material::Bind(
 			{
 				if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
 				{
-					BindTexture(program, name, arg, p_emptyTexture, textureSlot);
+					const auto emptyTexture = uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube;
+					BindTexture(program, name, arg, emptyTexture, textureSlot);
 				}
 			}
 			else if constexpr (std::same_as<PropertyType, Resources::Texture*>)
 			{
 				if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
 				{
-					BindTexture(program, name, arg ? &arg->GetTexture() : nullptr, p_emptyTexture, textureSlot);
+					const auto emptyTexture = uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube;
+					BindTexture(program, name, arg ? &arg->GetTexture() : nullptr, emptyTexture, textureSlot);
 				}
 			}
 		};

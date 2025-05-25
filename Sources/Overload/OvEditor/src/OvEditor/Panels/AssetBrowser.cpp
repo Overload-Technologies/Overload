@@ -685,7 +685,7 @@ namespace
 			{
 				for (const std::string& materialName : model->GetMaterialNames())
 				{
-					const auto finalPath = FindAvailableFilePath(filePath / (materialName + ".ovmat"));
+					const auto finalPath = FindAvailableFilePath(filePath.parent_path() / (materialName + ".ovmat"));
 
 					const std::string fileContent = std::format(
 						"<root><shader>:Shaders\\{}.ovfx</shader></root>",

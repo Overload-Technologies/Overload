@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <ranges>
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CModelRenderer.h>
@@ -23,108 +24,109 @@
 #include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
 
-struct SceneRenderPassDescriptor
-{
-	OvCore::Rendering::SceneRenderer::AllDrawables drawables;
-};
-
-class SceneRenderPass : public OvRendering::Core::ARenderPass
-{
-public:
-	SceneRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool stencilWrite = false) :
-		OvRendering::Core::ARenderPass(p_renderer),
-		m_stencilWrite(stencilWrite)
-	{}
-
-protected:
-	void PrepareStencilBuffer(OvRendering::Data::PipelineState& p_pso)
-	{
-		p_pso.stencilTest = true;
-		p_pso.stencilWriteMask = 0xFF;
-		p_pso.stencilFuncRef = 1;
-		p_pso.stencilFuncMask = 0xFF;
-		p_pso.stencilOpFail = OvRendering::Settings::EOperation::REPLACE;
-		p_pso.depthOpFail = OvRendering::Settings::EOperation::REPLACE;
-		p_pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
-		p_pso.colorWriting.mask = 0x00;
-	}
-
-private:
-	bool m_stencilWrite;
-};
-
-class OpaqueRenderPass : public SceneRenderPass
-{
-public:
-	OpaqueRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
-		SceneRenderPass(p_renderer, p_stencilWrite)
-	{}
-
-protected:
-	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
-	{
-		ZoneScoped;
-		TracyGpuZone("OpaqueRenderPass");
-
-		PrepareStencilBuffer(p_pso);
-
-		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
-
-		for (const auto& [distance, drawable] : sceneContent.drawables.opaques)
-		{
-			m_renderer.DrawEntity(p_pso, drawable);
-		}
-	}
-};
-
-class TransparentRenderPass : public SceneRenderPass
-{
-public:
-	TransparentRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
-		SceneRenderPass(p_renderer, p_stencilWrite) {}
-
-protected:
-	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
-	{
-		ZoneScoped;
-		TracyGpuZone("TransparentRenderPass");
-
-		PrepareStencilBuffer(p_pso);
-
-		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
-
-		for (const auto& [distance, drawable] : sceneContent.drawables.transparents)
-		{
-			m_renderer.DrawEntity(p_pso, drawable);
-		}
-	}
-};
-
-class UIRenderPass : public SceneRenderPass
-{
-public:
-	UIRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
-		SceneRenderPass(p_renderer, p_stencilWrite) {}
-
-protected:
-	virtual void Draw(OvRendering::Data::PipelineState p_pso) override
-	{
-		ZoneScoped;
-		TracyGpuZone("UIRenderPass");
-
-		PrepareStencilBuffer(p_pso);
-
-		auto& sceneContent = m_renderer.GetDescriptor<SceneRenderPassDescriptor>();
-
-		for (const auto& [distance, drawable] : sceneContent.drawables.ui)
-		{
-			m_renderer.DrawEntity(p_pso, drawable);
-		}
-	}
-};
-
 namespace
 {
+	using namespace OvCore::Rendering;
+
+	class SceneRenderPass : public OvRendering::Core::ARenderPass
+	{
+	public:
+		SceneRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool stencilWrite = false) :
+			OvRendering::Core::ARenderPass(p_renderer),
+			m_stencilWrite(stencilWrite)
+		{
+		}
+
+	protected:
+		void PrepareStencilBuffer(OvRendering::Data::PipelineState& p_pso)
+		{
+			p_pso.stencilTest = true;
+			p_pso.stencilWriteMask = 0xFF;
+			p_pso.stencilFuncRef = 1;
+			p_pso.stencilFuncMask = 0xFF;
+			p_pso.stencilOpFail = OvRendering::Settings::EOperation::REPLACE;
+			p_pso.depthOpFail = OvRendering::Settings::EOperation::REPLACE;
+			p_pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
+			p_pso.colorWriting.mask = 0x00;
+		}
+
+	private:
+		bool m_stencilWrite;
+	};
+
+	class OpaqueRenderPass : public SceneRenderPass
+	{
+	public:
+		OpaqueRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
+			SceneRenderPass(p_renderer, p_stencilWrite)
+		{
+		}
+
+	protected:
+		virtual void Draw(OvRendering::Data::PipelineState p_pso) override
+		{
+			ZoneScoped;
+			TracyGpuZone("OpaqueRenderPass");
+
+			PrepareStencilBuffer(p_pso);
+
+			const auto& drawables = m_renderer.GetDescriptor<SceneRenderer::SceneFilteredDrawablesDescriptor>();
+
+			for (const auto& drawable : drawables.opaques | std::views::values)
+			{
+				m_renderer.DrawEntity(p_pso, drawable);
+			}
+		}
+	};
+
+	class TransparentRenderPass : public SceneRenderPass
+	{
+	public:
+		TransparentRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
+			SceneRenderPass(p_renderer, p_stencilWrite) {
+		}
+
+	protected:
+		virtual void Draw(OvRendering::Data::PipelineState p_pso) override
+		{
+			ZoneScoped;
+			TracyGpuZone("TransparentRenderPass");
+
+			PrepareStencilBuffer(p_pso);
+
+			const auto& drawables = m_renderer.GetDescriptor<SceneRenderer::SceneFilteredDrawablesDescriptor>();
+
+			for (const auto& drawable : drawables.transparents | std::views::values)
+			{
+				m_renderer.DrawEntity(p_pso, drawable);
+			}
+		}
+	};
+
+	class UIRenderPass : public SceneRenderPass
+	{
+	public:
+		UIRenderPass(OvRendering::Core::CompositeRenderer& p_renderer, bool p_stencilWrite = false) :
+			SceneRenderPass(p_renderer, p_stencilWrite) {
+		}
+
+	protected:
+		virtual void Draw(OvRendering::Data::PipelineState p_pso) override
+		{
+			ZoneScoped;
+			TracyGpuZone("UIRenderPass");
+
+			PrepareStencilBuffer(p_pso);
+
+			const auto& drawables = m_renderer.GetDescriptor<SceneRenderer::SceneFilteredDrawablesDescriptor>();
+
+			for (const auto& drawable : drawables.ui | std::views::values)
+			{
+				m_renderer.DrawEntity(p_pso, drawable);
+			}
+		}
+	};
+
 	OvRendering::Features::LightingRenderFeature::LightSet FindActiveLights(const OvCore::SceneSystem::Scene& p_scene)
 	{
 		OvRendering::Features::LightingRenderFeature::LightSet lights;
@@ -194,8 +196,25 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 
 	OvRendering::Core::CompositeRenderer::BeginFrame(p_frameDescriptor);
 
-	AddDescriptor<SceneRenderPassDescriptor>({
-		ParseScene()
+	AddDescriptor<SceneDrawablesDescriptor>({
+		ParseScene(SceneParsingInput{
+			.scene = sceneDescriptor.scene
+		})
+	});
+
+	// Default filtered drawables descriptor (used by most render passes).
+	// Some other render passes can decide to filter the drawables themselves, using the 
+	// SceneDrawablesDescriptor instead.
+	AddDescriptor<SceneFilteredDrawablesDescriptor>({
+		FilterDrawables(
+			GetDescriptor<SceneDrawablesDescriptor>(),
+			SceneDrawablesFilteringInput{
+				.camera = p_frameDescriptor.camera.value(),
+				.frustumOverride = sceneDescriptor.frustumOverride,
+				.overrideMaterial = sceneDescriptor.overrideMaterial,
+				.fallbackMaterial = sceneDescriptor.fallbackMaterial
+			}
+		)
 	});
 }
 
@@ -221,141 +240,144 @@ void OvCore::Rendering::SceneRenderer::DrawModelWithSingleMaterial(OvRendering::
 	}
 }
 
-OvCore::Rendering::SceneRenderer::AllDrawables OvCore::Rendering::SceneRenderer::ParseScene()
+SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseScene(const SceneParsingInput& p_input)
 {
 	ZoneScoped;
 
 	using namespace OvCore::ECS::Components;
 
-	OpaqueDrawables opaques;
-	TransparentDrawables transparents;
-	UIDrawables ui;
+	// Containers for the parsed drawables.
+	SceneRenderer::SceneDrawablesDescriptor result;
 
-	auto& camera = m_frameDescriptor.camera.value();
+	const auto& scene = p_input.scene;
 
-	auto& sceneDescriptor = GetDescriptor<SceneDescriptor>();
-	auto& scene = sceneDescriptor.scene;
-	auto overrideMaterial = sceneDescriptor.overrideMaterial;
-	auto fallbackMaterial = sceneDescriptor.fallbackMaterial;
-
-	OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustum;
-
-	if (camera.HasFrustumGeometryCulling())
-	{
-		auto& frustumOverride = sceneDescriptor.frustumOverride;
-		frustum = frustumOverride ? frustumOverride : camera.GetFrustum();
-	}
-
-	for (CModelRenderer* modelRenderer : scene.GetFastAccessComponents().modelRenderers)
+	for (const auto modelRenderer : scene.GetFastAccessComponents().modelRenderers)
 	{
 		auto& owner = modelRenderer->owner;
+		if (!owner.IsActive()) continue;
+		const auto model = modelRenderer->GetModel();
+		if (!model) continue;
+		const auto materialRenderer = modelRenderer->owner.GetComponent<CMaterialRenderer>();
+		if (!materialRenderer) continue;
+				
+		const auto& transform = owner.transform.GetFTransform();
+		const auto& modelBoundingSphere = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::CULL_CUSTOM ? modelRenderer->GetCustomBoundingSphere() : model->GetBoundingSphere();
+		const auto& materials = materialRenderer->GetMaterials();
 
-		if (owner.IsActive())
+		for (auto& mesh : model->GetMeshes())
 		{
-			if (auto model = modelRenderer->GetModel())
+			OvTools::Utils::OptRef<OvRendering::Data::Material> material;
+
+			if (mesh->GetMaterialIndex() < kMaxMaterialCount)
 			{
-				if (auto materialRenderer = modelRenderer->owner.GetComponent<CMaterialRenderer>())
-				{
-					auto& transform = owner.transform.GetFTransform();
-
-					auto cullingOptions = OvRendering::Settings::ECullingOptions::NONE;
-
-					if (modelRenderer->GetFrustumBehaviour() != CModelRenderer::EFrustumBehaviour::DISABLED)
-					{
-						cullingOptions |= OvRendering::Settings::ECullingOptions::FRUSTUM_PER_MODEL;
-					}
-
-					if (modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::CULL_MESHES)
-					{
-						cullingOptions |= OvRendering::Settings::ECullingOptions::FRUSTUM_PER_MESH;
-					}
-
-					const auto& modelBoundingSphere = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::CULL_CUSTOM ? modelRenderer->GetCustomBoundingSphere() : model->GetBoundingSphere();
-
-					std::vector<OvRendering::Resources::Mesh*> meshes;
-
-					if (frustum)
-					{
-						ZoneScopedN("Frustum Culling");
-						meshes = frustum.value().GetMeshesInFrustum(*model, modelBoundingSphere, transform, cullingOptions);
-					}
-					else
-					{
-						meshes = model->GetMeshes();
-					}
-
-					if (!meshes.empty())
-					{
-						float distanceToActor = OvMaths::FVector3::Distance(transform.GetWorldPosition(), camera.GetPosition());
-						const OvCore::ECS::Components::CMaterialRenderer::MaterialList& materials = materialRenderer->GetMaterials();
-
-						for (const auto& mesh : meshes)
-						{
-							OvTools::Utils::OptRef<OvRendering::Data::Material> material;
-
-							if (mesh->GetMaterialIndex() < kMaxMaterialCount)
-							{
-								if (overrideMaterial && overrideMaterial->IsValid())
-								{
-									material = overrideMaterial.value();
-								}
-								else
-								{
-									material = materials.at(mesh->GetMaterialIndex());
-								}
-
-								const bool isMaterialValid = material && material->IsValid();
-								const bool hasValidFallbackMaterial = fallbackMaterial && fallbackMaterial->IsValid();
-
-								if (!isMaterialValid && hasValidFallbackMaterial)
-								{
-									material = fallbackMaterial;
-								}
-							}
-
-							if (material && material->IsValid())
-							{
-								OvRendering::Entities::Drawable drawable;
-								drawable.mesh = *mesh;
-								drawable.material = material;
-								drawable.stateMask = material->GenerateStateMask();
-
-								drawable.AddDescriptor<EngineDrawableDescriptor>({
-									transform.GetWorldMatrix(),
-									materialRenderer->GetUserMatrix()
-								});
-
-								if (material->IsUserInterface())
-								{
-									ui.emplace(decltype(decltype(ui)::value_type::first){
-										.order = material->GetDrawOrder(),
-										.distance = distanceToActor
-									}, drawable);
-								}
-								else
-								{
-									if (material->IsBlendable())
-									{
-										transparents.emplace(decltype(decltype(transparents)::value_type::first){
-											.order = material->GetDrawOrder(),
-											.distance = distanceToActor
-										}, drawable);
-									}
-									else
-									{
-										opaques.emplace(decltype(decltype(opaques)::value_type::first){
-											.order = material->GetDrawOrder(),
-											.distance = distanceToActor
-										}, drawable);
-									}
-								}
-							}
-						}
-					}
-				}
+				material = materials.at(mesh->GetMaterialIndex());
 			}
+
+			OvRendering::Entities::Drawable drawable;
+			// TODO: Store culling policy
+			drawable.mesh = *mesh;
+			drawable.material = material;
+			drawable.stateMask = material->GenerateStateMask();
+			drawable.transform = transform;
+			drawable.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
+				OvRendering::Entities::ECullingPolicy::NEVER :
+				OvRendering::Entities::ECullingPolicy::ALWAYS;
+
+			drawable.type = [&]() ->OvRendering::Entities::EDrawableType {
+				using enum OvRendering::Entities::EDrawableType;
+				const bool isUI = material->IsUserInterface();
+				const bool isBlendable = material->IsBlendable();
+				return isUI ? UI : isBlendable ? TRANSPARENT : OPAQUE;
+			}();
+
+			drawable.AddDescriptor<EngineDrawableDescriptor>({
+				transform.GetWorldMatrix(),
+				materialRenderer->GetUserMatrix()
+			});
+
+			result.drawables.push_back(drawable);
 		}
 	}
 
-	return { opaques, transparents, ui };
+	return result;
+}
+
+SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer::FilterDrawables(
+	const SceneDrawablesDescriptor& p_drawables,
+	const SceneDrawablesFilteringInput& p_filteringInput
+)
+{
+	ZoneScoped;
+
+	using namespace OvCore::ECS::Components;
+
+	SceneFilteredDrawablesDescriptor output;
+
+	const auto& camera = p_filteringInput.camera;
+	const auto& frustumOverride = p_filteringInput.frustumOverride;
+
+	// Determine if we should use frustum culling
+	OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustum;
+	if (camera.HasFrustumGeometryCulling())
+	{
+		frustum = frustumOverride ? frustumOverride : camera.GetFrustum();
+	}
+
+	// Process each drawable
+	for (const auto& drawable : p_drawables.drawables)
+	{
+		// Skip if material is invalid
+		if (!drawable.material || !drawable.material->IsValid())
+		{
+			continue;
+		}
+
+		// Perform frustum culling if enabled
+		if (frustum && drawable.cullingPolicy == OvRendering::Entities::ECullingPolicy::ALWAYS)
+		{
+			ZoneScopedN("Frustum Culling");
+
+			// Get the engine drawable descriptor to access transform information
+			const auto& engineDesc = drawable.GetDescriptor<EngineDrawableDescriptor>();
+
+			// Calculate bounding sphere in world space
+			const auto& meshBoundingSphere = drawable.mesh->GetBoundingSphere();
+
+			if (!frustum->BoundingSphereInFrustum(meshBoundingSphere, drawable.transform))
+			{
+				continue; // Skip this drawable as it's outside the frustum
+			}
+		}
+
+		// Calculate distance to camera for sorting
+		const float distanceToCamera = OvMaths::FVector3::Distance(
+			drawable.transform.GetWorldPosition(),
+			camera.GetPosition()
+		);
+
+		// Categorize drawable based on their type
+		if (drawable.type == OvRendering::Entities::EDrawableType::UI)
+		{
+			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
+				.order = drawable.material->GetDrawOrder(),
+					.distance = distanceToCamera
+			}, drawable);
+		}
+		else if (drawable.type == OvRendering::Entities::EDrawableType::TRANSPARENT)
+		{
+			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
+				.order = drawable.material->GetDrawOrder(),
+					.distance = distanceToCamera
+			}, drawable);
+		}
+		else if (drawable.type == OvRendering::Entities::EDrawableType::OPAQUE)
+		{
+			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
+				.order = drawable.material->GetDrawOrder(),
+					.distance = distanceToCamera
+			}, drawable);
+		}
+	}
+
+	return output;
 }

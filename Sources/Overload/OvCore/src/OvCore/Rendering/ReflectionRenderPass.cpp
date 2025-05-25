@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <ranges>
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
@@ -49,7 +51,6 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 
 	auto& sceneDescriptor = m_renderer.GetDescriptor<SceneRenderer::SceneDescriptor>();
 	auto& frameDescriptor = m_renderer.GetFrameDescriptor();
-	auto& scene = sceneDescriptor.scene;
 
 	auto pso = m_renderer.CreatePipelineState();
 
@@ -78,7 +79,7 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			reflectionProbe.GetFramebuffer().Bind();
 			m_renderer.SetViewport(0, 0, width, height);
 			m_renderer.Clear(true, true, true);
-			_DrawReflections(pso, scene);
+			_DrawReflections(pso, reflectionCamera);
 			reflectionProbe.GetCubemap()->GenerateMipmaps();
 			reflectionProbe.GetFramebuffer().Unbind();
 		}
@@ -96,46 +97,32 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 
 void OvCore::Rendering::ReflectionRenderPass::_DrawReflections(
 	OvRendering::Data::PipelineState p_pso,
-	OvCore::SceneSystem::Scene& p_scene
+	const OvRendering::Entities::Camera& p_camera
 )
 {
-	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
-	{
-		auto& actor = modelRenderer->owner;
+	auto& drawables = m_renderer.GetDescriptor<SceneRenderer::SceneDrawablesDescriptor>();
 
-		if (actor.IsActive())
-		{
-			if (auto model = modelRenderer->GetModel())
-			{
-				// TODO: Filter dynamic objects (only static objects should be rendered in the reflection pass)
-				if (auto materialRenderer = modelRenderer->owner.GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
-				{
-					const auto& materials = materialRenderer->GetMaterials();
-					const auto& modelMatrix = actor.transform.GetWorldMatrix();
-
-					for (auto mesh : model->GetMeshes())
-					{
-						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid())
-						{
-							OvRendering::Entities::Drawable drawable;
-							drawable.mesh = *mesh;
-							drawable.material = material;
-							drawable.stateMask = material->GenerateStateMask();
-
-							// If not found, the default pass will be used.
-							// This is only if a shader wants to override the default pass.
-							drawable.pass = "REFLECTION_PASS"; 
-
-							drawable.AddDescriptor<EngineDrawableDescriptor>({
-								modelMatrix,
-								materialRenderer->GetUserMatrix()
-							});
-
-							m_renderer.DrawEntity(p_pso, drawable);
-						}
-					}
-				}
-			}
+	const auto filteredDrawables = static_cast<SceneRenderer&>(m_renderer).FilterDrawables(
+		drawables,
+		SceneRenderer::SceneDrawablesFilteringInput{
+			.camera = p_camera,
+			.frustumOverride = std::nullopt, // No frustum override for reflections
+			.overrideMaterial = std::nullopt, // No override material for reflections
+			.fallbackMaterial = std::nullopt // No fallback material for reflections
 		}
+	);
+
+	for (const auto& drawable : filteredDrawables.opaques | std::views::values)
+	{
+		auto drawableCopy = drawable;
+		drawableCopy.pass = "REFLECTION_PASS";
+		m_renderer.DrawEntity(p_pso, drawable);
+	}
+
+	for (const auto& drawable : filteredDrawables.transparents | std::views::values)
+	{
+		auto drawableCopy = drawable;
+		drawableCopy.pass = "REFLECTION_PASS";
+		m_renderer.DrawEntity(p_pso, drawable);
 	}
 }

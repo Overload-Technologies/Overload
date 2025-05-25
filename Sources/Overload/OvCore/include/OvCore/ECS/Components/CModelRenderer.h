@@ -27,7 +27,7 @@ namespace OvCore::ECS::Components
 		enum class EFrustumBehaviour
 		{
 			DISABLED = 0,
-			CULL_MODEL = 1,
+			CULL_MODEL = 1, // TODO: Remove that
 			CULL_MESHES = 2,
 			CULL_CUSTOM = 3
 		};

@@ -65,20 +65,46 @@ namespace OvCore::Rendering
 			}
 		};
 
-		using OpaqueDrawables = std::multimap<DrawOrder<EOrderingMode::FRONT_TO_BACK>, OvRendering::Entities::Drawable>;
-		using TransparentDrawables = std::multimap<DrawOrder<EOrderingMode::BACK_TO_FRONT>, OvRendering::Entities::Drawable>;
-		using UIDrawables = std::multimap<DrawOrder<EOrderingMode::BACK_TO_FRONT>, OvRendering::Entities::Drawable>;
+		template<EOrderingMode OrderingMode>
+		using DrawableMap = std::multimap<DrawOrder<OrderingMode>, OvRendering::Entities::Drawable>;
 
-		struct AllDrawables
-		{
-			OpaqueDrawables opaques;
-			TransparentDrawables transparents;
-			UIDrawables ui;
-		};
-
+		/**
+		* Input data for the scene renderer.
+		*/
 		struct SceneDescriptor
 		{
 			OvCore::SceneSystem::Scene& scene;
+			OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustumOverride;
+			OvTools::Utils::OptRef<OvRendering::Data::Material> overrideMaterial;
+			OvTools::Utils::OptRef<OvRendering::Data::Material> fallbackMaterial;
+		};
+
+		struct SceneParsingInput
+		{
+			OvCore::SceneSystem::Scene& scene;
+		};
+
+		/**
+		* Result of the scene parsing, containing the drawables to be rendered.
+		*/
+		struct SceneDrawablesDescriptor
+		{
+			std::vector<OvRendering::Entities::Drawable> drawables;
+		};
+
+		/**
+		* Filtered drawables for the scene, categorized by their render pass, and sorted by their draw order.
+		*/
+		struct SceneFilteredDrawablesDescriptor
+		{
+			DrawableMap<EOrderingMode::FRONT_TO_BACK> opaques;
+			DrawableMap<EOrderingMode::BACK_TO_FRONT> transparents;
+			DrawableMap<EOrderingMode::BACK_TO_FRONT> ui;
+		};
+
+		struct SceneDrawablesFilteringInput
+		{
+			const OvRendering::Entities::Camera& camera;
 			OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustumOverride;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> overrideMaterial;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> fallbackMaterial;
@@ -111,7 +137,24 @@ namespace OvCore::Rendering
 			const OvMaths::FMatrix4& p_modelMatrix
 		);
 
-	protected:
-		AllDrawables ParseScene();
+		/**
+		* Parse the scene (as defined in the SceneDescriptor) to find the drawables to render.
+		* @param p_sceneDescriptor
+		* @param p_options
+		*/
+		SceneDrawablesDescriptor ParseScene(
+			const SceneParsingInput& p_input
+		);
+
+		/**
+		* Filter and prepare drawables based on the given context.
+		* This is where culling and sorting happens.
+		* @param p_drawables
+		* @param p_filteringInput
+		*/
+		SceneFilteredDrawablesDescriptor FilterDrawables(
+			const SceneDrawablesDescriptor& p_drawables,
+			const SceneDrawablesFilteringInput& p_filteringInput
+		);
 	};
 }

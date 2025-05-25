@@ -28,6 +28,9 @@ namespace OvCore::Rendering
 	protected:
 		virtual void Draw(OvRendering::Data::PipelineState p_pso) override;
 
-		void _DrawReflections(OvRendering::Data::PipelineState p_pso, OvCore::SceneSystem::Scene& p_scene);
+		void _DrawReflections(
+			OvRendering::Data::PipelineState p_pso,
+			const OvRendering::Entities::Camera& p_camera
+		);
 	};
 }

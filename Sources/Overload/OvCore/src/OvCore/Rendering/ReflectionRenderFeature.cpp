@@ -108,6 +108,12 @@ namespace
 			const bool isLocal = probe.GetInfluencePolicy() == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL;
 			const bool isGlobal = !isLocal;
 
+			// If we already have a valid local probe, we can safely skip further global probes.
+			if (isGlobal && bestLocal.probe.has_value())
+			{
+				continue;
+			}
+
 			auto& currentBest = isLocal ? bestLocal : bestGlobal;
 
 			// Skip this probe if it's further than the best found so far.

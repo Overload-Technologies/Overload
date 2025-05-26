@@ -241,20 +241,21 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
 #if !defined(DISABLE_IMAGE_BASED_LIGHTING)
     // IBL (Image-Based Lighting)
     // ------------------------------------------------
-    
+    // 0. Constants
+    const int environmentMaxLOD = textureQueryLevels(reflectionProbe);
+
     // 1. Calculate reflection vector
     vec3 R = reflect(-V, N);
     
     // 2. Diffuse irradiance (environment lighting)
-    vec3 irradiance = textureLod(reflectionProbe, N, 5.0).rgb; // High mip level for diffuse
+    vec3 irradiance = textureLod(reflectionProbe, N, environmentMaxLOD).rgb; // High mip level for diffuse
     
     // 3. Specular reflection
-    const int MAX_REFLECTION_LOD = textureQueryLevels(reflectionProbe) - 1;
     if (probeData.boxProjection)
     {
         R = BoxProjection(R, fragPos, probeData);
     }
-    vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * environmentMaxLOD).rgb;
     
     // 4. Apply BRDF
     vec2 brdf = EnvBRDFApprox(NdotV, roughness);

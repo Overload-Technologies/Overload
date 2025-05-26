@@ -55,7 +55,8 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 
 		if (material.HasProperty("_ReflectionProbeBoxProjection"))
 		{
-			const bool boxProjection = targetProbe->IsBoxProjectionEnabled();
+			const bool isGlobal = targetProbe->GetInfluencePolicy() == ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL;
+			const bool boxProjection = isGlobal && targetProbe->IsBoxProjectionEnabled();
 			material.SetProperty("_ReflectionProbeBoxProjection", boxProjection, true);
 
 			if (boxProjection)

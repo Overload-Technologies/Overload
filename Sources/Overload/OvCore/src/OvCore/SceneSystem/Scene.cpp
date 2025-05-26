@@ -47,9 +47,6 @@ void OvCore::SceneSystem::Scene::AddDefaultLights()
 	directionalLight.AddComponent<ECS::Components::CDirectionalLight>().SetIntensity(1.0f);
 	directionalLight.transform.SetLocalPosition({ 0.0f, 10.0f, 0.0f });
 	directionalLight.transform.SetLocalRotation(OvMaths::FQuaternion({ 120.0f, -40.0f, 0.0f }));
-
-	auto& ambientLight = CreateActor("Ambient Light");
-	ambientLight.AddComponent<ECS::Components::CAmbientSphereLight>().SetRadius(10000.0f);
 }
 
 void OvCore::SceneSystem::Scene::AddDefaultReflections()

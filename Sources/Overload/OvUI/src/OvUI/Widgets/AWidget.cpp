@@ -49,12 +49,24 @@ void OvUI::Widgets::AWidget::Draw()
 {
 	if (enabled)
 	{
+		if (disabled)
+		{
+			ImGui::BeginDisabled();
+		}
+
 		_Draw_Impl();
+
+		if (disabled)
+		{
+			ImGui::EndDisabled();
+		}
 
 		if (m_autoExecutePlugins)
 			ExecutePlugins(Plugins::EPluginExecutionContext::WIDGET);
 
 		if (!lineBreak)
+		{
 			ImGui::SameLine();
+		}
 	}
 }

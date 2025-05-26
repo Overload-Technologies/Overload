@@ -372,7 +372,10 @@ protected:
 			/* Render camera component frustum */
 			if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
 			{
-				DrawReflectionProbeInfluenceVolume(*reflectionProbeComponent);
+				if (reflectionProbeComponent->GetInfluencePolicy() == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL)
+				{
+					DrawReflectionProbeInfluenceVolume(*reflectionProbeComponent);
+				}
 			}
 
 			/* Render the actor collider */

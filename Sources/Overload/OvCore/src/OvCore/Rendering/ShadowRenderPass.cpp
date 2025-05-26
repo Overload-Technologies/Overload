@@ -65,7 +65,7 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 					light.shadowBuffer->Bind();
 					m_renderer.SetViewport(0, 0, light.shadowMapResolution, light.shadowMapResolution);
 					m_renderer.Clear(true, true, true);
-					DrawShadows(pso, scene);
+					_DrawShadows(pso, scene);
 					light.shadowBuffer->Unbind();
 
 					engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
@@ -86,7 +86,7 @@ void OvCore::Rendering::ShadowRenderPass::Draw(OvRendering::Data::PipelineState 
 	m_renderer.SetViewport(0, 0, frameDescriptor.renderWidth, frameDescriptor.renderHeight);
 }
 
-void OvCore::Rendering::ShadowRenderPass::DrawShadows(
+void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 	OvRendering::Data::PipelineState p_pso,
 	OvCore::SceneSystem::Scene& p_scene
 )
@@ -101,6 +101,11 @@ void OvCore::Rendering::ShadowRenderPass::DrawShadows(
 			{
 				if (auto materialRenderer = modelRenderer->owner.GetComponent<OvCore::ECS::Components::CMaterialRenderer>())
 				{
+					if (!materialRenderer->HasVisibilityFlags(EVisibilityFlags::SHADOW))
+					{
+						continue;
+					}
+
 					const auto& materials = materialRenderer->GetMaterials();
 					const auto& modelMatrix = actor.transform.GetWorldMatrix();
 

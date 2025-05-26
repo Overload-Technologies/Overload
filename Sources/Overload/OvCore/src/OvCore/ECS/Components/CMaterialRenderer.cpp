@@ -83,6 +83,21 @@ const OvCore::ECS::Components::CMaterialRenderer::MaterialList& OvCore::ECS::Com
 	return m_materials;
 }
 
+void OvCore::ECS::Components::CMaterialRenderer::SetVisibilityFlags(OvCore::Rendering::EVisibilityFlags p_flags)
+{
+	m_visibilityFlags = p_flags;
+}
+
+OvCore::Rendering::EVisibilityFlags OvCore::ECS::Components::CMaterialRenderer::GetVisibilityFlags() const
+{
+	return m_visibilityFlags;
+}
+
+bool OvCore::ECS::Components::CMaterialRenderer::HasVisibilityFlags(OvCore::Rendering::EVisibilityFlags p_flags) const
+{
+	return OvCore::Rendering::SatisfiesVisibility(m_visibilityFlags, p_flags);
+}
+
 void OvCore::ECS::Components::CMaterialRenderer::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
 	tinyxml2::XMLNode* materialsNode = p_doc.NewElement("materials");
@@ -95,6 +110,8 @@ void OvCore::ECS::Components::CMaterialRenderer::OnSerialize(tinyxml2::XMLDocume
 	{
 		OvCore::Helpers::Serializer::SerializeMaterial(p_doc, materialsNode, "material", m_materials[i]);
 	}
+
+	OvCore::Helpers::Serializer::SerializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
@@ -117,6 +134,8 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 	}
 
 	UpdateMaterialList();
+
+	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
 
 std::array<OvUI::Widgets::AWidget*, 3> CustomMaterialDrawer(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data)
@@ -164,6 +183,23 @@ std::array<OvUI::Widgets::AWidget*, 3> CustomMaterialDrawer(OvUI::Internal::Widg
 void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::WidgetContainer & p_root)
 {
 	using namespace OvCore::Helpers;
+	using enum Rendering::EVisibilityFlags;
+
+	auto drawVisibilityToggle = [this, &p_root](const std::string& p_flagName, Rendering::EVisibilityFlags p_flag) {
+		GUIDrawer::DrawBoolean(
+			p_root,
+			std::format("Visibility: {}", p_flagName),
+			[this, p_flag] { return IsFlagSet(m_visibilityFlags, p_flag); },
+			[this, p_flag](bool p_value) {
+				if (p_value) m_visibilityFlags |= p_flag;
+				else m_visibilityFlags &= ~p_flag;
+			}
+		);
+	};
+
+	drawVisibilityToggle("Geometry", GEOMETRY);
+	drawVisibilityToggle("Reflection", REFLECTION);
+	drawVisibilityToggle("Shadow", SHADOW);
 
 	for (uint8_t i = 0; i < m_materials.size(); ++i)
 		m_materialFields[i] = CustomMaterialDrawer(p_root, "Material", m_materials[i]);

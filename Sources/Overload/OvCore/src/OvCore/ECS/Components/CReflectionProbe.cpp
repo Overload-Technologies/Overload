@@ -43,14 +43,14 @@ OvCore::ECS::Components::CReflectionProbe::ERefreshMode OvCore::ECS::Components:
 	return m_refreshMode;
 }
 
-void OvCore::ECS::Components::CReflectionProbe::SetCaptureDynamicObjects(bool p_capture)
+void OvCore::ECS::Components::CReflectionProbe::SetInfluencePolicy(EInfluencePolicy p_policy)
 {
-	m_captureDynamicObjects = p_capture;
+	m_influencePolicy = p_policy;
 }
 
-bool OvCore::ECS::Components::CReflectionProbe::GetCaptureDynamicObjects() const
+OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy OvCore::ECS::Components::CReflectionProbe::GetInfluencePolicy() const
 {
-	return m_captureDynamicObjects;
+	return m_influencePolicy;
 }
 
 void OvCore::ECS::Components::CReflectionProbe::SetInfluenceSize(const OvMaths::FVector3& p_size)
@@ -99,10 +99,10 @@ void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocumen
 {
 	using namespace OvCore::Helpers;
 	Serializer::SerializeInt(p_doc, p_node, "resolution", m_resolution);
+	Serializer::SerializeUint32(p_doc, p_node, "influence_policy", static_cast<uint32_t>(m_influencePolicy));
 	Serializer::SerializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::SerializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
-	Serializer::SerializeBoolean(p_doc, p_node, "capture_dynamic_objects", m_captureDynamicObjects);
-	Serializer::SerializeInt(p_doc, p_node, "refresh_mode", static_cast<int>(m_refreshMode));
+	Serializer::SerializeUint32(p_doc, p_node, "refresh_mode", static_cast<uint32_t>(m_refreshMode));
 }
 
 void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -117,10 +117,10 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 
 	const auto previousRefreshMode = m_refreshMode;
 
+	Serializer::DeserializeUint32(p_doc, p_node, "influence_policy", reinterpret_cast<uint32_t&>(m_influencePolicy));
 	Serializer::DeserializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::DeserializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
-	Serializer::DeserializeBoolean(p_doc, p_node, "capture_dynamic_objects", m_captureDynamicObjects);
-	Serializer::DeserializeInt(p_doc, p_node, "refresh_mode", reinterpret_cast<int&>(m_refreshMode));
+	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 
 	// If the refresh mode is set to ONCE, we request a capture.
 	if (m_refreshMode == ERefreshMode::ONCE && previousRefreshMode != m_refreshMode)
@@ -138,19 +138,13 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	auto& refreshMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(m_refreshMode));
 	refreshMode.choices = {
 		{ static_cast<int>(ERefreshMode::REALTIME), "Realtime" },
-		{ static_cast<int>(ERefreshMode::ONCE), "Once)" },
+		{ static_cast<int>(ERefreshMode::ONCE), "Once" },
 		{ static_cast<int>(ERefreshMode::MANUAL), "Manual" }
 	};
 
 	auto& refreshModeDispatcher = refreshMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
 	refreshModeDispatcher.RegisterGatherer([this] { return static_cast<int>(m_refreshMode); });
 	refreshModeDispatcher.RegisterProvider([this](int mode) { m_refreshMode = static_cast<ERefreshMode>(mode); });
-
-	Helpers::GUIDrawer::DrawBoolean(
-		p_root,
-		"Capture Dynamic Objects",
-		m_captureDynamicObjects
-	);
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Cubemap Resolution");
 
@@ -171,17 +165,49 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	cubemapResolutionDispatcher.RegisterGatherer(std::bind(&CReflectionProbe::GetCubemapResolution, this));
 	cubemapResolutionDispatcher.RegisterProvider(std::bind(&CReflectionProbe::SetCubemapResolution, this, std::placeholders::_1));
 
+	Helpers::GUIDrawer::CreateTitle(p_root, "Influence Policy");
+
+	auto& influencePolicy = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(m_influencePolicy));
+	influencePolicy.choices = {
+		{ static_cast<int>(EInfluencePolicy::GLOBAL), "Global" },
+		{ static_cast<int>(EInfluencePolicy::LOCAL), "Local" }
+	};
+
+	auto& influencePolicyDispatcher = influencePolicy.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
+	influencePolicyDispatcher.RegisterGatherer([this] { return static_cast<int>(m_influencePolicy); });
+	influencePolicyDispatcher.RegisterProvider([this](int policy) { m_influencePolicy = static_cast<EInfluencePolicy>(policy); });
+
 	Helpers::GUIDrawer::DrawVec3(
 		p_root,
 		"Influence Size",
-		m_influenceSize
+		m_influenceSize,
+		0.05f,
+		0.0f
 	);
+
+	auto& influenceSize = *p_root.GetWidgets().back().first;
 
 	Helpers::GUIDrawer::DrawVec3(
 		p_root,
 		"Influence Offset",
-		m_influenceOffset
+		m_influenceOffset,
+		0.05f
 	);
+
+	auto& influenceOffset = *p_root.GetWidgets().back().first;
+
+	auto updateInfluenceWidgets = [](auto& widget, auto policy) {
+		widget.disabled = policy == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::GLOBAL;
+	};
+
+	updateInfluenceWidgets(influenceSize, m_influencePolicy);
+	updateInfluenceWidgets(influenceOffset, m_influencePolicy);
+
+	influencePolicy.ValueChangedEvent += [&](int p_value) {
+		const auto value = static_cast<EInfluencePolicy>(p_value);
+		updateInfluenceWidgets(influenceSize, value);
+		updateInfluenceWidgets(influenceOffset, value);
+	};
 
 	auto& captureNowButton = p_root.CreateWidget<OvUI::Widgets::Buttons::Button>("Capture Now");
 	captureNowButton.ClickedEvent += [this] {

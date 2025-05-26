@@ -66,6 +66,11 @@ bool OvCore::Rendering::ReflectionRenderFeature::_IsAffectedByReflectionProbe(
 	OvCore::ECS::Components::CReflectionProbe& p_probe
 ) const
 {
+	if (p_probe.GetInfluencePolicy() == ECS::Components::CReflectionProbe::EInfluencePolicy::GLOBAL)
+	{
+		return true;
+	}
+
 	// Transform the bounding sphere to world space using the model matrix
 	const auto worldSphereCenter = p_modelMatrix * OvMaths::FVector4(p_bounds.position, 1.0f);
 

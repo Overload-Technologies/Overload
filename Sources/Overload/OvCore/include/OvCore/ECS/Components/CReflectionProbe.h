@@ -26,11 +26,17 @@ namespace OvCore::ECS::Components
 	class CReflectionProbe : public AComponent
 	{
 	public:
-		enum class ERefreshMode : int // do not change the type `int`, serialization depends on it
+		enum class ERefreshMode : uint32_t
 		{
 			REALTIME,
 			ONCE,
 			MANUAL
+		};
+
+		enum class EInfluencePolicy : uint32_t
+		{
+			LOCAL,
+			GLOBAL
 		};
 
 		/**
@@ -56,15 +62,15 @@ namespace OvCore::ECS::Components
 		ERefreshMode GetRefreshMode() const;
 
 		/**
-		* Determines if the reflection probe should capture dynamic objects
-		* @param p_capture
+		* Determines the influence policy of the reflection probe
+		* @param p_policy
 		*/
-		void SetCaptureDynamicObjects(bool p_capture);
+		void SetInfluencePolicy(EInfluencePolicy p_policy);
 
 		/**
-		* Returns true if the reflection probe should capture dynamic objects
+		* Returns the influence policy of the reflection probe
 		*/
-		bool GetCaptureDynamicObjects() const;
+		EInfluencePolicy GetInfluencePolicy() const;
 
 		/**
 		* Sets the size of the influence volume of the reflection probe
@@ -143,8 +149,8 @@ namespace OvCore::ECS::Components
 		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
 		ERefreshMode m_refreshMode = ERefreshMode::ONCE;
 		bool m_captureRequested = false;
-		bool m_captureDynamicObjects = false;
 		uint32_t m_resolution = 512;
+		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
 	};

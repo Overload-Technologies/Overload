@@ -72,6 +72,7 @@ namespace OvUI::Widgets
 
 	public:
 		bool enabled = true;
+		bool disabled = false;
 		bool lineBreak = true;
 
 	protected:

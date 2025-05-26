@@ -19,8 +19,6 @@
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Types/Color.h>
 
-
-
 namespace OvCore::Resources
 {
 	class Material;

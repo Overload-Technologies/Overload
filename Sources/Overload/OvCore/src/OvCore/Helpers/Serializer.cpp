@@ -49,7 +49,7 @@ void OvCore::Helpers::Serializer::SerializeInt(tinyxml2::XMLDocument & p_doc, ti
 	p_node->InsertEndChild(element);
 }
 
-void OvCore::Helpers::Serializer::SerializeUint(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, unsigned p_value)
+void OvCore::Helpers::Serializer::SerializeUint32(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, uint32_t p_value)
 {
 	tinyxml2::XMLElement* element = p_doc.NewElement(p_name.c_str());
 	element->SetText(p_value);
@@ -232,7 +232,7 @@ void OvCore::Helpers::Serializer::DeserializeInt(tinyxml2::XMLDocument & p_doc, 
 		element->QueryIntText(&p_out);
 }
 
-void OvCore::Helpers::Serializer::DeserializeUint(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, unsigned & p_out)
+void OvCore::Helpers::Serializer::DeserializeUint32(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, uint32_t& p_out)
 {
 	if (auto element = p_node->FirstChildElement(p_name.c_str()); element)
 		element->QueryUnsignedText(&p_out);
@@ -412,10 +412,10 @@ int OvCore::Helpers::Serializer::DeserializeInt(tinyxml2::XMLDocument & p_doc, t
 	return result;
 }
 
-unsigned OvCore::Helpers::Serializer::DeserializeUint(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name)
+uint32_t OvCore::Helpers::Serializer::DeserializeUint32(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name)
 {
-	unsigned result;
-	DeserializeUint(p_doc, p_node, p_name, result);
+	uint32_t result;
+	DeserializeUint32(p_doc, p_node, p_name, result);
 	return result;
 }
 

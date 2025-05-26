@@ -9,16 +9,17 @@
 #include <map>
 
 #include <OvRendering/Core/CompositeRenderer.h>
-#include <OvRendering/Resources/Mesh.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Entities/Drawable.h>
 #include <OvRendering/HAL/UniformBuffer.h>
 #include <OvRendering/HAL/ShaderStorageBuffer.h>
+#include <OvRendering/Resources/Mesh.h>
 
-#include "OvCore/Resources/Material.h"
-#include "OvCore/ECS/Actor.h"
-#include "OvCore/ECS/Components/CCamera.h"
-#include "OvCore/SceneSystem/Scene.h"
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/Rendering/EVisibilityFlags.h>
+#include <OvCore/Resources/Material.h>
+#include <OvCore/SceneSystem/Scene.h>
 
 namespace OvCore::Rendering
 {
@@ -104,6 +105,7 @@ namespace OvCore::Rendering
 		struct SceneDrawableDescriptor
 		{
 			OvCore::ECS::Actor& actor;
+			EVisibilityFlags visibilityFlags = EVisibilityFlags::NONE;
 			ECullingPolicy cullingPolicy = ECullingPolicy::ALWAYS;
 		};
 
@@ -123,6 +125,7 @@ namespace OvCore::Rendering
 			OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustumOverride;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> overrideMaterial;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> fallbackMaterial;
+			EVisibilityFlags requiredVisibilityFlags = EVisibilityFlags::NONE;
 			bool includeUI = true; // Whether to include UI drawables in the filtering
 			bool includeTransparent = true; // Whether to include transparent drawables in the filtering
 			bool includeOpaque = true; // Whether to include opaque drawables in the filtering

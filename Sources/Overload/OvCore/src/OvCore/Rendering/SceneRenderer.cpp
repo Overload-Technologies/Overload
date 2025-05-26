@@ -212,7 +212,8 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 				.camera = p_frameDescriptor.camera.value(),
 				.frustumOverride = sceneDescriptor.frustumOverride,
 				.overrideMaterial = sceneDescriptor.overrideMaterial,
-				.fallbackMaterial = sceneDescriptor.fallbackMaterial
+				.fallbackMaterial = sceneDescriptor.fallbackMaterial,
+				.requiredVisibilityFlags = EVisibilityFlags::GEOMETRY
 			}
 		)
 	});
@@ -280,6 +281,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 
 			drawable.AddDescriptor<SceneDrawableDescriptor>({
 				.actor = modelRenderer->owner,
+				.visibilityFlags = materialRenderer->GetVisibilityFlags(),
 				.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
 					ECullingPolicy::NEVER :
 					ECullingPolicy::ALWAYS
@@ -323,9 +325,12 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 	{
 		const auto& desc = drawable.GetDescriptor<SceneDrawableDescriptor>();
 
-		// TODO: useuless right now, we need to implement a way to override the material in the drawable descriptor.
-		// Maybe another function (ProcessDrawable) that would allow to override the material based on the drawable descriptor?
-		// I don't believe this should be done here, as this is a filtering function.
+		// Skip drawables that do not satisfy the required visibility flags
+		if (!SatisfiesVisibility(desc.visibilityFlags, p_filteringInput.requiredVisibilityFlags))
+		{
+			continue;
+		}
+
 		const auto targetMaterial = 
 			p_filteringInput.overrideMaterial.has_value() ?
 			p_filteringInput.overrideMaterial.value() :

@@ -8,12 +8,11 @@
 
 #include <array>
 
-#include <OvUI/Widgets/Layout/Columns.h>
-
+#include <OvCore/ECS/Components/AComponent.h>
+#include <OvCore/Rendering/EVisibilityFlags.h>
+#include <OvCore/Resources/Material.h>
 #include <OvRendering/Resources/Mesh.h>
-
-#include "OvCore/Resources/Material.h"
-#include "OvCore/ECS/Components/AComponent.h"
+#include <OvUI/Widgets/Layout/Columns.h>
 
 constexpr uint8_t kMaxMaterialCount = 0xFF;
 
@@ -108,6 +107,23 @@ namespace OvCore::ECS::Components
 		const MaterialList& GetMaterials() const;
 
 		/**
+		* Sets visibility flags
+		* @param p_flags
+		*/
+		void SetVisibilityFlags(OvCore::Rendering::EVisibilityFlags p_flags);
+
+		/**
+		* Returns the visibility flags
+		*/
+		OvCore::Rendering::EVisibilityFlags GetVisibilityFlags() const;
+
+		/**
+		* Return true if the component has the given visibility flags
+		* @param p_flags
+		*/
+		bool HasVisibilityFlags(OvCore::Rendering::EVisibilityFlags p_flags) const;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -132,5 +148,6 @@ namespace OvCore::ECS::Components
 		MaterialField m_materialFields;
 		std::array<std::string, kMaxMaterialCount> m_materialNames;
 		OvMaths::FMatrix4 m_userMatrix;
+		Rendering::EVisibilityFlags m_visibilityFlags = Rendering::EVisibilityFlags::ALL;
 	};
 }

@@ -168,7 +168,7 @@ OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_
 	AddFeature<ShadowRenderFeature>();
 
 	AddPass<ShadowRenderPass>("Shadows", OvRendering::Settings::ERenderPassOrder::Shadows);
-	AddPass<ReflectionRenderPass>("ReflectionRenderPass", OvRendering::Settings::ERenderPassOrder::Shadows + 1); // TODO: Create a proper pass order name.
+	AddPass<ReflectionRenderPass>("ReflectionRenderPass", OvRendering::Settings::ERenderPassOrder::Reflections);
 	AddPass<OpaqueRenderPass>("Opaques", OvRendering::Settings::ERenderPassOrder::Opaque, p_stencilWrite);
 	AddPass<TransparentRenderPass>("Transparents", OvRendering::Settings::ERenderPassOrder::Transparent, p_stencilWrite);
 	AddPass<PostProcessRenderPass>("Post-Process", OvRendering::Settings::ERenderPassOrder::PostProcessing);

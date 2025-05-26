@@ -38,12 +38,5 @@ namespace OvCore::Rendering
 	protected:
 		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
 		virtual void OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
-
-	private:
-		bool _IsAffectedByReflectionProbe(
-			const OvMaths::FMatrix4& p_modelMatrix,
-			const OvRendering::Geometry::BoundingSphere& p_bounds,
-			OvCore::ECS::Components::CReflectionProbe& p_probe
-		) const;
 	};
 }

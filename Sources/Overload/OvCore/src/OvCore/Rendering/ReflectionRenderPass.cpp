@@ -69,7 +69,10 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 		}
 
 		OvRendering::Entities::Camera reflectionCamera;
-		reflectionCamera.SetPosition(reflectionProbe.owner.transform.GetWorldPosition());
+		reflectionCamera.SetPosition(
+			reflectionProbe.owner.transform.GetWorldPosition() +
+			reflectionProbe.GetInfluenceOffset()
+		);
 		reflectionCamera.SetFov(90.0f);
 
 		// For each face

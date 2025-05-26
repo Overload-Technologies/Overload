@@ -19,8 +19,12 @@ namespace OvRendering::Features
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		DebugShapeRenderFeature(Core::CompositeRenderer& p_renderer);
+		DebugShapeRenderFeature(
+			Core::CompositeRenderer& p_renderer,
+			EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Destructor

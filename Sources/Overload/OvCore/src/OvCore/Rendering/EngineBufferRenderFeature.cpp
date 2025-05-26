@@ -21,8 +21,11 @@ namespace
 		sizeof(OvMaths::FMatrix4);	// User matrix
 }
 
-OvCore::Rendering::EngineBufferRenderFeature::EngineBufferRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer)
-	: ARenderFeature(p_renderer)
+OvCore::Rendering::EngineBufferRenderFeature::EngineBufferRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) : 
+	ARenderFeature(p_renderer, p_executionPolicy)
 {
 	m_engineBuffer = std::make_unique<OvRendering::HAL::UniformBuffer>();
 	m_engineBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);

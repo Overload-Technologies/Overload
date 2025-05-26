@@ -122,6 +122,11 @@ namespace OvCore::ECS::Components
 		void RequestCapture();
 
 		/**
+		* Returns the cubemap texture
+		*/
+		std::shared_ptr<OvRendering::HAL::Texture> GetCubemap() const;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -148,7 +153,6 @@ namespace OvCore::ECS::Components
 		bool _IsCaptureRequested() const;
 		void _MarkCaptureRequestComplete();
 		void _CreateCubemap();
-		std::shared_ptr<OvRendering::HAL::Texture> _GetCubemap() const;
 		OvRendering::HAL::Framebuffer& _GetFramebuffer() const;
 
 		friend class OvCore::Rendering::ReflectionRenderPass;

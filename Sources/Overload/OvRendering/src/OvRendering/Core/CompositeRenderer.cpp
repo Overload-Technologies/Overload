@@ -5,7 +5,7 @@
 */
 
 #include <functional>
-
+#include <ranges>
 #include <tracy/Tracy.hpp>
 
 #include <OvRendering/Core/CompositeRenderer.h>
@@ -23,7 +23,7 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 
 	ABaseRenderer::BeginFrame(p_frameDescriptor);
 
-	for (const auto& [_, feature] : m_features)
+	for (const auto& feature : m_features | std::views::values)
 	{
 		if (feature->IsEnabled())
 		{
@@ -31,7 +31,7 @@ void OvRendering::Core::CompositeRenderer::BeginFrame(const Data::FrameDescripto
 		}
 	}
 
-	for (const auto& [_, pass] : m_passes)
+	for (const auto& pass : m_passes | std::views::values)
 	{
 		if (pass.second->IsEnabled())
 		{
@@ -47,15 +47,21 @@ void OvRendering::Core::CompositeRenderer::DrawFrame()
 
 	auto pso = CreatePipelineState();
 
-	for (const auto& [_, pass] : m_passes)
+	OVASSERT(!m_currentPass.has_value(), "Cannot draw frame while a pass is already being drawn. Did you forget to call EndFrame() ?");
+
+	for (const auto& pass : m_passes | std::views::values)
 	{
+		m_currentPass = pass.second.get();
+
 		m_frameDescriptor.outputBuffer.value().Bind();
 		SetViewport(0, 0, m_frameDescriptor.renderWidth, m_frameDescriptor.renderHeight);
 
-		if (pass.second->IsEnabled())
+		if (m_currentPass->IsEnabled())
 		{
-			pass.second->Draw(pso);
+			m_currentPass->Draw(pso);
 		}
+
+		m_currentPass.reset();
 	}
 }
 
@@ -64,7 +70,7 @@ void OvRendering::Core::CompositeRenderer::EndFrame()
 	ZoneScoped;
 	TracyGpuZone("EndFrame");
 
-	for (const auto& [_, pass] : m_passes)
+	for (const auto& pass : m_passes | std::views::values)
 	{
 		if (pass.second->IsEnabled())
 		{
@@ -72,7 +78,7 @@ void OvRendering::Core::CompositeRenderer::EndFrame()
 		}
 	}
 
-	for (const auto& [_, feature] : m_features)
+	for (const auto& feature : m_features | std::views::values)
 	{
 		if (feature->IsEnabled())
 		{
@@ -98,9 +104,9 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 		return;
 	}
 
-	for (const auto& [_, feature] : m_features)
+	for (const auto& feature : m_features | std::views::values)
 	{
-		if (feature->IsEnabled())
+		if (feature->IsEnabledFor(typeid(m_currentPass.value())))
 		{
 			feature->OnBeforeDraw(p_pso, p_drawable);
 		}
@@ -108,9 +114,9 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 
 	ABaseRenderer::DrawEntity(p_pso, p_drawable);
 	
-	for (const auto& [_, feature] : m_features)
+	for (const auto& feature : m_features | std::views::values)
 	{
-		if (feature->IsEnabled())
+		if (feature->IsEnabledFor(typeid(m_currentPass.value())))
 		{
 			feature->OnAfterDraw(p_drawable);
 		}

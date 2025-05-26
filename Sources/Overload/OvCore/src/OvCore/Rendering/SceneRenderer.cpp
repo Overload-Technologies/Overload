@@ -162,17 +162,28 @@ namespace
 OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_driver, bool p_stencilWrite)
 	: OvRendering::Core::CompositeRenderer(p_driver)
 {
-	AddFeature<EngineBufferRenderFeature>();
-	AddFeature<OvRendering::Features::LightingRenderFeature>();
-	AddFeature<ReflectionRenderFeature>();
-	AddFeature<ShadowRenderFeature>();
+	using namespace OvRendering::Features;
+	using namespace OvRendering::Settings;
+	using enum OvRendering::Features::EFeatureExecutionPolicy;
 
-	AddPass<ShadowRenderPass>("Shadows", OvRendering::Settings::ERenderPassOrder::Shadows);
-	AddPass<ReflectionRenderPass>("ReflectionRenderPass", OvRendering::Settings::ERenderPassOrder::Reflections);
-	AddPass<OpaqueRenderPass>("Opaques", OvRendering::Settings::ERenderPassOrder::Opaque, p_stencilWrite);
-	AddPass<TransparentRenderPass>("Transparents", OvRendering::Settings::ERenderPassOrder::Transparent, p_stencilWrite);
-	AddPass<PostProcessRenderPass>("Post-Process", OvRendering::Settings::ERenderPassOrder::PostProcessing);
-	AddPass<UIRenderPass>("UI", OvRendering::Settings::ERenderPassOrder::UI);
+	AddFeature<EngineBufferRenderFeature, ALWAYS>();
+	AddFeature<LightingRenderFeature, ALWAYS>();
+
+	AddFeature<ReflectionRenderFeature, WHITELIST_ONLY>()
+		.Include<OpaqueRenderPass>()
+		.Include<TransparentRenderPass>();
+
+	AddFeature<ShadowRenderFeature, WHITELIST_ONLY>()
+		.Include<OpaqueRenderPass>()
+		.Include<TransparentRenderPass>()
+		.Include<UIRenderPass>();
+
+	AddPass<ShadowRenderPass>("Shadows", ERenderPassOrder::Shadows);
+	AddPass<ReflectionRenderPass>("ReflectionRenderPass", ERenderPassOrder::Reflections);
+	AddPass<OpaqueRenderPass>("Opaques", ERenderPassOrder::Opaque, p_stencilWrite);
+	AddPass<TransparentRenderPass>("Transparents", ERenderPassOrder::Transparent, p_stencilWrite);
+	AddPass<PostProcessRenderPass>("Post-Process", ERenderPassOrder::PostProcessing);
+	AddPass<UIRenderPass>("UI", ERenderPassOrder::UI);
 }
 
 void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)

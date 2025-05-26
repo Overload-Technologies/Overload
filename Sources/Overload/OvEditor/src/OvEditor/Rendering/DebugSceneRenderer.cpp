@@ -222,6 +222,9 @@ protected:
 				auto& model = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
 				auto modelMatrix = CalculateUnscaledModelMatrix(actor) * OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
 
+				m_reflectiveMaterial.SetProperty("_ReflectionProbe", reflectionProbe->GetCubemap().get());
+				m_reflectiveMaterial.SetProperty("_ReflectionProbeBoxProjection", false);
+
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_reflectiveMaterial, modelMatrix);
 			}
@@ -729,16 +732,21 @@ protected:
 OvEditor::Rendering::DebugSceneRenderer::DebugSceneRenderer(OvRendering::Context::Driver& p_driver) :
 	OvCore::Rendering::SceneRenderer(p_driver, true /* enable stencil write, required by the grid */)
 {
-	AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
-	AddFeature<OvRendering::Features::DebugShapeRenderFeature>();
-	AddFeature<OvEditor::Rendering::DebugModelRenderFeature>();
-	AddFeature<OvEditor::Rendering::OutlineRenderFeature>();
-	AddFeature<OvEditor::Rendering::GizmoRenderFeature>();
+	using namespace OvRendering::Features;
+	using namespace OvEditor::Rendering;
+	using namespace OvRendering::Settings;
+	using enum OvRendering::Features::EFeatureExecutionPolicy;
 
-	AddPass<GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
-	AddPass<DebugCamerasRenderPass>("Debug Cameras", OvRendering::Settings::ERenderPassOrder::Debug);
-	AddPass<DebugReflectionProbesRenderPass>("Debug Reflection Probes", OvRendering::Settings::ERenderPassOrder::Debug);
-	AddPass<DebugLightsRenderPass>("Debug Lights", OvRendering::Settings::ERenderPassOrder::Debug);
-	AddPass<DebugActorRenderPass>("Debug Actor", OvRendering::Settings::ERenderPassOrder::Debug);
-	AddPass<PickingRenderPass>("Picking", OvRendering::Settings::ERenderPassOrder::Debug);
+	AddFeature<FrameInfoRenderFeature, ALWAYS>();
+	AddFeature<DebugShapeRenderFeature, FRAME_EVENTS_ONLY>();
+	AddFeature<DebugModelRenderFeature, NEVER>();
+	AddFeature<OutlineRenderFeature, NEVER>();
+	AddFeature<GizmoRenderFeature, NEVER>();
+
+	AddPass<GridRenderPass>("Grid", ERenderPassOrder::Debug);
+	AddPass<DebugCamerasRenderPass>("Debug Cameras", ERenderPassOrder::Debug);
+	AddPass<DebugReflectionProbesRenderPass>("Debug Reflection Probes", ERenderPassOrder::Debug);
+	AddPass<DebugLightsRenderPass>("Debug Lights", ERenderPassOrder::Debug);
+	AddPass<DebugActorRenderPass>("Debug Actor", ERenderPassOrder::Debug);
+	AddPass<PickingRenderPass>("Picking", ERenderPassOrder::Debug);
 }

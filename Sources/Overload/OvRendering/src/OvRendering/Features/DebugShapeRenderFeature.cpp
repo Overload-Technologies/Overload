@@ -4,13 +4,16 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Features/DebugShapeRenderFeature.h"
-#include "OvRendering/Core/CompositeRenderer.h"
-#include "OvRendering/Resources/Loaders/ShaderLoader.h"
-#include "OvRendering/Utils/Conversions.h"
+#include <OvRendering/Core/CompositeRenderer.h>
+#include <OvRendering/Features/DebugShapeRenderFeature.h>
+#include <OvRendering/Resources/Loaders/ShaderLoader.h>
+#include <OvRendering/Utils/Conversions.h>
 
-OvRendering::Features::DebugShapeRenderFeature::DebugShapeRenderFeature(Core::CompositeRenderer& p_renderer)
-	: ARenderFeature(p_renderer)
+OvRendering::Features::DebugShapeRenderFeature::DebugShapeRenderFeature(
+	Core::CompositeRenderer& p_renderer,
+	EFeatureExecutionPolicy p_executionPolicy
+) :
+	ARenderFeature(p_renderer, p_executionPolicy)
 {
 	constexpr auto kVertices = std::to_array<Geometry::Vertex>({
 		{

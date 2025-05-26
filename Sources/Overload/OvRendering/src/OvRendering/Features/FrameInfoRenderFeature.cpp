@@ -7,8 +7,12 @@
 #include "OvRendering/Features/FrameInfoRenderFeature.h"
 #include "OvRendering/Core/CompositeRenderer.h"
 
-OvRendering::Features::FrameInfoRenderFeature::FrameInfoRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer)
-	: ARenderFeature(p_renderer), m_isFrameInfoDataValid(true)
+OvRendering::Features::FrameInfoRenderFeature::FrameInfoRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	ARenderFeature(p_renderer, p_executionPolicy),
+	m_isFrameInfoDataValid(true)
 {
 	m_postDrawListener = m_renderer.postDrawEntityEvent += std::bind(&FrameInfoRenderFeature::OnAfterDraw, this, std::placeholders::_1);
 }

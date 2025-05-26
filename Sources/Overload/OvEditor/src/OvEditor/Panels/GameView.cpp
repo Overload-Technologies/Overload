@@ -23,7 +23,10 @@ OvEditor::Panels::GameView::GameView
 	m_sceneManager(EDITOR_CONTEXT(sceneManager))
 {
 	m_renderer = std::make_unique<OvCore::Rendering::SceneRenderer>(*EDITOR_CONTEXT(driver));
-	m_renderer->AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
+	m_renderer->AddFeature<
+		OvRendering::Features::FrameInfoRenderFeature,
+		OvRendering::Features::EFeatureExecutionPolicy::ALWAYS
+	>();
 }
 
 OvRendering::Entities::Camera* OvEditor::Panels::GameView::GetCamera()

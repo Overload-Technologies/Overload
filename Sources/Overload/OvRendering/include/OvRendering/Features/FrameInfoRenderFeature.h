@@ -18,8 +18,12 @@ namespace OvRendering::Features
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		FrameInfoRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		FrameInfoRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Destructor

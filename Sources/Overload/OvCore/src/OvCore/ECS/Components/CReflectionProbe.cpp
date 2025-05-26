@@ -105,6 +105,12 @@ void OvCore::ECS::Components::CReflectionProbe::RequestCapture()
 	m_captureRequested = true;
 }
 
+std::shared_ptr<OvRendering::HAL::Texture> OvCore::ECS::Components::CReflectionProbe::GetCubemap() const
+{
+	OVASSERT(m_cubemap != nullptr, "Cubemap is not initialized");
+	return m_cubemap;
+}
+
 void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	using namespace OvCore::Helpers;
@@ -292,12 +298,6 @@ void OvCore::ECS::Components::CReflectionProbe::_CreateCubemap()
 	m_framebuffer->Attach(renderbuffer, OvRendering::Settings::EFramebufferAttachment::DEPTH);
 
 	m_framebuffer->Validate();
-}
-
-std::shared_ptr<OvRendering::HAL::Texture> OvCore::ECS::Components::CReflectionProbe::_GetCubemap() const
-{
-	OVASSERT(m_cubemap != nullptr, "Cubemap is not initialized");
-	return m_cubemap;
 }
 
 OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetFramebuffer() const

@@ -91,7 +91,7 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			reflectionProbe._GetFramebuffer().Unbind();
 		}
 
-		reflectionProbe._GetCubemap()->GenerateMipmaps();
+		reflectionProbe.GetCubemap()->GenerateMipmaps();
 		reflectionProbe._MarkCaptureRequestComplete();
 
 		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());

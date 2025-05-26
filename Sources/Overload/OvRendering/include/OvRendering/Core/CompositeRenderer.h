@@ -9,10 +9,12 @@
 #include <typeindex>
 #include <memory>
 
-#include "OvRendering/Core/ABaseRenderer.h"
-#include "OvRendering/Core/ARenderPass.h"
-#include "OvRendering/Features/ARenderFeature.h"
-#include "OvRendering/Data/Describable.h"
+#include <OvRendering/Core/ABaseRenderer.h>
+#include <OvRendering/Core/ARenderPass.h>
+#include <OvRendering/Data/Describable.h>
+#include <OvRendering/Features/ARenderFeature.h>
+#include <OvRendering/Types/RenderFeatureType.h>
+#include <OvRendering/Types/RenderPassType.h>
 
 namespace OvRendering::Core
 {
@@ -62,26 +64,26 @@ namespace OvRendering::Core
 		* Add a render feature to the renderer
 		* @param p_args (Parameter pack forwared to the render feature constructor)
 		*/
-		template<typename T, typename ... Args>
+		template<Types::RenderFeatureType T, Features::EFeatureExecutionPolicy Policy, typename ... Args>
 		T& AddFeature(Args&&... p_args);
 
 		/**
 		* Remove the given render feature
 		*/
-		template<typename T>
+		template<Types::RenderFeatureType T>
 		bool RemoveFeature();
 
 		/**
 		* Retrieve the render feature matching the given type
 		* @note Fails if the feature doesn't exist
 		*/
-		template<typename T>
+		template<Types::RenderFeatureType T>
 		T& GetFeature() const;
 
 		/**
 		* Return true if the a feature matching the given type has been found
 		*/
-		template<typename T>
+		template<Types::RenderFeatureType T>
 		bool HasFeature() const;
 
 		/**
@@ -90,19 +92,22 @@ namespace OvRendering::Core
 		* @param p_order
 		* @param p_args (Parameter pack forwared to the render pass constructor)
 		*/
-		template<typename T, typename ... Args>
+		template<Types::RenderPassType T, typename ... Args>
 		T& AddPass(const std::string& p_name, uint32_t p_order, Args&&... p_args);
 
 		/**
 		* Retrieve the render passing matching the given pass name
 		* @param p_name
 		*/
-		template<typename T>
+		template<Types::RenderPassType T>
 		T& GetPass(const std::string& p_name) const;
 
 	protected:
 		std::unordered_map<std::type_index, std::unique_ptr<Features::ARenderFeature>> m_features;
 		std::multimap<uint32_t, std::pair<std::string, std::unique_ptr<Core::ARenderPass>>> m_passes;
+
+	private:
+		OvTools::Utils::OptRef<Core::ARenderPass> m_currentPass;
 	};
 }
 

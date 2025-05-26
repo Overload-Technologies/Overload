@@ -25,8 +25,12 @@ namespace OvCore::Rendering
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		EngineBufferRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		EngineBufferRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Replace the current camera data in the engine buffer by the provided camera

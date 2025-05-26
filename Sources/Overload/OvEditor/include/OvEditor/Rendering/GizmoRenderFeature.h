@@ -30,8 +30,12 @@ namespace OvEditor::Rendering
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		GizmoRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		GizmoRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Render a gizmo at position

@@ -24,11 +24,16 @@ OvEditor::Panels::AssetView::AssetView
 	const OvUI::Settings::PanelWindowSettings& p_windowSettings
 ) : AViewControllable(p_title, p_opened, p_windowSettings)
 {
+	using namespace OvRendering::Features;
+	using namespace OvEditor::Rendering;
+	using namespace OvRendering::Settings;
+	using enum OvRendering::Features::EFeatureExecutionPolicy;
+
 	m_renderer = std::make_unique<OvCore::Rendering::SceneRenderer>(*EDITOR_CONTEXT(driver));
 
-	m_renderer->AddFeature<OvEditor::Rendering::DebugModelRenderFeature>();
-	m_renderer->AddFeature<OvRendering::Features::DebugShapeRenderFeature>();
-	m_renderer->AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
+	m_renderer->AddFeature<DebugModelRenderFeature, NEVER>();
+	m_renderer->AddFeature<DebugShapeRenderFeature, NEVER>();
+	m_renderer->AddFeature<FrameInfoRenderFeature, ALWAYS>();
 
 	m_renderer->AddPass<OvEditor::Rendering::GridRenderPass>("Grid", OvRendering::Settings::ERenderPassOrder::Debug);
 

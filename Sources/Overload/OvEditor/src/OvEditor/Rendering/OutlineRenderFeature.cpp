@@ -19,8 +19,11 @@ namespace
 	constexpr std::string_view kOutlinePassName = "OUTLINE_PASS";
 }
 
-OvEditor::Rendering::OutlineRenderFeature::OutlineRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
-	OvRendering::Features::ARenderFeature(p_renderer)
+OvEditor::Rendering::OutlineRenderFeature::OutlineRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	OvRendering::Features::ARenderFeature(p_renderer, p_executionPolicy)
 {
 	/* Stencil Fill Material */
 	m_stencilFillMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("OutlineFallback"));

@@ -29,7 +29,10 @@ OvGame::Core::Game::Game(Context & p_context) :
 	#ifdef _DEBUG
 	m_canvas.AddPanel(m_driverInfo);
 	m_canvas.AddPanel(m_frameInfo);
-	m_sceneRenderer.AddFeature<OvRendering::Features::FrameInfoRenderFeature>();
+	m_sceneRenderer.AddFeature<
+		OvRendering::Features::FrameInfoRenderFeature,
+		OvRendering::Features::EFeatureExecutionPolicy::ALWAYS
+	>();
 	#endif
 
 	m_context.sceneManager.LoadScene(m_context.projectSettings.Get<std::string>("start_scene"));

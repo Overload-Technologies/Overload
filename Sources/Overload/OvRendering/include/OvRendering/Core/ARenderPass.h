@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "OvRendering/Data/FrameDescriptor.h"
-#include "OvRendering/Settings/ERenderPassOrder.h"
+#include <OvRendering/Data/FrameDescriptor.h>
+#include <OvRendering/Settings/ERenderPassOrder.h>
 
 namespace OvRendering::Core
 {

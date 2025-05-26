@@ -26,8 +26,11 @@
 #include "OvEditor/Core/EditorActions.h"
 #include "OvEditor/Rendering/GizmoRenderFeature.h"
 
-OvEditor::Rendering::GizmoRenderFeature::GizmoRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
-	OvRendering::Features::ARenderFeature(p_renderer)
+OvEditor::Rendering::GizmoRenderFeature::GizmoRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	OvRendering::Features::ARenderFeature(p_renderer, p_executionPolicy)
 {
 	/* Gizmo Arrow Material */
 	m_gizmoArrowMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));

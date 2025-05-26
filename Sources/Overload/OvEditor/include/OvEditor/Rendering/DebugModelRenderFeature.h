@@ -19,8 +19,12 @@ namespace OvEditor::Rendering
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		DebugModelRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		DebugModelRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Utility function to draw a whole model with a single material,

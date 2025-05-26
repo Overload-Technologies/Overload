@@ -32,8 +32,12 @@ namespace OvCore::Rendering
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		ReflectionRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		ReflectionRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 	protected:
 		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);

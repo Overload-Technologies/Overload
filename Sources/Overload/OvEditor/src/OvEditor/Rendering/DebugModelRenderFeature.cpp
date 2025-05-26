@@ -8,8 +8,11 @@
 #include "OvCore/Rendering/EngineDrawableDescriptor.h"
 #include "OvRendering/Core/CompositeRenderer.h"
 
-OvEditor::Rendering::DebugModelRenderFeature::DebugModelRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer)
-	: ARenderFeature(p_renderer)
+OvEditor::Rendering::DebugModelRenderFeature::DebugModelRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	ARenderFeature(p_renderer, p_executionPolicy)
 {
 }
 

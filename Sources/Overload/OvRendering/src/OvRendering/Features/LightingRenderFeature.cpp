@@ -7,8 +7,13 @@
 #include "OvRendering/Features/LightingRenderFeature.h"
 #include "OvRendering/Core/CompositeRenderer.h"
 
-OvRendering::Features::LightingRenderFeature::LightingRenderFeature(Core::CompositeRenderer& p_renderer, uint32_t p_bufferBindingPoint)
-	: ARenderFeature(p_renderer), m_bufferBindingPoint(p_bufferBindingPoint)
+OvRendering::Features::LightingRenderFeature::LightingRenderFeature(
+	Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy,
+	uint32_t p_bufferBindingPoint
+) :
+	ARenderFeature(p_renderer, p_executionPolicy),
+	m_bufferBindingPoint(p_bufferBindingPoint)
 {
 	m_lightBuffer = std::make_unique<HAL::ShaderStorageBuffer>();
 }

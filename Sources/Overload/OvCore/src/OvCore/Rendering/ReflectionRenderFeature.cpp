@@ -139,8 +139,11 @@ namespace
 	}
 }
 
-OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
-	ARenderFeature(p_renderer)
+OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	ARenderFeature(p_renderer, p_executionPolicy)
 {
 }
 
@@ -171,13 +174,13 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 
 	material.SetProperty(
 		"_ReflectionProbe",
-		targetProbe ? targetProbe->_GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
+		targetProbe ? targetProbe->GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
 		true
 	);
 
 	if (targetProbe)
 	{
-		material.SetProperty("_ReflectionProbe", targetProbe->_GetCubemap().get(), true);
+		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
 
 		if (material.HasProperty("_ReflectionProbeBoxProjection"))
 		{

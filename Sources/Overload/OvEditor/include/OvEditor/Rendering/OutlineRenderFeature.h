@@ -30,8 +30,12 @@ namespace OvEditor::Rendering
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		*/
-		OutlineRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer);
+		OutlineRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+		);
 
 		/**
 		* Draw an outline around the given actor

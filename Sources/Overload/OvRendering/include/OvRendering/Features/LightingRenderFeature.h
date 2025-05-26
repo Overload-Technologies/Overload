@@ -30,9 +30,14 @@ namespace OvRendering::Features
 		/**
 		* Constructor
 		* @param p_renderer
+		* @param p_executionPolicy
 		* @param p_bufferBindingPoint
 		*/
-		LightingRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer, uint32_t p_bufferBindingPoint = 0);
+		LightingRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy,
+			uint32_t p_bufferBindingPoint = 0
+		);
 
 		/**
 		* Bind the light buffer

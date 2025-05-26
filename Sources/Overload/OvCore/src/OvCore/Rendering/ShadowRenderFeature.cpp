@@ -13,8 +13,11 @@
 
 constexpr uint8_t kMaxShadowMaps = 1;
 
-OvCore::Rendering::ShadowRenderFeature::ShadowRenderFeature(OvRendering::Core::CompositeRenderer& p_renderer) :
-	ARenderFeature(p_renderer)
+OvCore::Rendering::ShadowRenderFeature::ShadowRenderFeature(
+	OvRendering::Core::CompositeRenderer& p_renderer,
+	OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy
+) :
+	ARenderFeature(p_renderer, p_executionPolicy)
 {
 }
 

@@ -73,6 +73,16 @@ const OvMaths::FVector3& OvCore::ECS::Components::CReflectionProbe::GetInfluence
 	return m_influenceOffset;
 }
 
+void OvCore::ECS::Components::CReflectionProbe::SetBoxProjection(bool p_enabled)
+{
+	m_boxProjection = p_enabled;
+}
+
+bool OvCore::ECS::Components::CReflectionProbe::IsBoxProjectionEnabled() const
+{
+	return m_boxProjection;
+}
+
 void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_resolution)
 {
 	OVASSERT(p_resolution > 0, "Cubemap resolution must be greater than 0");
@@ -102,6 +112,7 @@ void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocumen
 	Serializer::SerializeUint32(p_doc, p_node, "influence_policy", static_cast<uint32_t>(m_influencePolicy));
 	Serializer::SerializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::SerializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
+	Serializer::SerializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 	Serializer::SerializeUint32(p_doc, p_node, "refresh_mode", static_cast<uint32_t>(m_refreshMode));
 }
 
@@ -120,6 +131,7 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 	Serializer::DeserializeUint32(p_doc, p_node, "influence_policy", reinterpret_cast<uint32_t&>(m_influencePolicy));
 	Serializer::DeserializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::DeserializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
+	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 
 	// If the refresh mode is set to ONCE, we request a capture.
@@ -196,17 +208,27 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 
 	auto& influenceOffset = *p_root.GetWidgets().back().first;
 
+	Helpers::GUIDrawer::DrawBoolean(
+		p_root,
+		"Box Projection",
+		m_boxProjection
+	);
+
+	auto& boxProjection = *p_root.GetWidgets().back().first;
+
 	auto updateInfluenceWidgets = [](auto& widget, auto policy) {
 		widget.disabled = policy == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::GLOBAL;
 	};
 
 	updateInfluenceWidgets(influenceSize, m_influencePolicy);
 	updateInfluenceWidgets(influenceOffset, m_influencePolicy);
+	updateInfluenceWidgets(boxProjection, m_influencePolicy);
 
 	influencePolicy.ValueChangedEvent += [&](int p_value) {
 		const auto value = static_cast<EInfluencePolicy>(p_value);
 		updateInfluenceWidgets(influenceSize, value);
 		updateInfluenceWidgets(influenceOffset, value);
+		updateInfluenceWidgets(boxProjection, value);
 	};
 
 	auto& captureNowButton = p_root.CreateWidget<OvUI::Widgets::Buttons::Button>("Capture Now");

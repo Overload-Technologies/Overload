@@ -11,6 +11,8 @@
 #include <optional>
 #include <variant>
 
+#include <OvMaths/FMatrix3.h>
+
 #include <OvRendering/Data/StateMask.h>
 #include <OvRendering/HAL/TextureHandle.h>
 #include <OvRendering/Resources/Shader.h>
@@ -27,6 +29,7 @@ namespace OvRendering::Data
 		OvMaths::FVector2,
 		OvMaths::FVector3,
 		OvMaths::FVector4,
+		OvMaths::FMatrix3,
 		OvMaths::FMatrix4,
 		OvRendering::HAL::TextureHandle*,	// Texture handle
 		OvRendering::Resources::Texture*	// Texture asset (serializable)

@@ -95,6 +95,16 @@ namespace OvCore::ECS::Components
 		const OvMaths::FVector3& GetInfluenceOffset() const;
 
 		/**
+		* Sets if the reflection probe should use box projection
+		*/
+		void SetBoxProjection(bool p_enabled);
+
+		/**
+		* Returns if the reflection probe uses box projection
+		*/
+		bool IsBoxProjectionEnabled() const;
+
+		/**
 		* Sets the cubemap resolution
 		* @note The resolution must be a power of 2!
 		* @param p_resolution
@@ -153,5 +163,6 @@ namespace OvCore::ECS::Components
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
+		bool m_boxProjection = false;
 	};
 }

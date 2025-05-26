@@ -39,6 +39,7 @@ namespace
 		if (auto value = as.operator()<FVector2>()) return *value;
 		if (auto value = as.operator()<FVector3>()) return *value;
 		if (auto value = as.operator()<FVector4>()) return *value;
+		if (auto value = as.operator()<FMatrix3>()) return *value;
 		if (auto value = as.operator()<FMatrix4>()) return *value;
 		if (auto value = as.operator()<HAL::TextureHandle*>()) return *value;
 		if (auto value = as.operator()<Resources::Texture*>()) return *value;
@@ -181,6 +182,10 @@ void OvRendering::Data::Material::Bind(
 		else if (uniformType == FLOAT_VEC4)
 		{
 			program.SetUniform<FVector4>(name, std::get<FVector4>(value));
+		}
+		else if (uniformType == FLOAT_MAT3)
+		{
+			program.SetUniform<FMatrix3>(name, std::get<FMatrix3>(value));
 		}
 		else if (uniformType == FLOAT_MAT4)
 		{

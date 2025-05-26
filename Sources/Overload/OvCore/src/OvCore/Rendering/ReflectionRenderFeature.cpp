@@ -52,6 +52,25 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 	))
 	{
 		material.SetProperty("_ReflectionProbe", targetProbe->_GetCubemap().get(), true);
+
+		if (material.HasProperty("_ReflectionProbeBoxProjection"))
+		{
+			const bool boxProjection = targetProbe->IsBoxProjectionEnabled();
+			material.SetProperty("_ReflectionProbeBoxProjection", boxProjection, true);
+
+			if (boxProjection)
+			{
+				const auto& probePosition = targetProbe->owner.transform.GetWorldPosition();
+				const auto& boxPosition = probePosition + targetProbe->GetInfluenceOffset();
+				const auto& probeRotation = targetProbe->owner.transform.GetWorldRotation();
+				const auto& probeRotationMatrix = OvMaths::FQuaternion::ToMatrix3(OvMaths::FQuaternion::Normalize(probeRotation));
+
+				material.TrySetProperty("_ReflectionProbePosition", probePosition, true);
+				material.TrySetProperty("_ReflectionProbeRotation", probeRotationMatrix, true);
+				material.TrySetProperty("_ReflectionProbeBoxCenter", boxPosition, true);
+				material.TrySetProperty("_ReflectionProbeBoxExtents", targetProbe->GetInfluenceSize() / 2.0f, true);
+			}
+		}
 	}
 }
 

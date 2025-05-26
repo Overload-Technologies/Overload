@@ -315,6 +315,7 @@ struct OvTools::Utils::MappingFor<OvRendering::Settings::EUniformType, GLenum>
 		EnumValuePair<EnumType::FLOAT_VEC2, GL_FLOAT_VEC2>,
 		EnumValuePair<EnumType::FLOAT_VEC3, GL_FLOAT_VEC3>,
 		EnumValuePair<EnumType::FLOAT_VEC4, GL_FLOAT_VEC4>,
+		EnumValuePair<EnumType::FLOAT_MAT3, GL_FLOAT_MAT3>,
 		EnumValuePair<EnumType::FLOAT_MAT4, GL_FLOAT_MAT4>,
 		EnumValuePair<EnumType::DOUBLE_MAT4, GL_DOUBLE_MAT4>,
 		EnumValuePair<EnumType::SAMPLER_2D, GL_SAMPLER_2D>,

@@ -4,6 +4,55 @@
 #include ":Shaders/Common/Utils.ovfxh"
 #include ":Shaders/Lighting/Shadow.ovfxh"
 
+struct ProbeData
+{
+    bool boxProjection;
+    vec3 position;
+    mat3 rotation;
+    vec3 boxCenter;
+    vec3 boxExtents;
+};
+
+// https://seblagarde.wordpress.com/wp-content/uploads/2012/08/parallax_corrected_cubemap-siggraph2012.pdf
+vec3 BoxProjectionOBB(vec3 reflectionVector, vec3 worldPos, vec3 probePos, vec3 obbCenter, vec3 obbExtents, mat3 obbOrientation)
+{
+    // Transform world position and reflection vector to OBB local space
+    vec3 localPos = transpose(obbOrientation) * (worldPos - obbCenter);
+    vec3 localReflection = transpose(obbOrientation) * reflectionVector;
+    vec3 localProbePos = transpose(obbOrientation) * (probePos - obbCenter);
+    
+    // Perform AABB intersection in local space
+    vec3 ndr = normalize(localReflection);
+    vec3 rbmax = (obbExtents - localPos) / ndr;
+    vec3 rbmin = (-obbExtents - localPos) / ndr;
+    
+    vec3 rbminmax;
+    rbminmax.x = (ndr.x > 0.0) ? rbmax.x : rbmin.x;
+    rbminmax.y = (ndr.y > 0.0) ? rbmax.y : rbmin.y;
+    rbminmax.z = (ndr.z > 0.0) ? rbmax.z : rbmin.z;
+    float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+    
+    // Find intersection point in local space
+    vec3 localIntersection = localPos + ndr * fa;
+    
+    // Transform intersection back to world space
+    vec3 worldIntersection = obbOrientation * localIntersection + obbCenter;
+    
+    return normalize(worldIntersection - probePos);
+}
+
+vec3 BoxProjection(vec3 reflectionDir, vec3 worldPos, ProbeData probe)
+{
+    return BoxProjectionOBB(
+        reflectionDir,
+        worldPos, 
+        probe.position,
+        probe.boxCenter,
+        probe.boxExtents * 2.0,
+        probe.rotation
+    );
+}
+
 float LuminosityFromAttenuation(mat4 light, vec3 fragPos)
 {
     const vec3 lightPosition = light[0].rgb;
@@ -94,7 +143,7 @@ vec2 EnvBRDFApprox(float NdotV, float roughness)
     return AB;
 }
 
-vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube reflectionProbe)
+vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube reflectionProbe, ProbeData probeData)
 {
     // Gamma correction of the albedo color (assuming the albedo is in sRGB space)
     albedo = pow(albedo, vec3(2.2));
@@ -201,6 +250,10 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
     
     // 3. Specular reflection
     const int MAX_REFLECTION_LOD = textureQueryLevels(reflectionProbe) - 1;
+    if (probeData.boxProjection)
+    {
+        R = BoxProjection(R, fragPos, probeData);
+    }
     vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * MAX_REFLECTION_LOD).rgb;
     
     // 4. Apply BRDF

@@ -134,6 +134,7 @@ DECLARE_GET_UNIFORM_FUNCTION(float, GLfloat, glGetUniformfv);
 DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FVector2, GLfloat, glGetUniformfv);
 DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FVector3, GLfloat, glGetUniformfv);
 DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FVector4, GLfloat, glGetUniformfv);
+DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FMatrix3, GLfloat, glGetUniformfv);
 DECLARE_GET_UNIFORM_FUNCTION(OvMaths::FMatrix4, GLfloat, glGetUniformfv);
 
 #define DECLARE_SET_UNIFORM_FUNCTION(type, func, ...) \
@@ -152,6 +153,7 @@ DECLARE_SET_UNIFORM_FUNCTION(float, glUniform1f, value);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector2, glUniform2f, value.x, value.y);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector3, glUniform3f, value.x, value.y, value.z);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FVector4, glUniform4f, value.x, value.y, value.z, value.w);
+DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FMatrix3, glUniformMatrix3fv, 1, GL_TRUE, &value.data[0]);
 DECLARE_SET_UNIFORM_FUNCTION(OvMaths::FMatrix4, glUniformMatrix4fv, 1, GL_TRUE, &value.data[0]);
 
 template<>
@@ -195,6 +197,7 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 				case FLOAT_VEC2: return GetUniform<OvMaths::FVector2>(name);
 				case FLOAT_VEC3: return GetUniform<OvMaths::FVector3>(name);
 				case FLOAT_VEC4: return GetUniform<OvMaths::FVector4>(name);
+				case FLOAT_MAT3: return GetUniform<OvMaths::FMatrix3>(name);
 				case FLOAT_MAT4: return GetUniform<OvMaths::FMatrix4>(name);
 				case SAMPLER_2D: return std::make_any<Resources::Texture*>(nullptr);
 				case SAMPLER_CUBE: return std::make_any<Resources::Texture*>(nullptr);

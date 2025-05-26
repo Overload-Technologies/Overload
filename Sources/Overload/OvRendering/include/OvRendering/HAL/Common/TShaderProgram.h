@@ -8,6 +8,7 @@
 
 #include <unordered_map>
 
+#include <OvMaths/FMatrix3.h>
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
@@ -29,6 +30,7 @@ namespace OvRendering::HAL
 		std::same_as<T, OvMaths::FVector2> ||
 		std::same_as<T, OvMaths::FVector3> ||
 		std::same_as<T, OvMaths::FVector4> ||
+		std::same_as<T, OvMaths::FMatrix3> ||
 		std::same_as<T, OvMaths::FMatrix4>;
 
 	/**

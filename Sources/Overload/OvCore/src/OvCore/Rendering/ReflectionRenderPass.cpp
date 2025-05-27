@@ -69,31 +69,29 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 		}
 
 		OvRendering::Entities::Camera reflectionCamera;
+
 		reflectionCamera.SetPosition(
 			reflectionProbe.owner.transform.GetWorldPosition() +
 			reflectionProbe.GetInfluenceOffset()
 		);
+
 		reflectionCamera.SetFov(90.0f);
+		const auto [width, height] = reflectionProbe._GetFramebuffer().GetSize();
+		reflectionProbe._GetFramebuffer().Bind();
+		m_renderer.SetViewport(0, 0, width, height);
 
 		// For each face
 		for (uint32_t faceIndex = 0U; faceIndex < kProbeFaceCount; ++faceIndex)
 		{
 			reflectionCamera.SetRotation(OvMaths::FQuaternion{ kCubeFaceRotations[faceIndex] });
-			const auto [width, height] = reflectionProbe._GetFramebuffer().GetSize();
-
 			reflectionCamera.CacheMatrices(width, height);
-
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
-
 			reflectionProbe._GetFramebuffer().SetTargetDrawBuffer(faceIndex);
-
-			reflectionProbe._GetFramebuffer().Bind(); // TODO: Bind/Unbind outside of the for loop?
-			m_renderer.SetViewport(0, 0, width, height);
 			m_renderer.Clear(true, true, true);
 			_DrawReflections(pso, reflectionCamera);
-			reflectionProbe._GetFramebuffer().Unbind();
 		}
 
+		reflectionProbe._GetFramebuffer().Unbind();
 		reflectionProbe.GetCubemap()->GenerateMipmaps();
 		reflectionProbe._MarkCaptureRequestComplete();
 

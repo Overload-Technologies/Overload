@@ -220,7 +220,8 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
             // cook-torrance brdf
             const float NDF = DistributionGGX(N, H, roughness);        
             const float G = GeometrySmith(N, V, L, roughness);      
-            const vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);       
+            const float cosTheta = clamp(dot(H, V), 0.0, 1.0);
+            const vec3 F = FresnelSchlick(cosTheta, F0);     
             
             const vec3 kS = F;
             vec3 kD = vec3(1.0) - kS;

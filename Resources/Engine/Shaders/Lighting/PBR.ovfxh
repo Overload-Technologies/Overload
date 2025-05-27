@@ -1,51 +1,17 @@
 #include ":Shaders/Common/Buffers/LightsSSBO.ovfxh"
 #include ":Shaders/Common/Constants.ovfxh"
-#include ":Shaders/Common/Physics.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
-#include ":Shaders/Lighting/Shadow.ovfxh"
+#include ":Shaders/Lighting/Light.ovfxh"
 #include ":Shaders/Lighting/IBL.ovfxh"
-
-float LuminosityFromAttenuation(mat4 light, vec3 fragPos)
-{
-    const vec3 lightPosition = light[0].rgb;
-    const float constant = light[0][3];
-    const float linear = light[1][3];
-    const float quadratic = light[2][3];
-
-    const float distanceToLight = length(lightPosition - fragPos);
-    const float attenuation = (constant + linear * distanceToLight + quadratic * (distanceToLight * distanceToLight));
-
-    return 1.0 / attenuation;
-}
-
-vec3 ComputeAmbientBoxLight(mat4 light, vec3 fragPos)
-{
-    const vec3 lightPosition = light[0].rgb;
-    const vec3 lightColor = UnPack(light[2][0]);
-    const float intensity = light[3][3];
-    const vec3 size = vec3(light[0][3], light[1][3], light[2][3]);
-
-    return IsPointInAABB(fragPos, lightPosition, size) ? lightColor * intensity : vec3(0.0);
-}
-
-vec3 ComputeAmbientSphereLight(mat4 light, vec3 fragPos)
-{
-    const vec3 lightPosition = light[0].rgb;
-    const vec3 lightColor = UnPack(light[2][0]);
-    const float intensity = light[3][3];
-    const float radius = light[0][3];
-
-    return IsPointInSphere(fragPos, lightPosition, radius) ? lightColor * intensity : vec3(0.0);
-}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float NdotH  = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH * NdotH;
+    const float a = roughness * roughness;
+    const float a2 = a * a;
+    const float NdotH  = max(dot(N, H), 0.0);
+    const float NdotH2 = NdotH * NdotH;
     
-    float num = a2;
+    const float num = a2;
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
     
@@ -54,27 +20,56 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
+    const float r = (roughness + 1.0);
+    const float k = (r * r) / 8.0;
 
-    float num = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
+    const float num = NdotV;
+    const float denom = NdotV * (1.0 - k) + k;
 
     return num / denom;
-}
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-    return ggx1 * ggx2;
 }
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    const float NdotV = max(dot(N, V), 0.0);
+    const float NdotL = max(dot(N, L), 0.0);
+    const float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    const float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+// Cook-Torrance BRDF calculation
+vec3 CalculateBRDF(LightContribution lightContrib, vec3 V, vec3 N, vec3 albedo, float metallic, float roughness, vec3 F0)
+{
+    const vec3 radiance = lightContrib.radiance;
+    const vec3 L = lightContrib.L;
+
+    const vec3 H = normalize(V + L);
+    
+    // Cook-Torrance BRDF components
+    const float NDF = DistributionGGX(N, H, roughness);
+    const float G = GeometrySmith(N, V, L, roughness);
+    const float cosTheta = clamp(dot(H, V), 0.0, 1.0);
+    const vec3 F = FresnelSchlick(cosTheta, F0);
+    
+    // Energy conservation
+    const vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+    
+    // BRDF calculation
+    const vec3 numerator = NDF * G * F;
+    const float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+    const vec3 specular = numerator / max(denominator, 0.001);
+    
+    const float NdotL = max(dot(N, L), 0.0);
+    return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
 vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube environmentMap)
@@ -85,93 +80,59 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
     const vec3 N = normalize(normal);
     const vec3 V = normalize(viewPos - fragPos);
     const float NdotV = max(dot(N, V), 0.0);
-
     const vec3 F0 = mix(vec3(0.04), albedo, metallic); 
 
-    // reflectance equation
+    // Prepare accumulation variables
     vec3 Lo = vec3(0.0);
-    vec3 ambientSum = vec3(0.0);
+    vec3 ambient = vec3(0.0);
 
     for (int i = 0; i < ssbo_Lights.length(); ++i) 
     {
-        const mat4 light = ssbo_Lights[i];
-        const int lightType = int(light[3][0]);
+        const Light light = ExtractLight(ssbo_Lights[i]);
 
-        if (lightType == 3)
+        switch(light.type)
         {
-            ambientSum += ComputeAmbientBoxLight(light, fragPos);
-        }
-        else if (lightType == 4)
-        {
-            ambientSum += ComputeAmbientSphereLight(light, fragPos);
-        }
-        else
-        {
-            // calculate per-light radiance
-            const vec3 L = lightType == 1 ? -light[1].rgb : normalize(light[0].rgb - fragPos);
-            const vec3 H = normalize(V + L);
-            const float distance = length(light[0].rgb - fragPos);
-            float lightCoeff = 0.0;
-
-            switch(int(light[3][0]))
+            case 0: // Point Light
             {
-                case 0:
-                    lightCoeff = LuminosityFromAttenuation(light, fragPos) * light[3][3];
-                    break;
-
-                case 1:
-                    lightCoeff = light[3][3];
-
-                    if (light[2][1] > 0.0f)
-                    {
-                        const vec3 lightDir = light[1].rgb;
-                        vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);
-                        float shadow = CalculateShadow(fragPosLightSpace, shadowMap, normal, lightDir);
-                        lightCoeff *= 1.0 - shadow;
-                    }
-                    
-                    break;
-
-                case 2:
-                    const vec3 lightForward = light[1].rgb;
-                    const float cutOff = cos(radians(light[3][1]));
-                    const float outerCutOff = cos(radians(light[3][1] + light[3][2]));
-
-                    const vec3 lightDirection = normalize(light[0].rgb - fragPos);
-                    const float luminosity = LuminosityFromAttenuation(light, fragPos);
-
-                    /* Calculate the spot intensity */
-                    const float theta = dot(lightDirection, normalize(-lightForward)); 
-                    const float epsilon = cutOff - outerCutOff;
-                    const float spotIntensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
-
-                    lightCoeff = luminosity * spotIntensity * light[3][3];
-                    break;
+                const PointLight pointLight = ExtractPointLight(light);
+                const LightContribution contrib = CalculatePointLightContribution(pointLight, fragPos);
+                Lo += CalculateBRDF(contrib, V, N, albedo, metallic, roughness, F0);
+                break;
             }
-
-            const vec3 radiance = UnPack(light[2][0]) * lightCoeff;        
             
-            // cook-torrance brdf
-            const float NDF = DistributionGGX(N, H, roughness);        
-            const float G = GeometrySmith(N, V, L, roughness);      
-            const float cosTheta = clamp(dot(H, V), 0.0, 1.0);
-            const vec3 F = FresnelSchlick(cosTheta, F0);     
+            case 1: // Directional Light
+            {
+                const DirectionalLight dirLight = ExtractDirectionalLight(light);
+                const LightContribution contrib = CalculateDirectionalLightContribution(dirLight, fragPos, N, shadowMap, lightSpaceMatrix);
+                Lo += CalculateBRDF(contrib, V, N, albedo, metallic, roughness, F0);
+                break;
+            }
             
-            const vec3 kS = F;
-            vec3 kD = vec3(1.0) - kS;
-            kD *= 1.0 - metallic;	  
+            case 2: // Spot Light
+            {
+                const SpotLight spotLight = ExtractSpotLight(light);
+                const LightContribution contrib = CalculateSpotLightContribution(spotLight, fragPos);
+                Lo += CalculateBRDF(contrib, V, N, albedo, metallic, roughness, F0);
+                break;
+            }
             
-            const vec3 numerator = NDF * G * F;
-            const float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-            const vec3 specular = numerator / max(denominator, 0.001);  
-                
-            // add to outgoing radiance Lo
-            const float NdotL = max(dot(N, L), 0.0);                
-            Lo += (kD * albedo / PI + specular) * radiance * NdotL; 
+            case 3: // Ambient Box Light
+            {
+                const AmbientBoxLight boxLight = ExtractAmbientBoxLight(light);
+                ambient += CalculateAmbientBoxLightContribution(boxLight, fragPos);
+                break;
+            }
+            
+            case 4: // Ambient Sphere Light
+            {
+                const AmbientSphereLight sphereLight = ExtractAmbientSphereLight(light);
+                ambient += CalculateAmbientSphereLightContribution(sphereLight, fragPos);
+                break;
+            }
         }
     }
 
-    vec3 ambient = ambientSum * albedo * ao;  // Existing ambient from local lights
+    ambient *= albedo * ao;
 
 #if !defined(DISABLE_IMAGE_BASED_LIGHTING)
     ambient += CalculateImageBasedLighting(

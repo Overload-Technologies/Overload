@@ -1,12 +1,11 @@
-bool IsPointInAABB(vec3 point, vec3 aabbCenter, vec3 aabbHalfSize)
+float IsPointInAABB(vec3 p, vec3 center, vec3 halfSize)
 {
-    return
-        point.x > aabbCenter.x - aabbHalfSize.x && point.x < aabbCenter.x + aabbHalfSize.x &&
-        point.y > aabbCenter.y - aabbHalfSize.y && point.y < aabbCenter.y + aabbHalfSize.y &&
-        point.z > aabbCenter.z - aabbHalfSize.z && point.z < aabbCenter.z + aabbHalfSize.z;
+    vec3 d = abs(p - center) - halfSize;
+    return step(0.0, -max(d.x, max(d.y, d.z))); // returns 1.0 if inside, 0.0 if outside
 }
 
-bool IsPointInSphere(vec3 point, vec3 sphereCenter, float sphereRadius)
+float IsPointInSphere(vec3 p, vec3 center, float radius)
 {
-    return distance(point, sphereCenter) <= sphereRadius;
+    float distSq = dot(p - center, p - center);
+    return step(distSq, radius * radius); // 1.0 if inside, 0.0 if outside
 }

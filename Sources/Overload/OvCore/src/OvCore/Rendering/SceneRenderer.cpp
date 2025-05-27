@@ -290,12 +290,21 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				.stateMask = material.has_value() ? material->GenerateStateMask() : OvRendering::Data::StateMask{},
 			};
 
+			auto bounds = [&]() -> std::optional<OvRendering::Geometry::BoundingSphere> {
+				using enum CModelRenderer::EFrustumBehaviour;
+				switch (modelRenderer->GetFrustumBehaviour())
+				{
+				case MESH_BOUNDS: return mesh->GetBoundingSphere();
+				case DEPRECATED_MODEL_BOUNDS: return model->GetBoundingSphere();
+				case CUSTOM_BOUNDS: return modelRenderer->GetCustomBoundingSphere();
+				}
+				return std::nullopt;
+			}();
+
 			drawable.AddDescriptor<SceneDrawableDescriptor>({
 				.actor = modelRenderer->owner,
 				.visibilityFlags = materialRenderer->GetVisibilityFlags(),
-				.cullingPolicy = modelRenderer->GetFrustumBehaviour() == CModelRenderer::EFrustumBehaviour::DISABLED ?
-					ECullingPolicy::NEVER :
-					ECullingPolicy::ALWAYS
+				.bounds = bounds,
 			});
 			
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
@@ -355,17 +364,14 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		if (!isUI && targetMaterial->IsBlendable() && !p_filteringInput.includeTransparent) continue;
 
 		// Perform frustum culling if enabled
-		if (frustum && desc.cullingPolicy == ECullingPolicy::ALWAYS)
+		if (frustum && desc.bounds.has_value())
 		{
 			ZoneScopedN("Frustum Culling");
 
 			// Get the engine drawable descriptor to access transform information
 			const auto& engineDesc = drawable.GetDescriptor<EngineDrawableDescriptor>();
 
-			// Calculate bounding sphere in world space
-			const auto& meshBoundingSphere = drawable.mesh->GetBoundingSphere();
-
-			if (!frustum->BoundingSphereInFrustum(meshBoundingSphere, desc.actor.transform.GetFTransform()))
+			if (!frustum->BoundingSphereInFrustum(desc.bounds.value(), desc.actor.transform.GetFTransform()))
 			{
 				continue; // Skip this drawable as it's outside the frustum
 			}

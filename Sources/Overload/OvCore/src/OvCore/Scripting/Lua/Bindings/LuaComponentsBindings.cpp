@@ -67,9 +67,9 @@ void BindLuaComponents(sol::state& p_luaState)
 
 	p_luaState.new_enum<OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour>("FrustumBehaviour", {
 		{"DISABLED", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED},
-		{"CULL_MODEL", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CULL_MODEL},
-		{"CULL_MESHES", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CULL_MESHES},
-		{"CULL_CUSTOM", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CULL_CUSTOM}
+		// {"DEPRECATED_MODEL_BOUNDS", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::DEPRECATED_MODEL_BOUNDS},
+		{"MESH_BOUNDS", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::MESH_BOUNDS},
+		{"CUSTOM_BOUNDS", OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CUSTOM_BOUNDS}
 	});
 
 	p_luaState.new_usertype<CModelRenderer>("ModelRenderer",

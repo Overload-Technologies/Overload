@@ -27,9 +27,9 @@ namespace OvCore::ECS::Components
 		enum class EFrustumBehaviour
 		{
 			DISABLED = 0,
-			CULL_MODEL = 1, // TODO: Remove that
-			CULL_MESHES = 2,
-			CULL_CUSTOM = 3
+			DEPRECATED_MODEL_BOUNDS = 1, // This is not used anymore, but the enum value is kept for compatibility
+			MESH_BOUNDS = 2,
+			CUSTOM_BOUNDS = 3
 		};
 
 		/**
@@ -100,6 +100,6 @@ namespace OvCore::ECS::Components
 		OvRendering::Resources::Model* m_model = nullptr;
 		OvTools::Eventing::Event<> m_modelChangedEvent;
 		OvRendering::Geometry::BoundingSphere m_customBoundingSphere = { {}, 1.0f };
-		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::CULL_MODEL;
+		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::MESH_BOUNDS;
 	};
 }

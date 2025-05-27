@@ -90,9 +90,9 @@ void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::Widget
 	GUIDrawer::CreateTitle(p_root, "Frustum Culling Behaviour");
 	auto& boundingMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(0);
 	boundingMode.choices.emplace(0, "Disabled");
-	boundingMode.choices.emplace(1, "Cull model");
-	boundingMode.choices.emplace(2, "Cull model & sub-meshes");
-	boundingMode.choices.emplace(3, "Cull custom bounding sphere");
+	// [[deprecated]] boundingMode.choices.emplace(1, "Model Bounds");
+	boundingMode.choices.emplace(2, "Mesh Bounds");
+	boundingMode.choices.emplace(3, "Custom Bounds");
 	auto& boundingModeDispatcher = boundingMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
 	boundingModeDispatcher.RegisterReference(reinterpret_cast<int&>(m_frustumBehaviour));
 
@@ -111,5 +111,5 @@ void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::Widget
 		centerLabel.enabled = centerWidget.enabled = radiusLabel.enabled = radiusWidget.enabled = p_choice == 3;
 	};
 
-	centerLabel.enabled = centerWidget.enabled = radiusLabel.enabled = radiusWidget.enabled = m_frustumBehaviour == EFrustumBehaviour::CULL_CUSTOM;
+	centerLabel.enabled = centerWidget.enabled = radiusLabel.enabled = radiusWidget.enabled = m_frustumBehaviour == EFrustumBehaviour::CUSTOM_BOUNDS;
 }

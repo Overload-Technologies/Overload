@@ -430,13 +430,12 @@ protected:
 		auto pso = m_renderer.CreatePipelineState();
 
 		// Convenient lambda to draw a frustum line
-		auto draw = [&](const FVector3& p_start, const FVector3& p_end, const float planeDistance)
-			{
-				auto offset = pos + forward * planeDistance;
-				auto start = offset + p_start;
-				auto end = offset + p_end;
-				m_debugShapeFeature.DrawLine(pso, start, end, kFrustumColor);
-			};
+		auto draw = [&](const FVector3& p_start, const FVector3& p_end, const float planeDistance) {
+			auto offset = pos + forward * planeDistance;
+			auto start = offset + p_start;
+			auto end = offset + p_end;
+			m_debugShapeFeature.DrawLine(pso, start, end, kFrustumColor, 1.0f, false);
+		};
 
 		// Draw near plane
 		draw(a, b, near);
@@ -555,7 +554,8 @@ protected:
 			p_reflectionProbe.owner.transform.GetWorldRotation(),
 			size,
 			kDebugBoundsColor,
-			1.0f
+			1.0f,
+			false
 		);
 	}
 
@@ -576,7 +576,8 @@ protected:
 				p_actor.transform.GetWorldRotation(),
 				boxColliderComponent->GetSize() * p_actor.transform.GetWorldScale(),
 				OvMaths::FVector3{ 0.f, 1.f, 0.f },
-				1.0f
+				1.0f,
+				false
 			);
 		}
 
@@ -592,7 +593,8 @@ protected:
 				p_actor.transform.GetWorldRotation(),
 				radius,
 				OvMaths::FVector3{ 0.f, 1.f, 0.f },
-				1.0f
+				1.0f,
+				false
 			);
 		}
 
@@ -610,7 +612,8 @@ protected:
 				radius,
 				height,
 				OvMaths::FVector3{ 0.f, 1.f, 0.f },
-				1.0f
+				1.0f,
+				false
 			);
 		}
 	}
@@ -628,7 +631,8 @@ protected:
 			data.transform->GetWorldRotation(),
 			data.CalculateEffectRange(),
 			kDebugBoundsColor,
-			1.0f
+			1.0f,
+			false
 		);
 	}
 
@@ -645,7 +649,8 @@ protected:
 			data.transform->GetWorldRotation(),
 			{ data.constant, data.linear, data.quadratic },
 			data.CalculateEffectRange(),
-			1.0f
+			1.0f,
+			false
 		);
 	}
 
@@ -662,7 +667,8 @@ protected:
 			p_ambientSphereLight.owner.transform.GetWorldRotation(),
 			data.constant,
 			kLightVolumeColor,
-			1.0f
+			1.0f,
+			false
 		);
 	}
 
@@ -670,59 +676,60 @@ protected:
 	{
 		using namespace OvCore::ECS::Components;
 		using namespace OvPhysics::Entities;
+		using enum OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour;
 
 		auto pso = m_renderer.CreatePipelineState();
-		pso.depthTest = false;
 
-		/* Draw the sphere collider if any */
+		const auto frustumBehaviour = p_modelRenderer.GetFrustumBehaviour();
+		
+		if (frustumBehaviour == DISABLED)
+		{
+			return; // No bounds to draw
+		}
+
+		// Draw the mesh, model, or custom bounding sphere
 		if (auto model = p_modelRenderer.GetModel())
 		{
 			auto& actor = p_modelRenderer.owner;
 
-			OvMaths::FVector3 actorScale = actor.transform.GetWorldScale();
-			OvMaths::FQuaternion actorRotation = actor.transform.GetWorldRotation();
-			OvMaths::FVector3 actorPosition = actor.transform.GetWorldPosition();
+			const auto& actorScale = actor.transform.GetWorldScale();
+			const auto& actorRotation = actor.transform.GetWorldRotation();
+			const auto& actorPosition = actor.transform.GetWorldPosition();
 
-			const auto& modelBoundingsphere =
-				p_modelRenderer.GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CULL_CUSTOM ?
-				p_modelRenderer.GetCustomBoundingSphere() :
-				model->GetBoundingSphere();
+			const float radiusScale = std::max(std::max(std::max(actorScale.x, actorScale.y), actorScale.z), 0.0f);
 
-			float radiusScale = std::max(std::max(std::max(actorScale.x, actorScale.y), actorScale.z), 0.0f);
-			float scaledRadius = modelBoundingsphere.radius * radiusScale;
-			auto sphereOffset = OvMaths::FQuaternion::RotatePoint(modelBoundingsphere.position, actorRotation) * radiusScale;
+			auto drawBounds = [&](const OvRendering::Geometry::BoundingSphere& p_bounds) {
+				const float scaledRadius = p_bounds.radius * radiusScale;
+				const auto sphereOffset = OvMaths::FQuaternion::RotatePoint(
+					p_bounds.position,
+					actorRotation
+				) * radiusScale;
 
-			m_debugShapeFeature.DrawSphere(
-				pso,
-				actorPosition + sphereOffset,
-				actorRotation,
-				scaledRadius,
-				kDebugBoundsColor,
-				1.0f
-			);
+				m_debugShapeFeature.DrawSphere(
+					pso,
+					actorPosition + sphereOffset,
+					actorRotation,
+					scaledRadius,
+					kDebugBoundsColor,
+					1.0f,
+					false
+				);
+			};
 
-			if (p_modelRenderer.GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CULL_MESHES)
+			if (frustumBehaviour == MESH_BOUNDS)
 			{
-				const auto& meshes = model->GetMeshes();
-
-				if (meshes.size() > 1) // One mesh would result into the same bounding sphere for mesh and model
+				for (auto mesh : model->GetMeshes())
 				{
-					for (auto mesh : meshes)
-					{
-						auto& meshBoundingSphere = mesh->GetBoundingSphere();
-						float scaledRadius = meshBoundingSphere.radius * radiusScale;
-						auto sphereOffset = OvMaths::FQuaternion::RotatePoint(meshBoundingSphere.position, actorRotation) * radiusScale;
-
-						m_debugShapeFeature.DrawSphere(
-							pso,
-							actorPosition + sphereOffset,
-							actorRotation,
-							scaledRadius,
-							kDebugBoundsColor,
-							1.0f
-						);
-					}
+					drawBounds(mesh->GetBoundingSphere());
 				}
+			}
+			else
+			{
+				drawBounds(
+					frustumBehaviour == CUSTOM_BOUNDS ?
+					p_modelRenderer.GetCustomBoundingSphere() :
+					model->GetBoundingSphere()
+				);
 			}
 		}
 	}

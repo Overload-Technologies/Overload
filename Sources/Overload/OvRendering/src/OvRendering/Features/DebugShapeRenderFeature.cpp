@@ -91,15 +91,16 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
 	const OvMaths::FVector3& p_start,
 	const OvMaths::FVector3& p_end,
 	const OvMaths::FVector3& p_color,
-	float p_lineWidth
+	float p_lineWidth,
+	bool p_depthTest
 )
 {
 	m_lineMaterial->SetBackfaceCulling(false);
 	m_lineMaterial->SetFrontfaceCulling(false);
+	m_lineMaterial->SetDepthTest(p_depthTest);
 	m_lineMaterial->SetProperty("start", p_start);
 	m_lineMaterial->SetProperty("end", p_end);
 	m_lineMaterial->SetProperty("color", p_color);
-
 
 	p_pso.rasterizationMode = Settings::ERasterizationMode::LINE;
 	p_pso.lineWidthPow2 = Utils::Conversions::FloatToPow2(p_lineWidth);
@@ -121,37 +122,38 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawBox(
 	const OvMaths::FQuaternion& p_rotation,
 	const OvMaths::FVector3& p_size,
 	const OvMaths::FVector3& p_color,
-	float p_lineWidth
+	float p_lineWidth,
+	bool p_depthTest
 )
 {
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth);
-	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, -p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, -p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, -p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, -p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, -p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
+	DrawLine(p_pso, p_position + p_rotation * OvMaths::FVector3{ -p_size.x, +p_size.y, +p_size.z }, p_position + p_rotation * OvMaths::FVector3{ +p_size.x, +p_size.y, +p_size.z }, p_color, p_lineWidth, p_depthTest);
 }
 
-void OvRendering::Features::DebugShapeRenderFeature::DrawSphere(OvRendering::Data::PipelineState p_pso, const OvMaths::FVector3& p_position, const OvMaths::FQuaternion& p_rotation, float p_radius, const OvMaths::FVector3& p_color, float p_lineWidth)
+void OvRendering::Features::DebugShapeRenderFeature::DrawSphere(OvRendering::Data::PipelineState p_pso, const OvMaths::FVector3& p_position, const OvMaths::FQuaternion& p_rotation, float p_radius, const OvMaths::FVector3& p_color, float p_lineWidth, bool p_depthTest)
 {
 	if (!std::isinf(p_radius))
 	{
 		for (float i = 0; i <= 360.0f; i += 10.0f)
 		{
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth);
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 		}
 	}
 }
 
-void OvRendering::Features::DebugShapeRenderFeature::DrawCapsule(OvRendering::Data::PipelineState p_pso, const OvMaths::FVector3& p_position, const OvMaths::FQuaternion& p_rotation, float p_radius, float p_height, const OvMaths::FVector3& p_color, float p_lineWidth)
+void OvRendering::Features::DebugShapeRenderFeature::DrawCapsule(OvRendering::Data::PipelineState p_pso, const OvMaths::FVector3& p_position, const OvMaths::FQuaternion& p_rotation, float p_radius, float p_height, const OvMaths::FVector3& p_color, float p_lineWidth, bool p_depthTest)
 {
 	if (!std::isinf(p_radius))
 	{
@@ -161,24 +163,24 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawCapsule(OvRendering::Da
 
 		for (float i = 0; i < 360.0f; i += 10.0f)
 		{
-			DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
-			DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
+			DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 
 			if (i < 180.f)
 			{
-				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth);
-				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
+				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 			}
 			else
 			{
-				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth);
-				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth);
+				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 			}
 		}
 
-		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ -p_radius, -halfHeight, 0.f }), p_position + p_rotation * (OvMaths::FVector3{ -p_radius, +halfHeight, 0.f }), p_color, p_lineWidth);
-		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ p_radius, -halfHeight, 0.f }), p_position + p_rotation * (OvMaths::FVector3{ p_radius, +halfHeight, 0.f }), p_color, p_lineWidth);
-		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, -halfHeight, -p_radius }), p_position + p_rotation * (OvMaths::FVector3{ 0.f, +halfHeight, -p_radius }), p_color, p_lineWidth);
-		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, -halfHeight, p_radius }), p_position + p_rotation * (OvMaths::FVector3{ 0.f, +halfHeight, p_radius }), p_color, p_lineWidth);
+		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ -p_radius, -halfHeight, 0.f }), p_position + p_rotation * (OvMaths::FVector3{ -p_radius, +halfHeight, 0.f }), p_color, p_lineWidth, p_depthTest);
+		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ p_radius, -halfHeight, 0.f }), p_position + p_rotation * (OvMaths::FVector3{ p_radius, +halfHeight, 0.f }), p_color, p_lineWidth, p_depthTest);
+		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, -halfHeight, -p_radius }), p_position + p_rotation * (OvMaths::FVector3{ 0.f, +halfHeight, -p_radius }), p_color, p_lineWidth, p_depthTest);
+		DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, -halfHeight, p_radius }), p_position + p_rotation * (OvMaths::FVector3{ 0.f, +halfHeight, p_radius }), p_color, p_lineWidth, p_depthTest);
 	}
 }

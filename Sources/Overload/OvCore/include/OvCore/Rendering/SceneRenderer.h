@@ -35,12 +35,6 @@ namespace OvCore::Rendering
 			FRONT_TO_BACK,
 		};
 
-		enum class ECullingPolicy
-		{
-			NEVER,
-			ALWAYS
-		};
-
 		template<EOrderingMode OrderingMode>
 		struct DrawOrder
 		{
@@ -106,7 +100,7 @@ namespace OvCore::Rendering
 		{
 			OvCore::ECS::Actor& actor;
 			EVisibilityFlags visibilityFlags = EVisibilityFlags::NONE;
-			ECullingPolicy cullingPolicy = ECullingPolicy::ALWAYS;
+			std::optional<OvRendering::Geometry::BoundingSphere> bounds;
 		};
 
 		/**

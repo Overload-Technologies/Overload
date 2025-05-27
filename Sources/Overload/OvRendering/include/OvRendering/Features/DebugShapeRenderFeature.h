@@ -44,7 +44,8 @@ namespace OvRendering::Features
 			const OvMaths::FVector3& p_start,
 			const OvMaths::FVector3& p_end,
 			const OvMaths::FVector3& p_color,
-			float p_lineWidth = 1.0f
+			float p_lineWidth = 1.0f,
+			bool p_depthTest = true
 		);
 
 		/**
@@ -62,7 +63,8 @@ namespace OvRendering::Features
 			const OvMaths::FQuaternion& p_rotation,
 			const OvMaths::FVector3& p_size,
 			const OvMaths::FVector3& p_color,
-			float p_lineWidth = 1.0f
+			float p_lineWidth = 1.0f,
+			bool p_depthTest = true
 		);
 
 		/**
@@ -80,7 +82,8 @@ namespace OvRendering::Features
 			const OvMaths::FQuaternion& p_rotation,
 			float p_radius,
 			const OvMaths::FVector3& p_color,
-			float p_lineWidth = 1.0f
+			float p_lineWidth = 1.0f,
+			bool p_depthTest = true
 		);
 
 		/**
@@ -100,7 +103,8 @@ namespace OvRendering::Features
 			float p_radius,
 			float p_height,
 			const OvMaths::FVector3& p_color,
-			float p_lineWidth = 1.0f
+			float p_lineWidth = 1.0f,
+			bool p_depthTest = true
 		);
 
 	protected:

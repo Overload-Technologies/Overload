@@ -337,6 +337,16 @@ void OvRendering::Data::Material::SetReceiveShadows(bool p_receiveShadows)
 	m_receiveShadows = p_receiveShadows;
 }
 
+void OvRendering::Data::Material::SetCapturedByReflectionProbes(bool p_capturedByReflectionProbes)
+{
+	m_capturedByReflectionProbes = p_capturedByReflectionProbes;
+}
+
+void OvRendering::Data::Material::SetReceiveReflections(bool p_receiveReflections)
+{
+	m_receiveReflections = p_receiveReflections;
+}
+
 void OvRendering::Data::Material::SetGPUInstances(int p_instances)
 {
 	m_gpuInstances = p_instances;
@@ -390,6 +400,16 @@ bool OvRendering::Data::Material::IsShadowCaster() const
 bool OvRendering::Data::Material::IsShadowReceiver() const
 {
 	return m_receiveShadows;
+}
+
+bool OvRendering::Data::Material::IsCapturedByReflectionProbes() const
+{
+	return m_capturedByReflectionProbes;
+}
+
+bool OvRendering::Data::Material::IsReflectionReceiver() const
+{
+	return m_receiveReflections;
 }
 
 int OvRendering::Data::Material::GetGPUInstances() const

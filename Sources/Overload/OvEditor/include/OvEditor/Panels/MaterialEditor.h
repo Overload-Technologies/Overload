@@ -89,10 +89,12 @@ namespace OvEditor::Panels
 		OvTools::Eventing::Event<> m_shaderDroppedEvent;
 
 		OvUI::Widgets::Layout::Group* m_settings = nullptr;
+		OvUI::Widgets::Layout::Group* m_materialPipelineState = nullptr;
 		OvUI::Widgets::Layout::Group* m_materialSettings = nullptr;
 		OvUI::Widgets::Layout::Group* m_materialFeatures = nullptr;
 		OvUI::Widgets::Layout::Group* m_materialProperties = nullptr;
 
+		OvUI::Widgets::Layout::Columns<2>* m_materialPipelineStateColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_materialSettingsColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_materialFeaturesColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_materialPropertiesColumns = nullptr;

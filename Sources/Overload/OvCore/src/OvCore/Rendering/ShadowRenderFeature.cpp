@@ -27,48 +27,42 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 
 	auto& material = p_drawable.material.value();
 
-	if (material.IsShadowReceiver())
+	// Skip materials that aren't properly set to receive shadows.
+	if (!material.IsShadowReceiver() || !material.HasProperty("_ShadowMap") || !material.HasProperty("_LightSpaceMatrix"))
 	{
-		OVASSERT(m_renderer.HasDescriptor<OvRendering::Features::LightingRenderFeature::LightingDescriptor>(), "Cannot find LightingDescriptor attached to this renderer");
+		return;
+	}
 
-		auto& lightDescriptor = m_renderer.GetDescriptor<OvRendering::Features::LightingRenderFeature::LightingDescriptor>();
+	OVASSERT(m_renderer.HasDescriptor<OvRendering::Features::LightingRenderFeature::LightingDescriptor>(), "Cannot find LightingDescriptor attached to this renderer");
 
-		uint8_t lightIndex = 0;
+	auto& lightDescriptor = m_renderer.GetDescriptor<OvRendering::Features::LightingRenderFeature::LightingDescriptor>();
 
-		for (auto lightReference : lightDescriptor.lights)
+	uint8_t lightIndex = 0;
+
+	for (auto lightReference : lightDescriptor.lights)
+	{
+		const auto& light = lightReference.get();
+
+		if (!light.castShadows) continue;
+
+		if (lightIndex >= kMaxShadowMaps)
 		{
-			const auto& light = lightReference.get();
+			OVLOG_WARNING("ShadowRenderFeature does not support more than one shadow casting directional light at the moment");
+			continue;
+		}
 
-			if (light.castShadows)
-			{
-				if (lightIndex < kMaxShadowMaps)
-				{
-					if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
-					{
-						OVASSERT(light.IsSetupForShadowRendering(), "This light isn't setup for shadow rendering");
+		if (light.type == OvRendering::Settings::ELightType::DIRECTIONAL)
+		{
+			OVASSERT(light.IsSetupForShadowRendering(), "This light isn't setup for shadow rendering");
 
-						const auto shadowTex = light.shadowBuffer->GetAttachment<OvRendering::HAL::Texture>(
-							OvRendering::Settings::EFramebufferAttachment::DEPTH
-						);
+			const auto shadowTex = light.shadowBuffer->GetAttachment<OvRendering::HAL::Texture>(
+				OvRendering::Settings::EFramebufferAttachment::DEPTH
+			);
 
-						if (!material.TrySetProperty("_ShadowMap", &shadowTex.value(), true))
-						{
-							OVLOG_WARNING("ShadowRenderFeature: Material does not have a _ShadowMap property");
-						}
+			material.SetProperty("_ShadowMap", &shadowTex.value(), true);
+			material.SetProperty("_LightSpaceMatrix", light.lightSpaceMatrix.value(), true);
 
-						if (!material.TrySetProperty("_LightSpaceMatrix", light.lightSpaceMatrix.value(), true))
-						{
-							OVLOG_WARNING("ShadowRenderFeature: Material does not have a _LightSpaceMatrix property");
-						}
-
-						++lightIndex;
-					}
-				}
-				else
-				{
-					OVLOG_WARNING("ShadowRenderFeature does not support more than one shadow casting directional light at the moment");
-				}
-			}
+			++lightIndex;
 		}
 	}
 }

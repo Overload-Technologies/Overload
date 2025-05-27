@@ -163,8 +163,8 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 
 	auto& material = p_drawable.material.value();
 
-	// TODO: Check if material is set to receive reflections
-	if (!material.HasProperty("_EnvironmentMap"))
+	// Skip materials that aren't properly set to receive reflections.
+	if (!material.IsReflectionReceiver() || !material.HasProperty("_EnvironmentMap"))
 	{
 		return;
 	}

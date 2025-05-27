@@ -215,6 +215,18 @@ namespace OvRendering::Data
 		void SetReceiveShadows(bool p_receiveShadows);
 
 		/**
+		* Sets whether this material should be captured by reflection probes
+		* @param p_capturedByReflectionProbes
+		*/
+		void SetCapturedByReflectionProbes(bool p_capturedByReflectionProbes);
+
+		/**
+		* Sets whether this material should receive reflections from reflection probes
+		* @param p_receiveReflections
+		*/
+		void SetReceiveReflections(bool p_receiveReflections);
+
+		/**
 		* Defines the number of instances
 		* @param p_instances
 		*/
@@ -269,6 +281,16 @@ namespace OvRendering::Data
 		* Returns true if the material is set to receive shadows
 		*/
 		bool IsShadowReceiver() const;
+
+		/**
+		* Returns true if the material is set to be captured by reflection probes
+		*/
+		bool IsCapturedByReflectionProbes() const;
+
+		/**
+		* Returns true if the material is set to receive reflections
+		*/
+		bool IsReflectionReceiver() const;
 
 		/**
 		* Returns the number of instances
@@ -349,16 +371,19 @@ namespace OvRendering::Data
 
 		bool m_supportOrthographic = true;
 		bool m_supportPerspective = true;
-
 		bool m_userInterface = false;
+
 		bool m_blendable = false;
 		bool m_backfaceCulling = true;
 		bool m_frontfaceCulling = false;
 		bool m_depthTest = true;
 		bool m_depthWriting = true;
 		bool m_colorWriting = true;
-		bool m_castShadows = false;
-		bool m_receiveShadows = false;
+
+		bool m_castShadows = true;
+		bool m_receiveShadows = true;
+		bool m_capturedByReflectionProbes = true;
+		bool m_receiveReflections = true;
 
 		int m_gpuInstances = 1;
 		int m_drawOrder = 1000;

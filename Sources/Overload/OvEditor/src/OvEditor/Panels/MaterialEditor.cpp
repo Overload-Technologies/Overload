@@ -301,6 +301,10 @@ void OvEditor::Panels::MaterialEditor::CreateShaderSelector()
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 {
+	m_materialPipelineState = &m_settings->CreateWidget<Layout::GroupCollapsable>("Pipeline State");
+	m_materialPipelineStateColumns = &m_materialPipelineState->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	m_materialPipelineStateColumns->widths[0] = 150;
+
 	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Settings");
 	m_materialSettingsColumns = &m_materialSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialSettingsColumns->widths[0] = 150;
@@ -323,15 +327,18 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
 void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()
 {
 	m_materialSettingsColumns->RemoveAllWidgets(); // Ensure that the m_shaderSettingsColumns is empty
+	m_materialPipelineStateColumns->RemoveAllWidgets(); // Ensure that the m_materialADvancedSettingsColumns is empty
 
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Blendable", std::bind(&OvCore::Resources::Material::IsBlendable, m_target), std::bind(&OvCore::Resources::Material::SetBlendable, m_target, std::placeholders::_1));
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Back-face Culling", std::bind(&OvCore::Resources::Material::HasBackfaceCulling, m_target), std::bind(&OvCore::Resources::Material::SetBackfaceCulling, m_target, std::placeholders::_1));
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Front-face Culling", std::bind(&OvCore::Resources::Material::HasFrontfaceCulling, m_target), std::bind(&OvCore::Resources::Material::SetFrontfaceCulling, m_target, std::placeholders::_1));
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Depth Test", std::bind(&OvCore::Resources::Material::HasDepthTest, m_target), std::bind(&OvCore::Resources::Material::SetDepthTest, m_target, std::placeholders::_1));
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Depth Writing", std::bind(&OvCore::Resources::Material::HasDepthWriting, m_target), std::bind(&OvCore::Resources::Material::SetDepthWriting, m_target, std::placeholders::_1));
-	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Color Writing", std::bind(&OvCore::Resources::Material::HasColorWriting, m_target), std::bind(&OvCore::Resources::Material::SetColorWriting, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Blendable", std::bind(&OvCore::Resources::Material::IsBlendable, m_target), std::bind(&OvCore::Resources::Material::SetBlendable, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Back-face Culling", std::bind(&OvCore::Resources::Material::HasBackfaceCulling, m_target), std::bind(&OvCore::Resources::Material::SetBackfaceCulling, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Front-face Culling", std::bind(&OvCore::Resources::Material::HasFrontfaceCulling, m_target), std::bind(&OvCore::Resources::Material::SetFrontfaceCulling, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Depth Test", std::bind(&OvCore::Resources::Material::HasDepthTest, m_target), std::bind(&OvCore::Resources::Material::SetDepthTest, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Depth Writing", std::bind(&OvCore::Resources::Material::HasDepthWriting, m_target), std::bind(&OvCore::Resources::Material::SetDepthWriting, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialPipelineStateColumns, "Color Writing", std::bind(&OvCore::Resources::Material::HasColorWriting, m_target), std::bind(&OvCore::Resources::Material::SetColorWriting, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Shadow Casting", std::bind(&OvCore::Resources::Material::IsShadowCaster, m_target), std::bind(&OvCore::Resources::Material::SetCastShadows, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Shadow Receiving", std::bind(&OvCore::Resources::Material::IsShadowReceiver, m_target), std::bind(&OvCore::Resources::Material::SetReceiveShadows, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Reflection Capture", std::bind(&OvCore::Resources::Material::IsCapturedByReflectionProbes, m_target), std::bind(&OvCore::Resources::Material::SetCapturedByReflectionProbes, m_target, std::placeholders::_1));
+	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Reflection Receiving", std::bind(&OvCore::Resources::Material::IsReflectionReceiver, m_target), std::bind(&OvCore::Resources::Material::SetReceiveReflections, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "User Interface", std::bind(&OvCore::Resources::Material::IsUserInterface, m_target), std::bind(&OvCore::Resources::Material::SetUserInterface, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Orthographic Support", std::bind(&OvCore::Resources::Material::SupportsOrthographic, m_target), std::bind(&OvCore::Resources::Material::SetOrthographicSupport, m_target, std::placeholders::_1));
 	GUIDrawer::DrawBoolean(*m_materialSettingsColumns, "Perspective Support", std::bind(&OvCore::Resources::Material::SupportsPerspective, m_target), std::bind(&OvCore::Resources::Material::SetPerspectiveSupport, m_target, std::placeholders::_1));

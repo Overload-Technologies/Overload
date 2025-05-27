@@ -125,17 +125,22 @@ void OvCore::Rendering::ReflectionRenderPass::_DrawReflections(
 		}
 	);
 
+	auto captureDrawable = [&](const OvRendering::Entities::Drawable& drawable) {
+		if (drawable.material && drawable.material->IsCapturedByReflectionProbes())
+		{
+			auto drawableCopy = drawable;
+			drawableCopy.pass = "REFLECTION_PASS";
+			m_renderer.DrawEntity(p_pso, drawableCopy);
+		}
+	};
+
 	for (const auto& drawable : filteredDrawables.opaques | std::views::values)
 	{
-		auto drawableCopy = drawable;
-		drawableCopy.pass = "REFLECTION_PASS";
-		m_renderer.DrawEntity(p_pso, drawableCopy);
+		captureDrawable(drawable);
 	}
 
 	for (const auto& drawable : filteredDrawables.transparents | std::views::values)
 	{
-		auto drawableCopy = drawable;
-		drawableCopy.pass = "REFLECTION_PASS";
-		m_renderer.DrawEntity(p_pso, drawableCopy);
+		captureDrawable(drawable);
 	}
 }

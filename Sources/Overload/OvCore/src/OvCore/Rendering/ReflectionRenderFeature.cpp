@@ -147,6 +147,16 @@ OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(
 {
 }
 
+void OvCore::Rendering::ReflectionRenderFeature::OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
+{
+	OVASSERT(m_renderer.HasDescriptor<ReflectionRenderFeature::ReflectionDescriptor>(), "Cannot find ReflectionDescriptor attached to this renderer");
+	const auto& reflectionDescriptor = m_renderer.GetDescriptor<ReflectionRenderFeature::ReflectionDescriptor>();
+	for (auto& probe : reflectionDescriptor.reflectionProbes)
+	{
+		probe.get()._PrepareUBO();
+	}
+}
+
 void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
 {
 	ZoneScoped;
@@ -154,7 +164,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 	auto& material = p_drawable.material.value();
 
 	// TODO: Check if material is set to receive reflections
-	if (!material.HasProperty("_ReflectionProbe"))
+	if (!material.HasProperty("_EnvironmentMap"))
 	{
 		return;
 	}
@@ -173,34 +183,14 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 	);
 
 	material.SetProperty(
-		"_ReflectionProbe",
+		"_EnvironmentMap",
 		targetProbe ? targetProbe->GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
 		true
 	);
 
 	if (targetProbe)
 	{
-		material.SetProperty("_ReflectionProbe", targetProbe->GetCubemap().get(), true);
-
-		if (material.HasProperty("_ReflectionProbeBoxProjection"))
-		{
-			const bool isGlobal = targetProbe->GetInfluencePolicy() == ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL;
-			const bool boxProjection = isGlobal && targetProbe->IsBoxProjectionEnabled();
-			material.SetProperty("_ReflectionProbeBoxProjection", boxProjection, true);
-
-			if (boxProjection)
-			{
-				const auto& probePosition = targetProbe->owner.transform.GetWorldPosition();
-				const auto& boxPosition = probePosition + targetProbe->GetInfluenceOffset();
-				const auto& probeRotation = targetProbe->owner.transform.GetWorldRotation();
-				const auto& probeRotationMatrix = OvMaths::FQuaternion::ToMatrix3(OvMaths::FQuaternion::Normalize(probeRotation));
-
-				material.TrySetProperty("_ReflectionProbePosition", probePosition, true);
-				material.TrySetProperty("_ReflectionProbeRotation", probeRotationMatrix, true);
-				material.TrySetProperty("_ReflectionProbeBoxCenter", boxPosition, true);
-				material.TrySetProperty("_ReflectionProbeBoxExtents", targetProbe->GetInfluenceSize() / 2.0f, true);
-			}
-		}
+		targetProbe->_GetUniformBuffer().Bind(1);
 	}
 }
 

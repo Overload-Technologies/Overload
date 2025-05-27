@@ -9,6 +9,7 @@
 #include <OvCore/ECS/Components/AComponent.h>
 #include <OvRendering/HAL/Framebuffer.h>
 #include <OvRendering/HAL/Texture.h>
+#include <OvRendering/HAL/UniformBuffer.h>
 
 namespace OvCore::ECS { class Actor; }
 
@@ -153,7 +154,9 @@ namespace OvCore::ECS::Components
 		bool _IsCaptureRequested() const;
 		void _MarkCaptureRequestComplete();
 		void _CreateCubemap();
+		void _PrepareUBO();
 		OvRendering::HAL::Framebuffer& _GetFramebuffer() const;
+		OvRendering::HAL::UniformBuffer& _GetUniformBuffer() const;
 
 		friend class OvCore::Rendering::ReflectionRenderPass;
 		friend class OvCore::Rendering::ReflectionRenderFeature;
@@ -161,6 +164,7 @@ namespace OvCore::ECS::Components
 	private:
 		std::unique_ptr<OvRendering::HAL::Framebuffer> m_framebuffer;
 		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
+		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_uniformBuffer;
 		ERefreshMode m_refreshMode = ERefreshMode::ONCE;
 		bool m_captureRequested = false;
 		uint32_t m_resolution = 512;

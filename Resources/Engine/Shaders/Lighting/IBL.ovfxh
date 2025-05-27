@@ -1,0 +1,105 @@
+#include ":Shaders/Common/Buffers/ReflectionUBO.ovfxh"
+
+// https://seblagarde.wordpress.com/wp-content/uploads/2012/08/parallax_corrected_cubemap-siggraph2012.pdf
+vec3 BoxProjectionOBB(vec3 reflectionVector, vec3 worldPos, vec3 probePos, vec3 obbCenter, vec3 obbExtents, mat3 obbOrientation)
+{
+    // Transform world position and reflection vector to OBB local space
+    vec3 localPos = obbOrientation * (worldPos - obbCenter);
+    vec3 localReflection = obbOrientation * reflectionVector;
+    vec3 localProbePos = obbOrientation * (probePos - obbCenter);
+    
+    // Perform AABB intersection in local space
+    vec3 ndr = normalize(localReflection);
+    vec3 rbmax = (obbExtents - localPos) / ndr;
+    vec3 rbmin = (-obbExtents - localPos) / ndr;
+    
+    vec3 rbminmax;
+    rbminmax.x = (ndr.x > 0.0) ? rbmax.x : rbmin.x;
+    rbminmax.y = (ndr.y > 0.0) ? rbmax.y : rbmin.y;
+    rbminmax.z = (ndr.z > 0.0) ? rbmax.z : rbmin.z;
+    float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+    
+    // Find intersection point in local space
+    vec3 localIntersection = localPos + ndr * fa;
+    
+    // Transform intersection back to world space
+    vec3 worldIntersection = transpose(obbOrientation) * localIntersection + obbCenter;
+    
+    return normalize(worldIntersection - probePos);
+}
+
+vec3 ParallaxCorrect(vec3 reflectionDir, vec3 worldPos)
+{
+    if (ubo_ReflectionProbeData.boxProjection)
+    {
+        return BoxProjectionOBB(
+            reflectionDir,
+            worldPos, 
+            ubo_ReflectionProbeData.position.xyz,
+            ubo_ReflectionProbeData.boxCenter.xyz,
+            ubo_ReflectionProbeData.boxExtents.xyz,
+            mat3(ubo_ReflectionProbeData.rotation)
+        );
+    }
+    
+    return reflectionDir; // No box projection, return original reflection direction
+}
+
+// BRDF integration approximation for IBL specular
+vec2 EnvBRDFApprox(float NdotV, float roughness)
+{
+    // Approximation from "Moving Frostbite to PBR" by Lagarde & de Rousiers
+    const vec4 c0 = vec4(-1, -0.0275, -0.572, 0.022);
+    const vec4 c1 = vec4(1, 0.0425, 1.04, -0.04);
+    vec4 r = roughness * c0 + c1;
+    float a004 = min(r.x * r.x, exp2(-9.28 * NdotV)) * r.x + r.y;
+    vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
+    return AB;
+}
+
+// Modified Fresnel-Schlick approximation that includes roughness term for IBL
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+vec3 CalculateImageBasedLighting(
+    samplerCube environmentMap,
+    vec3 fragPos,
+    vec3 V,
+    vec3 N,
+    float roughness,
+    float metallic,
+    vec3 F0,
+    float NdotV,
+    vec3 albedo,
+    float ao
+) {
+    // 0. Constants
+    const int environmentMaxLOD = textureQueryLevels(environmentMap) - 1; // TODO: Should we do -1 here?
+    
+    // 1. Calculate reflection vector
+    const vec3 R = ParallaxCorrect(reflect(-V, N), fragPos);
+    
+    // 2. Diffuse irradiance (environment lighting)
+    const vec3 irradiance = textureLod(environmentMap, N, environmentMaxLOD).rgb; // High mip level for diffuse
+    
+    // 3. Specular reflection
+    const vec3 prefilteredColor = textureLod(environmentMap, R, roughness * environmentMaxLOD).rgb;
+    
+    // 4. Apply BRDF
+    const vec2 brdf = EnvBRDFApprox(NdotV, roughness);
+    
+    // 5. Calculate Fresnel for IBL
+    const vec3 F_IBL = FresnelSchlickRoughness(NdotV, F0, roughness);
+    
+    // 6. Calculate specular and diffuse IBL components
+    const vec3 kS_IBL = F_IBL;
+    const vec3 kD_IBL = (1.0 - kS_IBL) * (1.0 - metallic);
+    
+    const vec3 diffuseIBL = kD_IBL * irradiance * albedo;
+    const vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
+    
+    // 7. Return IBL contribution
+    return (diffuseIBL + specularIBL) * ao;
+}

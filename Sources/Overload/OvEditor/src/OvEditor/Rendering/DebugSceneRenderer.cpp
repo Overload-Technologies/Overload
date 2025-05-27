@@ -222,8 +222,7 @@ protected:
 				auto& model = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
 				auto modelMatrix = CalculateUnscaledModelMatrix(actor) * OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
 
-				m_reflectiveMaterial.SetProperty("_ReflectionProbe", reflectionProbe->GetCubemap().get());
-				m_reflectiveMaterial.SetProperty("_ReflectionProbeBoxProjection", false);
+				m_reflectiveMaterial.SetProperty("_EnvironmentMap", reflectionProbe->GetCubemap().get());
 
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_reflectiveMaterial, modelMatrix);

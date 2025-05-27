@@ -1,4 +1,4 @@
-layout (std140) uniform EngineUBO
+layout (std140, binding = 0) uniform EngineUBO
 {
     mat4    ubo_Model;
     mat4    ubo_View;

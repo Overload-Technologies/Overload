@@ -8,8 +8,9 @@
 
 #include <stdint.h>
 
-#include "OvMaths/FVector3.h"
-#include "OvMaths/FVector4.h"
+#include <OvMaths/FMatrix3.h>
+#include <OvMaths/FVector3.h>
+#include <OvMaths/FVector4.h>
 
 namespace OvMaths
 {
@@ -53,6 +54,12 @@ namespace OvMaths
 		* @param p_other
 		*/
 		FMatrix4(const FMatrix4& p_other);
+
+		/**
+		* Constructor from a 3x3 matrix
+		* @param p_other
+		*/
+		FMatrix4(const FMatrix3& p_other);
 
 		/**
 		* Copy assignment

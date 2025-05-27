@@ -53,6 +53,15 @@ OvMaths::FMatrix4::FMatrix4(const FMatrix4& p_other)
 	*this = p_other;
 }
 
+OvMaths::FMatrix4::FMatrix4(const FMatrix3& p_other) : FMatrix4(
+	p_other.data[0], p_other.data[1], p_other.data[2], 0.f,
+	p_other.data[3], p_other.data[4], p_other.data[5], 0.f,
+	p_other.data[6], p_other.data[7], p_other.data[8], 0.f,
+	0.f, 0.f, 0.f, 1.f
+)
+{
+}
+
 OvMaths::FMatrix4& OvMaths::FMatrix4::operator=(const FMatrix4& p_other)
 {
 	memcpy(this->data, p_other.data, 16 * sizeof(float));

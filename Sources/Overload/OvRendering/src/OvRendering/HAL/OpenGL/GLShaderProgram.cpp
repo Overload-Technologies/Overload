@@ -17,9 +17,9 @@
 
 namespace
 {
-	constexpr bool IsEngineUBOMember(std::string_view p_name)
+	constexpr bool IsReservedUniform(std::string_view p_name)
 	{
-		return p_name.starts_with("ubo_");
+		return p_name.starts_with("ubo_") || p_name.starts_with("ReflectionUBO");
 	}
 }
 
@@ -177,8 +177,8 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 		const auto name = std::string{ nameBuffer.data(), static_cast<size_t>(actualLength) };
 		const auto uniformType = ValueToEnum<Settings::EUniformType>(type);
 
-		// Skip reserved uniforms (e.g., ubo_ prefix)
-		if (IsEngineUBOMember(name))
+		// Skip reserved uniforms (e.g. ubo uniforms)
+		if (IsReservedUniform(name))
 		{
 			continue;
 		}

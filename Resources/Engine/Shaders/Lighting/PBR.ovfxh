@@ -3,55 +3,7 @@
 #include ":Shaders/Common/Physics.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
 #include ":Shaders/Lighting/Shadow.ovfxh"
-
-struct ProbeData
-{
-    bool boxProjection;
-    vec3 position;
-    mat3 rotation;
-    vec3 boxCenter;
-    vec3 boxExtents;
-};
-
-// https://seblagarde.wordpress.com/wp-content/uploads/2012/08/parallax_corrected_cubemap-siggraph2012.pdf
-vec3 BoxProjectionOBB(vec3 reflectionVector, vec3 worldPos, vec3 probePos, vec3 obbCenter, vec3 obbExtents, mat3 obbOrientation)
-{
-    // Transform world position and reflection vector to OBB local space
-    vec3 localPos = transpose(obbOrientation) * (worldPos - obbCenter);
-    vec3 localReflection = transpose(obbOrientation) * reflectionVector;
-    vec3 localProbePos = transpose(obbOrientation) * (probePos - obbCenter);
-    
-    // Perform AABB intersection in local space
-    vec3 ndr = normalize(localReflection);
-    vec3 rbmax = (obbExtents - localPos) / ndr;
-    vec3 rbmin = (-obbExtents - localPos) / ndr;
-    
-    vec3 rbminmax;
-    rbminmax.x = (ndr.x > 0.0) ? rbmax.x : rbmin.x;
-    rbminmax.y = (ndr.y > 0.0) ? rbmax.y : rbmin.y;
-    rbminmax.z = (ndr.z > 0.0) ? rbmax.z : rbmin.z;
-    float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
-    
-    // Find intersection point in local space
-    vec3 localIntersection = localPos + ndr * fa;
-    
-    // Transform intersection back to world space
-    vec3 worldIntersection = obbOrientation * localIntersection + obbCenter;
-    
-    return normalize(worldIntersection - probePos);
-}
-
-vec3 BoxProjection(vec3 reflectionDir, vec3 worldPos, ProbeData probe)
-{
-    return BoxProjectionOBB(
-        reflectionDir,
-        worldPos, 
-        probe.position,
-        probe.boxCenter,
-        probe.boxExtents * 2.0,
-        probe.rotation
-    );
-}
+#include ":Shaders/Lighting/IBL.ovfxh"
 
 float LuminosityFromAttenuation(mat4 light, vec3 fragPos)
 {
@@ -125,25 +77,7 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-// Modified Fresnel-Schlick approximation that includes roughness term for IBL
-vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
-{
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-// BRDF integration approximation for IBL specular
-vec2 EnvBRDFApprox(float NdotV, float roughness)
-{
-    // Approximation from "Moving Frostbite to PBR" by Lagarde & de Rousiers
-    const vec4 c0 = vec4(-1, -0.0275, -0.572, 0.022);
-    const vec4 c1 = vec4(1, 0.0425, 1.04, -0.04);
-    vec4 r = roughness * c0 + c1;
-    float a004 = min(r.x * r.x, exp2(-9.28 * NdotV)) * r.x + r.y;
-    vec2 AB = vec2(-1.04, 1.04) * a004 + r.zw;
-    return AB;
-}
-
-vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube reflectionProbe, ProbeData probeData)
+vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube environmentMap)
 {
     // Gamma correction of the albedo color (assuming the albedo is in sRGB space)
     albedo = pow(albedo, vec3(2.2));
@@ -153,7 +87,7 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
     const float NdotV = max(dot(N, V), 0.0);
 
     const vec3 F0 = mix(vec3(0.04), albedo, metallic); 
-               
+
     // reflectance equation
     vec3 Lo = vec3(0.0);
     vec3 ambientSum = vec3(0.0);
@@ -240,39 +174,18 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
     vec3 ambient = ambientSum * albedo * ao;  // Existing ambient from local lights
 
 #if !defined(DISABLE_IMAGE_BASED_LIGHTING)
-    // IBL (Image-Based Lighting)
-    // ------------------------------------------------
-    // 0. Constants
-    const int environmentMaxLOD = textureQueryLevels(reflectionProbe);
-
-    // 1. Calculate reflection vector
-    vec3 R = reflect(-V, N);
-    
-    // 2. Diffuse irradiance (environment lighting)
-    vec3 irradiance = textureLod(reflectionProbe, N, environmentMaxLOD).rgb; // High mip level for diffuse
-    
-    // 3. Specular reflection
-    if (probeData.boxProjection)
-    {
-        R = BoxProjection(R, fragPos, probeData);
-    }
-    vec3 prefilteredColor = textureLod(reflectionProbe, R, roughness * environmentMaxLOD).rgb;
-    
-    // 4. Apply BRDF
-    vec2 brdf = EnvBRDFApprox(NdotV, roughness);
-    
-    // 5. Calculate Fresnel for IBL
-    vec3 F_IBL = FresnelSchlickRoughness(NdotV, F0, roughness);
-    
-    // 6. Calculate specular and diffuse IBL components
-    vec3 kS_IBL = F_IBL;
-    vec3 kD_IBL = (1.0 - kS_IBL) * (1.0 - metallic);
-    
-    vec3 diffuseIBL = kD_IBL * irradiance * albedo;
-    vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
-    
-    // 7. Combine all lighting components
-    ambient += (diffuseIBL + specularIBL) * ao;  // Add IBL contribution
+    ambient += CalculateImageBasedLighting(
+        environmentMap,
+        fragPos,
+        V,
+        N,
+        roughness,
+        metallic,
+        F0,
+        NdotV,
+        albedo,
+        ao
+    );
 #endif
     
     return ambient + Lo;

@@ -14,11 +14,24 @@
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 
+namespace
+{
+	constexpr size_t kUBOSize =
+		sizeof(OvMaths::FVector4) +	// Position (vec3)
+		sizeof(OvMaths::FMatrix4) +	// Rotation (mat3)
+		sizeof(OvMaths::FVector4) +	// Box Center (vec3)
+		sizeof(OvMaths::FVector4) +	// Box Extents (vec3)
+		sizeof(int);				// Box Projection (bool)
+}
+
 OvCore::ECS::Components::CReflectionProbe::CReflectionProbe(ECS::Actor& p_owner) : AComponent(p_owner)
 {
 	m_framebuffer = std::make_unique<OvRendering::HAL::Framebuffer>(
 		"ReflectionProbeFramebuffer"
 	);
+
+	m_uniformBuffer = std::make_unique<OvRendering::HAL::UniformBuffer>();
+	m_uniformBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
 
 	_CreateCubemap();
 
@@ -300,8 +313,45 @@ void OvCore::ECS::Components::CReflectionProbe::_CreateCubemap()
 	m_framebuffer->Validate();
 }
 
+void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
+{
+	const auto& probePosition = owner.transform.GetWorldPosition();
+	const auto& boxPosition = probePosition + m_influenceOffset;
+	const auto& probeRotation = owner.transform.GetWorldRotation();
+	const auto& probeRotationMatrix = OvMaths::FQuaternion::ToMatrix3(OvMaths::FQuaternion::Normalize(probeRotation));
+
+	// UBO is padding sensitive, so we need to ensure proper alignment.
+#pragma pack(push, 1)
+	struct
+	{
+		OvMaths::FVector4 position;
+		OvMaths::FMatrix4 rotation;
+		OvMaths::FVector4 boxCenter;
+		OvMaths::FVector4 boxExtents;
+		bool boxProjection;
+		std::byte padding[3];
+	} uboDataPage{ 
+		.position = probePosition,
+		.rotation = probeRotationMatrix,
+		.boxCenter = boxPosition,
+		.boxExtents = m_influenceSize,
+		.boxProjection = m_boxProjection && m_influencePolicy == EInfluencePolicy::LOCAL,
+	};
+#pragma pack(pop)
+
+	static_assert(sizeof(uboDataPage) == kUBOSize, "UBO data size mismatch");
+
+	m_uniformBuffer->Upload(&uboDataPage);
+}
+
 OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetFramebuffer() const
 {
 	OVASSERT(m_framebuffer != nullptr, "Framebuffer is not initialized");
 	return *m_framebuffer;
+}
+
+OvRendering::HAL::UniformBuffer& OvCore::ECS::Components::CReflectionProbe::_GetUniformBuffer() const
+{
+	OVASSERT(m_uniformBuffer != nullptr, "Uniform buffer is not initialized");
+	return *m_uniformBuffer;
 }

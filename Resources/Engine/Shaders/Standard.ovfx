@@ -123,13 +123,7 @@ uniform bool u_BuiltInGammaCorrection = false;
 
 uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
-
-uniform samplerCube _ReflectionProbe;
-uniform bool _ReflectionProbeBoxProjection = false;
-uniform vec3 _ReflectionProbePosition;
-uniform mat3 _ReflectionProbeRotation;
-uniform vec3 _ReflectionProbeBoxCenter;
-uniform vec3 _ReflectionProbeBoxExtents;
+uniform samplerCube _EnvironmentMap;
 
 out vec4 FRAGMENT_COLOR;
 
@@ -192,14 +186,6 @@ void main()
 
     const float ao = texture(u_AmbientOcclusionMap, texCoords).r;
 
-    const ProbeData probeData = ProbeData(
-        _ReflectionProbeBoxProjection,
-        _ReflectionProbePosition,
-        _ReflectionProbeRotation,
-        _ReflectionProbeBoxCenter,
-        _ReflectionProbeBoxExtents
-    );
-
     vec3 pbr = PBRLightingModel(
         albedo.rgb,
         metallic,
@@ -210,8 +196,7 @@ void main()
         fs_in.FragPos,
         _ShadowMap,
         _LightSpaceMatrix,
-        _ReflectionProbe,
-        probeData
+        _EnvironmentMap
     );
 
     // Simple built-in tonemapping (Reinhard) and gamma correction for elements

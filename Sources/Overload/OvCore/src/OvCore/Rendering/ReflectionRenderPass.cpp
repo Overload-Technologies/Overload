@@ -109,7 +109,6 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 		}
 
 		targetFramebuffer.get().Unbind();
-		reflectionProbe._MarkCaptureRequestComplete();
 
 		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 	}

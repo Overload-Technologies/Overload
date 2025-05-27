@@ -31,9 +31,16 @@ namespace OvCore::ECS::Components
 		enum class ERefreshMode : uint32_t
 		{
 			REALTIME,
-			REALTIME_PROGRESSIVE,
 			ONCE,
 			ON_DEMAND
+		};
+
+		enum class ECaptureSpeed : uint32_t
+		{
+			ONE_FACE = 1,		// Capture one face per frame
+			TWO_FACES = 2,		// Capture two faces per frame
+			THREE_FACES = 3,	// Capture three faces per frame
+			SIX_FACES = 6		// Capture all six faces per frame
 		};
 
 		enum class EInfluencePolicy : uint32_t
@@ -63,6 +70,17 @@ namespace OvCore::ECS::Components
 		* Returns the refresh mode of the reflection probe
 		*/
 		ERefreshMode GetRefreshMode() const;
+
+		/**
+		* Determines how many faces the reflection probe should capture per frame
+		* @param p_speed
+		*/
+		void SetCaptureSpeed(ECaptureSpeed p_speed);
+
+		/**
+		* Returns the capture speed (number of faces captured per frame)
+		*/
+		ECaptureSpeed GetCaptureSpeed() const;
 
 		/**
 		* Determines the influence policy of the reflection probe
@@ -121,8 +139,9 @@ namespace OvCore::ECS::Components
 
 		/**
 		* Requests the cubemap to be updated
+		* @param p_forceImmediate
 		*/
-		void RequestCapture();
+		void RequestCapture(bool p_forceImmediate = false);
 
 		/**
 		* Returns the last complete cubemap captured by the reflection probe
@@ -153,7 +172,6 @@ namespace OvCore::ECS::Components
 		virtual void OnEnable() override;
 
 	private:
-		void _MarkCaptureRequestComplete();
 		void _NotifyCubemapComplete();
 		void _AllocateResources();
 		void _PrepareUBO();
@@ -166,21 +184,28 @@ namespace OvCore::ECS::Components
 		friend class OvCore::Rendering::ReflectionRenderFeature;
 
 	private:
+		struct CaptureRequestDesc
+		{
+			bool forceImmediate = false;
+		};
+
+	private:
 		// Double buffering so we can render to progressively one while reading from the other
 		Rendering::PingPongFramebuffer m_framebuffers;
 		std::array<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemaps;
 		OvTools::Utils::CircularIterator<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemapIterator;
-
 		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_uniformBuffer;
+		uint32_t m_captureFaceIndex = 0; // Current frame index in the capture process
+		std::optional<CaptureRequestDesc> m_captureRequest = std::nullopt;
+		bool m_isAnyCubemapComplete = false;
 
-		ERefreshMode m_refreshMode = ERefreshMode::REALTIME_PROGRESSIVE;
+		// Serialized properties
+		ERefreshMode m_refreshMode = ERefreshMode::REALTIME;
+		ECaptureSpeed m_captureSpeed = ECaptureSpeed::ONE_FACE; // Number of faces to capture per frame
 		uint32_t m_resolution = 512;
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
 		bool m_boxProjection = false;
-
-		bool m_captureRequested = false;
-		uint32_t m_captureFaceIndex = 0; // Current frame in the capture process
 	};
 }

@@ -60,10 +60,10 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 	{
 		auto& reflectionProbe = reflectionProbeReference.get();
 
-		const bool isRealtime = reflectionProbe.GetRefreshMode() == ECS::Components::CReflectionProbe::ERefreshMode::REALTIME;
+		const auto faceIndices = reflectionProbe._GetCaptureFaceIndices();
 
-		// Skip if the probe is not set to be updated in this frame.
-		if (!isRealtime && !reflectionProbe._IsCaptureRequested())
+		// No faces to render, skip this probe.
+		if (faceIndices.empty())
 		{
 			continue;
 		}
@@ -75,24 +75,40 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			reflectionProbe.GetInfluenceOffset()
 		);
 
+		std::reference_wrapper<OvRendering::HAL::Framebuffer> targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
+
 		reflectionCamera.SetFov(90.0f);
-		const auto [width, height] = reflectionProbe._GetFramebuffer().GetSize();
-		reflectionProbe._GetFramebuffer().Bind();
+		const auto [width, height] = targetFramebuffer.get().GetSize();
+		targetFramebuffer.get().Bind();
 		m_renderer.SetViewport(0, 0, width, height);
 
-		// For each face
-		for (uint32_t faceIndex = 0U; faceIndex < kProbeFaceCount; ++faceIndex)
+		// Iterating over the given face indices, which determine if we 
+		// are rendering progressively (less than 6 faces per frame) or immediately (6 faces at once).
+		for (auto faceIndex : faceIndices)
 		{
 			reflectionCamera.SetRotation(OvMaths::FQuaternion{ kCubeFaceRotations[faceIndex] });
 			reflectionCamera.CacheMatrices(width, height);
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
-			reflectionProbe._GetFramebuffer().SetTargetDrawBuffer(faceIndex);
+			targetFramebuffer.get().SetTargetDrawBuffer(faceIndex);
 			m_renderer.Clear(true, true, true);
 			_DrawReflections(pso, reflectionCamera);
+
+			// Once we finish rendering all faces, we notify the probe that the cubemap is complete.
+			if (faceIndex == 5)
+			{
+				reflectionProbe._NotifyCubemapComplete();
+
+				const bool isLastFace = (faceIndex == faceIndices.back());
+
+				if (!isLastFace)
+				{
+					targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
+					targetFramebuffer.get().Bind(); // Backbuffer changed, rebind it.
+				}
+			}
 		}
 
-		reflectionProbe._GetFramebuffer().Unbind();
-		reflectionProbe.GetCubemap()->GenerateMipmaps();
+		targetFramebuffer.get().Unbind();
 		reflectionProbe._MarkCaptureRequestComplete();
 
 		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());

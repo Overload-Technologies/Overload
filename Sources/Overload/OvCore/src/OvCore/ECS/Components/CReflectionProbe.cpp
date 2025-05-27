@@ -22,18 +22,22 @@ namespace
 		sizeof(OvMaths::FVector4) +	// Box Center (vec3)
 		sizeof(OvMaths::FVector4) +	// Box Extents (vec3)
 		sizeof(int);				// Box Projection (bool)
+
+	constexpr uint32_t kProgressiveFacesPerFrame = 1; // One face per frame in progressive capture mode
+
+	constexpr uint32_t kBackBufferIndex = 0; // Cubemap that is being rendered
+	constexpr uint32_t kCompleteBufferIndex = 1; // Cubemap that is used
 }
 
-OvCore::ECS::Components::CReflectionProbe::CReflectionProbe(ECS::Actor& p_owner) : AComponent(p_owner)
+OvCore::ECS::Components::CReflectionProbe::CReflectionProbe(ECS::Actor& p_owner) :
+	AComponent(p_owner),
+	m_framebuffers{ "ReflectionProbeFramebuffer" },
+	m_cubemapIterator{ m_cubemaps }
 {
-	m_framebuffer = std::make_unique<OvRendering::HAL::Framebuffer>(
-		"ReflectionProbeFramebuffer"
-	);
-
 	m_uniformBuffer = std::make_unique<OvRendering::HAL::UniformBuffer>();
 	m_uniformBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
 
-	_CreateCubemap();
+	_AllocateResources();
 
 	if (m_refreshMode == ERefreshMode::ONCE)
 	{
@@ -49,6 +53,11 @@ std::string OvCore::ECS::Components::CReflectionProbe::GetName()
 void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mode)
 {
 	m_refreshMode = p_mode;
+
+	// Progressive uses double buffering, while immediate doesn't.
+	// This makes sure that the proper resources are allocated for
+	// the given refresh mode.
+	_AllocateResources();
 }
 
 OvCore::ECS::Components::CReflectionProbe::ERefreshMode OvCore::ECS::Components::CReflectionProbe::GetRefreshMode() const
@@ -104,7 +113,8 @@ void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_
 	if (p_resolution != m_resolution)
 	{
 		m_resolution = p_resolution;
-		_CreateCubemap();
+		_AllocateResources();
+		RequestCapture();
 	}
 }
 
@@ -120,8 +130,13 @@ void OvCore::ECS::Components::CReflectionProbe::RequestCapture()
 
 std::shared_ptr<OvRendering::HAL::Texture> OvCore::ECS::Components::CReflectionProbe::GetCubemap() const
 {
-	OVASSERT(m_cubemap != nullptr, "Cubemap is not initialized");
-	return m_cubemap;
+	const auto& target =
+		_IsDoubleBuffered() ?
+		m_cubemapIterator[kCompleteBufferIndex] :
+		m_cubemaps[0];
+
+	OVASSERT(target != nullptr, "Cubemap is not initialized");
+	return target;
 }
 
 void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -169,13 +184,14 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	auto& refreshMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(m_refreshMode));
 	refreshMode.choices = {
 		{ static_cast<int>(ERefreshMode::REALTIME), "Realtime" },
+		{ static_cast<int>(ERefreshMode::REALTIME_PROGRESSIVE), "Realtime (Progressive)" },
 		{ static_cast<int>(ERefreshMode::ONCE), "Once" },
-		{ static_cast<int>(ERefreshMode::MANUAL), "Manual" }
+		{ static_cast<int>(ERefreshMode::ON_DEMAND), "On Demand" }
 	};
 
 	auto& refreshModeDispatcher = refreshMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
-	refreshModeDispatcher.RegisterGatherer([this] { return static_cast<int>(m_refreshMode); });
-	refreshModeDispatcher.RegisterProvider([this](int mode) { m_refreshMode = static_cast<ERefreshMode>(mode); });
+	refreshModeDispatcher.RegisterGatherer([this] { return static_cast<int>(GetRefreshMode()); });
+	refreshModeDispatcher.RegisterProvider([this](int mode) { SetRefreshMode(static_cast<ERefreshMode>(mode)); });
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Cubemap Resolution");
 
@@ -264,53 +280,77 @@ void OvCore::ECS::Components::CReflectionProbe::OnEnable()
 	}
 }
 
-bool OvCore::ECS::Components::CReflectionProbe::_IsCaptureRequested() const
-{
-	return m_captureRequested;
-}
-
 void OvCore::ECS::Components::CReflectionProbe::_MarkCaptureRequestComplete()
 {
 	m_captureRequested = false;
 }
 
-void OvCore::ECS::Components::CReflectionProbe::_CreateCubemap()
+void OvCore::ECS::Components::CReflectionProbe::_NotifyCubemapComplete()
 {
-	m_cubemap = std::make_shared<OvRendering::HAL::Texture>(
-		OvRendering::Settings::ETextureType::TEXTURE_CUBE,
-		"ReflectionProbeCubemap"
-	);
+	m_cubemapIterator[kBackBufferIndex]->GenerateMipmaps();
 
-	m_cubemap->Allocate(
-		OvRendering::Settings::TextureDesc{
-			.width = m_resolution,
-			.height = m_resolution,
-			.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR,
-			.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
-			.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-			.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-			.internalFormat = OvRendering::Settings::EInternalFormat::RGBA32F,
-			.useMipMaps = true
-		}
-	);
-
-	for (uint32_t i = 0; i < 6; ++i)
+	if (_IsDoubleBuffered())
 	{
-		m_framebuffer->Attach<OvRendering::HAL::Texture>(
-			m_cubemap,
-			OvRendering::Settings::EFramebufferAttachment::COLOR,
-			i, // Each color attachment is a face of the cubemap
-			i // Each face of the cubemap is accessed by its layer index
+		++m_cubemapIterator;
+		++m_framebuffers;
+	}
+}
+
+void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
+{
+	const uint8_t cubemapCount = _IsDoubleBuffered() ? 2 : 1;
+
+	// Reset the ping pong iterators
+	m_framebuffers.Reset();
+	m_cubemapIterator.Reset();
+
+	for (uint8_t i = 0; i < cubemapCount; ++i)
+	{
+		auto& cubemap = m_cubemaps[i];
+		cubemap = std::make_shared<OvRendering::HAL::Texture>(
+			OvRendering::Settings::ETextureType::TEXTURE_CUBE,
+			"ReflectionProbeCubemap"
 		);
+
+		cubemap->Allocate(
+			OvRendering::Settings::TextureDesc{
+				.width = m_resolution,
+				.height = m_resolution,
+				.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR,
+				.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
+				.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
+				.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
+				.internalFormat = OvRendering::Settings::EInternalFormat::RGBA32F,
+				.useMipMaps = true
+			}
+		);
+
+		for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex)
+		{
+			m_framebuffers[i].Attach<OvRendering::HAL::Texture>(
+				cubemap,
+				OvRendering::Settings::EFramebufferAttachment::COLOR,
+				faceIndex, // Each color attachment is a face of the cubemap
+				faceIndex // Each face of the cubemap is accessed by its layer index
+			);
+		}
+
+		// Depth buffer
+		const auto renderbuffer = std::make_shared<OvRendering::HAL::Renderbuffer>();
+		const auto internalFormat = OvRendering::Settings::EInternalFormat::DEPTH_COMPONENT;
+		renderbuffer->Allocate(m_resolution, m_resolution, internalFormat);
+		m_framebuffers[i].Attach(renderbuffer, OvRendering::Settings::EFramebufferAttachment::DEPTH);
+
+		// Validation
+		m_framebuffers[i].Validate();
 	}
 
-	// Depth buffer
-	const auto renderbuffer = std::make_shared<OvRendering::HAL::Renderbuffer>();
-	const auto internalFormat = OvRendering::Settings::EInternalFormat::DEPTH_COMPONENT;
-	renderbuffer->Allocate(m_resolution, m_resolution, internalFormat);
-	m_framebuffer->Attach(renderbuffer, OvRendering::Settings::EFramebufferAttachment::DEPTH);
-
-	m_framebuffer->Validate();
+	// Force at least the first cubemap to be ready for capture immediately.
+	// This avoids using an incomplete cubemap during the first few frames (if set to progressive).
+	if (m_refreshMode == ERefreshMode::REALTIME_PROGRESSIVE)
+	{
+		RequestCapture();
+	}
 }
 
 void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
@@ -344,14 +384,38 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 	m_uniformBuffer->Upload(&uboDataPage);
 }
 
-OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetFramebuffer() const
+std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFaceIndices()
 {
-	OVASSERT(m_framebuffer != nullptr, "Framebuffer is not initialized");
-	return *m_framebuffer;
+	if (m_refreshMode == ERefreshMode::REALTIME || m_captureRequested)
+	{
+		m_captureFaceIndex = 0;
+		return { 0, 1, 2, 3, 4, 5 }; // Capture all faces in one go
+	}
+
+	std::vector<uint32_t> faceIndices;
+	faceIndices.reserve(kProgressiveFacesPerFrame);
+	for (uint32_t i = m_captureFaceIndex; i < m_captureFaceIndex + kProgressiveFacesPerFrame; ++i)
+	{
+		faceIndices.push_back(i % 6); // Cycle through faces 0 to 5
+	}
+	m_captureFaceIndex = (m_captureFaceIndex + kProgressiveFacesPerFrame) % 6; // Update the index for the next capture
+	return faceIndices;
+}
+
+OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetTargetFramebuffer() const
+{
+	auto& framebuffer = m_framebuffers[kBackBufferIndex];
+	OVASSERT(framebuffer.IsValid(), "Framebuffer is invalid");
+	return framebuffer;
 }
 
 OvRendering::HAL::UniformBuffer& OvCore::ECS::Components::CReflectionProbe::_GetUniformBuffer() const
 {
 	OVASSERT(m_uniformBuffer != nullptr, "Uniform buffer is not initialized");
 	return *m_uniformBuffer;
+}
+
+bool OvCore::ECS::Components::CReflectionProbe::_IsDoubleBuffered() const
+{
+	return m_refreshMode == ERefreshMode::REALTIME_PROGRESSIVE;
 }

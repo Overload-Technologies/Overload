@@ -32,11 +32,24 @@ namespace OvTools::Utils
 		}
 
 		/**
+		* Return the element at the given offset
+		*/
+		T& operator[](uint8_t offset) const
+		{
+			return m_data[static_cast<size_t>(m_currentIndex + offset) % Size];
+		}
+
+		/**
 		* Increment the current index circularly.
 		*/
 		void operator++()
 		{
 			m_currentIndex = (m_currentIndex + 1) % Size;
+		}
+
+		void Reset()
+		{
+			m_currentIndex = 0;
 		}
 
 		/**

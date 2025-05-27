@@ -7,6 +7,7 @@
 #pragma once
 
 #include <OvCore/ECS/Components/AComponent.h>
+#include <OvCore/Rendering/PingPongFramebuffer.h>
 #include <OvRendering/HAL/Framebuffer.h>
 #include <OvRendering/HAL/Texture.h>
 #include <OvRendering/HAL/UniformBuffer.h>
@@ -30,8 +31,9 @@ namespace OvCore::ECS::Components
 		enum class ERefreshMode : uint32_t
 		{
 			REALTIME,
+			REALTIME_PROGRESSIVE,
 			ONCE,
-			MANUAL
+			ON_DEMAND
 		};
 
 		enum class EInfluencePolicy : uint32_t
@@ -123,7 +125,7 @@ namespace OvCore::ECS::Components
 		void RequestCapture();
 
 		/**
-		* Returns the cubemap texture
+		* Returns the last complete cubemap captured by the reflection probe
 		*/
 		std::shared_ptr<OvRendering::HAL::Texture> GetCubemap() const;
 
@@ -151,26 +153,34 @@ namespace OvCore::ECS::Components
 		virtual void OnEnable() override;
 
 	private:
-		bool _IsCaptureRequested() const;
 		void _MarkCaptureRequestComplete();
-		void _CreateCubemap();
+		void _NotifyCubemapComplete();
+		void _AllocateResources();
 		void _PrepareUBO();
-		OvRendering::HAL::Framebuffer& _GetFramebuffer() const;
+		std::vector<uint32_t> _GetCaptureFaceIndices();
+		OvRendering::HAL::Framebuffer& _GetTargetFramebuffer() const;
 		OvRendering::HAL::UniformBuffer& _GetUniformBuffer() const;
+		bool _IsDoubleBuffered() const;
 
 		friend class OvCore::Rendering::ReflectionRenderPass;
 		friend class OvCore::Rendering::ReflectionRenderFeature;
 
 	private:
-		std::unique_ptr<OvRendering::HAL::Framebuffer> m_framebuffer;
-		std::shared_ptr<OvRendering::HAL::Texture> m_cubemap;
+		// Double buffering so we can render to progressively one while reading from the other
+		Rendering::PingPongFramebuffer m_framebuffers;
+		std::array<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemaps;
+		OvTools::Utils::CircularIterator<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemapIterator;
+
 		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_uniformBuffer;
-		ERefreshMode m_refreshMode = ERefreshMode::ONCE;
-		bool m_captureRequested = false;
+
+		ERefreshMode m_refreshMode = ERefreshMode::REALTIME_PROGRESSIVE;
 		uint32_t m_resolution = 512;
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
 		bool m_boxProjection = false;
+
+		bool m_captureRequested = false;
+		uint32_t m_captureFaceIndex = 0; // Current frame in the capture process
 	};
 }

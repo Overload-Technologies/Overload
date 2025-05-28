@@ -358,10 +358,16 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 
 		// Skip if material is invalid
 		if (!targetMaterial || !targetMaterial->IsValid()) continue;
-		const bool isUI = targetMaterial->IsUserInterface();
-		if (isUI && !p_filteringInput.includeUI) continue;
-		if (!isUI && !targetMaterial->IsBlendable() && !p_filteringInput.includeOpaque) continue;
-		if (!isUI && targetMaterial->IsBlendable() && !p_filteringInput.includeTransparent) continue;
+
+		// Filter drawables based on the type (UI, opaque, transparent)
+		// Except for the fallback material, which is always included.
+		if (!p_filteringInput.fallbackMaterial || &p_filteringInput.fallbackMaterial.value() != &targetMaterial.value())
+		{
+			const bool isUI = targetMaterial->IsUserInterface();
+			if (isUI && !p_filteringInput.includeUI) continue;
+			if (!isUI && !targetMaterial->IsBlendable() && !p_filteringInput.includeOpaque) continue;
+			if (!isUI && targetMaterial->IsBlendable() && !p_filteringInput.includeTransparent) continue;
+		}
 
 		// Perform frustum culling if enabled
 		if (frustum && desc.bounds.has_value())
@@ -388,6 +394,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		// At this point, the filtered drawable should be guaranteed to have a valid material.
 		auto drawableCopy = drawable;
 		drawableCopy.material = targetMaterial;
+		drawableCopy.stateMask = targetMaterial->GenerateStateMask();
 
 		// Categorize drawable based on their type.
 		// This is also where sorting happens, using

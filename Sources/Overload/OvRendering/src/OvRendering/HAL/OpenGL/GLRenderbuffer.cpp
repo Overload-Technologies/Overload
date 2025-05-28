@@ -19,7 +19,7 @@ OvRendering::HAL::GLRenderbuffer::TRenderbuffer()
 template<>
 OvRendering::HAL::GLRenderbuffer::~TRenderbuffer()
 {
-	glDeleteBuffers(1, &m_context.id);
+	glDeleteRenderbuffers(1, &m_context.id);
 }
 
 template<>

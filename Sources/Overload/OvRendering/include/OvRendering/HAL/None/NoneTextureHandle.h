@@ -10,6 +10,10 @@
 
 namespace OvRendering::HAL
 {
-	struct NoneTextureHandleContext {};
+	struct NoneTextureHandleContext
+	{
+		const Settings::ETextureType type;
+	};
+
 	using NoneTextureHandle = TTextureHandle<Settings::EGraphicsBackend::NONE, NoneTextureHandleContext>;
 }

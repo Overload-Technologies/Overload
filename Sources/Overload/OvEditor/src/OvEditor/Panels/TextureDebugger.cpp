@@ -57,7 +57,7 @@ struct OvTools::Utils::MappingFor<OvEditor::Panels::EScaleMode, float>
 	>;
 };
 
-namespace OvEditor::Panels 
+namespace
 {
 	void AddOption(OvUI::Widgets::Selection::ComboBox& p_selector, const OvRendering::HAL::Texture& p_texture)
 	{
@@ -81,12 +81,12 @@ namespace OvEditor::Panels
 		return std::min(safeSizeX / texDesc.width, safeSizeY / texDesc.height);
 	}
 
-	OvMaths::FVector2 CalculateImageSize(EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, OvRendering::HAL::Texture& p_texture)
+	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, OvRendering::HAL::Texture& p_texture)
 	{
 		const float scale =
-			p_mode == EScaleMode::ONE_TO_ONE ?
+			p_mode == OvEditor::Panels::EScaleMode::ONE_TO_ONE ?
 			CalculateOneToOneScale(p_windowSize, p_texture) :
-			OvTools::Utils::ToValueImpl<EScaleMode, float>(p_mode);
+			OvTools::Utils::ToValueImpl<OvEditor::Panels::EScaleMode, float>(p_mode);
 
 		return {
 			p_texture.GetDesc().width * scale,
@@ -94,6 +94,21 @@ namespace OvEditor::Panels
 		};
 	}
 
+	bool IsValidTexture(const OvRendering::HAL::Texture* p_texture)
+	{
+		return
+			p_texture != nullptr &&
+			p_texture->GetID() != 0 &&
+			p_texture->IsValid() &&
+			p_texture->GetDesc().width > 0 &&
+			p_texture->GetDesc().height > 0 &&
+			// Only 2D textures are supported in the debugger
+			p_texture->GetType() == OvRendering::Settings::ETextureType::TEXTURE_2D;
+	}
+}
+
+namespace OvEditor::Panels 
+{
 	TextureDebugger::TextureDebugger(
 		const std::string& p_title,
 		bool p_opened,
@@ -116,7 +131,10 @@ namespace OvEditor::Panels
 		{
 			if (auto texture = textureRegistry.GetTexture(textureID); texture.has_value())
 			{
-				AddOption(m_textureSelector, texture.value());
+				if (IsValidTexture(&texture.value()))
+				{
+					AddOption(m_textureSelector, texture.value());
+				}
 			}
 		}
 
@@ -139,7 +157,7 @@ namespace OvEditor::Panels
 		};
 
 		// Selecting the last texture, by default
-		if (m_textureSelector.choices.size() > 1)
+		if (m_textureSelector.choices.size() > 1ULL)
 		{
 			m_textureSelector.currentChoice = static_cast<int>(m_textureSelector.choices.size() - 1ULL);
 			m_textureSelector.ValueChangedEvent.Invoke(m_textureSelector.currentChoice);
@@ -147,14 +165,8 @@ namespace OvEditor::Panels
 
 		m_creationListenerID = textureRegistry.textureAddedEvent += [this](const auto& p_desc)
 		{
-			if (p_desc.id != 0)
+			if (IsValidTexture(p_desc.texture))
 			{
-				m_textureSelector.choices[p_desc.id] = std::format(
-					"Texture {}: {}",
-					p_desc.id,
-					p_desc.texture->GetDebugName()
-				);
-
 				AddOption(m_textureSelector, *p_desc.texture);
 			}
 		};

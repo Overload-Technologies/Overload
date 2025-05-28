@@ -47,3 +47,9 @@ uint32_t OvRendering::HAL::GLTextureHandle::GetID() const
 {
 	return m_context.id;
 }
+
+template<>
+OvRendering::Settings::ETextureType OvRendering::HAL::GLTextureHandle::GetType() const
+{
+	return ValueToEnum<Settings::ETextureType>(m_context.type);
+}

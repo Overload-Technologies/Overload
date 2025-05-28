@@ -168,9 +168,6 @@ namespace OvCore::ECS::Components
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
-	protected:
-		virtual void OnEnable() override;
-
 	private:
 		void _NotifyCubemapComplete();
 		void _AllocateResources();

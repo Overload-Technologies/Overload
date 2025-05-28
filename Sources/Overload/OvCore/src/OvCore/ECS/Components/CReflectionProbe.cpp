@@ -41,11 +41,6 @@ OvCore::ECS::Components::CReflectionProbe::CReflectionProbe(ECS::Actor& p_owner)
 	m_uniformBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
 
 	_AllocateResources();
-
-	if (m_refreshMode == ERefreshMode::ONCE)
-	{
-		RequestCapture();
-	}
 }
 
 std::string OvCore::ECS::Components::CReflectionProbe::GetName()
@@ -58,12 +53,6 @@ void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mo
 	if (p_mode != m_refreshMode)
 	{
 		m_refreshMode = p_mode;
-
-		// If the refresh mode is set to ONCE, we request a capture.
-		if (m_refreshMode == ERefreshMode::ONCE)
-		{
-			RequestCapture();
-		}
 	}
 }
 
@@ -113,7 +102,6 @@ void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_
 	{
 		m_resolution = p_resolution;
 		_AllocateResources();
-		RequestCapture();
 	}
 }
 
@@ -156,6 +144,13 @@ void OvCore::ECS::Components::CReflectionProbe::RequestCapture(bool p_forceImmed
 {
 	m_captureFaceIndex = 0;
 
+	if (m_captureRequest.has_value() && m_captureRequest->forceImmediate)
+	{
+		// If a request already exists and is set to force immediate,
+		// we ignore the new request.
+		return;
+	}
+
 	m_captureRequest = {
 		.forceImmediate = p_forceImmediate
 	};
@@ -194,8 +189,6 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 		m_resolution = Serializer::DeserializeInt(p_doc, p_node, "resolution");
 	}
 
-	const auto previousRefreshMode = m_refreshMode;
-
 	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 	Serializer::DeserializeUint32(p_doc, p_node, "capture_speed", reinterpret_cast<uint32_t&>(m_captureSpeed));
 	Serializer::DeserializeVec3(p_doc, p_node, "capture_position", m_capturePosition);
@@ -204,12 +197,6 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 
 	m_captureFaceIndex = 0;
-
-	// If the refresh mode is set to ONCE, we request a capture.
-	if (m_refreshMode == ERefreshMode::ONCE && previousRefreshMode != m_refreshMode)
-	{
-		RequestCapture();
-	}
 }
 
 void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::WidgetContainer& p_root)
@@ -318,14 +305,6 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	};
 }
 
-void OvCore::ECS::Components::CReflectionProbe::OnEnable()
-{
-	if (m_refreshMode == ERefreshMode::ONCE)
-	{
-		RequestCapture();
-	}
-}
-
 void OvCore::ECS::Components::CReflectionProbe::_NotifyCubemapComplete()
 {
 	if (m_captureRequest)
@@ -405,16 +384,6 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 		// Validation
 		m_framebuffers[i].Validate();
 	}
-
-	// When in progressive mode (double buffered) AND we are not in ON_DEMAND mode,
-	// we want to make sure that we have a valid cubemap to present.
-	// In ON_DEMAND mode, the responsibility of capturing the cubemap is left to the user.
-	if (_IsDoubleBuffered () && m_refreshMode != ERefreshMode::ON_DEMAND)
-	{
-		RequestCapture(
-			true // Immediate capture request
-		);
-	}
 }
 
 void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
@@ -452,7 +421,11 @@ std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFace
 {
 	auto targetFaceCount = [&]() -> uint32_t {
 		const bool captureRequested = m_captureRequest.has_value();
-		const bool immediateCaptureRequested = captureRequested && m_captureRequest->forceImmediate;
+		const bool immediateCaptureRequested =
+			(captureRequested && m_captureRequest->forceImmediate) ||
+			// Always make sure to capture all faces immediately when no cubemap is complete,
+			// unless we are in "on demand" mode.
+			(m_refreshMode != ERefreshMode::ON_DEMAND && !m_isAnyCubemapComplete);
 
 		if (immediateCaptureRequested)
 		{
@@ -466,6 +439,11 @@ std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFace
 
 		return 0;
 	}();
+
+	if (targetFaceCount == 0)
+	{
+		return {}; // No faces to capture
+	}
 
 	const auto lastIndex = m_captureFaceIndex + (targetFaceCount - 1);
 

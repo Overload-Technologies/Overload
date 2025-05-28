@@ -76,7 +76,7 @@ vec3 CalculateImageBasedLighting(
     float ao
 ) {
     // 0. Constants
-    const int environmentMaxLOD = textureQueryLevels(environmentMap) - 1; // TODO: Should we do -1 here?
+    const int environmentMaxLOD = textureQueryLevels(environmentMap) - 1;
     
     // 1. Calculate reflection vector
     const vec3 R = ParallaxCorrect(reflect(-V, N), fragPos);

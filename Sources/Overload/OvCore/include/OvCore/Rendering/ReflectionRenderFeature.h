@@ -19,11 +19,16 @@
 namespace OvCore::Rendering
 {
 	/**
-	* TODO
+	* Ensures that reflection probes data is provided to
+	* the appropriate drawable entities.
 	*/
 	class ReflectionRenderFeature : public OvRendering::Features::ARenderFeature
 	{
 	public:
+		/**
+		* Provided by the scene renderer, this descriptor contains
+		* reflection probes to evaluate and provide to the drawables.
+		*/
 		struct ReflectionDescriptor
 		{
 			std::vector<std::reference_wrapper<ECS::Components::CReflectionProbe>> reflectionProbes;
@@ -42,6 +47,5 @@ namespace OvCore::Rendering
 	protected:
 		virtual void OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor) override;
 		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
-		virtual void OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
 	};
 }

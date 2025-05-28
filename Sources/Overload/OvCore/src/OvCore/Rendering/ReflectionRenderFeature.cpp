@@ -149,8 +149,13 @@ OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(
 
 void OvCore::Rendering::ReflectionRenderFeature::OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
 {
-	OVASSERT(m_renderer.HasDescriptor<ReflectionRenderFeature::ReflectionDescriptor>(), "Cannot find ReflectionDescriptor attached to this renderer");
+	OVASSERT(
+		m_renderer.HasDescriptor<ReflectionRenderFeature::ReflectionDescriptor>(),
+		"Cannot find ReflectionDescriptor attached to this renderer"
+	);
+
 	const auto& reflectionDescriptor = m_renderer.GetDescriptor<ReflectionRenderFeature::ReflectionDescriptor>();
+
 	for (auto& probe : reflectionDescriptor.reflectionProbes)
 	{
 		probe.get()._PrepareUBO();
@@ -192,9 +197,4 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 	{
 		targetProbe->_GetUniformBuffer().Bind(1);
 	}
-}
-
-void OvCore::Rendering::ReflectionRenderFeature::OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable)
-{
-
 }

@@ -27,7 +27,6 @@ OvRendering::HAL::GLTextureHandle::TTextureHandle(Settings::ETextureType p_type,
 template<>
 void OvRendering::HAL::GLTextureHandle::Bind(std::optional<uint32_t> p_slot) const
 {
-	// TODO: Use glBindTextureUnit
 	if (p_slot.has_value())
 	{
 		glActiveTexture(GL_TEXTURE0 + p_slot.value());

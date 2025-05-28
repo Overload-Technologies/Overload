@@ -20,7 +20,8 @@
 namespace OvCore::Rendering
 {
 	/**
-	* Draw the scene for actor picking
+	* Ensures drawable are properly setup to receive shadows by
+	* providing them with the shadow map and light-space matrix.
 	*/
 	class ShadowRenderFeature : public OvRendering::Features::ARenderFeature
 	{
@@ -37,6 +38,5 @@ namespace OvCore::Rendering
 
 	protected:
 		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
-		virtual void OnAfterDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable);
 	};
 }

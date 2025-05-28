@@ -42,19 +42,10 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 
 	using namespace OvCore::Rendering;
 
-	OVASSERT(m_renderer.HasDescriptor<SceneRenderer::SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
-	OVASSERT(m_renderer.HasFeature<OvCore::Rendering::EngineBufferRenderFeature>(), "Cannot find EngineBufferRenderFeature attached to this renderer");
-	OVASSERT(m_renderer.HasDescriptor<OvCore::Rendering::ReflectionRenderFeature::ReflectionDescriptor>(), "Cannot find ReflectionDescriptor attached to this renderer");
-
+	auto& sceneDescriptor = m_renderer.GetDescriptor<SceneRenderer::SceneDescriptor>();
 	auto& engineBufferRenderFeature = m_renderer.GetFeature<OvCore::Rendering::EngineBufferRenderFeature>();
 	auto& reflectionDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::ReflectionRenderFeature::ReflectionDescriptor>();
-
-	auto& sceneDescriptor = m_renderer.GetDescriptor<SceneRenderer::SceneDescriptor>();
 	auto& frameDescriptor = m_renderer.GetFrameDescriptor();
-
-	auto pso = m_renderer.CreatePipelineState();
-
-	uint8_t lightIndex = 0;
 
 	for (auto reflectionProbeReference : reflectionDescriptor.reflectionProbes)
 	{
@@ -91,7 +82,7 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
 			targetFramebuffer.get().SetTargetDrawBuffer(faceIndex);
 			m_renderer.Clear(true, true, true);
-			_DrawReflections(pso, reflectionCamera);
+			_DrawReflections(p_pso, reflectionCamera);
 
 			// Once we finish rendering all faces, we notify the probe that the cubemap is complete.
 			if (faceIndex == 5)
@@ -100,18 +91,24 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 
 				const bool isLastFace = (faceIndex == faceIndices.back());
 
+				// If we are not done (i.e., not the last face in the capture process),
+				// We update the target framebuffer. This is required since _NotifyCubemapComplete()
+				// internally swaps its framebuffer (double buffering).
 				if (!isLastFace)
 				{
 					targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
-					targetFramebuffer.get().Bind(); // Backbuffer changed, rebind it.
+					targetFramebuffer.get().Bind();
 				}
 			}
 		}
 
 		targetFramebuffer.get().Unbind();
-
-		engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 	}
+
+	// Once we are done rendering all reflection probes,
+	// we can restore the initial camera, unbind the framebuffer,
+	// and reset the viewport.
+	engineBufferRenderFeature.SetCamera(frameDescriptor.camera.value());
 
 	if (auto output = frameDescriptor.outputBuffer)
 	{

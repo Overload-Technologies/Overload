@@ -337,10 +337,16 @@ void OvCore::ECS::Components::CReflectionProbe::_NotifyCubemapComplete()
 		m_captureRequest.reset();
 	}
 
+	// This is to keep track of whether any cubemap is complete.
+	// Useful to ensure that we always have a valid cubemap to present.
 	m_isAnyCubemapComplete = true;
 
+	// Once the cubemap is complete, we can generate the mipmaps
+	// that will be used to sample the average color of the cubemap (diffuse IBL).
 	m_cubemapIterator[kBackBufferIndex]->GenerateMipmaps();
 
+	// When using double buffering (i.e. progressive capture), we need to
+	// update which buffer is the back buffer and which one is the complete buffer (presented to shaders).
 	if (_IsDoubleBuffered())
 	{
 		++m_cubemapIterator;
@@ -355,9 +361,14 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 	// Reset the ping pong iterators
 	m_framebuffers.Reset();
 	m_cubemapIterator.Reset();
+
+	// This forces a capture on the next frame,
+	// as we always want to have at least one valid cubemap.
 	m_isAnyCubemapComplete = false;
+
 	m_captureFaceIndex = 0;
 
+	// Allocate 1 or 2 cubemaps (depending on double buffering)
 	for (uint8_t i = 0; i < cubemapCount; ++i)
 	{
 		auto& cubemap = m_cubemaps[i];
@@ -399,11 +410,14 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 		m_framebuffers[i].Validate();
 	}
 
-	// When double buffering is enabled, we want to make sure that at least one
-	// complete cubemap is ready to be used at all times.
-	if (_IsDoubleBuffered())
+	// When in progressive mode (double buffered) AND we are not in ON_DEMAND mode,
+	// we want to make sure that we have a valid cubemap to present.
+	// In ON_DEMAND mode, the responsibility of capturing the cubemap is left to the user.
+	if (_IsDoubleBuffered () && m_refreshMode != ERefreshMode::ON_DEMAND)
 	{
-		RequestCapture();
+		RequestCapture(
+			true // Immediate capture request
+		);
 	}
 }
 
@@ -440,19 +454,9 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 
 std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFaceIndices()
 {
-	const bool immediateCaptureRequested =
-		(m_captureRequest.has_value() && m_captureRequest->forceImmediate) ||
-		// If no cubemap is complete, we need to capture all faces immediately,
-		// so we at least have one valid cubemap to present.
-		!m_isAnyCubemapComplete;
-
 	auto targetFaceCount = [&]() -> uint32_t {
 		const bool captureRequested = m_captureRequest.has_value();
-		const bool immediateCaptureRequested =
-			(captureRequested && m_captureRequest->forceImmediate) ||
-			// If no cubemap is complete, we need to capture all faces immediately,
-			// so we at least have one valid cubemap to present.
-			!m_isAnyCubemapComplete;
+		const bool immediateCaptureRequested = captureRequested && m_captureRequest->forceImmediate;
 
 		if (immediateCaptureRequested)
 		{
@@ -467,13 +471,29 @@ std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFace
 		return 0;
 	}();
 
+	const auto lastIndex = m_captureFaceIndex + (targetFaceCount - 1);
+
+	OVASSERT(
+		lastIndex < 6,
+		"We shouldn't request more than one cubemap to be modified at a time."
+		// Expected indices are:
+		// [0, 1, 2, 3, 4, 5] for 6 faces per frame,
+		// [0, 1, 2], [3, 4, 5] for 3 faces per frame,
+		// [0, 1], [2, 3], [4, 5] for 2 faces per frame,
+		// [0], [1], [2], [3], [4], [5] for 1 face per frame.
+	);
+
 	std::vector<uint32_t> faceIndices;
 	faceIndices.reserve(targetFaceCount);
-	for (uint32_t i = m_captureFaceIndex; i < m_captureFaceIndex + targetFaceCount; ++i)
+
+	for (uint32_t i = m_captureFaceIndex; i <= lastIndex; ++i)
 	{
-		faceIndices.push_back(i % 6); // Cycle through faces 0 to 5
+		faceIndices.push_back(i);
 	}
-	m_captureFaceIndex = (m_captureFaceIndex + targetFaceCount) % 6; // Update the index for the next capture
+
+	// Update the index for the next capture
+	m_captureFaceIndex = (lastIndex + 1) % 6;
+
 	return faceIndices;
 }
 

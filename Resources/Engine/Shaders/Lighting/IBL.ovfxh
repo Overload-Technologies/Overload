@@ -49,6 +49,7 @@ vec3 ParallaxCorrect(vec3 reflectionDir, vec3 worldPos)
 vec2 EnvBRDFApprox(float NdotV, float roughness)
 {
     // Approximation from "Moving Frostbite to PBR" by Lagarde & de Rousiers
+    // This is great because it mitigates the need to sample a precomputed BRDF LUT!
     const vec4 c0 = vec4(-1, -0.0275, -0.572, 0.022);
     const vec4 c1 = vec4(1, 0.0425, 1.04, -0.04);
     vec4 r = roughness * c0 + c1;

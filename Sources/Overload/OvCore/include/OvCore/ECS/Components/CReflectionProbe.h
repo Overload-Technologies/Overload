@@ -23,7 +23,7 @@ namespace OvCore::Rendering
 namespace OvCore::ECS::Components
 {
 	/**
-	* A simple light that has no attenuation and that has a direction
+	* Component that captures the surrounding environment into a cubemap texture.
 	*/
 	class CReflectionProbe : public AComponent
 	{

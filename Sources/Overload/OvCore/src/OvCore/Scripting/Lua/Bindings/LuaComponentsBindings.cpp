@@ -4,25 +4,25 @@
 * @licence: MIT
 */
 
-#include "OvCore/ECS/Actor.h"
-
-#include "OvCore/ECS/Components/CTransform.h"
-#include "OvCore/ECS/Components/CCamera.h"
-#include "OvCore/ECS/Components/CPhysicalBox.h"
-#include "OvCore/ECS/Components/CPhysicalSphere.h"
-#include "OvCore/ECS/Components/CPhysicalCapsule.h"
-#include "OvCore/ECS/Components/CDirectionalLight.h"
-#include "OvCore/ECS/Components/CPointLight.h"
-#include "OvCore/ECS/Components/CSpotLight.h"
-#include "OvCore/ECS/Components/CAmbientBoxLight.h"
-#include "OvCore/ECS/Components/CAmbientSphereLight.h"
-#include "OvCore/ECS/Components/CModelRenderer.h"
-#include "OvCore/ECS/Components/CMaterialRenderer.h"
-#include "OvCore/ECS/Components/CAudioSource.h"
-#include "OvCore/ECS/Components/CAudioListener.h"
-#include "OvCore/ECS/Components/CPostProcessStack.h"
-
 #include <sol/sol.hpp>
+
+#include <OvCore/ECS/Actor.h>  
+#include <OvCore/ECS/Components/CAmbientBoxLight.h>  
+#include <OvCore/ECS/Components/CAmbientSphereLight.h>  
+#include <OvCore/ECS/Components/CAudioListener.h>  
+#include <OvCore/ECS/Components/CAudioSource.h>  
+#include <OvCore/ECS/Components/CCamera.h>  
+#include <OvCore/ECS/Components/CDirectionalLight.h>  
+#include <OvCore/ECS/Components/CMaterialRenderer.h>  
+#include <OvCore/ECS/Components/CModelRenderer.h>  
+#include <OvCore/ECS/Components/CPhysicalBox.h>  
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>  
+#include <OvCore/ECS/Components/CPhysicalSphere.h>  
+#include <OvCore/ECS/Components/CPointLight.h>  
+#include <OvCore/ECS/Components/CPostProcessStack.h>  
+#include <OvCore/ECS/Components/CReflectionProbe.h>  
+#include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/ECS/Components/CTransform.h>
 
 void BindLuaComponents(sol::state& p_luaState)
 {
@@ -90,7 +90,7 @@ void BindLuaComponents(sol::state& p_luaState)
 	p_luaState.new_enum<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>("CollisionDetectionMode", {
 		{"DISCRETE", OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode::DISCRETE},
 		{"CONTINUOUS", OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode::CONTINUOUS}
-	});
+		});
 
 	p_luaState.new_usertype<CPhysicalObject>("PhysicalObject",
 		sol::base_classes, sol::bases<AComponent>(),
@@ -116,7 +116,7 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetCollisionDetectionMode", &CPhysicalObject::SetCollisionDetectionMode,
 		"GetCollisionMode", &CPhysicalObject::GetCollisionDetectionMode,
 		"SetKinematic", &CPhysicalObject::SetKinematic
-		);
+	);
 
 	p_luaState.new_usertype<CPhysicalBox>("PhysicalBox",
 		sol::base_classes, sol::bases<CPhysicalObject>(),
@@ -141,7 +141,7 @@ void BindLuaComponents(sol::state& p_luaState)
 	p_luaState.new_enum<OvRendering::Settings::EProjectionMode>("ProjectionMode", {
 		{"ORTHOGRAPHIC", OvRendering::Settings::EProjectionMode::ORTHOGRAPHIC},
 		{"PERSPECTIVE", OvRendering::Settings::EProjectionMode::PERSPECTIVE}
-	});
+		});
 
 	p_luaState.new_usertype<CCamera>("Camera",
 		sol::base_classes, sol::bases<AComponent>(),
@@ -274,7 +274,7 @@ void BindLuaComponents(sol::state& p_luaState)
 		{"UNCHARTED2", OvCore::Rendering::PostProcess::ETonemappingMode::UNCHARTED2},
 		{"UNCHARTED2_FILMIC", OvCore::Rendering::PostProcess::ETonemappingMode::UNCHARTED2_FILMIC},
 		{"ACES", OvCore::Rendering::PostProcess::ETonemappingMode::ACES}
-	});
+		});
 
 	p_luaState.new_usertype<OvCore::Rendering::PostProcess::TonemappingSettings>("TonemappingSettings",
 		sol::base_classes, sol::bases<OvCore::Rendering::PostProcess::EffectSettings>(),
@@ -297,5 +297,44 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetBloomSettings", &CPostProcessStack::SetBloomSettings,
 		"SetAutoExposureSettings", &CPostProcessStack::SetAutoExposureSettings,
 		"SetFXAASettings", &CPostProcessStack::SetFXAASettings
+	);
+
+	p_luaState.new_enum<CReflectionProbe::ERefreshMode>("ReflectionProbeRefreshMode", {
+		{ "REALTIME", CReflectionProbe::ERefreshMode::REALTIME },
+		{ "ONCE", CReflectionProbe::ERefreshMode::ONCE },
+		{ "ON_DEMAND", CReflectionProbe::ERefreshMode::ON_DEMAND }
+	});
+
+	p_luaState.new_enum<CReflectionProbe::ECaptureSpeed>("ReflectionProbeCaptureSpeed", {
+		{ "ONE_FACE", CReflectionProbe::ECaptureSpeed::ONE_FACE },
+		{ "TWO_FACES", CReflectionProbe::ECaptureSpeed::TWO_FACES },
+		{ "THREE_FACES", CReflectionProbe::ECaptureSpeed::THREE_FACES },
+		{ "SIX_FACES", CReflectionProbe::ECaptureSpeed::SIX_FACES }
+	});
+
+	p_luaState.new_enum<CReflectionProbe::EInfluencePolicy>("ReflectionProbeInfluencePolicy", {
+		{ "GLOBAL", CReflectionProbe::EInfluencePolicy::GLOBAL },
+		{ "LOCAL", CReflectionProbe::EInfluencePolicy::LOCAL }
+	});
+
+	// Add bindings for the new CReflectionProbe component
+	p_luaState.new_usertype<CReflectionProbe>("ReflectionProbe",
+		sol::base_classes, sol::bases<AComponent>(),
+		"SetRefreshMode", &CReflectionProbe::SetRefreshMode,
+		"GetRefreshMode", &CReflectionProbe::GetRefreshMode,
+		"SetCaptureSpeed", &CReflectionProbe::SetCaptureSpeed,
+		"GetCaptureSpeed", &CReflectionProbe::GetCaptureSpeed,
+		"SetInfluencePolicy", &CReflectionProbe::SetInfluencePolicy,
+		"GetInfluencePolicy", &CReflectionProbe::GetInfluencePolicy,
+		"SetInfluenceSize", &CReflectionProbe::SetInfluenceSize,
+		"GetInfluenceSize", &CReflectionProbe::GetInfluenceSize,
+		"SetInfluenceOffset", &CReflectionProbe::SetInfluenceOffset,
+		"GetInfluenceOffset", &CReflectionProbe::GetInfluenceOffset,
+		"SetBoxProjection", &CReflectionProbe::SetBoxProjection,
+		"IsBoxProjectionEnabled", &CReflectionProbe::IsBoxProjectionEnabled,
+		"SetCubemapResolution", &CReflectionProbe::SetCubemapResolution,
+		"GetCubemapResolution", &CReflectionProbe::GetCubemapResolution,
+		"RequestCapture", &CReflectionProbe::RequestCapture,
+		"GetCubemap", &CReflectionProbe::GetCubemap
 	);
 }

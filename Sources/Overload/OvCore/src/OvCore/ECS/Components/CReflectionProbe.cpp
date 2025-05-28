@@ -86,8 +86,6 @@ void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mo
 		{
 			RequestCapture();
 		}
-
-		_AllocateResources();
 	}
 }
 

@@ -4,25 +4,25 @@
 * @licence: MIT
 */
 
-#include "OvCore/ECS/Actor.h"
-#include "OvCore/ECS/Components/CTransform.h"
-#include "OvCore/ECS/Components/CCamera.h"
-#include "OvCore/ECS/Components/CPhysicalBox.h"
-#include "OvCore/ECS/Components/CPhysicalSphere.h"
-#include "OvCore/ECS/Components/CPhysicalCapsule.h"
-#include "OvCore/ECS/Components/CDirectionalLight.h"
-#include "OvCore/ECS/Components/CPointLight.h"
-#include "OvCore/ECS/Components/CSpotLight.h"
-#include "OvCore/ECS/Components/CAmbientBoxLight.h"
-#include "OvCore/ECS/Components/CAmbientSphereLight.h"
-#include "OvCore/ECS/Components/CModelRenderer.h"
-#include "OvCore/ECS/Components/CMaterialRenderer.h"
-#include "OvCore/ECS/Components/CAudioSource.h"
-#include "OvCore/ECS/Components/CAudioListener.h"
-#include "OvCore/ECS/Components/CPostProcessStack.h"
-#include <OvCore/Scripting/Lua/LuaScriptEngine.h>
-
 #include <sol/sol.hpp>
+
+#include <OvCore/ECS/Actor.h>  
+#include <OvCore/ECS/Components/CAmbientBoxLight.h>  
+#include <OvCore/ECS/Components/CAmbientSphereLight.h>  
+#include <OvCore/ECS/Components/CAudioListener.h>  
+#include <OvCore/ECS/Components/CAudioSource.h>  
+#include <OvCore/ECS/Components/CCamera.h>  
+#include <OvCore/ECS/Components/CDirectionalLight.h>  
+#include <OvCore/ECS/Components/CMaterialRenderer.h>  
+#include <OvCore/ECS/Components/CModelRenderer.h>  
+#include <OvCore/ECS/Components/CPhysicalBox.h>  
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>  
+#include <OvCore/ECS/Components/CPhysicalSphere.h>  
+#include <OvCore/ECS/Components/CPointLight.h>  
+#include <OvCore/ECS/Components/CPostProcessStack.h>  
+#include <OvCore/ECS/Components/CReflectionProbe.h>  
+#include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
 void BindLuaActor(sol::state& p_luaState)
 {
@@ -63,7 +63,8 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetMaterialRenderer", &Actor::GetComponent<CMaterialRenderer>,
 		"GetAudioSource", &Actor::GetComponent<CAudioSource>,
 		"GetAudioListener", &Actor::GetComponent<CAudioListener>,
-		"GetPostProcessStack", &Actor::GetComponent<CPostProcessStack>,
+		"GetPostProcessStack", & Actor::GetComponent<CPostProcessStack>,
+		"GetReflectionProbe", &Actor::GetComponent<CReflectionProbe>,
 
 		/* Behaviours relatives */
 		"GetBehaviour", [](Actor& p_this, const std::string& p_name) -> sol::table {
@@ -92,7 +93,8 @@ void BindLuaActor(sol::state& p_luaState)
 		"AddMaterialRenderer", &Actor::AddComponent<CMaterialRenderer>,
 		"AddAudioSource", &Actor::AddComponent<CAudioSource>,
 		"AddAudioListener", &Actor::AddComponent<CAudioListener>,
-		"AddPostProcessStack", &Actor::AddComponent<CPostProcessStack>,
+		"AddPostProcessStack", & Actor::AddComponent<CPostProcessStack>,
+		"AddReflectionProbe", &Actor::AddComponent<CReflectionProbe>,
 
 		/* Components Destructors */
 		"RemoveModelRenderer", &Actor::RemoveComponent<CModelRenderer>,
@@ -108,7 +110,8 @@ void BindLuaActor(sol::state& p_luaState)
 		"RemoveMaterialRenderer", &Actor::RemoveComponent<CMaterialRenderer>,
 		"RemoveAudioSource", &Actor::RemoveComponent<CAudioSource>,
 		"RemoveAudioListener", &Actor::RemoveComponent<CAudioListener>,
-		"RemovePostProcessStack", &Actor::RemoveComponent<CPostProcessStack>,
+		"RemovePostProcessStack", & Actor::RemoveComponent<CPostProcessStack>,
+		"RemoveReflectionProbe", &Actor::RemoveComponent<CReflectionProbe>,
 
 		/* Behaviour management */
 		"AddBehaviour", &Actor::AddBehaviour,

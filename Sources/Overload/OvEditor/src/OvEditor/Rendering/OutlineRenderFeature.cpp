@@ -104,7 +104,10 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorToStencil(OvRendering::
 
 		if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
 		{
-			const auto translation = OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition());
+			const auto translation = OvMaths::FMatrix4::Translation(
+				p_actor.transform.GetWorldPosition() +
+				reflectionProbeComponent->GetCapturePosition()
+			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
 			const auto scale = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
 			const auto model = translation * rotation * scale;
@@ -150,7 +153,10 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(
 
 		if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
 		{
-			const auto translation = OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition());
+			const auto translation = OvMaths::FMatrix4::Translation(
+				p_actor.transform.GetWorldPosition() +
+				reflectionProbeComponent->GetCapturePosition()
+			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
 			const auto scale = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
 			const auto model = translation * rotation * scale;

@@ -63,7 +63,7 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 
 		reflectionCamera.SetPosition(
 			reflectionProbe.owner.transform.GetWorldPosition() +
-			reflectionProbe.GetInfluenceOffset()
+			reflectionProbe.GetCapturePosition()
 		);
 
 		std::reference_wrapper<OvRendering::HAL::Framebuffer> targetFramebuffer = reflectionProbe._GetTargetFramebuffer();

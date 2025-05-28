@@ -220,7 +220,14 @@ protected:
 			if (actor.IsActive())
 			{
 				auto& model = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
-				auto modelMatrix = CalculateUnscaledModelMatrix(actor) * OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+				auto modelMatrix =
+					OvMaths::FMatrix4::Scale(
+						OvMaths::FMatrix4::Translate(
+							CalculateUnscaledModelMatrix(actor),
+							reflectionProbe->GetCapturePosition()
+						),
+						{ 0.5f, 0.5f, 0.5f }
+					);
 
 				m_reflectiveMaterial.SetProperty("_EnvironmentMap", reflectionProbe->GetCubemap().get());
 
@@ -545,12 +552,11 @@ protected:
 	{
 		auto pso = m_renderer.CreatePipelineState();
 		pso.depthTest = false;
-		const auto& offset = p_reflectionProbe.GetInfluenceOffset();
 		const auto& size = p_reflectionProbe.GetInfluenceSize();
-		const auto finalPosition = p_reflectionProbe.owner.transform.GetWorldPosition() + offset;
+		const auto position = p_reflectionProbe.owner.transform.GetWorldPosition();
 		m_debugShapeFeature.DrawBox(
 			pso,
-			finalPosition,
+			position,
 			p_reflectionProbe.owner.transform.GetWorldRotation(),
 			size,
 			kDebugBoundsColor,

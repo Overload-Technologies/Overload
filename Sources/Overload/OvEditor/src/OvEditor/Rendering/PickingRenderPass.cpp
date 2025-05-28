@@ -229,7 +229,10 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableReflectionProbes(OvRend
 		{
 			PreparePickingMaterial(actor, m_reflectionProbeMaterial);
 			auto& reflectionProbeModel = *EDITOR_CONTEXT(editorResources)->GetModel("Sphere");
-			const auto translation = OvMaths::FMatrix4::Translation(actor.transform.GetWorldPosition());
+			const auto translation = OvMaths::FMatrix4::Translation(
+				actor.transform.GetWorldPosition() +
+				reflectionProbe->GetCapturePosition()
+			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(actor.transform.GetWorldRotation());
 			const auto scaling = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
 			auto modelMatrix = translation * rotation * scaling;

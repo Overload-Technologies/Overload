@@ -83,6 +83,29 @@ namespace OvCore::ECS::Components
 		ECaptureSpeed GetCaptureSpeed() const;
 
 		/**
+		* Sets the position offset for the capture of the reflection probe
+		* @param p_position
+		*/
+		void SetCapturePosition(const OvMaths::FVector3& p_position);
+
+		/**
+		* Returns the position offset for the capture of the reflection probe
+		*/
+		const OvMaths::FVector3& GetCapturePosition() const;
+
+		/**
+		* Sets the cubemap resolution
+		* @note The resolution must be a power of 2!
+		* @param p_resolution
+		*/
+		void SetCubemapResolution(uint32_t p_resolution);
+
+		/**
+		* Returns the cubemap resolution
+		*/
+		uint32_t GetCubemapResolution() const;
+
+		/**
 		* Determines the influence policy of the reflection probe
 		* @param p_policy
 		*/
@@ -105,17 +128,6 @@ namespace OvCore::ECS::Components
 		const OvMaths::FVector3& GetInfluenceSize() const;
 
 		/**
-		* Sets the position offset of the influence volume of the reflection probe, based on the actor position
-		* @param p_offset
-		*/
-		void SetInfluenceOffset(const OvMaths::FVector3& p_offset);
-
-		/**
-		* Returns the position offset of the reflection probe volume
-		*/
-		const OvMaths::FVector3& GetInfluenceOffset() const;
-
-		/**
 		* Sets if the reflection probe should use box projection
 		*/
 		void SetBoxProjection(bool p_enabled);
@@ -124,18 +136,6 @@ namespace OvCore::ECS::Components
 		* Returns if the reflection probe uses box projection
 		*/
 		bool IsBoxProjectionEnabled() const;
-
-		/**
-		* Sets the cubemap resolution
-		* @note The resolution must be a power of 2!
-		* @param p_resolution
-		*/
-		void SetCubemapResolution(uint32_t p_resolution);
-
-		/**
-		* Returns the cubemap resolution
-		*/
-		uint32_t GetCubemapResolution() const;
 
 		/**
 		* Requests the cubemap to be updated
@@ -203,9 +203,9 @@ namespace OvCore::ECS::Components
 		ERefreshMode m_refreshMode = ERefreshMode::REALTIME;
 		ECaptureSpeed m_captureSpeed = ECaptureSpeed::ONE_FACE; // Number of faces to capture per frame
 		uint32_t m_resolution = 512;
+		OvMaths::FVector3 m_capturePosition{ 0.0f, 0.0f, 0.0f };
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
-		OvMaths::FVector3 m_influenceOffset{ 0.0f, 0.0f, 0.0f };
 		bool m_boxProjection = false;
 	};
 }

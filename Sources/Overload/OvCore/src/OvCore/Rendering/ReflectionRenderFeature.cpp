@@ -41,7 +41,7 @@ namespace
 		// Get the probe's influence position
 		const auto& probeInfluencePosition =
 			probeTransform.GetWorldPosition() +
-			p_probe.GetInfluenceOffset();
+			p_probe.GetCapturePosition();
 		// Get the rotation matrix from the probe's transform
 		const auto probeRotation = probeTransform.GetWorldRotation();
 
@@ -102,7 +102,7 @@ namespace
 			const auto& probe = probeRef.get();
 
 			const auto& probeTransform = probe.owner.transform;
-			const auto probeWorldPosition = probeTransform.GetWorldPosition() + probe.GetInfluenceOffset();
+			const auto probeWorldPosition = probeTransform.GetWorldPosition() + probe.GetCapturePosition();
 			const auto distance = OvMaths::FVector3::Distance(drawableWorldPosition, probeWorldPosition);
 
 			const bool isLocal = probe.GetInfluencePolicy() == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL;

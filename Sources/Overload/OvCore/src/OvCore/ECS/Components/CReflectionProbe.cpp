@@ -53,6 +53,25 @@ std::string OvCore::ECS::Components::CReflectionProbe::GetName()
 	return "Reflection Probe";
 }
 
+void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mode)
+{
+	if (p_mode != m_refreshMode)
+	{
+		m_refreshMode = p_mode;
+
+		// If the refresh mode is set to ONCE, we request a capture.
+		if (m_refreshMode == ERefreshMode::ONCE)
+		{
+			RequestCapture();
+		}
+	}
+}
+
+OvCore::ECS::Components::CReflectionProbe::ERefreshMode OvCore::ECS::Components::CReflectionProbe::GetRefreshMode() const
+{
+	return m_refreshMode;
+}
+
 void OvCore::ECS::Components::CReflectionProbe::SetCaptureSpeed(ECaptureSpeed p_speed)
 {
 	const bool requiredDoubleBuffering = _IsDoubleBuffered();
@@ -75,23 +94,32 @@ OvCore::ECS::Components::CReflectionProbe::ECaptureSpeed OvCore::ECS::Components
 	return m_captureSpeed;
 }
 
-void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mode)
+void OvCore::ECS::Components::CReflectionProbe::SetCapturePosition(const OvMaths::FVector3& p_position)
 {
-	if (p_mode != m_refreshMode)
-	{
-		m_refreshMode = p_mode;
+	m_capturePosition = p_position;
+}
 
-		// If the refresh mode is set to ONCE, we request a capture.
-		if (m_refreshMode == ERefreshMode::ONCE)
-		{
-			RequestCapture();
-		}
+const OvMaths::FVector3& OvCore::ECS::Components::CReflectionProbe::GetCapturePosition() const
+{
+	return m_capturePosition;
+}
+
+void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_resolution)
+{
+	OVASSERT(p_resolution > 0, "Cubemap resolution must be greater than 0");
+	OVASSERT((p_resolution & (p_resolution - 1)) == 0 > 0, "Cubemap resolution must be a power of 2");
+
+	if (p_resolution != m_resolution)
+	{
+		m_resolution = p_resolution;
+		_AllocateResources();
+		RequestCapture();
 	}
 }
 
-OvCore::ECS::Components::CReflectionProbe::ERefreshMode OvCore::ECS::Components::CReflectionProbe::GetRefreshMode() const
+uint32_t OvCore::ECS::Components::CReflectionProbe::GetCubemapResolution() const
 {
-	return m_refreshMode;
+	return m_resolution;
 }
 
 void OvCore::ECS::Components::CReflectionProbe::SetInfluencePolicy(EInfluencePolicy p_policy)
@@ -114,16 +142,6 @@ const OvMaths::FVector3& OvCore::ECS::Components::CReflectionProbe::GetInfluence
 	return m_influenceSize;
 }
 
-void OvCore::ECS::Components::CReflectionProbe::SetInfluenceOffset(const OvMaths::FVector3& p_offset)
-{
-	m_influenceOffset = p_offset;
-}
-
-const OvMaths::FVector3& OvCore::ECS::Components::CReflectionProbe::GetInfluenceOffset() const
-{
-	return m_influenceOffset;
-}
-
 void OvCore::ECS::Components::CReflectionProbe::SetBoxProjection(bool p_enabled)
 {
 	m_boxProjection = p_enabled;
@@ -132,24 +150,6 @@ void OvCore::ECS::Components::CReflectionProbe::SetBoxProjection(bool p_enabled)
 bool OvCore::ECS::Components::CReflectionProbe::IsBoxProjectionEnabled() const
 {
 	return m_boxProjection;
-}
-
-void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_resolution)
-{
-	OVASSERT(p_resolution > 0, "Cubemap resolution must be greater than 0");
-	OVASSERT((p_resolution & (p_resolution - 1)) == 0 > 0, "Cubemap resolution must be a power of 2");
-
-	if (p_resolution != m_resolution)
-	{
-		m_resolution = p_resolution;
-		_AllocateResources();
-		RequestCapture();
-	}
-}
-
-uint32_t OvCore::ECS::Components::CReflectionProbe::GetCubemapResolution() const
-{
-	return m_resolution;
 }
 
 void OvCore::ECS::Components::CReflectionProbe::RequestCapture(bool p_forceImmediate)
@@ -175,13 +175,13 @@ std::shared_ptr<OvRendering::HAL::Texture> OvCore::ECS::Components::CReflectionP
 void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	using namespace OvCore::Helpers;
+	Serializer::SerializeUint32(p_doc, p_node, "refresh_mode", static_cast<uint32_t>(m_refreshMode));
+	Serializer::SerializeUint32(p_doc, p_node, "capture_speed", static_cast<uint32_t>(m_captureSpeed));
+	Serializer::SerializeVec3(p_doc, p_node, "capture_position", m_capturePosition);
 	Serializer::SerializeInt(p_doc, p_node, "resolution", m_resolution);
 	Serializer::SerializeUint32(p_doc, p_node, "influence_policy", static_cast<uint32_t>(m_influencePolicy));
 	Serializer::SerializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
-	Serializer::SerializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
 	Serializer::SerializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
-	Serializer::SerializeUint32(p_doc, p_node, "refresh_mode", static_cast<uint32_t>(m_refreshMode));
-	Serializer::SerializeUint32(p_doc, p_node, "capture_speed", static_cast<uint32_t>(m_captureSpeed));
 }
 
 void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -196,12 +196,12 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 
 	const auto previousRefreshMode = m_refreshMode;
 
-	Serializer::DeserializeUint32(p_doc, p_node, "influence_policy", reinterpret_cast<uint32_t&>(m_influencePolicy));
-	Serializer::DeserializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
-	Serializer::DeserializeVec3(p_doc, p_node, "influence_offset", m_influenceOffset);
-	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 	Serializer::DeserializeUint32(p_doc, p_node, "capture_speed", reinterpret_cast<uint32_t&>(m_captureSpeed));
+	Serializer::DeserializeVec3(p_doc, p_node, "capture_position", m_capturePosition);
+	Serializer::DeserializeUint32(p_doc, p_node, "influence_policy", reinterpret_cast<uint32_t&>(m_influencePolicy));
+	Serializer::DeserializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
+	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 
 	m_captureFaceIndex = 0;
 
@@ -262,6 +262,13 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	cubemapResolutionDispatcher.RegisterGatherer(std::bind(&CReflectionProbe::GetCubemapResolution, this));
 	cubemapResolutionDispatcher.RegisterProvider(std::bind(&CReflectionProbe::SetCubemapResolution, this, std::placeholders::_1));
 
+	Helpers::GUIDrawer::DrawVec3(
+		p_root,
+		"Capture Position",
+		m_capturePosition,
+		0.05f
+	);
+
 	Helpers::GUIDrawer::CreateTitle(p_root, "Influence Policy");
 
 	auto& influencePolicy = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(m_influencePolicy));
@@ -284,15 +291,6 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 
 	auto& influenceSize = *p_root.GetWidgets().back().first;
 
-	Helpers::GUIDrawer::DrawVec3(
-		p_root,
-		"Influence Offset",
-		m_influenceOffset,
-		0.05f
-	);
-
-	auto& influenceOffset = *p_root.GetWidgets().back().first;
-
 	Helpers::GUIDrawer::DrawBoolean(
 		p_root,
 		"Box Projection",
@@ -306,13 +304,11 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	};
 
 	updateInfluenceWidgets(influenceSize, m_influencePolicy);
-	updateInfluenceWidgets(influenceOffset, m_influencePolicy);
 	updateInfluenceWidgets(boxProjection, m_influencePolicy);
 
 	influencePolicy.ValueChangedEvent += [&](int p_value) {
 		const auto value = static_cast<EInfluencePolicy>(p_value);
 		updateInfluenceWidgets(influenceSize, value);
-		updateInfluenceWidgets(influenceOffset, value);
 		updateInfluenceWidgets(boxProjection, value);
 	};
 
@@ -423,8 +419,8 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 
 void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 {
-	const auto& probePosition = owner.transform.GetWorldPosition();
-	const auto& boxPosition = probePosition + m_influenceOffset;
+	const auto& probePosition = owner.transform.GetWorldPosition() + m_capturePosition;
+	const auto& boxPosition = owner.transform.GetWorldPosition();
 	const auto& probeRotation = owner.transform.GetWorldRotation();
 	const auto& probeRotationMatrix = OvMaths::FQuaternion::ToMatrix3(OvMaths::FQuaternion::Normalize(probeRotation));
 
@@ -435,14 +431,14 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 		OvMaths::FVector4 position;
 		OvMaths::FMatrix4 rotation;
 		OvMaths::FVector4 boxCenter;
-		OvMaths::FVector4 boxExtents;
+		OvMaths::FVector4 boxHalfExtents;
 		bool boxProjection;
 		std::byte padding[3];
 	} uboDataPage{ 
 		.position = probePosition,
 		.rotation = probeRotationMatrix,
 		.boxCenter = boxPosition,
-		.boxExtents = m_influenceSize,
+		.boxHalfExtents = m_influenceSize,
 		.boxProjection = m_boxProjection && m_influencePolicy == EInfluencePolicy::LOCAL,
 	};
 #pragma pack(pop)

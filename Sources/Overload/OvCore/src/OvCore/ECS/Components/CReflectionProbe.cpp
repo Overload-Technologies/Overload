@@ -59,6 +59,7 @@ void OvCore::ECS::Components::CReflectionProbe::SetCaptureSpeed(ECaptureSpeed p_
 	const bool willRequireDoubleBuffering = RequiresDoubleBuffering(p_speed);
 
 	m_captureSpeed = p_speed;
+	m_captureFaceIndex = 0; // Reset the capture face index, to make sure we start from the first face again.
 
 	// Progressive uses double buffering, while immediate (6 face per frame) doesn't.
 	// This makes sure that the proper resources are allocated for
@@ -203,6 +204,8 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
 	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 	Serializer::DeserializeUint32(p_doc, p_node, "capture_speed", reinterpret_cast<uint32_t&>(m_captureSpeed));
+
+	m_captureFaceIndex = 0;
 
 	// If the refresh mode is set to ONCE, we request a capture.
 	if (m_refreshMode == ERefreshMode::ONCE && previousRefreshMode != m_refreshMode)
@@ -355,6 +358,7 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 	m_framebuffers.Reset();
 	m_cubemapIterator.Reset();
 	m_isAnyCubemapComplete = false;
+	m_captureFaceIndex = 0;
 
 	for (uint8_t i = 0; i < cubemapCount; ++i)
 	{

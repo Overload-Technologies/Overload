@@ -29,10 +29,12 @@ void OvRendering::HAL::GLTextureHandle::Bind(std::optional<uint32_t> p_slot) con
 {
 	if (p_slot.has_value())
 	{
-		glActiveTexture(GL_TEXTURE0 + p_slot.value());
+		glBindTextureUnit(p_slot.value(), m_context.id);
 	}
-
-	glBindTexture(m_context.type, m_context.id);
+	else
+	{
+		glBindTexture(m_context.type, m_context.id);
+	}
 }
 
 template<>

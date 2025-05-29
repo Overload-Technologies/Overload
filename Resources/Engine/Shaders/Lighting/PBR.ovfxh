@@ -74,6 +74,12 @@ vec3 CalculateBRDF(LightContribution lightContrib, vec3 V, vec3 N, vec3 albedo, 
 
 vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube environmentMap)
 {
+    // Sanitize inputs
+    metallic = clamp(metallic, 0.0, 1.0);
+    roughness = clamp(roughness, 0.04, 1.0);
+    ao = clamp(ao, 0.0, 1.0);
+    normal = normalize(normal);
+
     // Gamma correction of the albedo color (assuming the albedo is in sRGB space)
     albedo = pow(albedo, vec3(2.2));
 

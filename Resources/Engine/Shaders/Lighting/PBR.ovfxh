@@ -138,8 +138,6 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
         }
     }
 
-    ambient *= albedo * ao;
-
 #if !defined(DISABLE_IMAGE_BASED_LIGHTING)
     ambient += CalculateImageBasedLighting(
         environmentMap,
@@ -150,10 +148,11 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
         metallic,
         F0,
         NdotV,
-        albedo,
-        ao
+        albedo
     );
 #endif
+
+    ambient *= ao;
     
     return ambient + Lo;
 }

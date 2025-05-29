@@ -13,6 +13,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
+#include <OvCore/Rendering/ReflectionRenderFeature.h>
 
 #include <OvDebug/Assertion.h>
 
@@ -212,6 +213,7 @@ protected:
 		);
 
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+		auto& reflectionRenderFeature = m_renderer.GetFeature<OvCore::Rendering::ReflectionRenderFeature>();
 
 		for (auto reflectionProbe : sceneDescriptor.scene.GetFastAccessComponents().reflectionProbes)
 		{
@@ -229,7 +231,9 @@ protected:
 						{ 0.5f, 0.5f, 0.5f }
 					);
 
-				m_reflectiveMaterial.SetProperty("_EnvironmentMap", reflectionProbe->GetCubemap().get());
+				reflectionRenderFeature.PrepareProbe(*reflectionProbe);
+				reflectionRenderFeature.SendProbeData(m_reflectiveMaterial, *reflectionProbe);
+				reflectionRenderFeature.BindProbe(*reflectionProbe);
 
 				m_renderer.GetFeature<OvEditor::Rendering::DebugModelRenderFeature>()
 					.DrawModelWithSingleMaterial(p_pso, model, m_reflectiveMaterial, modelMatrix);

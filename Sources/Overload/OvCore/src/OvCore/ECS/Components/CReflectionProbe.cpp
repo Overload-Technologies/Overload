@@ -21,6 +21,7 @@ namespace
 		sizeof(OvMaths::FMatrix4) +	// Rotation (mat3)
 		sizeof(OvMaths::FVector4) +	// Box Center (vec3)
 		sizeof(OvMaths::FVector4) +	// Box Extents (vec3)
+		sizeof(float) +				// Brightness (float)
 		sizeof(int);				// Box Projection (bool)
 
 	constexpr uint32_t kBackBufferIndex = 0; // Cubemap that is being rendered
@@ -91,6 +92,16 @@ void OvCore::ECS::Components::CReflectionProbe::SetCapturePosition(const OvMaths
 const OvMaths::FVector3& OvCore::ECS::Components::CReflectionProbe::GetCapturePosition() const
 {
 	return m_capturePosition;
+}
+
+void OvCore::ECS::Components::CReflectionProbe::SetBrightness(float p_brightness)
+{
+	m_brightness = p_brightness;
+}
+
+float OvCore::ECS::Components::CReflectionProbe::GetBrightness() const
+{
+	return m_brightness;
 }
 
 void OvCore::ECS::Components::CReflectionProbe::SetCubemapResolution(uint32_t p_resolution)
@@ -173,7 +184,8 @@ void OvCore::ECS::Components::CReflectionProbe::OnSerialize(tinyxml2::XMLDocumen
 	Serializer::SerializeUint32(p_doc, p_node, "refresh_mode", static_cast<uint32_t>(m_refreshMode));
 	Serializer::SerializeUint32(p_doc, p_node, "capture_speed", static_cast<uint32_t>(m_captureSpeed));
 	Serializer::SerializeVec3(p_doc, p_node, "capture_position", m_capturePosition);
-	Serializer::SerializeInt(p_doc, p_node, "resolution", m_resolution);
+	Serializer::SerializeFloat(p_doc, p_node, "brightness", m_brightness);
+	Serializer::SerializeUint32(p_doc, p_node, "resolution", m_resolution);
 	Serializer::SerializeUint32(p_doc, p_node, "influence_policy", static_cast<uint32_t>(m_influencePolicy));
 	Serializer::SerializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::SerializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
@@ -192,6 +204,8 @@ void OvCore::ECS::Components::CReflectionProbe::OnDeserialize(tinyxml2::XMLDocum
 	Serializer::DeserializeUint32(p_doc, p_node, "refresh_mode", reinterpret_cast<uint32_t&>(m_refreshMode));
 	Serializer::DeserializeUint32(p_doc, p_node, "capture_speed", reinterpret_cast<uint32_t&>(m_captureSpeed));
 	Serializer::DeserializeVec3(p_doc, p_node, "capture_position", m_capturePosition);
+	Serializer::DeserializeFloat(p_doc, p_node, "brightness", m_brightness);
+	Serializer::DeserializeUint32(p_doc, p_node, "resolution", m_resolution);
 	Serializer::DeserializeUint32(p_doc, p_node, "influence_policy", reinterpret_cast<uint32_t&>(m_influencePolicy));
 	Serializer::DeserializeVec3(p_doc, p_node, "influence_size", m_influenceSize);
 	Serializer::DeserializeBoolean(p_doc, p_node, "box_projection", m_boxProjection);
@@ -254,6 +268,14 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 		"Capture Position",
 		m_capturePosition,
 		0.05f
+	);
+
+	Helpers::GUIDrawer::DrawScalar<float>(
+		p_root,
+		"Brithgness",
+		m_brightness,
+		0.01f,
+		0.0f
 	);
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Influence Policy");
@@ -401,6 +423,7 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 		OvMaths::FMatrix4 rotation;
 		OvMaths::FVector4 boxCenter;
 		OvMaths::FVector4 boxHalfExtents;
+		float brightness;
 		bool boxProjection;
 		std::byte padding[3];
 	} uboDataPage{ 
@@ -408,6 +431,7 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 		.rotation = probeRotationMatrix,
 		.boxCenter = boxPosition,
 		.boxHalfExtents = m_influenceSize,
+		.brightness = m_brightness,
 		.boxProjection = m_boxProjection && m_influencePolicy == EInfluencePolicy::LOCAL,
 	};
 #pragma pack(pop)

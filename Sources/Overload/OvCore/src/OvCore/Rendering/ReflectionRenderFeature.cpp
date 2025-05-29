@@ -147,6 +147,28 @@ OvCore::Rendering::ReflectionRenderFeature::ReflectionRenderFeature(
 {
 }
 
+void OvCore::Rendering::ReflectionRenderFeature::PrepareProbe(OvCore::ECS::Components::CReflectionProbe& p_reflectionProbe)
+{
+	p_reflectionProbe._PrepareUBO();
+}
+
+void OvCore::Rendering::ReflectionRenderFeature::SendProbeData(
+	OvRendering::Data::Material& p_material,
+	OvTools::Utils::OptRef<const OvCore::ECS::Components::CReflectionProbe> p_reflectionProbe
+)
+{
+	p_material.SetProperty(
+		"_EnvironmentMap",
+		p_reflectionProbe.has_value() ? p_reflectionProbe->GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
+		true
+	);
+}
+
+void OvCore::Rendering::ReflectionRenderFeature::BindProbe(const OvCore::ECS::Components::CReflectionProbe& p_reflectionProbe)
+{
+	p_reflectionProbe._GetUniformBuffer().Bind(1);
+}
+
 void OvCore::Rendering::ReflectionRenderFeature::OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)
 {
 	OVASSERT(
@@ -158,7 +180,7 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeginFrame(const OvRendering:
 
 	for (auto& probe : reflectionDescriptor.reflectionProbes)
 	{
-		probe.get()._PrepareUBO();
+		PrepareProbe(probe.get());
 	}
 }
 
@@ -187,14 +209,10 @@ void OvCore::Rendering::ReflectionRenderFeature::OnBeforeDraw(OvRendering::Data:
 		reflectionDescriptor.reflectionProbes
 	);
 
-	material.SetProperty(
-		"_EnvironmentMap",
-		targetProbe ? targetProbe->GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
-		true
-	);
+	SendProbeData(material, targetProbe);
 
 	if (targetProbe)
 	{
-		targetProbe->_GetUniformBuffer().Bind(1);
+		BindProbe(targetProbe.value());
 	}
 }

@@ -73,8 +73,7 @@ vec3 CalculateImageBasedLighting(
     float metallic,
     vec3 F0,
     float NdotV,
-    vec3 albedo,
-    float ao
+    vec3 albedo
 ) {
     // 0. Constants
     const int environmentMaxLOD = textureQueryLevels(environmentMap) - 1;
@@ -102,5 +101,5 @@ vec3 CalculateImageBasedLighting(
     const vec3 specularIBL = prefilteredColor * (F_IBL * brdf.x + brdf.y);
     
     // 7. Return IBL contribution
-    return (diffuseIBL + specularIBL) * ao;
+    return (diffuseIBL + specularIBL) * ubo_ReflectionProbeData.brightness;
 }

@@ -94,6 +94,17 @@ namespace OvCore::ECS::Components
 		const OvMaths::FVector3& GetCapturePosition() const;
 
 		/**
+		* Sets the brightness of the reflection probe
+		* @param p_brightness
+		*/
+		void SetBrightness(float p_brightness);
+
+		/**
+		* Returns the brightness of the reflection probe
+		*/
+		float GetBrightness() const;
+
+		/**
 		* Sets the cubemap resolution
 		* @note The resolution must be a power of 2!
 		* @param p_resolution
@@ -201,6 +212,7 @@ namespace OvCore::ECS::Components
 		ECaptureSpeed m_captureSpeed = ECaptureSpeed::ONE_FACE; // Number of faces to capture per frame
 		uint32_t m_resolution = 512;
 		OvMaths::FVector3 m_capturePosition{ 0.0f, 0.0f, 0.0f };
+		float m_brightness = 1.0f;
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		bool m_boxProjection = false;

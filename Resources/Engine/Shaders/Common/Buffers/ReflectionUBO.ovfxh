@@ -4,5 +4,6 @@ layout (std140, binding = 1) uniform ReflectionUBO
     mat4 rotation;
     vec4 boxCenter;
     vec4 boxHalfExtents;
+    float brightness;
     bool boxProjection;
 } ubo_ReflectionProbeData;

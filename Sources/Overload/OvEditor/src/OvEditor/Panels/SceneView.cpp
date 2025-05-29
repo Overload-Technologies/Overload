@@ -156,6 +156,15 @@ OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::SceneView::C
 
 void OvEditor::Panels::SceneView::DrawFrame()
 {
+	auto& pickingPass = m_renderer->GetPass<OvEditor::Rendering::PickingRenderPass>("Picking");
+
+	// Enable picking pass only when the scene view is hovered, not picking, and not operating the camera
+	pickingPass.SetEnabled(
+		IsHovered() &&
+		!m_gizmoOperations.IsPicking() &&
+		!m_cameraController.IsOperating()
+	);
+
 	OvEditor::Panels::AViewControllable::DrawFrame();
 	HandleActorPicking();
 }
@@ -183,7 +192,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 		m_gizmoOperations.StopPicking();
 	}
 
-	if (IsHovered() && !IsResizing())
+	if (!m_gizmoOperations.IsPicking() && IsHovered() && !IsResizing())
 	{
 		const auto pickingResult = GetPickingResult();
 
@@ -241,6 +250,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 
 		m_gizmoOperations.SetCurrentMouse({ static_cast<float>(mousePosition.first - m_position.x), static_cast<float>(mousePosition.second - m_position.y) });
 		m_gizmoOperations.ApplyOperation(m_camera.GetViewMatrix(), m_camera.GetProjectionMatrix(), m_camera.GetPosition(), { static_cast<float>(winWidth), static_cast<float>(winHeight) });
+		m_highlightedGizmoDirection = m_gizmoOperations.GetDirection();
 	}
 }
 

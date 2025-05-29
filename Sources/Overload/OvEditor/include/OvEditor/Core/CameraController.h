@@ -84,6 +84,11 @@ namespace OvEditor::Core
 		bool IsRightMousePressed() const;
 
 		/**
+		* Returns true if the camera controller is currently operating
+		*/
+		bool IsOperating() const;
+
+		/**
 		* Lock the target actor to the given actor.
 		* @note Usefull to force orbital camera or camera focus to target a specific actor
 		* @param p_actor

@@ -258,6 +258,11 @@ bool OvEditor::Core::CameraController::IsRightMousePressed() const
 	return m_rightMousePressed;
 }
 
+bool OvEditor::Core::CameraController::IsOperating() const
+{
+	return m_rightMousePressed || m_middleMousePressed;
+}
+
 void OvEditor::Core::CameraController::LockTargetActor(OvCore::ECS::Actor& p_actor)
 {
 	m_lockedActor = p_actor;

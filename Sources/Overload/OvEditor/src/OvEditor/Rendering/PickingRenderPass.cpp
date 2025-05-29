@@ -102,7 +102,6 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Rendering::Picki
 
 void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineState p_pso)
 {
-	// TODO: Make sure we only renderer when the view is hovered and not being resized
 	ZoneScoped;
 	TracyGpuZone("PickingRenderPass");
 

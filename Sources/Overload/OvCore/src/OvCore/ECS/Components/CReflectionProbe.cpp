@@ -309,7 +309,7 @@ void OvCore::ECS::Components::CReflectionProbe::_NotifyCubemapComplete()
 {
 	if (m_captureRequest)
 	{
-		m_captureRequest.reset();
+		m_captureRequest.reset(); // Discard the capture request after processing it.
 	}
 
 	// This is to keep track of whether any cubemap is complete.
@@ -473,7 +473,11 @@ std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFace
 
 OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetTargetFramebuffer() const
 {
-	auto& framebuffer = m_framebuffers[kBackBufferIndex];
+	auto& framebuffer =
+		_IsDoubleBuffered() ?
+		m_framebuffers[kBackBufferIndex] :
+		m_framebuffers[0];
+
 	OVASSERT(framebuffer.IsValid(), "Framebuffer is invalid");
 	return framebuffer;
 }

@@ -66,11 +66,11 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			reflectionProbe.GetCapturePosition()
 		);
 
-		std::reference_wrapper<OvRendering::HAL::Framebuffer> targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
+		auto& targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
 
 		reflectionCamera.SetFov(90.0f);
-		const auto [width, height] = targetFramebuffer.get().GetSize();
-		targetFramebuffer.get().Bind();
+		const auto [width, height] = targetFramebuffer.GetSize();
+		targetFramebuffer.Bind();
 		m_renderer.SetViewport(0, 0, width, height);
 
 		// Iterating over the given face indices, which determine if we 
@@ -80,29 +80,18 @@ void OvCore::Rendering::ReflectionRenderPass::Draw(OvRendering::Data::PipelineSt
 			reflectionCamera.SetRotation(OvMaths::FQuaternion{ kCubeFaceRotations[faceIndex] });
 			reflectionCamera.CacheMatrices(width, height);
 			engineBufferRenderFeature.SetCamera(reflectionCamera);
-			targetFramebuffer.get().SetTargetDrawBuffer(faceIndex);
+			targetFramebuffer.SetTargetDrawBuffer(faceIndex);
 			m_renderer.Clear(true, true, true);
 			_DrawReflections(p_pso, reflectionCamera);
 
-			// Once we finish rendering all faces, we notify the probe that the cubemap is complete.
+			// If we just drew the last face, we notify the reflection probe that the cubemap is complete.
 			if (faceIndex == 5)
 			{
 				reflectionProbe._NotifyCubemapComplete();
-
-				const bool isLastFace = (faceIndex == faceIndices.back());
-
-				// If we are not done (i.e., not the last face in the capture process),
-				// We update the target framebuffer. This is required since _NotifyCubemapComplete()
-				// internally swaps its framebuffer (double buffering).
-				if (!isLastFace)
-				{
-					targetFramebuffer = reflectionProbe._GetTargetFramebuffer();
-					targetFramebuffer.get().Bind();
-				}
 			}
 		}
 
-		targetFramebuffer.get().Unbind();
+		targetFramebuffer.Unbind();
 	}
 
 	// Once we are done rendering all reflection probes,

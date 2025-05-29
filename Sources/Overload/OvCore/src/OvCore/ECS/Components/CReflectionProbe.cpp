@@ -11,8 +11,10 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvDebug/Assertion.h>
 #include <OvRendering/HAL/Renderbuffer.h>
-#include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/Layout/Dummy.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
 namespace
 {
@@ -320,6 +322,11 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 		updateInfluenceWidgets(influenceSize, value);
 		updateInfluenceWidgets(boxProjection, value);
 	};
+
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
+	p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>(); // Necessary to fill the "value" column
+
+	Helpers::GUIDrawer::CreateTitle(p_root, "Reflection Probe Debugging");
 
 	auto& captureNowButton = p_root.CreateWidget<OvUI::Widgets::Buttons::Button>("Capture Now");
 	captureNowButton.ClickedEvent += [this] {

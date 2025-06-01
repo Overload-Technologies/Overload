@@ -5,6 +5,7 @@
 #feature NORMAL_MAPPING
 #feature DISTANCE_FADE
 #feature SPECULAR_WORKFLOW
+#feature REFRACTION
 
 #shader vertex
 #version 450 core
@@ -125,6 +126,19 @@ uniform sampler2D _ShadowMap;
 uniform mat4 _LightSpaceMatrix;
 uniform samplerCube _EnvironmentMap;
 
+#if defined(REFRACTION)
+uniform float u_RefractionIndex = 1.33; // Default for water
+uniform float u_RefractionStrength = 0.5;
+uniform bool u_ChromaticAberration = false;
+uniform float u_ChromaticStrength = 0.03;
+uniform sampler2D u_ThicknessMap;
+uniform float u_Thickness = 0.1;
+uniform vec3 u_TransmittanceColor = vec3(1.0, 1.0, 1.0);
+uniform float u_TransmittanceDensity = 5.0;
+uniform bool u_InternalReflections = false;
+uniform int u_MaxBounces = 2;
+#endif
+
 out vec4 FRAGMENT_COLOR;
 
 void main()
@@ -198,6 +212,82 @@ void main()
         _LightSpaceMatrix,
         _EnvironmentMap
     );
+
+#if defined(REFRACTION)
+    vec3 viewDir = normalize(ubo_ViewPos - fs_in.FragPos);
+    
+    // Calculate local thickness from map or use global thickness
+    float materialThickness = u_Thickness;
+    if (textureSize(u_ThicknessMap, 0).x > 1) {
+        materialThickness *= texture(u_ThicknessMap, texCoords).r;
+    }
+    
+    // Calculate refraction vector
+    vec3 refractionVector = refract(-viewDir, normal, 1.0 / u_RefractionIndex);
+    
+    // Sample environment map using refraction vector
+    vec3 refractionColor;
+    
+    if (u_ChromaticAberration) {
+        // Simple chromatic aberration effect by using different IORs for RGB
+        vec3 refractionVectorR = refract(-viewDir, normal, 1.0 / (u_RefractionIndex * (1.0 - u_ChromaticStrength)));
+        vec3 refractionVectorB = refract(-viewDir, normal, 1.0 / (u_RefractionIndex * (1.0 + u_ChromaticStrength)));
+        
+        refractionColor.r = texture(_EnvironmentMap, refractionVectorR).r;
+        refractionColor.g = texture(_EnvironmentMap, refractionVector).g;
+        refractionColor.b = texture(_EnvironmentMap, refractionVectorB).b;
+    } else {
+        refractionColor = texture(_EnvironmentMap, refractionVector).rgb;
+    }
+    
+    // Apply Beer's law for light absorption based on thickness
+    // exp(-density * thickness * (1 - transmittance_color))
+    vec3 absorption = exp(-u_TransmittanceDensity * materialThickness * (vec3(1.0) - u_TransmittanceColor));
+    refractionColor *= absorption;
+    
+    // Internal reflections for thick materials
+    if (u_InternalReflections && materialThickness > 0.05) {
+        vec3 internalReflectionColor = vec3(0.0);
+        vec3 attenuationFactor = vec3(1.0);
+        vec3 currentRay = refractionVector;
+        
+        // Simulate a few internal bounces
+        for (int i = 0; i < u_MaxBounces; i++) {
+            // Internal reflection at the back face
+            vec3 backFaceNormal = -normal; // Simplified approximation
+            vec3 reflectedRay = reflect(currentRay, backFaceNormal);
+            
+            // Attenuate with each bounce (energy loss)
+            attenuationFactor *= absorption * 0.5;
+            
+            // Sample environment and add contribution
+            vec3 bounceColor = texture(_EnvironmentMap, reflectedRay).rgb;
+            internalReflectionColor += bounceColor * attenuationFactor;
+            
+            // Update ray for next bounce (simplified)
+            currentRay = reflectedRay;
+        }
+        
+        // Add internal reflections to refraction color
+        refractionColor += internalReflectionColor;
+    }
+    
+    // Calculate fresnel term to blend between refraction and PBR lighting
+    float fresnel = pow(1.0 - max(dot(viewDir, normal), 0.0), 5.0);
+    
+    // Thickness affects the balance between reflection and refraction
+    // Thicker materials show more internal color (transmittance) effects
+    float thicknessModifier = smoothstep(0.0, 1.0, materialThickness * 5.0);
+    
+    // Blend based on material properties, fresnel, and thickness
+    float refractionFactor = (1.0 - metallic) * u_RefractionStrength * (1.0 - fresnel);
+    
+    // Thicker materials have more absorption but also more internal effects
+    refractionFactor *= mix(1.0, 0.8, thicknessModifier);
+    
+    // Apply refraction by blending with PBR result
+    pbr = mix(pbr, refractionColor, refractionFactor * (1.0 - roughness));
+#endif
 
     // Simple built-in tonemapping (Reinhard) and gamma correction for elements
     // not affected by post-processing (e.g. debug, UI, etc.), but still aiming

@@ -155,6 +155,9 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	auto& lightBillboardScaleSlider = sceneViewBillboardScaleMenu.CreateWidget<Sliders::SliderInt>(0, 100, static_cast<int>(Settings::EditorSettings::LightBillboardScale * 100.0f), OvUI::Widgets::Sliders::ESliderOrientation::HORIZONTAL, "Lights");
 	lightBillboardScaleSlider.ValueChangedEvent += [this](int p_value) { Settings::EditorSettings::LightBillboardScale = p_value / 100.0f; };
 	lightBillboardScaleSlider.format = "%d %%";
+	auto& reflectionProbesScaleSlider = sceneViewBillboardScaleMenu.CreateWidget<Sliders::SliderInt>(0, 100, static_cast<int>(Settings::EditorSettings::ReflectionProbeScale * 100.0f), OvUI::Widgets::Sliders::ESliderOrientation::HORIZONTAL, "Reflection Probes");
+	reflectionProbesScaleSlider.ValueChangedEvent += [this](int p_value) { Settings::EditorSettings::ReflectionProbeScale = p_value / 100.0f; };
+	reflectionProbesScaleSlider.format = "%d %%";
 
 	auto& snappingMenu = m_settingsMenu->CreateWidget<MenuList>("Snapping");
 	snappingMenu.CreateWidget<Drags::DragFloat>(0.001f, 999999.0f, Settings::EditorSettings::TranslationSnapUnit, 0.05f, "Translation Unit").ValueChangedEvent += [this](float p_value) { Settings::EditorSettings::TranslationSnapUnit = p_value; };

@@ -39,6 +39,7 @@ void OvEditor::Settings::EditorSettings::Save()
 	iniFile.Add("editor_frustum_geometry_culling", EditorFrustumGeometryCulling.Get());
 	iniFile.Add("editor_frustum_light_culling", EditorFrustumLightCulling.Get());
 	iniFile.Add("light_billboard_scale", LightBillboardScale.Get());
+	iniFile.Add("reflection_probe_scale", ReflectionProbeScale.Get());
 	iniFile.Add("translation_snap_unit", TranslationSnapUnit.Get());
 	iniFile.Add("rotation_snap_unit", RotationSnapUnit.Get());
 	iniFile.Add("scaling_snap_unit", ScalingSnapUnit.Get());
@@ -56,6 +57,7 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<bool>(iniFile, "show_geometry_frustum_culling_in_scene_view", EditorFrustumGeometryCulling);
 	LoadIniEntry<bool>(iniFile, "show_light_frustum_culling_in_scene_view", EditorFrustumLightCulling);
 	LoadIniEntry<float>(iniFile, "light_billboard_scale", LightBillboardScale);
+	LoadIniEntry<float>(iniFile, "reflection_probe_scale", ReflectionProbeScale);
 	LoadIniEntry<float>(iniFile, "translation_snap_unit", TranslationSnapUnit);
 	LoadIniEntry<float>(iniFile, "rotation_snap_unit", RotationSnapUnit);
 	LoadIniEntry<float>(iniFile, "scaling_snap_unit", ScalingSnapUnit);

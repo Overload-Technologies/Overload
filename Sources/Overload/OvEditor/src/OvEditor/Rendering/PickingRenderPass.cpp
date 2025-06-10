@@ -233,7 +233,9 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableReflectionProbes(OvRend
 				reflectionProbe->GetCapturePosition()
 			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(actor.transform.GetWorldRotation());
-			const auto scaling = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+			const auto scaling = OvMaths::FMatrix4::Scaling(
+				OvMaths::FVector3::One * OvEditor::Settings::EditorSettings::ReflectionProbeScale
+			);
 			auto modelMatrix = translation * rotation * scaling;
 
 			m_renderer.GetFeature<DebugModelRenderFeature>()

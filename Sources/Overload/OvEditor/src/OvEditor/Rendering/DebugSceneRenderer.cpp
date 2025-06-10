@@ -228,7 +228,7 @@ protected:
 							CalculateUnscaledModelMatrix(actor),
 							reflectionProbe->GetCapturePosition()
 						),
-						{ 0.5f, 0.5f, 0.5f }
+						OvMaths::FVector3::One * OvEditor::Settings::EditorSettings::ReflectionProbeScale
 					);
 
 				reflectionRenderFeature.PrepareProbe(*reflectionProbe);

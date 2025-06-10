@@ -109,7 +109,9 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorToStencil(OvRendering::
 				reflectionProbeComponent->GetCapturePosition()
 			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-			const auto scale = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+			const auto scale = OvMaths::FMatrix4::Scaling(
+				OvMaths::FVector3::One * OvEditor::Settings::EditorSettings::ReflectionProbeScale
+			);
 			const auto model = translation * rotation * scale;
 			DrawModelToStencil(p_pso, model, *EDITOR_CONTEXT(editorResources)->GetModel("Sphere"));
 		}
@@ -158,7 +160,9 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawActorOutline(
 				reflectionProbeComponent->GetCapturePosition()
 			);
 			const auto rotation = OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-			const auto scale = OvMaths::FMatrix4::Scaling({ 0.5f, 0.5f, 0.5f });
+			const auto scale = OvMaths::FMatrix4::Scaling(
+				OvMaths::FVector3::One * OvEditor::Settings::EditorSettings::ReflectionProbeScale
+			);
 			const auto model = translation * rotation * scale;
 			DrawModelOutline(p_pso, model, *EDITOR_CONTEXT(editorResources)->GetModel("Sphere"), p_color);
 		}

@@ -72,7 +72,20 @@ vec3 CalculateBRDF(LightContribution lightContrib, vec3 V, vec3 N, vec3 albedo, 
     return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
-vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, vec3 normal, vec3 viewPos, vec3 fragPos, sampler2D shadowMap, mat4 lightSpaceMatrix, samplerCube environmentMap)
+vec3 PBRLightingModel(
+    vec3 albedo,
+    float metallic,
+    float roughness,
+    float ao,
+    vec3 normal,
+    vec3 viewPos,
+    vec3 fragPos,
+    sampler2D shadowMap,
+    mat4 lightSpaceMatrix,
+    samplerCube environmentMap,
+    float transmission,
+    float refractionIndex
+)
 {
     // Sanitize inputs
     metallic = clamp(metallic, 0.0, 1.0);
@@ -148,7 +161,9 @@ vec3 PBRLightingModel(vec3 albedo, float metallic, float roughness, float ao, ve
         metallic,
         F0,
         NdotV,
-        albedo
+        albedo,
+        transmission,
+        refractionIndex
     );
 #endif
 

@@ -93,6 +93,9 @@ uniform sampler2D u_RoughnessMap;
 uniform float u_Roughness = 1.0;
 #endif
 
+uniform float u_RefractionIndex = 1.5; // 1.0 = air, 1.33 = water, 1.5 = glass, etc.
+uniform float u_Transmission = 0.0; // 0.0 = opaque, 1.0 = fully transmissive
+
 #if defined(NORMAL_MAPPING)
 uniform sampler2D u_NormalMap;
 #endif
@@ -200,7 +203,9 @@ void main()
         fs_in.FragPos,
         _ShadowMap,
         _LightSpaceMatrix,
-        _EnvironmentMap
+        _EnvironmentMap,
+        u_Transmission,
+        u_RefractionIndex
     );
 
     // Simple built-in tonemapping (Reinhard) and gamma correction for elements

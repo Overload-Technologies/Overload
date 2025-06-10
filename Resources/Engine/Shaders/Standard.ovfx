@@ -77,6 +77,10 @@ uniform vec4 u_Albedo = vec4(1.0);
 uniform sampler2D u_AmbientOcclusionMap;
 uniform sampler2D u_MaskMap;
 
+uniform sampler2D u_EmissiveMap;
+uniform vec3 u_EmissiveColor = vec3(1.0, 1.0, 1.0);
+uniform float u_EmissiveIntensity = 0.0;
+
 #if defined(SPECULAR_WORKFLOW)
 uniform sampler2D u_SpecularMap;
 uniform float u_Specular = 1.0;
@@ -204,6 +208,9 @@ void main()
     // to approximate the final PBR look.
     pbr = mix(pbr, pbr / (pbr + vec3(1.0)), u_BuiltInToneMapping);
     pbr = mix(pbr, pow(pbr, vec3(1.0 / 2.2)), u_BuiltInGammaCorrection);
+
+    const vec3 emissive = texture(u_EmissiveMap, texCoords).rgb * u_EmissiveColor * u_EmissiveIntensity;
+    pbr += emissive;
 
     FRAGMENT_COLOR = vec4(pbr, albedo.a);
 #endif

@@ -56,6 +56,14 @@ void OvUI::Widgets::AWidget::Draw()
 
 		_Draw_Impl();
 
+		if (!tooltip.empty())
+		{
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+			{
+				ImGui::SetTooltip(tooltip.c_str());
+			}
+		}
+
 		if (disabled)
 		{
 			ImGui::EndDisabled();

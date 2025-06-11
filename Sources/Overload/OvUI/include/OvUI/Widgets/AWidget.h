@@ -71,6 +71,7 @@ namespace OvUI::Widgets
 		virtual void _Draw_Impl() = 0;
 
 	public:
+		std::string tooltip;
 		bool enabled = true;
 		bool disabled = false;
 		bool lineBreak = true;

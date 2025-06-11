@@ -90,6 +90,19 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 		EDITOR_CONTEXT(uiManager)->ApplyStyle(static_cast<OvUI::Styling::EStyle>(p_value));
 	};
 
+	auto& fontSizeMenu = m_settingsMenu->CreateWidget<MenuList>("Font Size");
+	auto& fontSizeSelector = fontSizeMenu.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::FontSize.Get()));
+	fontSizeSelector.choices = {
+		{ static_cast<int>(Settings::EFontSize::SMALL), "Small"},
+		{ static_cast<int>(Settings::EFontSize::MEDIUM), "Medium"},
+		{ static_cast<int>(Settings::EFontSize::BIG), "Big"}
+	};
+	fontSizeSelector.ValueChangedEvent += [this](int p_value) {
+		Settings::EditorSettings::FontSize = p_value;
+		const auto fontID = std::string{ Settings::GetFontID(static_cast<Settings::EFontSize>(p_value)) };
+		EDITOR_CONTEXT(uiManager)->UseFont(fontID);
+	};
+
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);
 	m_settingsMenu->CreateWidget<MenuItem>("Vertical Synchronization", "", true, true).ValueChangedEvent += [this](bool p_value) { EDITOR_CONTEXT(device)->SetVsync(p_value); };
 	auto& cameraSpeedMenu = m_settingsMenu->CreateWidget<MenuList>("Camera Speed");

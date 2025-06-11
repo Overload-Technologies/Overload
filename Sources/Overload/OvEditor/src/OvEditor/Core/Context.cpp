@@ -126,10 +126,13 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 		uiManager->ResetLayout(defaultLayoutPath.string());
 	}
 
-	uiManager->LoadFont("Ruda_Big", fontPath.string(), 16);
-	uiManager->LoadFont("Ruda_Small", fontPath.string(), 12);
-	uiManager->LoadFont("Ruda_Medium", fontPath.string(), 14);
-	uiManager->UseFont("Ruda_Medium");
+	uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::BIG) }, fontPath.string(), 18);
+	uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::MEDIUM) }, fontPath.string(), 15);
+	uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::SMALL) }, fontPath.string(), 12);
+	uiManager->UseFont(std::string{ Settings::GetFontID(
+		static_cast<Settings::EFontSize>(Settings::EditorSettings::FontSize.Get())
+	) });
+
 	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());
 	uiManager->SetEditorLayoutAutosaveFrequency(60.0f);
 	uiManager->EnableEditorLayoutSave(true);

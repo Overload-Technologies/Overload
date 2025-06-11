@@ -234,6 +234,8 @@ void OvEditor::Panels::MaterialEditor::OnMaterialDropped()
 void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 {
 	m_materialProperties->enabled = m_shader; // Enable m_shaderSettings group if the shader of the target material is non-null
+	m_editShaderButton->disabled = m_shader == nullptr;
+	m_compileShaderButton->disabled = m_shader == nullptr;
 
 	if (m_shader != m_target->GetShader())
 	{
@@ -278,6 +280,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& compileButton = CreateWidget<Buttons::Button>("Compile");
+	m_compileShaderButton = &compileButton;
 	compileButton.tooltip = "Compile the shader of the current material";
 	compileButton.lineBreak = false;
 	compileButton.ClickedEvent += [this] {
@@ -293,6 +296,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& editShaderButton = CreateWidget<Buttons::Button>("Edit Shader");
+	m_editShaderButton = &editShaderButton;
 	editShaderButton.tooltip = "Edit the shader of the current material";
 	editShaderButton.lineBreak = false;
 	editShaderButton.ClickedEvent += [this] {

@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include <OvUI/Widgets/Texts/Text.h>
+#include <OvRendering/Resources/Shader.h>
 #include <OvUI/Panels/PanelWindow.h>
+#include <OvUI/Widgets/Texts/Text.h>
+#include <OvUI/Widgets/Buttons/AButton.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/Columns.h>
-#include <OvRendering/Resources/Shader.h>
 
 namespace OvCore::Resources { class Material; }
 
@@ -84,6 +85,9 @@ namespace OvEditor::Panels
 
 		OvUI::Widgets::Texts::Text* m_targetMaterialText = nullptr;
 		OvUI::Widgets::Texts::Text* m_shaderText = nullptr;
+
+		OvUI::Widgets::Buttons::AButton* m_editShaderButton = nullptr;
+		OvUI::Widgets::Buttons::AButton* m_compileShaderButton = nullptr;
 
 		OvTools::Eventing::Event<> m_materialDroppedEvent;
 		OvTools::Eventing::Event<> m_shaderDroppedEvent;

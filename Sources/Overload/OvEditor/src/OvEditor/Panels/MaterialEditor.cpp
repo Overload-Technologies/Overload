@@ -11,6 +11,8 @@
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/MaterialEditor.h>
 
+#include <OvTools/Utils/SystemCalls.h>
+
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
@@ -246,13 +248,16 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 	else
 	{
 		m_materialPropertiesColumns->RemoveAllWidgets();
+		m_materialFeaturesColumns->RemoveAllWidgets();
 	}
 }
 
 void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
-	auto& saveButton = CreateWidget<Buttons::Button>("Save to file");
+	auto& saveButton = CreateWidget<Buttons::Button>("Save");
 	saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	saveButton.tooltip = "Save the current material to file";
+	saveButton.lineBreak = false;
 	saveButton.ClickedEvent += [this] {
 		if (m_target)
 		{
@@ -260,10 +265,9 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 		}
 	};
 
-	saveButton.lineBreak = false;
-
-	auto& reloadButton = CreateWidget<Buttons::Button>("Reload from file");
-	reloadButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+	auto& reloadButton = CreateWidget<Buttons::Button>("Reload");
+	reloadButton.tooltip = "Reload the current material from file";
+	reloadButton.lineBreak = false;
 	reloadButton.ClickedEvent += [this] {
 		if (m_target)
 		{
@@ -273,15 +277,43 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 		OnMaterialDropped();
 	};
 
-	reloadButton.lineBreak = false;
+	auto& compileButton = CreateWidget<Buttons::Button>("Compile");
+	compileButton.tooltip = "Compile the shader of the current material";
+	compileButton.lineBreak = false;
+	compileButton.ClickedEvent += [this] {
+		if (m_target)
+		{
+			if (const auto shader = m_target->GetShader())
+			{
+				EDITOR_EXEC(CompileShader(*shader));
+				m_target->UpdateProperties();
+				OnShaderDropped();
+			}
+		}
+	};
+
+	auto& editShaderButton = CreateWidget<Buttons::Button>("Edit Shader");
+	editShaderButton.tooltip = "Edit the shader of the current material";
+	editShaderButton.lineBreak = false;
+	editShaderButton.ClickedEvent += [this] {
+		if (m_target)
+		{
+			if (const auto shader = m_target->GetShader())
+			{
+				const auto shaderFilePath = EDITOR_EXEC(GetRealPath(shader->path));
+				OvTools::Utils::SystemCalls::OpenFile(shaderFilePath);
+			}
+		}
+	};
 
 	auto& previewButton = CreateWidget<Buttons::Button>("Preview");
-	previewButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
+	previewButton.tooltip = "Preview the current material in the Asset View";
 	previewButton.lineBreak = false;
+	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
 
-	auto& resetButton = CreateWidget<Buttons::Button>("Reset to default");
+	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
 	resetButton.idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	resetButton.tooltip = "Reset the current material to its default state";
 	resetButton.ClickedEvent += std::bind(&MaterialEditor::Reset, this);
 }
 

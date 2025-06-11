@@ -74,7 +74,8 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 
 	if (m_shader)
 	{
-		FillUniform();
+		m_properties.clear();
+		UpdateProperties();
 	}
 	else
 	{
@@ -98,15 +99,23 @@ OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Mater
 	return std::nullopt;
 }
 
-void OvRendering::Data::Material::FillUniform()
+void OvRendering::Data::Material::UpdateProperties()
 {
-	m_properties.clear();
+	// Collect all uniform names currently used by the shader
+	std::unordered_set<std::string> usedUniforms;
 
-	for (const auto& featureVariants : m_shader->GetVariants() | std::views::values)
+	auto variants_view = m_shader->GetVariants()
+		| std::views::values
+		| std::views::join
+		| std::views::values;
+
+	for (const auto& variant : variants_view)
 	{
-		for (const auto& variant : featureVariants | std::views::values)
+		for (const auto& [name, uniformInfo] : variant->GetUniforms())
 		{
-			for (const auto& [name, uniformInfo] : variant->GetUniforms())
+			usedUniforms.insert(name);
+
+			if (!m_properties.contains(name))
 			{
 				m_properties.emplace(name, MaterialProperty{
 					.value = UniformToPropertyValue(uniformInfo.defaultValue),
@@ -115,6 +124,10 @@ void OvRendering::Data::Material::FillUniform()
 			}
 		}
 	}
+
+	std::erase_if(m_properties, [&usedUniforms](const auto& property) {
+		return !usedUniforms.contains(property.first);
+	});
 }
 
 // Note: this function is critical for performance, as it may be called many times during a frame.

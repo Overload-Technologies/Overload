@@ -710,6 +710,14 @@ void OvEditor::Core::EditorActions::MoveToTarget(OvCore::ECS::Actor& p_target)
 
 void OvEditor::Core::EditorActions::CompileShaders()
 {
+	for (const auto shader : m_context.shaderManager.GetResources() | std::views::values)
+	{
+		CompileShader(*shader);
+	}
+}
+
+void OvEditor::Core::EditorActions::CompileShader(OvRendering::Resources::Shader& p_shader)
+{
 	using namespace OvRendering::Resources::Loaders;
 
 	const auto previousLoggingSettings = ShaderLoader::GetLoggingSettings();
@@ -717,10 +725,7 @@ void OvEditor::Core::EditorActions::CompileShaders()
 	newLoggingSettings.summary = true; // Force enable summary logging
 	ShaderLoader::SetLoggingSettings(newLoggingSettings);
 
-	for (const auto shader : m_context.shaderManager.GetResources() | std::views::values)
-	{
-		m_context.shaderManager.ReloadResource(shader, GetRealPath(shader->path));
-	}
+	m_context.shaderManager.ReloadResource(&p_shader, GetRealPath(p_shader.path));
 
 	ShaderLoader::SetLoggingSettings(previousLoggingSettings);
 }

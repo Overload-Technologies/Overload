@@ -248,6 +248,11 @@ namespace OvEditor::Core
 		void CompileShaders();
 
 		/**
+		* Compile the given shader
+		*/
+		void CompileShader(OvRendering::Resources::Shader& p_shader);
+
+		/**
 		* Save every materials to their respective files
 		*/
 		void SaveMaterials();

@@ -75,9 +75,9 @@ namespace OvRendering::Data
 		) const;
 
 		/**
-		* Fill uniform with default uniform values
+		* Add missing properties to the material based on the shader, and remove properties that are not used in the shader.
 		*/
-		void FillUniform();
+		void UpdateProperties();
 
 		/**
 		* Bind the material and send its uniform data to the GPU

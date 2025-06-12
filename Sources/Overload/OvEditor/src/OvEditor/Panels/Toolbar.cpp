@@ -39,14 +39,17 @@ OvEditor::Panels::Toolbar::Toolbar
 
 	auto& translate = CreateWidget<ButtonImage>(editorResources->GetTexture("Move")->GetTexture().GetID(), iconSize);
 	translate.lineBreak = false;
+	translate.tooltip = "Set gizmo operation to translate\nShortcut: [W]";
 	translate.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::TRANSLATE)); };
 
 	auto& rotate = CreateWidget<ButtonImage>(editorResources->GetTexture("Rotate")->GetTexture().GetID(), iconSize);
 	rotate.lineBreak = false;
+	rotate.tooltip = "Set gizmo operation to rotate\nShortcut: [E]";
 	rotate.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::ROTATE)); };
 
 	auto& scale = CreateWidget<ButtonImage>(editorResources->GetTexture("Scale")->GetTexture().GetID(), iconSize);
 	scale.lineBreak = false;
+	scale.tooltip = "Set gizmo operation to scale\nShortcut: [R]";
 	scale.ClickedEvent += []() { EDITOR_EXEC(SetGizmoOperation(OvEditor::Core::EGizmoOperation::SCALE)); };
 
 	auto updateGizmoOperation = [&translate, &rotate, &scale](Core::EGizmoOperation p_operation) {
@@ -67,8 +70,14 @@ OvEditor::Panels::Toolbar::Toolbar
 	m_stopButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Stop")->GetTexture().GetID(), iconSize);
 	m_nextButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Next")->GetTexture().GetID(), iconSize);
 
+	m_playButton->tooltip = "Play (or resume) the game";
+	m_pauseButton->tooltip = "Pause the game";
+	m_stopButton->tooltip = "Stop the game";
+	m_nextButton->tooltip = "Step to the next frame";
+
 	CreateWidget<Layout::Spacing>(0).lineBreak = false;
 	auto& refreshButton = CreateWidget<ButtonImage>(editorResources->GetTexture("Refresh")->GetTexture().GetID(), iconSize);
+	refreshButton.tooltip = "Reload all scripts";
 
 	m_playButton->lineBreak = false;
 	m_pauseButton->lineBreak = false;

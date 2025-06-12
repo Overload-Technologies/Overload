@@ -6,4 +6,5 @@ layout (std140, binding = 1) uniform ReflectionUBO
     vec4 boxHalfExtents;
     float brightness;
     bool boxProjection;
+    bool local;
 } ubo_ReflectionProbeData;

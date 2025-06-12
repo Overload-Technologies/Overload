@@ -1,5 +1,14 @@
 #include ":Shaders/Common/Buffers/ReflectionUBO.ovfxh"
 
+bool IsPointInOBB(vec3 point, vec3 obbCenter, vec3 obbHalfExtents, mat3 obbOrientation)
+{
+    vec3 localPoint = obbOrientation * (point - obbCenter);
+    
+    return abs(localPoint.x) <= obbHalfExtents.x &&
+           abs(localPoint.y) <= obbHalfExtents.y &&
+           abs(localPoint.z) <= obbHalfExtents.z;
+}
+
 // https://seblagarde.wordpress.com/wp-content/uploads/2012/08/parallax_corrected_cubemap-siggraph2012.pdf
 vec3 BoxProjectionOBB(vec3 reflectionVector, vec3 worldPos, vec3 probePos, vec3 obbCenter, vec3 obbHalfExtents, mat3 obbOrientation)
 {
@@ -77,6 +86,17 @@ vec3 CalculateImageBasedLighting(
     float transmission,
     float refractionIndex
 ) {
+    // Early exit if the fragment is outside the reflection probe bounds
+    if (ubo_ReflectionProbeData.local && !IsPointInOBB(
+        fragPos,
+        ubo_ReflectionProbeData.boxCenter.xyz,
+        ubo_ReflectionProbeData.boxHalfExtents.xyz,
+        mat3(ubo_ReflectionProbeData.rotation))
+    )
+    {
+        return vec3(0.0); // No reflection/refraction.
+    }
+
     // 0. Constants
     const int environmentMaxLOD = textureQueryLevels(environmentMap) - 1;
    

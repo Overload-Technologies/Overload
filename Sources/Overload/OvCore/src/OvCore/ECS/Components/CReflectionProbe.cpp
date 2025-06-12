@@ -24,7 +24,8 @@ namespace
 		sizeof(OvMaths::FVector4) +	// Box Center (vec3)
 		sizeof(OvMaths::FVector4) +	// Box Extents (vec3)
 		sizeof(float) +				// Brightness (float)
-		sizeof(int);				// Box Projection (bool)
+		sizeof(int) +				// Box Projection (bool)
+		sizeof(int);				// Local (bool)
 
 	constexpr uint32_t kBackBufferIndex = 0; // Cubemap that is being rendered
 	constexpr uint32_t kCompleteBufferIndex = 1; // Cubemap that is used
@@ -432,7 +433,9 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 		OvMaths::FVector4 boxHalfExtents;
 		float brightness;
 		bool boxProjection;
-		std::byte padding[3];
+		std::byte padding1[3];
+		bool local;
+		std::byte padding2[3];
 	} uboDataPage{ 
 		.position = probePosition,
 		.rotation = probeRotationMatrix,
@@ -440,6 +443,7 @@ void OvCore::ECS::Components::CReflectionProbe::_PrepareUBO()
 		.boxHalfExtents = m_influenceSize,
 		.brightness = m_brightness,
 		.boxProjection = m_boxProjection && m_influencePolicy == EInfluencePolicy::LOCAL,
+		.local = m_influencePolicy == EInfluencePolicy::LOCAL,
 	};
 #pragma pack(pop)
 

@@ -33,64 +33,64 @@ OvEditor::Panels::AssetProperties::AssetProperties
 ) :
 	PanelWindow(p_title, p_opened, p_windowSettings)
 {
-    m_targetChanged += [this]() { SetTarget(m_assetSelector->content); };
+	m_targetChanged += [this]() { SetTarget(m_assetSelector->content); };
 
 	CreateHeaderButtons();
 
-    m_headerSeparator = &CreateWidget<OvUI::Widgets::Visual::Separator>();
-    m_headerSeparator->enabled = false;
+	m_headerSeparator = &CreateWidget<OvUI::Widgets::Visual::Separator>();
+	m_headerSeparator->enabled = false;
 
-    CreateAssetSelector();
+	CreateAssetSelector();
 
-    m_settings = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Settings");
+	m_settings = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Settings");
 	m_settingsColumns = &m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_settingsColumns->widths[0] = 150;
 
-    m_info = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Info");
-    m_infoColumns = &m_info->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-    m_infoColumns->widths[0] = 150;
+	m_info = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Info");
+	m_infoColumns = &m_info->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	m_infoColumns->widths[0] = 150;
 
-    m_settings->enabled = m_info->enabled = false;
+	m_settings->enabled = m_info->enabled = false;
 }
 
 void OvEditor::Panels::AssetProperties::SetTarget(const std::string& p_path)
 {
 	m_resource = p_path == "" ? p_path : EDITOR_EXEC(GetResourcePath(p_path));
 
-    if (m_assetSelector)
-    {
-        m_assetSelector->content = m_resource;
-    }
+	if (m_assetSelector)
+	{
+		m_assetSelector->content = m_resource;
+	}
 
-    Refresh();
+	Refresh();
 }
 
 void OvEditor::Panels::AssetProperties::Refresh()
 {
-    m_metadata.reset(new OvTools::Filesystem::IniFile(EDITOR_EXEC(GetRealPath(m_resource)) + ".meta"));
+	m_metadata.reset(new OvTools::Filesystem::IniFile(EDITOR_EXEC(GetRealPath(m_resource)) + ".meta"));
 
-    CreateSettings();
-    CreateInfo();
+	CreateSettings();
+	CreateInfo();
 
-    m_applyButton->enabled = m_settings->enabled;
-    m_resetButton->enabled = m_settings->enabled;
-    m_revertButton->enabled = m_settings->enabled;
+	m_applyButton->enabled = m_settings->enabled;
+	m_resetButton->enabled = m_settings->enabled;
+	m_revertButton->enabled = m_settings->enabled;
 
-    switch (OvTools::Utils::PathParser::GetFileType(m_resource))
-    {
-    case OvTools::Utils::PathParser::EFileType::MODEL:
-    case OvTools::Utils::PathParser::EFileType::TEXTURE:
-    case OvTools::Utils::PathParser::EFileType::MATERIAL:
-        m_previewButton->enabled = true;
-        break;
-    default:
-        m_previewButton->enabled = false;
-        break;
-    }
+	switch (OvTools::Utils::PathParser::GetFileType(m_resource))
+	{
+	case OvTools::Utils::PathParser::EFileType::MODEL:
+	case OvTools::Utils::PathParser::EFileType::TEXTURE:
+	case OvTools::Utils::PathParser::EFileType::MATERIAL:
+		m_previewButton->enabled = true;
+		break;
+	default:
+		m_previewButton->enabled = false;
+		break;
+	}
 
-    // Enables the header separator (And the line break) if at least one button is enabled
-    m_headerSeparator->enabled = m_applyButton->enabled || m_resetButton->enabled || m_revertButton->enabled || m_previewButton->enabled;
-    m_headerLineBreak->enabled = m_headerSeparator->enabled;
+	// Enables the header separator (And the line break) if at least one button is enabled
+	m_headerSeparator->enabled = m_applyButton->enabled || m_resetButton->enabled || m_revertButton->enabled || m_previewButton->enabled;
+	m_headerLineBreak->enabled = m_headerSeparator->enabled;
 }
 
 void OvEditor::Panels::AssetProperties::Preview()
@@ -120,42 +120,43 @@ void OvEditor::Panels::AssetProperties::Preview()
 void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 {
 	m_applyButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Apply");
-    m_applyButton->idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
-    m_applyButton->enabled = false;
-    m_applyButton->lineBreak = false;
-    m_applyButton->ClickedEvent += std::bind(&AssetProperties::Apply, this);
+	m_applyButton->idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	m_applyButton->tooltip = "Save changes and reimport the asset with the new settings";
+	m_applyButton->enabled = false;
+	m_applyButton->lineBreak = false;
+	m_applyButton->ClickedEvent += std::bind(&AssetProperties::Apply, this);
 
 	m_revertButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Revert");
-	m_revertButton->idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-    m_revertButton->enabled = false;
-    m_revertButton->lineBreak = false;
-    m_revertButton->ClickedEvent += std::bind(&AssetProperties::SetTarget, this, m_resource);
+	m_revertButton->tooltip = "Reload the last saved settings from the asset property file";
+	m_revertButton->enabled = false;
+	m_revertButton->lineBreak = false;
+	m_revertButton->ClickedEvent += [this] { SetTarget(m_resource); };
 
 	m_previewButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Preview");
-	m_previewButton->idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-    m_previewButton->enabled = false;
+	m_previewButton->tooltip = "Preview the asset in the Asset View";
+	m_previewButton->enabled = false;
 	m_previewButton->lineBreak = false;
 	m_previewButton->ClickedEvent += std::bind(&AssetProperties::Preview, this);
 
-	m_resetButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Reset to default");
+	m_resetButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Reset");
+	m_resetButton->tooltip = "Reset all settings to default values";
 	m_resetButton->idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
-    m_resetButton->enabled = false;
-    m_resetButton->lineBreak = false;
-	m_resetButton->ClickedEvent += [this]
-	{
+	m_resetButton->enabled = false;
+	m_resetButton->lineBreak = false;
+	m_resetButton->ClickedEvent += [this] {
 		m_metadata->RemoveAll();
 		CreateSettings();
 	};
 
-    m_headerLineBreak = &CreateWidget<OvUI::Widgets::Layout::NewLine>();
-    m_headerLineBreak->enabled = false;
+	m_headerLineBreak = &CreateWidget<OvUI::Widgets::Layout::NewLine>();
+	m_headerLineBreak->enabled = false;
 }
 
 void OvEditor::Panels::AssetProperties::CreateAssetSelector()
 {
-    auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-    columns.widths[0] = 150;
-    m_assetSelector = &OvCore::Helpers::GUIDrawer::DrawAsset(columns, "Target", m_resource, &m_targetChanged);
+	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
+	columns.widths[0] = 150;
+	m_assetSelector = &OvCore::Helpers::GUIDrawer::DrawAsset(columns, "Target", m_resource, &m_targetChanged);
 }
 
 void OvEditor::Panels::AssetProperties::CreateSettings()
@@ -164,7 +165,7 @@ void OvEditor::Panels::AssetProperties::CreateSettings()
 
 	const auto fileType = OvTools::Utils::PathParser::GetFileType(m_resource);
 
-    m_settings->enabled = true;
+	m_settings->enabled = true;
 
 	if (fileType == OvTools::Utils::PathParser::EFileType::MODEL)
 	{
@@ -174,36 +175,36 @@ void OvEditor::Panels::AssetProperties::CreateSettings()
 	{
 		CreateTextureSettings();
 	}
-    else
-    {
-        m_settings->enabled = false;
-    }
+	else
+	{
+		m_settings->enabled = false;
+	}
 }
 
 void OvEditor::Panels::AssetProperties::CreateInfo()
 {
-    const auto realPath = EDITOR_EXEC(GetRealPath(m_resource));
+	const auto realPath = EDITOR_EXEC(GetRealPath(m_resource));
 
-    m_infoColumns->RemoveAllWidgets();
+	m_infoColumns->RemoveAllWidgets();
 
-    if (std::filesystem::exists(realPath))
-    {
-        m_info->enabled = true;
+	if (std::filesystem::exists(realPath))
+	{
+		m_info->enabled = true;
 
-        OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Path");
-        m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(realPath);
+		OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Path");
+		m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(realPath);
 
-        OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Size");
-        const auto [size, unit] = OvTools::Utils::SizeConverter::ConvertToOptimalUnit(static_cast<float>(std::filesystem::file_size(realPath)), OvTools::Utils::SizeConverter::ESizeUnit::BYTE);
-        m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(std::to_string(size) + " " + OvTools::Utils::SizeConverter::UnitToString(unit));
+		OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Size");
+		const auto [size, unit] = OvTools::Utils::SizeConverter::ConvertToOptimalUnit(static_cast<float>(std::filesystem::file_size(realPath)), OvTools::Utils::SizeConverter::ESizeUnit::BYTE);
+		m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(std::to_string(size) + " " + OvTools::Utils::SizeConverter::UnitToString(unit));
 
-        OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Metadata");
-        m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(std::filesystem::exists(realPath + ".meta") ? "Yes" : "No");
-    }
-    else
-    {
-        m_info->enabled = false;
-    }
+		OvCore::Helpers::GUIDrawer::CreateTitle(*m_infoColumns, "Metadata");
+		m_infoColumns->CreateWidget<OvUI::Widgets::Texts::Text>(std::filesystem::exists(realPath + ".meta") ? "Yes" : "No");
+	}
+	else
+	{
+		m_info->enabled = false;
+	}
 }
 
 #define MODEL_FLAG_ENTRY(setting) OvCore::Helpers::GUIDrawer::DrawBoolean(*m_settingsColumns, setting, [&]() { return m_metadata->Get<bool>(setting); }, [&](bool value) { m_metadata->Set<bool>(setting, value); })

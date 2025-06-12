@@ -159,9 +159,10 @@ If you'd like to contribute, please refer to our [contribution guildelines](http
 
 # Screenshots
 ![editor](https://github.com/user-attachments/assets/2134f35f-a7f8-4bd6-8f4f-7d4761206cbf)
+![shading](https://github.com/user-attachments/assets/414c72e0-cea5-4710-8d5e-c8d03f56c00f)
+![reflections](https://github.com/user-attachments/assets/2a54a9c4-1884-4271-ac77-1da57aa43a9b)
+![pbr](https://github.com/user-attachments/assets/712d9b6e-4bf7-4cf7-ad23-01aeb1de9713)
 ![custom-shaders](https://github.com/user-attachments/assets/8cfed591-a565-45d2-aa4c-8e3926bdeea6)
-![shading](https://github.com/user-attachments/assets/e5219043-eb7f-4859-8345-a61fef9abf93)
-![materials](https://github.com/user-attachments/assets/c16f1bfc-7d6a-4610-a5fe-062761513ad6)
 ![intel-sponza](https://github.com/user-attachments/assets/325fb0b5-54fc-4110-9011-5a51edcebf72)
 ![intel-sponza-2](https://github.com/user-attachments/assets/87acd196-09aa-4399-af71-f7ac6d1ee34f)
 ![intel-sponza-3](https://github.com/user-attachments/assets/28a8c112-d723-4e02-b790-a0b023dbc5c6)

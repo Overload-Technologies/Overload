@@ -237,7 +237,8 @@ void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 			m_materialFields[i][0]->enabled = enabled;
 			m_materialFields[i][1]->enabled = enabled;
 			m_materialFields[i][2]->enabled = enabled;
-			reinterpret_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0])->content = m_materialNames[i];
+			const auto formattedName = std::format("Material [{}]: <{}>", i, m_materialNames[i]);
+			reinterpret_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0]) ->content = formattedName;
 		}
 	}
 }

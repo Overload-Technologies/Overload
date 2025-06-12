@@ -18,8 +18,10 @@
 #include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/InputFields/InputInt.h>
+#include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
@@ -201,8 +203,13 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 	drawVisibilityToggle("Reflection", REFLECTION);
 	drawVisibilityToggle("Shadow", SHADOW);
 
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
+	p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>(); // Necessary to fill the "value" column
+
 	for (uint8_t i = 0; i < m_materials.size(); ++i)
+	{
 		m_materialFields[i] = CustomMaterialDrawer(p_root, "Material", m_materials[i]);
+	}
 
 	UpdateMaterialList();
 }

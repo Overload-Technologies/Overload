@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html
+  lang="{{ .Site.Language.Lang }}"
+  class="color-toggle-hidden"
+  {{ if default false .Site.Params.geekdocDarkModeCode }}code-theme="dark"{{ end }}
+>
+  <head>
+    {{ partial "head/meta" . }}
+    <title>
+      {{- if eq .Kind "home" -}}
+        {{ .Site.Title }}
+      {{- else -}}
+        {{ printf "%s | %s" (partial "utils/title" .) .Site.Title }}
+      {{- end -}}
+    </title>
+
+    {{ partial "head/favicons" . }}
+    {{ partial "head/rel-me" . }}
+    {{ partial "head/microformats" . }}
+    {{ partial "head/others" . }}
+    {{ partial "head/custom" . }}
+  </head>
+
+  <body itemscope itemtype="https://schema.org/WebPage">
+    <div class="w-full flex justify-center">
+      <a href="#main-content" id="gdoc-to-main" class="gdoc-markdown__link">Skip to main content</a>
+    </div>
+
+    {{ partial "svg-icon-symbols" . }}
+
+
+    <div
+      class="wrapper {{ if default false .Site.Params.geekdocDarkModeDim }}dark-mode-dim{{ end }}"
+    >
+      {{ $navEnabled := default true .Page.Params.geekdocNav }}
+      {{ partial "site-header" (dict "Root" . "MenuEnabled" $navEnabled) }}
+
+
+      <main class="container flex flex-even">
+        {{ if $navEnabled }}
+          <aside class="gdoc-nav">
+            {{ partial "menu" . }}
+          </aside>
+        {{ end }}
+
+
+        <div class="gdoc-page">
+          {{ template "main" . }}
+
+
+          {{ $showPrevNext := (default true .Site.Params.geekdocNextPrev) }}
+          {{ if $showPrevNext }}
+          <div class="gdoc-page__footer flex flex-wrap justify-between">
+            {{ if .Site.Params.geekdocMenuBundle }}
+              {{ partial "menu-bundle-np" . }}
+            {{ else }}
+              {{ partial "menu-filetree-np" . }}
+            {{ end }}
+          </div>
+          {{ end }}
+        </div>
+      </main>
+
+      {{ partial "site-footer" . }}
+    </div>
+
+    {{ partial "foot" . }}
+  </body>
+</html>

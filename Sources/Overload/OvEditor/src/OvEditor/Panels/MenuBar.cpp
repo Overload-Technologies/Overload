@@ -4,34 +4,34 @@
 * @licence: MIT
 */
 
-#include <OvTools/Utils/SystemCalls.h>
-
-#include <OvCore/ECS/Components/CCamera.h>
-#include <OvCore/ECS/Components/CPointLight.h>
-#include <OvCore/ECS/Components/CDirectionalLight.h>
-#include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
-#include <OvCore/ECS/Components/CPhysicalBox.h>
-#include <OvCore/ECS/Components/CPhysicalSphere.h>
-#include <OvCore/ECS/Components/CPhysicalCapsule.h>
-#include <OvCore/ECS/Components/CAudioSource.h>
 #include <OvCore/ECS/Components/CAudioListener.h>
+#include <OvCore/ECS/Components/CAudioSource.h>
+#include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/ECS/Components/CDirectionalLight.h>
+#include <OvCore/ECS/Components/CPhysicalBox.h>
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>
+#include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/ECS/Components/CPointLight.h>
+#include <OvCore/ECS/Components/CSpotLight.h>
 
-#include <OvUI/Widgets/Visual/Separator.h>
-#include <OvUI/Widgets/Sliders/SliderInt.h>
-#include <OvUI/Widgets/Sliders/SliderFloat.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/Console.h>
+#include <OvEditor/Panels/MenuBar.h>
+#include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Settings/EditorSettings.h>
+#include <OvEditor/Utils/ActorCreationMenu.h>
+
+#include <OvTools/Utils/SystemCalls.h>
+
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
-
-#include "OvEditor/Core/EditorActions.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Panels/Console.h"
-#include "OvEditor/Panels/MenuBar.h"
-#include "OvEditor/Panels/SceneView.h"
-#include "OvEditor/Settings/EditorSettings.h"
-#include "OvEditor/Utils/ActorCreationMenu.h"
+#include <OvUI/Widgets/Sliders/SliderFloat.h>
+#include <OvUI/Widgets/Sliders/SliderInt.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -225,7 +225,7 @@ void OvEditor::Panels::MenuBar::CreateWindowMenu()
 void OvEditor::Panels::MenuBar::CreateActorsMenu()
 {
 	auto& actorsMenu = CreateWidget<MenuList>("Actors");
-    Utils::ActorCreationMenu::GenerateActorCreationMenu(actorsMenu);
+	Utils::ActorCreationMenu::GenerateActorCreationMenu(actorsMenu);
 }
 
 void OvEditor::Panels::MenuBar::CreateResourcesMenu()
@@ -254,15 +254,24 @@ void OvEditor::Panels::MenuBar::CreateLayoutMenu()
 
 void OvEditor::Panels::MenuBar::CreateHelpMenu()
 {
-    auto& helpMenu = CreateWidget<MenuList>("Help");
-    helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload"); };
-    helpMenu.CreateWidget<MenuItem>("Tutorials").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/wiki/Tutorials"); };
-    helpMenu.CreateWidget<MenuItem>("Scripting API").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/wiki/Scripting-API"); };
-    helpMenu.CreateWidget<Visual::Separator>();
-    helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
-    helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };
-    helpMenu.CreateWidget<Visual::Separator>();
-    helpMenu.CreateWidget<Texts::Text>("Version: " + std::string(OVERLOAD_VERSION));
+	auto& helpMenu = CreateWidget<MenuList>("Help");
+	helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload"); };
+	helpMenu.CreateWidget<MenuItem>("Documentation").ClickedEvent += [] {
+		const auto documentationPath = std::filesystem::path{} / "Documentation" / "index.html";
+		if (std::filesystem::exists(documentationPath))
+		{
+			OvTools::Utils::SystemCalls::OpenFile(documentationPath.string());
+		}
+		else
+		{
+			OvTools::Utils::SystemCalls::OpenURL("https://doc.overloadengine.org");
+		}
+	};
+	helpMenu.CreateWidget<Visual::Separator>();
+	helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
+	helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [] {OvTools::Utils::SystemCalls::OpenURL("https://github.com/Overload-Technologies/Overload/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };
+	helpMenu.CreateWidget<Visual::Separator>();
+	helpMenu.CreateWidget<Texts::Text>("Version: " + std::string(OVERLOAD_VERSION));
 }
 
 void OvEditor::Panels::MenuBar::RegisterPanel(const std::string& p_name, OvUI::Panels::PanelWindow& p_panel)

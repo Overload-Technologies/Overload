@@ -61,11 +61,16 @@ project "OvEditor"
 		"OvRendering",
 		"OvTools",
 		"OvUI",
-		"OvWindowing"
-    }
+		"OvWindowing",
+
+		-- Documentation
+		"Documentation"
+	}
 
 	postbuildcommands {
 		"for /f \"delims=|\" %%i in ('dir /B /S \"%{dependdir}\\*.dll\"') do xcopy /Q /Y \"%%i\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\"",
+
+		"xcopy \"%{outputdir}%{cfg.buildcfg}\\Documentation\" \"%{builddir}%{cfg.buildcfg}\\Documentation\" /y /i /r /e /q",
 
 		"rmdir /s /q \"%{builddir}%{cfg.buildcfg}\\Data\"",
 

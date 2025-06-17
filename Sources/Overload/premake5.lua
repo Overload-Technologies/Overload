@@ -69,3 +69,4 @@ group "Overload Apps"
 group ""
 
 include "../../Resources"
+include "../../Documentation"

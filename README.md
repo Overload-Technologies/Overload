@@ -5,18 +5,18 @@
   <a href="#screenshots">Screenshots</a> |
   <a href="#features">Features</a> |
   <a href="https://github.com/Overload-Technologies/Overload/wiki">Wiki</a> |
-  <a href="https://github.com/Overload-Technologies/Overload/blob/develop/CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/Overload-Technologies/Overload/blob/main/CONTRIBUTING.md">Contributing</a>
 <br/>
 <br/>
 <br/>
 <a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="platforms" src="https://img.shields.io/badge/platforms-Windows-blue?style=flat-square"/></a>
 <a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="release" src="https://img.shields.io/github/v/release/adriengivry/overload?style=flat-square"/></a>
-<a href="https://github.com/Overload-Technologies/Overload/tree/develop/Sources/Overload"><img alt="size" src="https://img.shields.io/github/repo-size/adriengivry/overload?style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/tree/main/Sources/Overload"><img alt="size" src="https://img.shields.io/github/repo-size/adriengivry/overload?style=flat-square"/></a>
 <br/>
 <a href="https://github.com/Overload-Technologies/Overload/issues"><img alt="issues" src="https://img.shields.io/github/issues-raw/adriengivry/overload.svg?color=yellow&style=flat-square"/></a>
 <a href="https://github.com/Overload-Technologies/Overload/pulls"><img alt="pulls" src="https://img.shields.io/github/issues-pr-raw/adriengivry/overload?color=yellow&style=flat-square"/></a>
 <br/>
-<a href="https://github.com/Overload-Technologies/Overload/blob/develop/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adriengivry/overload?color=green&style=flat-square"/></a>
+<a href="https://github.com/Overload-Technologies/Overload/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adriengivry/overload?color=green&style=flat-square"/></a>
 <a href="https://github.com/Overload-Technologies/Overload/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/adriengivry/overload/total?color=green&style=flat-square"></a>
 <br/>
 <br/>
@@ -144,10 +144,26 @@ If you'd like to build Overload directly from the command line (without opening 
 ## Tutorials & Scripting API
 Learn how to create your own games using Overload by visiting our [wiki](https://github.com/Overload-Technologies/Overload/wiki).
 
+## Local Documentation
+To navigate the documentation website locally (offline), and preview changes you make to the documentation in realtime, you need to install [hugo](https://gohugo.io/installation/), which is the static website generation tool that Overload uses for all its documentation.
+
+### Generate & Open Documentation
+Once Hugo installed on your machine, you can run the `OpenDocumentation.bat` script located at the root of the repository. This script will:
+1. Generate the documentation website from the files located in `Documentation/`.
+2. Open the documentation website in your default web browser.
+
+### Manually Generate Documentation
+The documentation being located in the `Documentation/` folder, you navigate to this folder and run the hugo server manually:
+```powershell
+cd Documentation/
+hugo server -D
+```
+Once the hugo server is up and running, you can visit the documentation at http://localhost:1313/.
+
 # Contributing
 Overload is open to contributions of all kinds. Feel free to open issues (feature requests or bug reports) or submit pull requests.
 
-If you'd like to contribute, please refer to our [contribution guildelines](https://github.com/Overload-Technologies/Overload/blob/develop/CONTRIBUTING.md).
+If you'd like to contribute, please refer to our [contribution guildelines](https://github.com/Overload-Technologies/Overload/blob/main/CONTRIBUTING.md).
 
 # Minimum Requirements
 | | |

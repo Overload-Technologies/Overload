@@ -1,0 +1,5 @@
+*.test
+imports.*
+dist/
+public/
+.hugo_build.lock

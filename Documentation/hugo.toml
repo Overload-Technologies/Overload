@@ -1,0 +1,34 @@
+baseURL = "http://localhost"
+title = "Overload Documentation"
+theme = "hugo-geekdoc"
+
+pluralizeListTitles = false
+
+# Geekdoc required configuration
+pygmentsUseClasses = true
+pygmentsCodeFences = true
+disablePathToLower = true
+
+# Required if you want to render robots.txt template
+enableRobotsTXT = true
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
+
+# Needed for mermaid shortcodes
+[markup]
+  [markup.goldmark.renderer]
+    # Needed for mermaid shortcode
+    unsafe = true
+  [markup.tableOfContents]
+    startLevel = 1
+    endLevel = 9
+
+[taxonomies]
+   tag = "tags"
+
+[params]
+  # (Optional, default false) Collapse all menu entries, can not be overwritten
+  # per page if enabled. Can be enabled per page via 'geekdocCollapseSection'.
+  geekdocCollapseAllSections = true

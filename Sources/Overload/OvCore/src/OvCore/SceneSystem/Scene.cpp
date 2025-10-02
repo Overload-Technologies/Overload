@@ -85,7 +85,7 @@ void OvCore::SceneSystem::Scene::AddDefaultSkysphere()
 
 void OvCore::SceneSystem::Scene::AddDefaultAtmosphere()
 {
-	auto& atmosphere = CreateActor("Atmoshpere");
+	auto& atmosphere = CreateActor("Atmosphere");
 	auto& materialRenderer = atmosphere.AddComponent<ECS::Components::CMaterialRenderer>();
 	auto& modelRenderer = atmosphere.AddComponent<ECS::Components::CModelRenderer>();
 	modelRenderer.SetFrustumBehaviour(ECS::Components::CModelRenderer::EFrustumBehaviour::DISABLED);

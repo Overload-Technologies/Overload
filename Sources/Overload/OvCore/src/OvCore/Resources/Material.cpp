@@ -180,31 +180,31 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 
 							if constexpr (std::same_as<T, bool>)
 							{
-								SetProperty(propName, Serializer::DeserializeBoolean(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeBoolean(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, int>)
 							{
-								SetProperty(propName, Serializer::DeserializeInt(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeInt(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, float>)
 							{
-								SetProperty(propName, Serializer::DeserializeFloat(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeFloat(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, FVector2>)
 							{
-								SetProperty(propName, Serializer::DeserializeVec2(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeVec2(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, FVector3>)
 							{
-								SetProperty(propName, Serializer::DeserializeVec3(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeVec3(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, FVector4>)
 							{
-								SetProperty(propName, Serializer::DeserializeVec4(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeVec4(p_doc, uniform, "value"));
 							}
 							else if constexpr (std::same_as<T, OvRendering::Resources::Texture*>)
 							{
-								SetProperty(propName, Serializer::DeserializeTexture(p_doc, uniform, "value"));
+								TrySetProperty(propName, Serializer::DeserializeTexture(p_doc, uniform, "value"));
 							}
 							// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
 						};

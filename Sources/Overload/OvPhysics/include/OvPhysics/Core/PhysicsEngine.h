@@ -41,7 +41,7 @@ namespace OvPhysics::Core
 		/**
 		* Destructor
 		*/
-		virtual ~PhysicsEngine() = default;
+		virtual ~PhysicsEngine();
 
 		/**
 		* Simulate the physics. This method call is decomposed in 3 things:

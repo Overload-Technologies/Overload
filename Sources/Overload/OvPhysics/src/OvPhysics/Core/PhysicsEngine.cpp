@@ -35,6 +35,11 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 	SetCollisionCallback();
 }
 
+OvPhysics::Core::PhysicsEngine::~PhysicsEngine()
+{
+
+}
+
 void OvPhysics::Core::PhysicsEngine::PreUpdate()
 {
 	std::for_each(m_physicalObjects.begin(), m_physicalObjects.end(), std::mem_fn(&PhysicalObject::UpdateBtTransform));

@@ -4,7 +4,10 @@ project "OvCore"
 	cppdialect "C++20"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	buildoptions { "/bigobj" }
+
+	-- If MSVC, set big obj flag
+	filter { "toolset:msc" }
+		buildoptions { "/bigobj" }
 
 	files {
 		"**.h",

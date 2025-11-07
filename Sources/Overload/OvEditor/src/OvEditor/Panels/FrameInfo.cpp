@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cmath>
+
 #include <OvDebug/Logger.h>
 
 #include <OvRendering/Features/FrameInfoRenderFeature.h>

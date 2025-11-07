@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
-
 
 namespace OvMaths::Internal
 {

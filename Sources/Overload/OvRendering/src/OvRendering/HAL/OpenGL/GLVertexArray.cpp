@@ -60,6 +60,18 @@ bool OvRendering::HAL::GLVertexArray::IsValid() const
 }
 
 template<>
+void OvRendering::HAL::GLVertexArray::Bind() const
+{
+	glBindVertexArray(m_context.id);
+}
+
+template<>
+void OvRendering::HAL::GLVertexArray::Unbind() const
+{
+	glBindVertexArray(0);
+}
+
+template<>
 void OvRendering::HAL::GLVertexArray::SetLayout(
 	Settings::VertexAttributeLayout p_attributes,
 	VertexBuffer& p_vertexBuffer,
@@ -116,18 +128,6 @@ void OvRendering::HAL::GLVertexArray::ResetLayout()
 	}
 	m_context.attributeCount = 0;
 	Unbind();
-}
-
-template<>
-void OvRendering::HAL::GLVertexArray::Bind() const
-{
-	glBindVertexArray(m_context.id);
-}
-
-template<>
-void OvRendering::HAL::GLVertexArray::Unbind() const
-{
-	glBindVertexArray(0);
 }
 
 template<>

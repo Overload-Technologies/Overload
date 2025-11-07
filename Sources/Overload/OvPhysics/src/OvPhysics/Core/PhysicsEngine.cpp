@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <cstdint>
 
 #include <bullet/btBulletCollisionCommon.h>
 #include <bullet/btBulletDynamicsCommon.h>

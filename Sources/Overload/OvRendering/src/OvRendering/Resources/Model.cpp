@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <cmath>
 
 #include "OvRendering/Resources/Model.h"
 

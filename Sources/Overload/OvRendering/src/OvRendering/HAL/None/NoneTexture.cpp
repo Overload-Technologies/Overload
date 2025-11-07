@@ -8,7 +8,10 @@
 
 #include <OvRendering/HAL/None//NoneTexture.h>
 
+template<>
 OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::CreationEvent;
+
+template<>
 OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::DestructionEvent;
 
 template<>

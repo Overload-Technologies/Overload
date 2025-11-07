@@ -84,35 +84,6 @@ void OvRendering::HAL::GLShaderProgram::DetachAll()
 	m_context.attachedShaders.clear();
 }
 
-template<>
-OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::GLShaderProgram::Link()
-{
-	glLinkProgram(m_context.id);
-
-	GLint linkStatus;
-	glGetProgramiv(m_context.id, GL_LINK_STATUS, &linkStatus);
-
-	if (linkStatus == GL_FALSE)
-	{
-		GLint maxLength;
-		glGetProgramiv(m_context.id, GL_INFO_LOG_LENGTH, &maxLength);
-
-		std::string errorLog(maxLength, ' ');
-		glGetProgramInfoLog(m_context.id, maxLength, &maxLength, errorLog.data());
-
-		return {
-			.success = false,
-			.message = errorLog
-		};
-	}
-
-	QueryUniforms();
-
-	return {
-		.success = true
-	};
-}
-
 #define DECLARE_GET_UNIFORM_FUNCTION(type, glType, func) \
 template<> \
 template<> \
@@ -215,6 +186,35 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 			});
 		}
 	}
+}
+
+template<>
+OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::GLShaderProgram::Link()
+{
+	glLinkProgram(m_context.id);
+
+	GLint linkStatus;
+	glGetProgramiv(m_context.id, GL_LINK_STATUS, &linkStatus);
+
+	if (linkStatus == GL_FALSE)
+	{
+		GLint maxLength;
+		glGetProgramiv(m_context.id, GL_INFO_LOG_LENGTH, &maxLength);
+
+		std::string errorLog(maxLength, ' ');
+		glGetProgramInfoLog(m_context.id, maxLength, &maxLength, errorLog.data());
+
+		return {
+			.success = false,
+			.message = errorLog
+		};
+	}
+
+	QueryUniforms();
+
+	return {
+		.success = true
+	};
 }
 
 template<>

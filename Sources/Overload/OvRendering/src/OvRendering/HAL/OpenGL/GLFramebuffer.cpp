@@ -80,6 +80,7 @@ void OvRendering::HAL::GLFramebuffer::Unbind() const
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+template<>
 bool OvRendering::HAL::GLFramebuffer::Validate()
 {
 	const GLenum status = glCheckNamedFramebufferStatus(m_context.id, GL_FRAMEBUFFER);

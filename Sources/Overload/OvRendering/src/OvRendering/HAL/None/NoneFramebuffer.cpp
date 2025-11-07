@@ -48,6 +48,7 @@ void OvRendering::HAL::NoneFramebuffer::Unbind() const
 {
 }
 
+template<>
 bool OvRendering::HAL::NoneFramebuffer::Validate()
 {
 	return m_context.valid = true;

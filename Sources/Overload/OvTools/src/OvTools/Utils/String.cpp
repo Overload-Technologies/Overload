@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+
 #include "OvTools/Utils/String.h"
 
 bool OvTools::Utils::String::Replace(std::string & p_target, const std::string & p_from, const std::string & p_to)

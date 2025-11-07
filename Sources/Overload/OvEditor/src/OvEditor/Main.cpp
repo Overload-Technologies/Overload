@@ -79,7 +79,7 @@ namespace
 
 int main(int argc, char** argv)
 {
-	UpdateWorkingDirectory(argv[0]);
+	// UpdateWorkingDirectory(argv[0]);
 
 	OvEditor::Settings::EditorSettings::Load();
 

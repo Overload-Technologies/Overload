@@ -135,16 +135,18 @@ project "OvEditor"
 		postbuildcommands {
 			"rm -rf %{builddir}%{cfg.buildcfg}/Data",
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Data",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Config",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Development",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Shipping",
 
 			"cp -r %{resdir}Engine %{builddir}%{cfg.buildcfg}/Data/Engine",
 			"cp -r %{resdir}Editor %{builddir}%{cfg.buildcfg}/Data/Editor",
-			"mkdir -p %{builddir}%{cfg.buildcfg}/Config",
-			"cp %{prj.location}/Layout.ini %{builddir}%{cfg.buildcfg}/Config/",
+			"cp %{prj.location}/layout.ini %{builddir}%{cfg.buildcfg}/Config/ 2>/dev/null || true",
 
-			"cp %{outputdir}%{cfg.buildcfg}/%{prj.name}/* %{builddir}%{cfg.buildcfg}/",
+			"cp %{outputdir}%{cfg.buildcfg}/%{prj.name}/OvEditor %{builddir}%{cfg.buildcfg}/",
 
-			"cp %{outputdir}Debug/OvGame/* %{builddir}%{cfg.buildcfg}/Builder/Development/ 2>/dev/null || true",
-			"cp %{outputdir}Release/OvGame/* %{builddir}%{cfg.buildcfg}/Builder/Shipping/ 2>/dev/null || true",
+			"cp %{outputdir}Debug/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Development/ 2>/dev/null || true",
+			"cp %{outputdir}Release/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Shipping/ 2>/dev/null || true",
 
 			"true"
 		}

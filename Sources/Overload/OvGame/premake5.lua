@@ -11,7 +11,6 @@ project "OvGame"
 		"**.cpp",
 		"**.lua",
 		"**.ini",
-		"**.rc"
 	}
 
 	includedirs {
@@ -36,10 +35,6 @@ project "OvGame"
 	}
 
 	links {
-		-- Precompiled Libraries
-		"dbghelp.lib",
-		"opengl32.lib",
-
 		-- Dependencies
 		"assimp",
 		"bullet3",
@@ -63,12 +58,6 @@ project "OvGame"
 		"OvWindowing"
     }
 
-	postbuildcommands {
-		"for /f \"delims=|\" %%i in ('dir /B /S \"%{dependdir}\\*.dll\"') do xcopy /Q /Y \"%%i\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\"",
-		"xcopy \"%{resdir}Engine\\*\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\Data\\Engine\" /y /i /r /e /q",
-		"EXIT /B 0"
-	}
-
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }
 		symbols "On"
@@ -83,3 +72,49 @@ project "OvGame"
 	filter { "system:windows" }
 		-- forces post-build commands to trigger even if nothing changed
 		fastuptodate "Off"
+
+		files {
+			"**.rc",
+		}
+
+		links {
+			-- Precompiled Libraries
+			"dbghelp.lib",
+			"opengl32.lib",
+		}
+
+		postbuildcommands {
+			"for /f \"delims=|\" %%i in ('dir /B /S \"%{dependdir}\\*.dll\"') do xcopy /Q /Y \"%%i\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\"",
+			"xcopy \"%{resdir}Engine\\*\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\Data\\Engine\" /y /i /r /e /q",
+			"EXIT /B 0"
+		}
+
+	filter { "system:linux" }
+		links {
+			"dl",
+			"pthread",
+			"GL",
+			"X11",
+		}
+
+		-- Force inclusion of all symbols from these libraries
+		linkoptions {
+			"-Wl,--whole-archive",
+			outputdir .. "Debug/ImGui/libImGui.a",
+			outputdir .. "Debug/bullet3/libbullet3.a",
+			outputdir .. "Debug/lua/liblua.a",
+			outputdir .. "Debug/soloud/libsoloud.a",
+			outputdir .. "Debug/OvAudio/libOvAudio.a",
+			outputdir .. "Debug/assimp/libassimp.a",
+			outputdir .. "Debug/tinyxml2/libtinyxml2.a",
+			outputdir .. "Debug/glad/libglad.a",
+			"-Wl,--no-whole-archive",
+			"-Wl,--allow-multiple-definition",  -- Tracy and Bullet3 have some duplicate symbols
+		}
+
+		postbuildcommands {
+			"mkdir -p %{outputdir}%{cfg.buildcfg}/%{prj.name}/Data",
+			"cp -r %{resdir}Engine %{outputdir}%{cfg.buildcfg}/%{prj.name}/Data/Engine",
+			"true"
+		}
+

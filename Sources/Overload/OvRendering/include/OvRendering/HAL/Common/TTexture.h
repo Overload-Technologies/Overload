@@ -88,8 +88,8 @@ namespace OvRendering::HAL
 		const std::string& GetDebugName() const;
 
 	public:
-		static OvTools::Eventing::Event<TTexture&> CreationEvent;
-		static OvTools::Eventing::Event<TTexture&> DestructionEvent;
+		inline static OvTools::Eventing::Event<TTexture&> CreationEvent;
+		inline static OvTools::Eventing::Event<TTexture&> DestructionEvent;
 
 	private:
 		TextureContext m_textureContext;

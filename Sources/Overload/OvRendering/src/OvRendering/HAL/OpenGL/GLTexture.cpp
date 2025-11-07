@@ -11,12 +11,6 @@
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
-template<>
-OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::CreationEvent;
-
-template<>
-OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::DestructionEvent;
-
 namespace
 {
 	constexpr uint32_t CalculateMipMapLevels(uint32_t p_width, uint32_t p_height)

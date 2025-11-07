@@ -13,9 +13,13 @@ FORCE_DEDICATED_GPU
 #ifdef _DEBUG
 int main()
 #else
-#undef APIENTRY
-#include "Windows.h"
-INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+	#ifdef _WIN32
+		#undef APIENTRY
+		#include "Windows.h"
+		INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+	#else
+		int main()
+	#endif
 #endif
 {
 	OvGame::Core::Application app;

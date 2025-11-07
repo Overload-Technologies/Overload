@@ -36,11 +36,9 @@ project "OvEditor"
 	}
 
 	links {
-		-- Dependencies
-		"assimp",
+		-- Dependencies (order matters on Linux!)
 		"bullet3",
 		"glad",
-		"glfw",
 		"ImGui",
 		"lua",
 		"soloud",
@@ -56,7 +54,11 @@ project "OvEditor"
 		"OvRendering",
 		"OvTools",
 		"OvUI",
-		"OvWindowing"
+		"OvWindowing",
+
+		-- Dependencies that others depend on - must come after
+		"assimp",
+		"glfw",
     }
 
 	filter { "configurations:Debug" }
@@ -115,8 +117,24 @@ project "OvEditor"
 			"X11",
 		}
 
+		-- Force inclusion of all symbols from these libraries
+		linkoptions {
+			"-Wl,--whole-archive",
+			outputdir .. "Debug/ImGui/libImGui.a",
+			outputdir .. "Debug/bullet3/libbullet3.a",
+			outputdir .. "Debug/lua/liblua.a",
+			outputdir .. "Debug/soloud/libsoloud.a",
+			outputdir .. "Debug/OvAudio/libOvAudio.a",
+			outputdir .. "Debug/assimp/libassimp.a",
+			outputdir .. "Debug/tinyxml2/libtinyxml2.a",
+			outputdir .. "Debug/glad/libglad.a",
+			"-Wl,--no-whole-archive",
+			"-Wl,--allow-multiple-definition",  -- Tracy and Bullet3 have some duplicate symbols
+		}
+
 		postbuildcommands {
 			"rm -rf %{builddir}%{cfg.buildcfg}/Data",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Data",
 
 			"cp -r %{resdir}Engine %{builddir}%{cfg.buildcfg}/Data/Engine",
 			"cp -r %{resdir}Editor %{builddir}%{cfg.buildcfg}/Data/Editor",

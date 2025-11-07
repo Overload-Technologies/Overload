@@ -9,12 +9,6 @@
 #include <OvRendering/HAL/None//NoneTexture.h>
 
 template<>
-OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::CreationEvent;
-
-template<>
-OvTools::Eventing::Event<OvRendering::HAL::NoneTexture&> OvRendering::HAL::NoneTexture::DestructionEvent;
-
-template<>
 OvRendering::HAL::NoneTexture::TTexture(Settings::ETextureType p_type, std::string_view p_debugName) : TTextureHandle{ p_type, 0 }
 {
 	m_textureContext.debugName = p_debugName;

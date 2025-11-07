@@ -6,7 +6,14 @@
 
 #include <filesystem>
 
+#ifdef _WIN32
 #include <Windows.h>
+#else
+#include <cstdio>
+#include <memory>
+#include <array>
+#include <cstring>
+#endif
 
 #include "OvWindowing/Dialogs/FileDialog.h"
 
@@ -24,6 +31,7 @@ void OvWindowing::Dialogs::FileDialog::SetInitialDirectory(const std::string & p
 
 void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
 {
+#ifdef _WIN32
 	OPENFILENAME ofn;
 
 	if (!m_initialDirectory.empty())
@@ -56,6 +64,93 @@ void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
 	for (auto it = m_filepath.rbegin(); it != m_filepath.rend() && *it != '\\' && *it != '/'; ++it)
 		m_filename += *it;
 	std::reverse(m_filename.begin(), m_filename.end());
+#else
+	// Linux implementation using zenity
+	std::string command = "zenity --file-selection --title=\"" + m_dialogTitle + "\"";
+	
+	// Check if this is a save dialog (callback would be for save)
+	bool isSaveDialog = false;
+	if (reinterpret_cast<void*>(m_callback.target<int(*)(tagOFNA*)>()) != nullptr)
+	{
+		// This is a heuristic - if OVERWRITEPROMPT flag is set, it's likely a save dialog
+		if ((static_cast<int>(p_flags) & static_cast<int>(EExplorerFlags::OVERWRITEPROMPT)) != 0)
+			isSaveDialog = true;
+	}
+	
+	if (isSaveDialog)
+		command += " --save";
+	
+	if (!m_initialDirectory.empty())
+		command += " --filename=\"" + m_initialDirectory + "/\"";
+	
+	// Add file filters if present
+	if (!m_filter.empty())
+	{
+		std::string filters = m_filter;
+		size_t pos = 0;
+		while (pos < filters.length())
+		{
+			// Skip label (terminated by null)
+			size_t labelEnd = filters.find('\0', pos);
+			if (labelEnd == std::string::npos) break;
+			
+			pos = labelEnd + 1;
+			if (pos >= filters.length()) break;
+			
+			// Get filter pattern
+			size_t patternEnd = filters.find('\0', pos);
+			if (patternEnd == std::string::npos) patternEnd = filters.length();
+			
+			std::string pattern = filters.substr(pos, patternEnd - pos);
+			if (!pattern.empty())
+			{
+				command += " --file-filter='" + pattern + "'";
+			}
+			
+			pos = patternEnd + 1;
+		}
+	}
+	
+	command += " 2>/dev/null"; // Suppress GTK warnings
+	
+	// Execute zenity and capture output
+	std::array<char, 2048> buffer;
+	std::string result;
+	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+	
+	if (!pipe)
+	{
+		m_succeeded = false;
+		m_error = "Failed to open zenity";
+		return;
+	}
+	
+	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+	{
+		result += buffer.data();
+	}
+	
+	// Remove trailing newline
+	if (!result.empty() && result.back() == '\n')
+		result.pop_back();
+	
+	m_succeeded = !result.empty();
+	
+	if (m_succeeded)
+	{
+		m_filepath = result;
+		
+		/* Extract filename from filepath */
+		m_filename.clear();
+		for (auto it = m_filepath.rbegin(); it != m_filepath.rend() && *it != '\\' && *it != '/'; ++it)
+			m_filename += *it;
+		std::reverse(m_filename.begin(), m_filename.end());
+	}
+	else
+	{
+		m_error = "Dialog cancelled or zenity not available";
+	}
+#endif
 }
 
 bool OvWindowing::Dialogs::FileDialog::HasSucceeded() const
@@ -85,6 +180,7 @@ bool OvWindowing::Dialogs::FileDialog::IsFileExisting() const
 
 void OvWindowing::Dialogs::FileDialog::HandleError()
 {
+#ifdef _WIN32
 	switch (CommDlgExtendedError())
 	{
 	case CDERR_DIALOGFAILURE:	m_error = "CDERR_DIALOGFAILURE";   break;
@@ -104,4 +200,7 @@ void OvWindowing::Dialogs::FileDialog::HandleError()
 	case FNERR_SUBCLASSFAILURE: m_error = "FNERR_SUBCLASSFAILURE"; break;
 	default:					m_error = "You cancelled.";
 	}
+#else
+	m_error = "Dialog operation failed";
+#endif
 }

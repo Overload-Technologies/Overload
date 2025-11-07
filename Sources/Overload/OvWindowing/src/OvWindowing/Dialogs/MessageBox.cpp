@@ -4,7 +4,13 @@
 * @licence: MIT
 */
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <cstdio>
+#include <memory>
+#include <array>
+#endif
 
 #include "OvWindowing/Dialogs/MessageBox.h"
 
@@ -27,6 +33,7 @@ const OvWindowing::Dialogs::MessageBox::EUserAction& OvWindowing::Dialogs::Messa
 
 void OvWindowing::Dialogs::MessageBox::Spawn()
 {
+#ifdef _WIN32
 	int msgboxID = MessageBoxA
 	(
 		nullptr,
@@ -36,4 +43,174 @@ void OvWindowing::Dialogs::MessageBox::Spawn()
 	);
 
 	m_userResult = static_cast<EUserAction>(msgboxID);
+#else
+	// Linux implementation using zenity
+	std::string command = "zenity ";
+	
+	// Determine message type
+	switch (m_messageType)
+	{
+		case EMessageType::QUESTION:
+			command += "--question";
+			break;
+		case EMessageType::INFORMATION:
+			command += "--info";
+			break;
+		case EMessageType::WARNING:
+			command += "--warning";
+			break;
+		case EMessageType::ERROR:
+			command += "--error";
+			break;
+	}
+	
+	// Add title and message
+	command += " --title=\"" + m_title + "\"";
+	command += " --text=\"" + m_message + "\"";
+	
+	// Handle button layout
+	bool useExtraButtons = false;
+	std::string extraButtons;
+	
+	switch (m_buttonLayout)
+	{
+		case EButtonLayout::OK:
+			command += " --ok-label=\"OK\"";
+			break;
+		case EButtonLayout::OK_CANCEL:
+			command += " --ok-label=\"OK\" --cancel-label=\"Cancel\"";
+			break;
+		case EButtonLayout::YES_NO:
+			// For question dialogs, zenity uses yes/no by default
+			if (m_messageType == EMessageType::QUESTION)
+			{
+				command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
+			}
+			else
+			{
+				command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
+			}
+			break;
+		case EButtonLayout::YES_NO_CANCEL:
+			useExtraButtons = true;
+			extraButtons = " --extra-button=\"Yes\" --extra-button=\"No\"";
+			command += " --cancel-label=\"Cancel\"" + extraButtons;
+			break;
+		case EButtonLayout::RETRY_CANCEL:
+			command += " --ok-label=\"Retry\" --cancel-label=\"Cancel\"";
+			break;
+		case EButtonLayout::ABORT_RETRY_IGNORE:
+			useExtraButtons = true;
+			extraButtons = " --extra-button=\"Abort\" --extra-button=\"Retry\"";
+			command += " --cancel-label=\"Ignore\"" + extraButtons;
+			break;
+		case EButtonLayout::CANCEL_TRYAGAIN_CONTINUE:
+			useExtraButtons = true;
+			extraButtons = " --extra-button=\"Try Again\" --extra-button=\"Continue\"";
+			command += " --cancel-label=\"Cancel\"" + extraButtons;
+			break;
+		case EButtonLayout::HELP:
+			command += " --ok-label=\"Help\"";
+			break;
+	}
+	
+	command += " 2>/dev/null"; // Suppress GTK warnings
+	
+	// Execute zenity and check exit code
+	int exitCode = system(command.c_str());
+	int zenityResult = WEXITSTATUS(exitCode);
+	
+	// Map zenity exit codes to EUserAction
+	// zenity returns: 0 for OK/Yes, 1 for Cancel/No, 5 for timeout, 
+	// -1 for error, and button text for extra buttons
+	
+	if (useExtraButtons)
+	{
+		// For extra buttons, we need to capture the output
+		std::string captureCommand = command.substr(0, command.find(" 2>/dev/null"));
+		captureCommand += " 2>/dev/null";
+		
+		std::array<char, 128> buffer;
+		std::string result;
+		std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(captureCommand.c_str(), "r"), pclose);
+		
+		if (pipe)
+		{
+			while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+			{
+				result += buffer.data();
+			}
+		}
+		
+		// Remove trailing newline
+		if (!result.empty() && result.back() == '\n')
+			result.pop_back();
+		
+		// Map based on button text and layout
+		if (m_buttonLayout == EButtonLayout::YES_NO_CANCEL)
+		{
+			if (result == "Yes")
+				m_userResult = EUserAction::YES;
+			else if (result == "No")
+				m_userResult = EUserAction::NO;
+			else
+				m_userResult = EUserAction::CANCEL;
+		}
+		else if (m_buttonLayout == EButtonLayout::ABORT_RETRY_IGNORE)
+		{
+			if (result == "Abort")
+				m_userResult = EUserAction::CANCEL; // Map Abort to Cancel
+			else if (result == "Retry")
+				m_userResult = EUserAction::RETRY;
+			else
+				m_userResult = EUserAction::IGNORE;
+		}
+		else if (m_buttonLayout == EButtonLayout::CANCEL_TRYAGAIN_CONTINUE)
+		{
+			if (result == "Try Again")
+				m_userResult = EUserAction::TRYAGAIN;
+			else if (result == "Continue")
+				m_userResult = EUserAction::CONTINUE;
+			else
+				m_userResult = EUserAction::CANCEL;
+		}
+		else
+		{
+			m_userResult = EUserAction::CANCEL;
+		}
+	}
+	else
+	{
+		// Simple OK/Cancel mapping
+		if (zenityResult == 0)
+		{
+			// OK/Yes/Retry button pressed
+			switch (m_buttonLayout)
+			{
+				case EButtonLayout::YES_NO:
+					m_userResult = EUserAction::YES;
+					break;
+				case EButtonLayout::RETRY_CANCEL:
+					m_userResult = EUserAction::RETRY;
+					break;
+				default:
+					m_userResult = EUserAction::OK;
+					break;
+			}
+		}
+		else
+		{
+			// Cancel/No button pressed
+			switch (m_buttonLayout)
+			{
+				case EButtonLayout::YES_NO:
+					m_userResult = EUserAction::NO;
+					break;
+				default:
+					m_userResult = EUserAction::CANCEL;
+					break;
+			}
+		}
+	}
+#endif
 }

@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <cstdint>
 
 #include <bullet/btBulletCollisionCommon.h>
 #include <bullet/btBulletDynamicsCommon.h>
@@ -32,6 +33,11 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 
 	ListenToPhysicalObjects();
 	SetCollisionCallback();
+}
+
+OvPhysics::Core::PhysicsEngine::~PhysicsEngine()
+{
+
 }
 
 void OvPhysics::Core::PhysicsEngine::PreUpdate()

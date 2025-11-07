@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+
 #include "OvDebug/Logger.h"
 #include "OvTools/Time/Date.h"
 

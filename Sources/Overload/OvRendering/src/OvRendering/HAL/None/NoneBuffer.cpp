@@ -26,6 +26,27 @@ uint64_t OvRendering::HAL::NoneBuffer::Allocate(size_t p_size, Settings::EAccess
 }
 
 template<>
+bool OvRendering::HAL::NoneBuffer::IsValid() const
+{
+	return
+		m_buffer.type != Settings::EBufferType::UNKNOWN &&
+		m_buffer.allocatedBytes > 0;
+}
+
+template<>
+uint64_t OvRendering::HAL::NoneBuffer::GetSize() const
+{
+	OVASSERT(IsValid(), "Cannot get size of an invalid buffer");
+	return m_buffer.allocatedBytes;
+}
+
+template<>
+bool OvRendering::HAL::NoneBuffer::IsEmpty() const
+{
+	return GetSize() == 0;
+}
+
+template<>
 void OvRendering::HAL::NoneBuffer::Upload(const void* p_data, std::optional<BufferMemoryRange> p_range)
 {
 	OVASSERT(IsValid(), "Trying to upload data to an invalid buffer");
@@ -42,27 +63,6 @@ template<>
 void OvRendering::HAL::NoneBuffer::Unbind() const
 {
 	OVASSERT(IsValid(), "Cannot unbind an invalid buffer");
-}
-
-template<>
-bool OvRendering::HAL::NoneBuffer::IsValid() const
-{
-	return
-		m_buffer.type != Settings::EBufferType::UNKNOWN &&
-		m_buffer.allocatedBytes > 0;
-}
-
-template<>
-bool OvRendering::HAL::NoneBuffer::IsEmpty() const
-{
-	return GetSize() == 0;
-}
-
-template<>
-uint64_t OvRendering::HAL::NoneBuffer::GetSize() const
-{
-	OVASSERT(IsValid(), "Cannot get size of an invalid buffer");
-	return m_buffer.allocatedBytes;
 }
 
 template<>

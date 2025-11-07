@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cmath>
+
 #include "OvEditor/Core/GizmoBehaviour.h"
 #include "OvEditor/Core/EditorActions.h"
 #include "OvEditor/Settings/EditorSettings.h"

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cmath>
+
 #include "OvRendering/Features/LightingRenderFeature.h"
 #include "OvRendering/Core/CompositeRenderer.h"
 

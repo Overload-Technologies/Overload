@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <cstdint>
 #include <ctime>
 
 #include "OvTools/Time/Date.h"
@@ -14,7 +15,11 @@ std::string OvTools::Time::Date::GetDateAsString()
 	const auto now = time(nullptr);
 	tm ltm;
 
+#ifdef _WIN32
 	localtime_s(&ltm, &now);
+#else
+	localtime_r(&now, &ltm);
+#endif
 
 	std::string dateData[6] =
 	{

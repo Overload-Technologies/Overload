@@ -11,15 +11,20 @@
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
-OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::CreationEvent;
-OvTools::Eventing::Event<OvRendering::HAL::GLTexture&> OvRendering::HAL::GLTexture::DestructionEvent;
-
 namespace
 {
 	constexpr uint32_t CalculateMipMapLevels(uint32_t p_width, uint32_t p_height)
 	{
 		uint32_t maxDim = p_width > p_height ? p_width : p_height;
-		return maxDim ? 32u - __lzcnt(maxDim) : 1u;
+
+		uint32_t levels = 0;
+		while (maxDim > 1)
+		{
+			maxDim >>= 1;
+			++levels;
+		}
+
+		return levels ? levels + 1 : 1u;
 	}
 
 	constexpr bool IsValidMipMapFilter(OvRendering::Settings::ETextureFilteringMode p_mode)

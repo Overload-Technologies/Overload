@@ -6,11 +6,20 @@
 
 #include "OvWindowing/Dialogs/SaveFileDialog.h"
 
+#ifdef _WIN32
 #include <Windows.h>
 
 OvWindowing::Dialogs::SaveFileDialog::SaveFileDialog(const std::string & p_dialogTitle) : FileDialog(GetSaveFileNameA, p_dialogTitle)
 {
 }
+#else
+// Dummy callback for Linux (not used, but needed for constructor)
+static int DummySaveCallback(tagOFNA*) { return 0; }
+
+OvWindowing::Dialogs::SaveFileDialog::SaveFileDialog(const std::string & p_dialogTitle) : FileDialog(DummySaveCallback, p_dialogTitle)
+{
+}
+#endif
 
 void OvWindowing::Dialogs::SaveFileDialog::Show(EExplorerFlags p_flags)
 {

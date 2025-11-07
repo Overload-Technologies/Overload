@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-#pragma once
-
 #include <format>
 
 #include <glad.h>

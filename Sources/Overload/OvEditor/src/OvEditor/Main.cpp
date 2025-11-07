@@ -18,8 +18,12 @@
 #include <OvTools/Profiling/TracyAllocators.h>
 #include <OvTools/Utils/String.h>
 
+#ifdef _WIN32
 #undef APIENTRY
 #include "Windows.h"
+#else
+#include <cstdlib>
+#endif
 
 FORCE_DEDICATED_GPU
 
@@ -32,7 +36,9 @@ namespace
 	*/
 	void UpdateWorkingDirectory(const std::string& p_executablePath)
 	{
+#ifdef _WIN32
 		if (!IsDebuggerPresent())
+#endif
 		{
 			std::filesystem::current_path(OvTools::Utils::PathParser::GetContainingFolder(p_executablePath));
 		}
@@ -42,7 +48,13 @@ namespace
 	{
 		const auto errorEvent = [](OvWindowing::Context::EDeviceError, std::string errMsg) {
 			errMsg = "Overload requires OpenGL 4.5 or newer.\r\n" + errMsg;
+#ifdef _WIN32
 			MessageBox(0, errMsg.c_str(), "Overload", MB_OK | MB_ICONSTOP);
+#else
+			// Use zenity for error message on Linux
+			std::string command = "zenity --error --title=\"Overload\" --text=\"" + errMsg + "\" 2>/dev/null";
+			std::system(command.c_str());
+#endif
 		};
 
 		std::unique_ptr<OvEditor::Core::Application> app;
@@ -67,7 +79,7 @@ namespace
 
 int main(int argc, char** argv)
 {
-	UpdateWorkingDirectory(argv[0]);
+	// UpdateWorkingDirectory(argv[0]);
 
 	OvEditor::Settings::EditorSettings::Load();
 
@@ -109,9 +121,11 @@ int main(int argc, char** argv)
 	return EXIT_SUCCESS;
 }
 
+#ifdef _WIN32
 #ifndef _DEBUG
 INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
 {
 	main(__argc, __argv);
 }
+#endif
 #endif

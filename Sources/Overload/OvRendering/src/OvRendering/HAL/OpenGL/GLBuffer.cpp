@@ -25,6 +25,27 @@ OvRendering::HAL::GLBuffer::~TBuffer()
 }
 
 template<>
+bool OvRendering::HAL::GLBuffer::IsValid() const
+{
+	return
+		m_buffer.id != 0 &&
+		m_buffer.type != Settings::EBufferType::UNKNOWN;
+}
+
+template<>
+uint64_t OvRendering::HAL::GLBuffer::GetSize() const
+{
+	OVASSERT(IsValid(), "Cannot get size of an invalid buffer");
+	return m_buffer.allocatedBytes;
+}
+
+template<>
+bool OvRendering::HAL::GLBuffer::IsEmpty() const
+{
+	return GetSize() == 0;
+}
+
+template<>
 uint64_t OvRendering::HAL::GLBuffer::Allocate(uint64_t p_size, Settings::EAccessSpecifier p_usage)
 {
 	OVASSERT(IsValid(), "Cannot allocate memory for an invalid buffer");
@@ -66,27 +87,6 @@ void OvRendering::HAL::GLBuffer::Unbind() const
 {
 	OVASSERT(IsValid(), "Cannot unbind an invalid buffer");
 	glBindBuffer(EnumToValue<GLenum>(m_buffer.type), 0);
-}
-
-template<>
-bool OvRendering::HAL::GLBuffer::IsValid() const
-{
-	return
-		m_buffer.id != 0 &&
-		m_buffer.type != Settings::EBufferType::UNKNOWN;
-}
-
-template<>
-bool OvRendering::HAL::GLBuffer::IsEmpty() const
-{
-	return GetSize() == 0;
-}
-
-template<>
-uint64_t OvRendering::HAL::GLBuffer::GetSize() const
-{
-	OVASSERT(IsValid(), "Cannot get size of an invalid buffer");
-	return m_buffer.allocatedBytes;
 }
 
 template<>

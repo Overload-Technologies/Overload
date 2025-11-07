@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 

@@ -5,6 +5,8 @@
 */
 
 #include <array>
+#include <cmath>
+#include <cstdint>
 
 #include <OvDebug/Logger.h>
 #include <OvRendering/Resources/Mesh.h>

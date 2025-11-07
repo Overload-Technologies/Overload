@@ -4,8 +4,9 @@
 * @licence: MIT
 */
 
-#include <utility>
+#include <cmath>
 #include <stdexcept>
+#include <utility>
 
 #include "OvMaths/FVector4.h"
 

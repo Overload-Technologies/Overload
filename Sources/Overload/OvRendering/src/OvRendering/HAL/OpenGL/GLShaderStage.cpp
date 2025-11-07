@@ -51,7 +51,7 @@ OvRendering::Settings::ShaderCompilationResult OvRendering::HAL::GLShaderStage::
 		glGetShaderInfoLog(m_context.id, maxLength, &maxLength, errorLog.data());
 
 		std::string shaderTypeStr = Utils::GetShaderTypeName(m_context.type);
-		std::transform(shaderTypeStr.begin(), shaderTypeStr.end(), shaderTypeStr.begin(), std::toupper);
+		std::transform(shaderTypeStr.begin(), shaderTypeStr.end(), shaderTypeStr.begin(), toupper);
 		std::string errorHeader = "[" + shaderTypeStr + " SHADER] \"";
 
 		return {

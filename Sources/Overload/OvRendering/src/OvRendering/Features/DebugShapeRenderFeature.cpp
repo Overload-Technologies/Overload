@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cmath>
+
 #include <OvRendering/Core/CompositeRenderer.h>
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>

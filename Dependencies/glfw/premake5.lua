@@ -17,9 +17,19 @@ project "glfw"
 		"include"
 	}
 
-	defines {
-		"_GLFW_WIN32"
-	}
+	filter { "system:window" }
+		defines { "_GLFW_WIN32" }
+
+	filter { "system:linux" }
+		defines { "_GLFW_X11", "_GNU_SOURCE" }
+		removefiles {
+			"src/win32_*",
+			"src/cocoa_*",
+			"src/posix_time.h",
+			"src/wgl_*",
+				"src/nsgl_*"
+		}
+
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

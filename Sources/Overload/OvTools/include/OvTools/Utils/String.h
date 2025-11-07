@@ -57,6 +57,6 @@ namespace OvTools::Utils
 		* @param p_str String to trim
 		* @param p_trimOptions The desired trim options, default is trimming left and right
 		*/
-		static void Trim(std::string& p_str, const TrimOptions p_trimOptions = {});
+		static void Trim(std::string& p_str, const TrimOptions p_trimOptions = TrimOptions{.left = true, .right = true});
 	};
 }

@@ -93,62 +93,6 @@ bool RegisterBehaviour(sol::state& p_luaState, OvCore::ECS::Components::Behaviou
 	return false;
 }
 
-OvCore::Scripting::LuaScriptEngine::LuaScriptEngine()
-{
-	CreateContext();
-}
-
-OvCore::Scripting::LuaScriptEngine::~LuaScriptEngine()
-{
-	DestroyContext();
-}
-
-void OvCore::Scripting::LuaScriptEngine::CreateContext()
-{
-	OVASSERT(m_context.luaState == nullptr, "A Lua context already exists!");
-
-	m_context.luaState = std::make_unique<sol::state>();
-	m_context.luaState->open_libraries(sol::lib::base, sol::lib::math);
-
-	for (auto& callback : luaBindings)
-	{
-		callback(*m_context.luaState);
-	}
-
-	m_context.errorCount = 0;
-
-	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
-		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
-			const auto scriptFileName = behaviour.get().name + GetDefaultExtension();
-			const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
-			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), scriptPath.string()))
-			{
-				++m_context.errorCount;
-			}
-		}
-	);
-
-	if (m_context.errorCount > 0)
-	{
-		const std::string message = std::to_string(m_context.errorCount) + " script(s) failed to register";
-		OVLOG_ERROR(message);
-	}
-}
-
-void OvCore::Scripting::LuaScriptEngine::DestroyContext()
-{
-	OVASSERT(m_context.luaState != nullptr, "No valid Lua context");
-
-	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
-		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour)
-		{
-			behaviour.get().RemoveScript();
-		}
-	);
-
-	m_context.luaState.reset();
-}
-
 template<>
 OvCore::Scripting::LuaScriptEngineBase::TScriptEngine() {}
 
@@ -162,6 +106,12 @@ void OvCore::Scripting::LuaScriptEngineBase::SetScriptRootFolder(const std::file
 }
 
 template<>
+std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultExtension()
+{
+	return ".lua";
+}
+
+template<>
 std::vector<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValidExtensions()
 {
 	return { GetDefaultExtension() };
@@ -171,12 +121,6 @@ template<>
 std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultScriptContent(const std::string& p_name)
 {
 	return "local " + p_name + " =\n{\n}\n\nfunction " + p_name + ":OnStart()\nend\n\nfunction " + p_name + ":OnUpdate(deltaTime)\nend\n\nreturn " + p_name;
-}
-
-template<>
-std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultExtension()
-{
-	return ".lua";
 }
 
 template<>
@@ -193,6 +137,13 @@ void OvCore::Scripting::LuaScriptEngineBase::AddBehaviour(OvCore::ECS::Component
 	{
 		++m_context.errorCount;
 	}
+}
+
+template<>
+void OvCore::Scripting::LuaScriptEngineBase::Reload()
+{
+	static_cast<LuaScriptEngine&>(*this).DestroyContext();
+	static_cast<LuaScriptEngine&>(*this).CreateContext();
 }
 
 template<>
@@ -214,13 +165,6 @@ void OvCore::Scripting::LuaScriptEngineBase::RemoveBehaviour(OvCore::ECS::Compon
 	// Unconsidering a script is impossible with Lua, we have to reparse every behaviours
 	// @note this might be costly, we should look into it more seriously.
 	Reload(); 
-}
-
-template<>
-void OvCore::Scripting::LuaScriptEngineBase::Reload()
-{
-	static_cast<LuaScriptEngine&>(*this).DestroyContext();
-	static_cast<LuaScriptEngine&>(*this).CreateContext();
 }
 
 template<>
@@ -311,4 +255,60 @@ template<>
 void OvCore::Scripting::LuaScriptEngineBase::OnTriggerExit(OvCore::ECS::Components::Behaviour& p_target, OvCore::ECS::Components::CPhysicalObject& p_otherObject)
 {
 	ExecuteLuaFunction(p_target, "OnTriggerExit", p_otherObject);
+}
+
+OvCore::Scripting::LuaScriptEngine::LuaScriptEngine()
+{
+	CreateContext();
+}
+
+OvCore::Scripting::LuaScriptEngine::~LuaScriptEngine()
+{
+	DestroyContext();
+}
+
+void OvCore::Scripting::LuaScriptEngine::CreateContext()
+{
+	OVASSERT(m_context.luaState == nullptr, "A Lua context already exists!");
+
+	m_context.luaState = std::make_unique<sol::state>();
+	m_context.luaState->open_libraries(sol::lib::base, sol::lib::math);
+
+	for (auto& callback : luaBindings)
+	{
+		callback(*m_context.luaState);
+	}
+
+	m_context.errorCount = 0;
+
+	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
+		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
+			const auto scriptFileName = behaviour.get().name + GetDefaultExtension();
+			const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
+			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), scriptPath.string()))
+			{
+				++m_context.errorCount;
+			}
+		}
+	);
+
+	if (m_context.errorCount > 0)
+	{
+		const std::string message = std::to_string(m_context.errorCount) + " script(s) failed to register";
+		OVLOG_ERROR(message);
+	}
+}
+
+void OvCore::Scripting::LuaScriptEngine::DestroyContext()
+{
+	OVASSERT(m_context.luaState != nullptr, "No valid Lua context");
+
+	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
+		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour)
+		{
+			behaviour.get().RemoveScript();
+		}
+	);
+
+	m_context.luaState.reset();
 }

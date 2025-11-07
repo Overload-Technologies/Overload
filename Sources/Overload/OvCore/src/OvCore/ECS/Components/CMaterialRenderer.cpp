@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <format>
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>

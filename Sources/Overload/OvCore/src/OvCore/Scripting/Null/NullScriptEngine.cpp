@@ -18,6 +18,12 @@ template<>
 void OvCore::Scripting::NullScriptEngineBase::SetScriptRootFolder(const std::filesystem::path& p_scriptRootFolder) {}
 
 template<>
+std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultExtension()
+{
+	return ".ovscript";
+}
+
+template<>
 std::vector<std::string> OvCore::Scripting::NullScriptEngineBase::GetValidExtensions()
 {
 	return { GetDefaultExtension() };
@@ -27,12 +33,6 @@ template<>
 std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultScriptContent(const std::string& p_name)
 {
 	return "class " + p_name + " {\n}";
-}
-
-template<>
-std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultExtension()
-{
-	return ".ovscript";
 }
 
 template<>

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cmath>
+
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/PostProcess/BloomEffect.h>

@@ -11,7 +11,6 @@ project "OvEditor"
 		"**.cpp",
 		"**.lua",
 		"**.ini",
-		"**.rc",
 	}
 
 	includedirs {
@@ -37,10 +36,6 @@ project "OvEditor"
 	}
 
 	links {
-		-- Precompiled Libraries
-		"dbghelp.lib",
-		"opengl32.lib",
-
 		-- Dependencies
 		"assimp",
 		"bullet3",
@@ -64,28 +59,6 @@ project "OvEditor"
 		"OvWindowing"
     }
 
-	postbuildcommands {
-		"for /f \"delims=|\" %%i in ('dir /B /S \"%{dependdir}\\*.dll\"') do xcopy /Q /Y \"%%i\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\"",
-
-		"rmdir /s /q \"%{builddir}%{cfg.buildcfg}\\Data\"",
-
-		"xcopy \"%{resdir}Engine\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Engine\" /y /i /r /e /q",
-		"xcopy \"%{resdir}Editor\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Editor\" /y /i /r /e /q",
-		"xcopy \"%{prj.location}\\Layout.ini\" \"%{builddir}%{cfg.buildcfg}\\Config\\\" /y /i",
-
-		"xcopy \"%{wks.location}\\..\\..\\Tools\\tracy-profiler.exe\" \"%{builddir}%{cfg.buildcfg}\\Tools\\\" /y /i",
-
-		"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\\"",
-		"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\\"",
-
-		"xcopy \"%{outputdir}Debug\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Development\" /y /i /c",
-		"xcopy \"%{outputdir}Debug\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Development\" /y /i /c",
-		"xcopy \"%{outputdir}Release\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
-		"xcopy \"%{outputdir}Release\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
-
-		"EXIT /B 0"
-	}
-
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }
 		symbols "On"
@@ -101,3 +74,59 @@ project "OvEditor"
 		characterset ("MBCS")
 		-- forces post-build commands to trigger even if nothing changed
 		fastuptodate "Off"
+
+		files {
+			"**.rc",
+		}
+
+		links {
+			-- Precompiled Libraries
+			"dbghelp.lib",
+			"opengl32.lib",
+		}
+
+		postbuildcommands {
+			"for /f \"delims=|\" %%i in ('dir /B /S \"%{dependdir}\\*.dll\"') do xcopy /Q /Y \"%%i\" \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\"",
+
+			"rmdir /s /q \"%{builddir}%{cfg.buildcfg}\\Data\"",
+
+			"xcopy \"%{resdir}Engine\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Engine\" /y /i /r /e /q",
+			"xcopy \"%{resdir}Editor\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Editor\" /y /i /r /e /q",
+			"xcopy \"%{prj.location}\\Layout.ini\" \"%{builddir}%{cfg.buildcfg}\\Config\\\" /y /i",
+
+			"xcopy \"%{wks.location}\\..\\..\\Tools\\tracy-profiler.exe\" \"%{builddir}%{cfg.buildcfg}\\Tools\\\" /y /i",
+
+			"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\\"",
+			"xcopy /Y /I /Q /D \"%{outputdir}%{cfg.buildcfg}\\%{prj.name}\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\\"",
+
+			"xcopy \"%{outputdir}Debug\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Development\" /y /i /c",
+			"xcopy \"%{outputdir}Debug\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Development\" /y /i /c",
+			"xcopy \"%{outputdir}Release\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
+			"xcopy \"%{outputdir}Release\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
+
+			"EXIT /B 0"
+		}
+
+	filter { "system:linux" }
+		links {
+			"dl",
+			"pthread",
+			"GL",
+			"X11",
+		}
+
+		postbuildcommands {
+			"rm -rf %{builddir}%{cfg.buildcfg}/Data",
+
+			"cp -r %{resdir}Engine %{builddir}%{cfg.buildcfg}/Data/Engine",
+			"cp -r %{resdir}Editor %{builddir}%{cfg.buildcfg}/Data/Editor",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Config",
+			"cp %{prj.location}/Layout.ini %{builddir}%{cfg.buildcfg}/Config/",
+
+			"cp %{outputdir}%{cfg.buildcfg}/%{prj.name}/* %{builddir}%{cfg.buildcfg}/",
+
+			"cp %{outputdir}Debug/OvGame/* %{builddir}%{cfg.buildcfg}/Builder/Development/ 2>/dev/null || true",
+			"cp %{outputdir}Release/OvGame/* %{builddir}%{cfg.buildcfg}/Builder/Shipping/ 2>/dev/null || true",
+
+			"true"
+		}

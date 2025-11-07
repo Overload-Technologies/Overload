@@ -169,7 +169,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 				drawable.material.value() :
 				m_actorPickingFallbackMaterial;
 
-			const auto& actor = drawable.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
+			const auto& actor = drawable.template GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
 
 			PreparePickingMaterial(actor, targetMaterial);
 

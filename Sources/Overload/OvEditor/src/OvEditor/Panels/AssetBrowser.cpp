@@ -988,21 +988,19 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 		{
 			if (!p_isEngineItem) /* Prevent engine item from being DDTarget (Can't Drag and drop to engine folder) */
 			{
-				treeNode.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("Folder").DataReceivedEvent += [this, &treeNode, path, p_isEngineItem](std::pair<std::string, Layout::Group*> p_data)
+			treeNode.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("Folder").DataReceivedEvent += [this, &treeNode, path, p_isEngineItem](std::pair<std::string, Layout::Group*> p_data)
+			{
+			if (!p_data.first.empty())
+			{
+				const std::filesystem::path folderReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
+				const std::filesystem::path folderName = folderReceivedPath.filename();
+				const std::filesystem::path prevPath = folderReceivedPath;
+				const std::filesystem::path correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : std::filesystem::path(path);
+				const std::filesystem::path newPath = correctPath / folderName;
+
+				if (!std::filesystem::exists(newPath))
 				{
-					if (!p_data.first.empty())
-					{
-						const std::filesystem::path folderReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
-						const std::filesystem::path folderName = folderReceivedPath.filename();
-						const std::filesystem::path prevPath = folderReceivedPath;
-						const std::filesystem::path correctPath = m_pathUpdate.contains(&treeNode) ? m_pathUpdate.at(&treeNode) : path;
-						const std::filesystem::path newPath = correctPath / folderName;
-
-						if (!std::filesystem::exists(newPath))
-						{
-							const bool isEngineFolder = p_data.first.starts_with(':');
-
-							// Copy dd folder from Engine resources
+					const bool isEngineFolder = !p_data.first.empty() && p_data.first[0] == ':';							// Copy dd folder from Engine resources
 							if (isEngineFolder)
 							{
 								std::filesystem::copy(prevPath, newPath, std::filesystem::copy_options::recursive);
@@ -1035,18 +1033,16 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 					}
 				};
 
-				treeNode.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("File").DataReceivedEvent += [this, &treeNode, path, p_isEngineItem](std::pair<std::string, Layout::Group*> p_data)
+			treeNode.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("File").DataReceivedEvent += [this, &treeNode, path, p_isEngineItem](std::pair<std::string, Layout::Group*> p_data)
+			{
+				if (!p_data.first.empty())
 				{
-					if (!p_data.first.empty())
-					{
-						std::filesystem::path fileReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
+					std::filesystem::path fileReceivedPath = EDITOR_EXEC(GetRealPath(p_data.first));
 
-						const auto fileName = fileReceivedPath.filename();
-						const auto prevPath = fileReceivedPath;
-						const auto correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : path;
-						const auto newPath = correctPath / fileName;
-
-						if (!std::filesystem::exists(newPath))
+					const auto fileName = fileReceivedPath.filename();
+					const auto prevPath = fileReceivedPath;
+					const auto correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : std::filesystem::path(path);
+					const auto newPath = correctPath / fileName;						if (!std::filesystem::exists(newPath))
 						{
 							bool isEngineFile = p_data.first.at(0) == ':';
 

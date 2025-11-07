@@ -2,6 +2,7 @@
 #define __TRACYFASTVECTOR_HPP__
 
 #include <assert.h>
+#include <cstring>
 #include <stddef.h>
 
 #include "../common/TracyAlloc.hpp"

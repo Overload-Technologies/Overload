@@ -69,7 +69,6 @@ project "OvEditor"
 	filter { "configurations:Release" }
 		defines { "NDEBUG" }
 		optimize "Speed"
-		flags { "LinkTimeOptimization" }
 		kind "WindowedApp"
 
 	filter { "system:windows" }

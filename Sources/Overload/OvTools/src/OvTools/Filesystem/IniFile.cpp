@@ -7,6 +7,7 @@
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvTools/Utils/String.h>
 
+#include <algorithm>
 #include <fstream>
 
 namespace

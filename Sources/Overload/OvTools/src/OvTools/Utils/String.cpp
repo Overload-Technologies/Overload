@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <cstdint>
 
 #include "OvTools/Utils/String.h"

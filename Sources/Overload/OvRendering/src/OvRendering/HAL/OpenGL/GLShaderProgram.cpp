@@ -5,6 +5,7 @@
 */
 
 #include <array>
+#include <algorithm>
 
 #include <glad.h>
 

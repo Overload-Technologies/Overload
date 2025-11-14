@@ -9,10 +9,11 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-#include <cstdio>
-#include <memory>
+#include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cstring>
+#include <memory>
 #endif
 
 #include "OvWindowing/Dialogs/FileDialog.h"

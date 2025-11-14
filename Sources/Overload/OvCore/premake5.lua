@@ -8,6 +8,7 @@ project "OvCore"
 	-- If MSVC, set big obj flag
 	filter { "toolset:msc" }
 		buildoptions { "/bigobj" }
+	filter {}
 
 	files {
 		"**.h",

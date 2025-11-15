@@ -10,18 +10,31 @@
 
 #include "OvCore/ResourceManagement/AResourceManager.h"
 
+namespace
+{
+	std::string SanitizePath(const std::string& p_path)
+	{
+		std::string sanitizedPath = p_path;
+		std::replace(sanitizedPath.begin(), sanitizedPath.end(), '/', std::filesystem::path::preferred_separator);
+		std::replace(sanitizedPath.begin(), sanitizedPath.end(), '\\', std::filesystem::path::preferred_separator);
+		return sanitizedPath;
+	}
+}
+
 namespace OvCore::ResourceManagement
 {
 	template<typename T>
 	inline T* AResourceManager<T>::LoadResource(const std::string & p_path)
 	{
-		if (auto resource = GetResource(p_path, false); resource)
+		auto sanitizedPath = SanitizePath(p_path);
+
+		if (auto resource = GetResource(sanitizedPath, false); resource)
 			return resource;
 		else
 		{
-			auto newResource = CreateResource(p_path);
+			auto newResource = CreateResource(sanitizedPath);
 			if (newResource)
-				return RegisterResource(p_path, newResource);
+				return RegisterResource(sanitizedPath, newResource);
 			else
 				return nullptr;
 		}
@@ -30,21 +43,26 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline void AResourceManager<T>::UnloadResource(const std::string & p_path)
 	{
-		if (auto resource = GetResource(p_path, false); resource)
+		auto sanitizedPath = SanitizePath(p_path);
+
+		if (auto resource = GetResource(sanitizedPath, false); resource)
 		{
 			DestroyResource(resource);
-			UnregisterResource(p_path);
+			UnregisterResource(sanitizedPath);
 		}
 	}
 
 	template<typename T>
 	inline bool AResourceManager<T>::MoveResource(const std::string & p_previousPath, const std::string & p_newPath)
 	{
-		if (IsResourceRegistered(p_previousPath) && !IsResourceRegistered(p_newPath))
+		auto sanitizedPreviousPath = SanitizePath(p_previousPath);
+		auto sanitizedNewPath = SanitizePath(p_newPath);
+
+		if (IsResourceRegistered(sanitizedPreviousPath) && !IsResourceRegistered(sanitizedNewPath))
 		{
-			T* toMove = m_resources.at(p_previousPath);
-			UnregisterResource(p_previousPath);
-			RegisterResource(p_newPath, toMove);
+			T* toMove = m_resources.at(sanitizedPreviousPath);
+			UnregisterResource(sanitizedPreviousPath);
+			RegisterResource(sanitizedNewPath, toMove);
 			return true;
 		}
 
@@ -54,16 +72,19 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline void AResourceManager<T>::ReloadResource(const std::string& p_path)
 	{
-		if (auto resource = GetResource(p_path, false); resource)
+		auto sanitizedPath = SanitizePath(p_path);
+		
+		if (auto resource = GetResource(sanitizedPath, false); resource)
 		{
-			ReloadResource(resource, p_path);
+			ReloadResource(resource, sanitizedPath);
 		}
 	}
 
 	template<typename T>
 	inline bool AResourceManager<T>::IsResourceRegistered(const std::string & p_path)
 	{
-		return m_resources.find(p_path) != m_resources.end();
+		auto sanitizedPath = SanitizePath(p_path);
+		return m_resources.find(sanitizedPath) != m_resources.end();
 	}
 
 	template<typename T>
@@ -78,10 +99,14 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline T* AResourceManager<T>::RegisterResource(const std::string& p_path, T* p_instance)
 	{
-		if (auto resource = GetResource(p_path, false); resource)
-			DestroyResource(resource);
+		auto sanitizedPath = SanitizePath(p_path);
 
-		m_resources[p_path] = p_instance;
+		if (auto resource = GetResource(sanitizedPath, false); resource)
+		{
+			DestroyResource(resource);
+		}
+
+		m_resources[sanitizedPath] = p_instance;
 
 		return p_instance;
 	}
@@ -89,19 +114,22 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline void AResourceManager<T>::UnregisterResource(const std::string & p_path)
 	{
-		m_resources.erase(p_path);
+		auto sanitizedPath = SanitizePath(p_path);
+		m_resources.erase(sanitizedPath);
 	}
 
 	template<typename T>
 	inline T* AResourceManager<T>::GetResource(const std::string& p_path, bool p_tryToLoadIfNotFound)
 	{
-		if (auto resource = m_resources.find(p_path); resource != m_resources.end())
+		auto sanitizedPath = SanitizePath(p_path);
+		
+		if (auto resource = m_resources.find(sanitizedPath); resource != m_resources.end())
 		{
 			return resource->second;
 		}
 		else if (p_tryToLoadIfNotFound)
 		{
-			return LoadResource(p_path);
+			return LoadResource(sanitizedPath);
 		}
 
 		return nullptr;

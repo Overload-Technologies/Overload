@@ -1129,7 +1129,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 
 		treeNode.OpenedEvent += [this, &treeNode, path, p_isEngineItem, p_scriptFolder] {
 			treeNode.RemoveAllWidgets();
-			std::string updatedPath = OvTools::Utils::PathParser::GetContainingFolder(path) + treeNode.name;
+			std::filesystem::path updatedPath = std::filesystem::path{path}.parent_path() / treeNode.name;
 			ParseFolder(treeNode, std::filesystem::directory_entry(updatedPath), p_isEngineItem, p_scriptFolder);
 		};
 

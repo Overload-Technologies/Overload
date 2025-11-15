@@ -21,7 +21,7 @@ namespace OvCore::ResourceManagement
 		* Create the resource identified by the given path
 		* @param p_path
 		*/
-		virtual OvCore::Resources::Material* CreateResource(const std::string & p_path) override;
+		virtual OvCore::Resources::Material* CreateResource(const std::filesystem::path & p_path) override;
 
 		/**
 		* Destroy the given resource
@@ -34,6 +34,6 @@ namespace OvCore::ResourceManagement
 		* @param p_resource
 		* @param p_path
 		*/
-		virtual void ReloadResource(OvCore::Resources::Material* p_resource, const std::string& p_path) override;
+		virtual void ReloadResource(OvCore::Resources::Material* p_resource, const std::filesystem::path& p_path) override;
 	};
 }

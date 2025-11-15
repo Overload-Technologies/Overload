@@ -22,7 +22,7 @@ namespace OvCore::ResourceManagement
 		* Create the resource identified by the given path
 		* @param p_path
 		*/
-		virtual OvRendering::Resources::Texture* CreateResource(const std::string & p_path) override;
+		virtual OvRendering::Resources::Texture* CreateResource(const std::filesystem::path & p_path) override;
 
 		/**
 		* Destroy the given resource
@@ -35,6 +35,6 @@ namespace OvCore::ResourceManagement
 		* @param p_resource
 		* @param p_path
 		*/
-		virtual void ReloadResource(OvRendering::Resources::Texture* p_resource, const std::string& p_path) override;
+		virtual void ReloadResource(OvRendering::Resources::Texture* p_resource, const std::filesystem::path& p_path) override;
 	};
 }

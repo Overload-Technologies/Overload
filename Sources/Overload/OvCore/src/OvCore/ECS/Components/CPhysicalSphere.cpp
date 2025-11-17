@@ -4,11 +4,12 @@
 * @licence: MIT
 */
 
+
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CPhysicalSphere.h>
+
 #include <OvPhysics/Entities/PhysicalSphere.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
-
-#include "OvCore/ECS/Components/CPhysicalSphere.h"
-#include "OvCore/ECS/Actor.h"
 
 using namespace OvPhysics::Entities;
 
@@ -26,6 +27,11 @@ OvCore::ECS::Components::CPhysicalSphere::CPhysicalSphere(ECS::Actor & p_owner) 
 std::string OvCore::ECS::Components::CPhysicalSphere::GetName()
 {
 	return "Physical Sphere";
+}
+
+std::string OvCore::ECS::Components::CPhysicalSphere::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalSphere>::Name};
 }
 
 void OvCore::ECS::Components::CPhysicalSphere::SetRadius(float p_radius)

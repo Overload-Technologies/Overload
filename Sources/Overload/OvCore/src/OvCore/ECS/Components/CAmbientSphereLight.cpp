@@ -4,14 +4,13 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CAmbientSphereLight.h>
+
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Buttons/Button.h>
-
-#include "OvCore/ECS/Actor.h"
-
-#include "OvCore/ECS/Components/CAmbientSphereLight.h"
 
 OvCore::ECS::Components::CAmbientSphereLight::CAmbientSphereLight(ECS::Actor & p_owner) :
 	CLight(p_owner)
@@ -25,6 +24,11 @@ OvCore::ECS::Components::CAmbientSphereLight::CAmbientSphereLight(ECS::Actor & p
 std::string OvCore::ECS::Components::CAmbientSphereLight::GetName()
 {
 	return "Ambient Sphere Light";
+}
+
+std::string OvCore::ECS::Components::CAmbientSphereLight::GetTypeName()
+{
+	return std::string{ComponentTraits<CAmbientSphereLight>::Name};
 }
 
 float OvCore::ECS::Components::CAmbientSphereLight::GetRadius() const

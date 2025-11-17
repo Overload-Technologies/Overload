@@ -4,13 +4,14 @@
 * @licence: MIT
 */
 
-#include <OvUI/Widgets/Texts/TextColored.h>
-#include <OvDebug/Logger.h>
-
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Scripting/ScriptEngine.h>
+
+#include <OvDebug/Logger.h>
+
+#include <OvUI/Widgets/Texts/TextColored.h>
 
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
 	name(p_name), AComponent(p_owner)
@@ -28,7 +29,12 @@ std::string OvCore::ECS::Components::Behaviour::GetName()
 	return "Behaviour";
 }
 
-void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script>&& p_scriptContext)
+std::string OvCore::ECS::Components::Behaviour::GetTypeName()
+{
+	return std::string{ComponentTraits<Behaviour>::Name};
+}
+
+void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script> &&p_scriptContext)
 {
 	m_script = std::move(p_scriptContext);
 }

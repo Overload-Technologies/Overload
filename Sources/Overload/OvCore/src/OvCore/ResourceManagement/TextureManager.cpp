@@ -40,9 +40,9 @@ namespace
 	}
 }
 
-OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::CreateResource(const std::string & p_path)
+OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::CreateResource(const std::filesystem::path & p_path)
 {
-	std::string realPath = GetRealPath(p_path);
+	std::string realPath = GetRealPath(p_path).string();
 
 	const auto metaData = LoadTextureMetadata(realPath);
 
@@ -56,7 +56,7 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 	);
 
 	if (texture)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(texture) + offsetof(OvRendering::Resources::Texture, path)) = p_path; // Force the resource path to fit the given path
+		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(texture) + offsetof(OvRendering::Resources::Texture, path)) = p_path.string(); // Force the resource path to fit the given path
 
 	return texture;
 }
@@ -66,9 +66,9 @@ void OvCore::ResourceManagement::TextureManager::DestroyResource(OvRendering::Re
 	OvRendering::Resources::Loaders::TextureLoader::Destroy(p_resource);
 }
 
-void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Resources::Texture* p_resource, const std::string& p_path)
+void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Resources::Texture* p_resource, const std::filesystem::path& p_path)
 {
-	std::string realPath = GetRealPath(p_path);
+	std::string realPath = GetRealPath(p_path).string();
 
 	const auto metaData = LoadTextureMetadata(realPath);
 

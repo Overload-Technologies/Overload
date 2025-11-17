@@ -76,4 +76,10 @@ namespace OvCore::ECS::Components
 	protected:
 		OvRendering::Entities::Light m_data;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CLight>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CLight";
+	};
 }

@@ -36,6 +36,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -106,5 +111,11 @@ namespace OvCore::ECS::Components
 
 	private:
 		OvCore::Rendering::PostProcess::PostProcessStack m_settings;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CPostProcessStack>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CPostProcessStack";
 	};
 }

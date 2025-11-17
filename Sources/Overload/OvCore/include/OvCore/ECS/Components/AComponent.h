@@ -118,7 +118,18 @@ namespace OvCore::ECS::Components
 		*/
 		virtual std::string GetName() = 0;
 
+		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() = 0;
+
 	public:
 		ECS::Actor& owner;
+	};
+
+	template<typename T>
+	struct ComponentTraits
+	{
+		static constexpr std::string_view Name = "Unknown Component Type";
 	};
 }

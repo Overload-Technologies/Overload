@@ -44,6 +44,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines the model to use
 		* @param p_model
 		*/
@@ -101,5 +106,11 @@ namespace OvCore::ECS::Components
 		OvTools::Eventing::Event<> m_modelChangedEvent;
 		OvRendering::Geometry::BoundingSphere m_customBoundingSphere = { {}, 1.0f };
 		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::MESH_BOUNDS;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CModelRenderer>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CModelRenderer";
 	};
 }

@@ -4,11 +4,11 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CPhysicalCapsule.h>
+
 #include <OvPhysics/Entities/PhysicalCapsule.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
-
-#include "OvCore/ECS/Components/CPhysicalCapsule.h"
-#include "OvCore/ECS/Actor.h"
 
 using namespace OvPhysics::Entities;
 
@@ -26,6 +26,11 @@ OvCore::ECS::Components::CPhysicalCapsule::CPhysicalCapsule(ECS::Actor & p_owner
 std::string OvCore::ECS::Components::CPhysicalCapsule::GetName()
 {
 	return "Physical Capsule";
+}
+
+std::string OvCore::ECS::Components::CPhysicalCapsule::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalCapsule>::Name};
 }
 
 void OvCore::ECS::Components::CPhysicalCapsule::SetRadius(float p_radius)

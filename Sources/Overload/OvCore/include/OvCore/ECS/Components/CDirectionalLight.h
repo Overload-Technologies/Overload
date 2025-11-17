@@ -30,6 +30,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Set if the light should cast shadows
 		* @param p_enabled
 		*/
@@ -93,5 +98,11 @@ namespace OvCore::ECS::Components
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CDirectionalLight>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CDirectionalLight";
 	};
 }

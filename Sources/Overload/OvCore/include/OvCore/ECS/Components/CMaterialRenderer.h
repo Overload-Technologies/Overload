@@ -41,6 +41,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Fill the material renderer with the given material
 		* @param p_material
 		*/
@@ -149,5 +154,11 @@ namespace OvCore::ECS::Components
 		std::array<std::string, kMaxMaterialCount> m_materialNames;
 		OvMaths::FMatrix4 m_userMatrix;
 		Rendering::EVisibilityFlags m_visibilityFlags = Rendering::EVisibilityFlags::ALL;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CMaterialRenderer>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CMaterialRenderer";
 	};
 }

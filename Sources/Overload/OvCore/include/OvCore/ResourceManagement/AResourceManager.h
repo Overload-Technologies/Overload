@@ -23,32 +23,32 @@ namespace OvCore::ResourceManagement
 		* Handle the creation of a resource and register it
 		* @param p_path
 		*/
-		T* LoadResource(const std::string& p_path);
+		T* LoadResource(const std::filesystem::path& p_path);
 
 		/**
 		* Handle the destruction of a resource and unregister it
 		* @param p_path
 		*/
-		void UnloadResource(const std::string& p_path);
+		void UnloadResource(const std::filesystem::path& p_path);
 
 		/**
 		* Move a resource to the new given id (path)
 		* @param p_previousPath
 		* @param p_newPath
 		*/
-		bool MoveResource(const std::string& p_previousPath, const std::string& p_newPath);
+		bool MoveResource(const std::filesystem::path& p_previousPath, const std::filesystem::path& p_newPath);
 
 		/**
 		* Reload a resource
 		* @param p_path
 		*/
-		void ReloadResource(const std::string& p_path);
+		void ReloadResource(const std::filesystem::path& p_path);
 
 		/**
 		* Return true if the resource exists (= Is registered)
 		* @param p_path
 		*/
-		bool IsResourceRegistered(const std::string& p_path);
+		bool IsResourceRegistered(const std::filesystem::path& p_path);
 
 		/**
 		* Destroy and unregister every resources
@@ -62,14 +62,14 @@ namespace OvCore::ResourceManagement
 		* @param p_path
 		* @param p_instance
 		*/
-		T* RegisterResource(const std::string& p_path, T* p_instance);
+		T* RegisterResource(const std::filesystem::path& p_path, T* p_instance);
 
 		/**
 		* Unregister a resource (You have to destroy the resource before calling this method
 		* to prevent memory leaks)
 		* @param p_path
 		*/
-		void UnregisterResource(const std::string& p_path);
+		void UnregisterResource(const std::filesystem::path& p_path);
 
 		/**
 		* Return the instance linked to the given path or try to load it if not registered.
@@ -77,14 +77,14 @@ namespace OvCore::ResourceManagement
 		* @param p_path
 		* @param p_tryToLoadIfNotFound
 		*/
-		T* GetResource(const std::string& p_path, bool p_tryToLoadIfNotFound = true);
+		T* GetResource(const std::filesystem::path& p_path, bool p_tryToLoadIfNotFound = true);
 
 		/**
 		* Operator overload to get an instance linked to the given path.
 		* @note See GetResource for more informations
 		* @param p_path
 		*/
-		T* operator[](const std::string& p_path);
+		T* operator[](const std::filesystem::path& p_path);
 
 		/**
 		* Provide asset paths for the resource managers
@@ -100,19 +100,19 @@ namespace OvCore::ResourceManagement
 		/**
 		* Returns the resource map
 		*/
-		std::unordered_map<std::string, T*>& GetResources();
+		std::unordered_map<std::filesystem::path, T*>& GetResources();
 
 	protected:
-		virtual T* CreateResource(const std::string& p_path) = 0;
+		virtual T* CreateResource(const std::filesystem::path& p_path) = 0;
 		virtual void DestroyResource(T* p_resource) = 0;
-		virtual void ReloadResource(T* p_resource, const std::string& p_path) = 0;
-		std::string GetRealPath(const std::string& p_path) const;
+		virtual void ReloadResource(T* p_resource, const std::filesystem::path& p_path) = 0;
+		std::filesystem::path GetRealPath(const std::filesystem::path& p_path) const;
 
 	private:
 		inline static std::filesystem::path __PROJECT_ASSETS_PATH;
 		inline static std::filesystem::path __ENGINE_ASSETS_PATH;
 
-		std::unordered_map<std::string, T*> m_resources;
+		std::unordered_map<std::filesystem::path, T*> m_resources;
 	};
 }
 

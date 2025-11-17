@@ -6,15 +6,15 @@
 
 #include <cstdint>
 
-#include <OvUI/Widgets/Drags/DragFloat.h>
-#include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CPhysicalObject.h>
 
 #include <OvDebug/Logger.h>
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 
-#include "OvCore/ECS/Components/CPhysicalObject.h"
-#include "OvCore/ECS/Actor.h"
+#include <OvUI/Widgets/Drags/DragFloat.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
 
 OvCore::ECS::Components::CPhysicalObject::CPhysicalObject(ECS::Actor & p_owner) : 
 	AComponent(p_owner)

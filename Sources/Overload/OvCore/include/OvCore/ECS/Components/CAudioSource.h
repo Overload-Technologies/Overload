@@ -33,6 +33,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines the sound to play on the audio source
 		* @param p_sound
 		*/
@@ -172,5 +177,11 @@ namespace OvCore::ECS::Components
 		OvAudio::Resources::Sound* m_sound = nullptr;
 		OvAudio::Entities::AudioSource m_audioSource;
 		bool m_autoPlay = false;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CAudioSource>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CAudioSource";
 	};
 }

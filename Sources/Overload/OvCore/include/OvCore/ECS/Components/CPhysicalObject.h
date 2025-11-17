@@ -205,4 +205,10 @@ namespace OvCore::ECS::Components
 	protected:
 		std::unique_ptr<OvPhysics::Entities::PhysicalObject> m_physicalObject;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CPhysicalObject>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CPhysicalObject";
+	};
 }

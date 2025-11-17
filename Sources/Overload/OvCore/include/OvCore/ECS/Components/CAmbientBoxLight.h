@@ -30,6 +30,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Returns the size of the box
 		*/
 		OvMaths::FVector3 GetSize() const;
@@ -59,5 +64,11 @@ namespace OvCore::ECS::Components
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CAmbientBoxLight>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CAmbientBoxLight";
 	};
 }

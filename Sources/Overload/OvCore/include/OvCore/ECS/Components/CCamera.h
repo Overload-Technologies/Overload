@@ -36,6 +36,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Sets the fov of the camera to the given value
 		* @param p_value
 		*/
@@ -150,5 +155,11 @@ namespace OvCore::ECS::Components
 
 	private:
 		OvRendering::Entities::Camera m_camera;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CCamera>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CCamera";
 	};
 }

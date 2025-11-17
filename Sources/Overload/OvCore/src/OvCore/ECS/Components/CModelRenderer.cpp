@@ -4,21 +4,21 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CModelRenderer.h>
+#include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
+
+#include <OvUI/Plugins/DDTarget.h>
+#include <OvUI/Widgets/Drags/DragFloat.h>
+#include <OvUI/Widgets/Selection/CheckBox.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
-#include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Visual/Image.h>
-#include <OvUI/Widgets/Selection/ComboBox.h>
-#include <OvUI/Widgets/Selection/CheckBox.h>
-#include <OvUI/Widgets/Drags/DragFloat.h>
-
-#include "OvCore/Global/ServiceLocator.h"
-#include "OvCore/ResourceManagement/TextureManager.h"
-#include "OvCore/ResourceManagement/ModelManager.h"
-#include "OvCore/ResourceManagement/ShaderManager.h"
-#include "OvCore/ECS/Components/CModelRenderer.h"
-#include "OvCore/ECS/Components/CMaterialRenderer.h"
-#include "OvCore/ECS/Actor.h"
 
 OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : AComponent(p_owner)
 {
@@ -32,6 +32,11 @@ OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : A
 std::string OvCore::ECS::Components::CModelRenderer::GetName()
 {
 	return "Model Renderer";
+}
+
+std::string OvCore::ECS::Components::CModelRenderer::GetTypeName()
+{
+	return std::string{ComponentTraits<CModelRenderer>::Name};
 }
 
 void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model)

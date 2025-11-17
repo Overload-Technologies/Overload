@@ -61,6 +61,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Sets the refresh mode of the reflection probe
 		* @param p_mode
 		*/
@@ -216,5 +221,11 @@ namespace OvCore::ECS::Components
 		EInfluencePolicy m_influencePolicy = EInfluencePolicy::GLOBAL;
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		bool m_boxProjection = false;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CReflectionProbe>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CReflectionProbe";
 	};
 }

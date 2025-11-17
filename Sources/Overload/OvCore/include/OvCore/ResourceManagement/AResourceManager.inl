@@ -10,10 +10,24 @@
 
 #include "OvCore/ResourceManagement/AResourceManager.h"
 
+namespace
+{
+	// Normalize a path for consistent key usage across platforms.
+	// - Treat backslashes as separators (important on POSIX where '\\' isn't a separator)
+	// - Apply lexically_normal to collapse '.' and '..'
+	inline std::filesystem::path NormalizeKey(const std::filesystem::path& p)
+	{
+		std::string s = p.string();
+		std::replace(s.begin(), s.end(), '\\', '/');
+		std::filesystem::path norm = std::filesystem::path{s}.lexically_normal();
+		return norm;
+	}
+}
+
 namespace OvCore::ResourceManagement
 {
 	template<typename T>
-	inline T* AResourceManager<T>::LoadResource(const std::string & p_path)
+	inline T* AResourceManager<T>::LoadResource(const std::filesystem::path & p_path)
 	{
 		if (auto resource = GetResource(p_path, false); resource)
 			return resource;
@@ -28,7 +42,7 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline void AResourceManager<T>::UnloadResource(const std::string & p_path)
+	inline void AResourceManager<T>::UnloadResource(const std::filesystem::path & p_path)
 	{
 		if (auto resource = GetResource(p_path, false); resource)
 		{
@@ -38,13 +52,12 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline bool AResourceManager<T>::MoveResource(const std::string & p_previousPath, const std::string & p_newPath)
+	inline bool AResourceManager<T>::MoveResource(const std::filesystem::path & p_previousPath, const std::filesystem::path & p_newPath)
 	{
-		if (IsResourceRegistered(p_previousPath) && !IsResourceRegistered(p_newPath))
+		if (auto toMove = GetResource(p_previousPath, false); toMove && !IsResourceRegistered(p_newPath))
 		{
-			T* toMove = m_resources.at(p_previousPath);
-			UnregisterResource(p_previousPath);
 			RegisterResource(p_newPath, toMove);
+			UnregisterResource(p_previousPath);
 			return true;
 		}
 
@@ -52,7 +65,7 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline void AResourceManager<T>::ReloadResource(const std::string& p_path)
+	inline void AResourceManager<T>::ReloadResource(const std::filesystem::path& p_path)
 	{
 		if (auto resource = GetResource(p_path, false); resource)
 		{
@@ -61,9 +74,9 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline bool AResourceManager<T>::IsResourceRegistered(const std::string & p_path)
+	inline bool AResourceManager<T>::IsResourceRegistered(const std::filesystem::path & p_path)
 	{
-		return m_resources.find(p_path) != m_resources.end();
+		return m_resources.find(NormalizeKey(p_path)) != m_resources.end();
 	}
 
 	template<typename T>
@@ -76,26 +89,32 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline T* AResourceManager<T>::RegisterResource(const std::string& p_path, T* p_instance)
+	inline T* AResourceManager<T>::RegisterResource(const std::filesystem::path& p_path, T* p_instance)
 	{
-		if (auto resource = GetResource(p_path, false); resource)
-			DestroyResource(resource);
+		auto key = NormalizeKey(p_path);
 
-		m_resources[p_path] = p_instance;
+		if (auto resource = GetResource(p_path, false); resource)
+		{
+			DestroyResource(resource);
+		}
+
+		m_resources[key] = p_instance;
 
 		return p_instance;
 	}
 
 	template<typename T>
-	inline void AResourceManager<T>::UnregisterResource(const std::string & p_path)
+	inline void AResourceManager<T>::UnregisterResource(const std::filesystem::path & p_path)
 	{
-		m_resources.erase(p_path);
+		m_resources.erase(NormalizeKey(p_path));
 	}
 
 	template<typename T>
-	inline T* AResourceManager<T>::GetResource(const std::string& p_path, bool p_tryToLoadIfNotFound)
+	inline T* AResourceManager<T>::GetResource(const std::filesystem::path& p_path, bool p_tryToLoadIfNotFound)
 	{
-		if (auto resource = m_resources.find(p_path); resource != m_resources.end())
+		auto key = NormalizeKey(p_path);
+		
+		if (auto resource = m_resources.find(key); resource != m_resources.end())
 		{
 			return resource->second;
 		}
@@ -108,7 +127,7 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline T* AResourceManager<T>::operator[](const std::string & p_path)
+	inline T* AResourceManager<T>::operator[](const std::filesystem::path & p_path)
 	{
 		return GetResource(p_path);
 	}
@@ -124,25 +143,31 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
-	inline std::unordered_map<std::string, T*>& AResourceManager<T>::GetResources()
+	inline std::unordered_map<std::filesystem::path, T*>& AResourceManager<T>::GetResources()
 	{
 		return m_resources;
 	}
 
 	template<typename T>
-	inline std::string AResourceManager<T>::GetRealPath(const std::string& p_path) const
+	inline std::filesystem::path AResourceManager<T>::GetRealPath(const std::filesystem::path& p_path) const
 	{
+		// Keep support for the engine prefix ':'
+		const std::string s = p_path.string();
 		std::filesystem::path path;
-
-		if (p_path.starts_with(':')) // The path is an engine path
+		if (!s.empty() && s.front() == ':')
 		{
-			path = __ENGINE_ASSETS_PATH / p_path.substr(1);
+			// Remove the ':' prefix and normalize separators
+			std::string sub = s.substr(1);
+			std::replace(sub.begin(), sub.end(), '\\', '/');
+			path = __ENGINE_ASSETS_PATH / std::filesystem::path{sub};
 		}
-		else // The path is a project path
+		else
 		{
-			path = __PROJECT_ASSETS_PATH / p_path;
+			std::string sub = s;
+			std::replace(sub.begin(), sub.end(), '\\', '/');
+			path = __PROJECT_ASSETS_PATH / std::filesystem::path{sub};
 		}
 
-		return path.string();
+		return path.lexically_normal();
 	}
 }

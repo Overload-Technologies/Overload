@@ -18,6 +18,11 @@ std::string OvCore::ECS::Components::CPostProcessStack::GetName()
 	return "Post Process Stack";
 }
 
+std::string OvCore::ECS::Components::CPostProcessStack::GetTypeName()
+{
+	return std::string{ComponentTraits<CPostProcessStack>::Name};
+}
+
 void OvCore::ECS::Components::CPostProcessStack::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	auto& bloomSettings = m_settings.Get<Rendering::PostProcess::BloomEffect, Rendering::PostProcess::BloomSettings>();

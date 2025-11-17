@@ -39,6 +39,11 @@ std::string OvCore::ECS::Components::CMaterialRenderer::GetName()
 	return "Material Renderer";
 }
 
+std::string OvCore::ECS::Components::CMaterialRenderer::GetTypeName()
+{
+	return std::string{ComponentTraits<CMaterialRenderer>::Name};
+}
+
 void OvCore::ECS::Components::CMaterialRenderer::FillWithMaterial(OvCore::Resources::Material & p_material)
 {
 	for (uint8_t i = 0; i < m_materials.size(); ++i)

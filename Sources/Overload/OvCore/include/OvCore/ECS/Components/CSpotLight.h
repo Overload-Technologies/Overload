@@ -30,6 +30,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Returns the light constant
 		*/
 		float GetConstant() const;
@@ -103,5 +108,11 @@ namespace OvCore::ECS::Components
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CSpotLight>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CSpotLight";
 	};
 }

@@ -824,16 +824,18 @@ std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path
 {
 	std::filesystem::path result;
 
-	if (p_path.starts_with(':')) // The path is an engine path
+	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
+
+	if (normalizedPath.starts_with(':')) // The path is an engine path
 	{
-		result = m_context.engineAssetsPath / p_path.substr(1);
+		result = m_context.engineAssetsPath / normalizedPath.substr(1);
 	}
 	else // The path is a project path
 	{
-		result = m_context.projectAssetsPath / p_path;
+		result = m_context.projectAssetsPath / normalizedPath;
 	}
 
-	return result.string();
+	return result.lexically_normal().string();
 }
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)

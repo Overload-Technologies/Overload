@@ -4,10 +4,10 @@
 * @licence: MIT
 */
 
-#include <OvPhysics/Entities/PhysicalBox.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CPhysicalBox.h>
 
-#include "OvCore/ECS/Components/CPhysicalBox.h"
-#include "OvCore/ECS/Actor.h"
+#include <OvPhysics/Entities/PhysicalBox.h>
 
 using namespace OvPhysics::Entities;
 
@@ -25,6 +25,11 @@ OvCore::ECS::Components::CPhysicalBox::CPhysicalBox(ECS::Actor & p_owner) :
 std::string OvCore::ECS::Components::CPhysicalBox::GetName()
 {
 	return "Physical Box";
+}
+
+std::string OvCore::ECS::Components::CPhysicalBox::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalBox>::Name};
 }
 
 void OvCore::ECS::Components::CPhysicalBox::SetSize(const OvMaths::FVector3 & p_size)

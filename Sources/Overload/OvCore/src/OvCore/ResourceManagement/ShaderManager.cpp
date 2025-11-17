@@ -6,13 +6,13 @@
 
 #include "OvCore/ResourceManagement/ShaderManager.h"
 
-OvRendering::Resources::Shader* OvCore::ResourceManagement::ShaderManager::CreateResource(const std::string & p_path)
+OvRendering::Resources::Shader* OvCore::ResourceManagement::ShaderManager::CreateResource(const std::filesystem::path & p_path)
 {
-	std::string realPath = GetRealPath(p_path);
-	auto pathParserCallback = std::bind(&OvCore::ResourceManagement::ShaderManager::GetRealPath, this, std::placeholders::_1);
+	std::string realPath = GetRealPath(p_path).string();
+	auto pathParserCallback = [this](const std::string& s) { return GetRealPath(std::filesystem::path{s}).string(); };
 	OvRendering::Resources::Shader* shader = OvRendering::Resources::Loaders::ShaderLoader::Create(realPath, pathParserCallback);
 	if (shader)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(shader) + offsetof(OvRendering::Resources::Shader, path)) = p_path; // Force the resource path to fit the given path
+		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(shader) + offsetof(OvRendering::Resources::Shader, path)) = p_path.string(); // Force the resource path to fit the given path
 
 	return shader;
 }
@@ -22,8 +22,8 @@ void OvCore::ResourceManagement::ShaderManager::DestroyResource(OvRendering::Res
 	OvRendering::Resources::Loaders::ShaderLoader::Destroy(p_resource);
 }
 
-void OvCore::ResourceManagement::ShaderManager::ReloadResource(OvRendering::Resources::Shader* p_resource, const std::string& p_path)
+void OvCore::ResourceManagement::ShaderManager::ReloadResource(OvRendering::Resources::Shader* p_resource, const std::filesystem::path& p_path)
 {
-	auto pathParserCallback = std::bind(&OvCore::ResourceManagement::ShaderManager::GetRealPath, this, std::placeholders::_1);
-	OvRendering::Resources::Loaders::ShaderLoader::Recompile(*p_resource, p_path, pathParserCallback);
+	auto pathParserCallback = [this](const std::string& s) { return GetRealPath(std::filesystem::path{s}).string(); };
+	OvRendering::Resources::Loaders::ShaderLoader::Recompile(*p_resource, p_path.string(), pathParserCallback);
 }

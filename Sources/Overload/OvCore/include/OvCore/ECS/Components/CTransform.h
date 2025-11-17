@@ -38,6 +38,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines a parent to the transform
 		* @param p_parent
 		*/
@@ -206,5 +211,11 @@ namespace OvCore::ECS::Components
 
 	private:
 		OvMaths::FTransform m_transform;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CTransform>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CTransform";
 	};
 }

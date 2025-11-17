@@ -49,12 +49,12 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	return { flags };
 }
 
-OvRendering::Resources::Model* OvCore::ResourceManagement::ModelManager::CreateResource(const std::string& p_path)
+OvRendering::Resources::Model* OvCore::ResourceManagement::ModelManager::CreateResource(const std::filesystem::path& p_path)
 {
-	std::string realPath = GetRealPath(p_path);
+	std::string realPath = GetRealPath(p_path).string();
 	auto model = OvRendering::Resources::Loaders::ModelLoader::Create(realPath, GetAssetMetadata(realPath));
 	if (model)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(model) + offsetof(OvRendering::Resources::Model, path)) = p_path; // Force the resource path to fit the given path
+		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(model) + offsetof(OvRendering::Resources::Model, path)) = p_path.string(); // Force the resource path to fit the given path
 
 	return model;
 }
@@ -64,8 +64,8 @@ void OvCore::ResourceManagement::ModelManager::DestroyResource(OvRendering::Reso
 	OvRendering::Resources::Loaders::ModelLoader::Destroy(p_resource);
 }
 
-void OvCore::ResourceManagement::ModelManager::ReloadResource(OvRendering::Resources::Model* p_resource, const std::string& p_path)
+void OvCore::ResourceManagement::ModelManager::ReloadResource(OvRendering::Resources::Model* p_resource, const std::filesystem::path& p_path)
 {
-	std::string realPath = GetRealPath(p_path);
+	std::string realPath = GetRealPath(p_path).string();
 	OvRendering::Resources::Loaders::ModelLoader::Reload(*p_resource, realPath, GetAssetMetadata(realPath));
 }

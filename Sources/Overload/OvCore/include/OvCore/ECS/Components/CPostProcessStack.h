@@ -107,4 +107,10 @@ namespace OvCore::ECS::Components
 	private:
 		OvCore::Rendering::PostProcess::PostProcessStack m_settings;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CPostProcessStack>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CPostProcessStack";
+	};
 }

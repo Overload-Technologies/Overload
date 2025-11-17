@@ -4,15 +4,14 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CLight.h>
+
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
-
-#include "OvCore/ECS/Actor.h"
-
-#include "OvCore/ECS/Components/CLight.h"
 
 OvCore::ECS::Components::CLight::CLight(ECS::Actor & p_owner) :
 	AComponent(p_owner),

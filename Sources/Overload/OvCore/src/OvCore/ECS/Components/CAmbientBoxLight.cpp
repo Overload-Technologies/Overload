@@ -4,14 +4,13 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CAmbientBoxLight.h>
+
+#include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
-#include <OvUI/Widgets/Buttons/Button.h>
-
-#include "OvCore/ECS/Actor.h"
-
-#include "OvCore/ECS/Components/CAmbientBoxLight.h"
 
 OvCore::ECS::Components::CAmbientBoxLight::CAmbientBoxLight(ECS::Actor & p_owner) :
 	CLight(p_owner)

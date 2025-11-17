@@ -121,4 +121,10 @@ namespace OvCore::ECS::Components
 	public:
 		ECS::Actor& owner;
 	};
+
+	template<typename T>
+	struct ComponentTraits
+	{
+		static constexpr std::string_view Name = "Unknown Component Type";
+	};
 }

@@ -217,4 +217,10 @@ namespace OvCore::ECS::Components
 		OvMaths::FVector3 m_influenceSize{ 10.0f, 10.0f, 10.0f };
 		bool m_boxProjection = false;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CReflectionProbe>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CReflectionProbe";
+	};
 }

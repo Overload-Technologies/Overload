@@ -173,4 +173,10 @@ namespace OvCore::ECS::Components
 		OvAudio::Entities::AudioSource m_audioSource;
 		bool m_autoPlay = false;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CAudioSource>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CAudioSource";
+	};
 }

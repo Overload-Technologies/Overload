@@ -4,8 +4,8 @@
 * @licence: MIT
 */
 
-#include "OvCore/ECS/Components/CAudioListener.h"
-#include "OvCore/ECS/Actor.h"
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CAudioListener.h>
 
 OvCore::ECS::Components::CAudioListener::CAudioListener(ECS::Actor& p_owner) :
 	AComponent(p_owner),

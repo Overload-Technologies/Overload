@@ -102,4 +102,10 @@ namespace OvCore::ECS::Components
 		OvRendering::Geometry::BoundingSphere m_customBoundingSphere = { {}, 1.0f };
 		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::MESH_BOUNDS;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CModelRenderer>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CModelRenderer";
+	};
 }

@@ -150,4 +150,10 @@ namespace OvCore::ECS::Components
 		OvMaths::FMatrix4 m_userMatrix;
 		Rendering::EVisibilityFlags m_visibilityFlags = Rendering::EVisibilityFlags::ALL;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CMaterialRenderer>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CMaterialRenderer";
+	};
 }

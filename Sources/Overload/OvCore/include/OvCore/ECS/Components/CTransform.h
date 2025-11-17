@@ -207,4 +207,10 @@ namespace OvCore::ECS::Components
 	private:
 		OvMaths::FTransform m_transform;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CTransform>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CTransform";
+	};
 }

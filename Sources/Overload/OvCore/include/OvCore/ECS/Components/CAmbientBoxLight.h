@@ -60,4 +60,10 @@ namespace OvCore::ECS::Components
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CAmbientBoxLight>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CAmbientBoxLight";
+	};
 }

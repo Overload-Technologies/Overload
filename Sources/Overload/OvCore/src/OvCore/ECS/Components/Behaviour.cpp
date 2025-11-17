@@ -4,13 +4,14 @@
 * @licence: MIT
 */
 
-#include <OvUI/Widgets/Texts/TextColored.h>
-#include <OvDebug/Logger.h>
-
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Scripting/ScriptEngine.h>
+
+#include <OvDebug/Logger.h>
+
+#include <OvUI/Widgets/Texts/TextColored.h>
 
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
 	name(p_name), AComponent(p_owner)

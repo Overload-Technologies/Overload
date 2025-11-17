@@ -160,4 +160,10 @@ namespace OvCore::ECS::Components
 	private:
 		std::unique_ptr<Scripting::Script> m_script;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::Behaviour>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::Behaviour";
+	};
 }

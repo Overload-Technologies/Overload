@@ -4,15 +4,14 @@
 * @licence: MIT
 */
 
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/CPointLight.h>
+
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
-
-#include "OvCore/ECS/Actor.h"
-
-#include "OvCore/ECS/Components/CPointLight.h"
 
 OvCore::ECS::Components::CPointLight::CPointLight(ECS::Actor& p_owner) :
 	CLight(p_owner)

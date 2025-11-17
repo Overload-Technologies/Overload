@@ -25,6 +25,17 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 
+#include <iostream>
+
+namespace
+{
+	template<typename T>
+	bool IsType(const std::string_view p_typeName)
+	{
+		return p_typeName == OvCore::ECS::Components::ComponentTraits<T>::Name;
+	}
+}
+
 OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::DestroyedEvent;
 OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::CreatedEvent;
 OvTools::Eventing::Event<OvCore::ECS::Actor&, OvCore::ECS::Actor&> OvCore::ECS::Actor::AttachEvent;
@@ -448,29 +459,32 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 
 			while (currentComponent)
 			{
-				std::string componentType = currentComponent->FirstChildElement("type")->GetText();
+				const std::string componentType = currentComponent->FirstChildElement("type")->GetText();
 				OvCore::ECS::Components::AComponent* component = nullptr;
 
-				// TODO: Use component name instead of typeid (unsafe)
-				if (componentType == typeid(Components::CTransform).name())			component = &transform;
-				else if (componentType == typeid(Components::CPhysicalBox).name())			component = &AddComponent<OvCore::ECS::Components::CPhysicalBox>();
-				else if (componentType == typeid(Components::CPhysicalSphere).name())		component = &AddComponent<OvCore::ECS::Components::CPhysicalSphere>();
-				else if (componentType == typeid(Components::CPhysicalCapsule).name())		component = &AddComponent<OvCore::ECS::Components::CPhysicalCapsule>();
-				else if (componentType == typeid(Components::CModelRenderer).name())			component = &AddComponent<OvCore::ECS::Components::CModelRenderer>();
-				else if (componentType == typeid(Components::CCamera).name())				component = &AddComponent<OvCore::ECS::Components::CCamera>();
-				else if (componentType == typeid(Components::CMaterialRenderer).name())		component = &AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
-				else if (componentType == typeid(Components::CAudioSource).name())			component = &AddComponent<OvCore::ECS::Components::CAudioSource>();
-				else if (componentType == typeid(Components::CAudioListener).name())		component = &AddComponent<OvCore::ECS::Components::CAudioListener>();
-				else if (componentType == typeid(Components::CPointLight).name())			component = &AddComponent<OvCore::ECS::Components::CPointLight>();
-				else if (componentType == typeid(Components::CDirectionalLight).name())		component = &AddComponent<OvCore::ECS::Components::CDirectionalLight>();
-				else if (componentType == typeid(Components::CSpotLight).name())			component = &AddComponent<OvCore::ECS::Components::CSpotLight>();
-				else if (componentType == typeid(Components::CAmbientBoxLight).name())		component = &AddComponent<OvCore::ECS::Components::CAmbientBoxLight>();
-				else if (componentType == typeid(Components::CAmbientSphereLight).name())	component = &AddComponent<OvCore::ECS::Components::CAmbientSphereLight>();
-				else if (componentType == typeid(Components::CPostProcessStack).name())		component = &AddComponent<OvCore::ECS::Components::CPostProcessStack>();
-				else if (componentType == typeid(Components::CReflectionProbe).name())		component = &AddComponent<OvCore::ECS::Components::CReflectionProbe>();
+				using namespace OvCore::ECS::Components;
+
+				if (IsType<CTransform>(componentType)) component = &transform;
+				else if (IsType<CPhysicalBox>(componentType)) component = &AddComponent<CPhysicalBox>();
+				else if (IsType<CPhysicalSphere>(componentType)) component = &AddComponent<CPhysicalSphere>();
+				else if (IsType<CPhysicalCapsule>(componentType)) component = &AddComponent<CPhysicalCapsule>();
+				else if (IsType<CModelRenderer>(componentType)) component = &AddComponent<CModelRenderer>();
+				else if (IsType<CCamera>(componentType)) component = &AddComponent<CCamera>();
+				else if (IsType<CMaterialRenderer>(componentType)) component = &AddComponent<CMaterialRenderer>();
+				else if (IsType<CAudioSource>(componentType)) component = &AddComponent<CAudioSource>();
+				else if (IsType<CAudioListener>(componentType)) component = &AddComponent<CAudioListener>();
+				else if (IsType<CPointLight>(componentType)) component = &AddComponent<CPointLight>();
+				else if (IsType<CDirectionalLight>(componentType)) component = &AddComponent<CDirectionalLight>();
+				else if (IsType<CSpotLight>(componentType)) component = &AddComponent<CSpotLight>();
+				else if (IsType<CAmbientBoxLight>(componentType)) component = &AddComponent<CAmbientBoxLight>();
+				else if (IsType<CAmbientSphereLight>(componentType)) component = &AddComponent<CAmbientSphereLight>();
+				else if (IsType<CPostProcessStack>(componentType)) component = &AddComponent<CPostProcessStack>();
+				else if (IsType<CReflectionProbe>(componentType)) component = &AddComponent<CReflectionProbe>();
 
 				if (component)
+				{
 					component->OnDeserialize(p_doc, currentComponent->FirstChildElement("data"));
+				}
 
 				currentComponent = currentComponent->NextSiblingElement("component");
 			}

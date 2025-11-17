@@ -61,4 +61,10 @@ namespace OvCore::ECS::Components
 	private:
 		OvAudio::Entities::AudioListener m_audioListener;
 	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CAudioListener>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CAudioListener";
+	};
 }

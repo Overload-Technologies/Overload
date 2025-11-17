@@ -4,7 +4,7 @@
 * @licence: MIT
 */
 
-#include "OvCore/ECS/Components/CTransform.h"
+#include <OvCore/ECS/Components/CTransform.h>
 
 OvCore::ECS::Components::CTransform::CTransform(ECS::Actor& p_owner, OvMaths::FVector3 p_localPosition, OvMaths::FQuaternion p_localRotation, OvMaths::FVector3 p_localScale) :
 AComponent(p_owner)

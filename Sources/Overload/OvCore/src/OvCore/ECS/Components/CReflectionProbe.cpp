@@ -55,6 +55,11 @@ std::string OvCore::ECS::Components::CReflectionProbe::GetName()
 	return "Reflection Probe";
 }
 
+std::string OvCore::ECS::Components::CReflectionProbe::GetTypeName()
+{
+	return std::string{ComponentTraits<CReflectionProbe>::Name};
+}
+
 void OvCore::ECS::Components::CReflectionProbe::SetRefreshMode(ERefreshMode p_mode)
 {
 	if (p_mode != m_refreshMode)

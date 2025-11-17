@@ -41,6 +41,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Fill the material renderer with the given material
 		* @param p_material
 		*/

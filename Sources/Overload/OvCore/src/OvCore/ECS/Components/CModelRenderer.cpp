@@ -34,6 +34,11 @@ std::string OvCore::ECS::Components::CModelRenderer::GetName()
 	return "Model Renderer";
 }
 
+std::string OvCore::ECS::Components::CModelRenderer::GetTypeName()
+{
+	return std::string{ComponentTraits<CModelRenderer>::Name};
+}
+
 void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model)
 {
 	m_model = p_model;

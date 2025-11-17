@@ -44,6 +44,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines the model to use
 		* @param p_model
 		*/

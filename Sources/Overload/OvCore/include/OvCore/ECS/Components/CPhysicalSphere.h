@@ -32,6 +32,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines the radius of the sphere shape
 		* @param p_radius
 		*/

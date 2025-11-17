@@ -24,6 +24,11 @@ std::string OvCore::ECS::Components::CSpotLight::GetName()
 	return "Spot Light";
 }
 
+std::string OvCore::ECS::Components::CSpotLight::GetTypeName()
+{
+	return std::string{ComponentTraits<CSpotLight>::Name};
+}
+
 float OvCore::ECS::Components::CSpotLight::GetConstant() const
 {
 	return m_data.constant;

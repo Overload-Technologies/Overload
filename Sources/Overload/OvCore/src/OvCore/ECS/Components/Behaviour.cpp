@@ -29,7 +29,12 @@ std::string OvCore::ECS::Components::Behaviour::GetName()
 	return "Behaviour";
 }
 
-void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script>&& p_scriptContext)
+std::string OvCore::ECS::Components::Behaviour::GetTypeName()
+{
+	return std::string{ComponentTraits<Behaviour>::Name};
+}
+
+void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script> &&p_scriptContext)
 {
 	m_script = std::move(p_scriptContext);
 }

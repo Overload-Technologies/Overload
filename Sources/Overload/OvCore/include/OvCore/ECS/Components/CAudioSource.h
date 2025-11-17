@@ -33,6 +33,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Defines the sound to play on the audio source
 		* @param p_sound
 		*/

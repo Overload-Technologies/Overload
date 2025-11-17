@@ -19,6 +19,11 @@ std::string OvCore::ECS::Components::CAudioListener::GetName()
 	return "Audio Listener";
 }
 
+std::string OvCore::ECS::Components::CAudioListener::GetTypeName()
+{
+	return std::string{ComponentTraits<CAudioListener>::Name};
+}
+
 void OvCore::ECS::Components::CAudioListener::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 }

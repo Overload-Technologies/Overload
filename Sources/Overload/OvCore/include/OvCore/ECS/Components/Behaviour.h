@@ -36,6 +36,11 @@ namespace OvCore::ECS::Components
 		* Returns the name of the component
 		*/
 		virtual std::string GetName() override;
+		
+		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
 
 		/**
 		* Sets the script associated with this behaviour

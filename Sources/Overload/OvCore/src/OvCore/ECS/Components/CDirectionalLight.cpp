@@ -24,6 +24,11 @@ std::string OvCore::ECS::Components::CDirectionalLight::GetName()
 	return "Directional Light";
 }
 
+std::string OvCore::ECS::Components::CDirectionalLight::GetTypeName()
+{
+	return std::string{ComponentTraits<CDirectionalLight>::Name};
+}
+
 void OvCore::ECS::Components::CDirectionalLight::SetCastShadows(bool p_enabled)
 {
 	m_data.castShadows = p_enabled;

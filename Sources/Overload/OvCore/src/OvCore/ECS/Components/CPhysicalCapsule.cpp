@@ -28,6 +28,11 @@ std::string OvCore::ECS::Components::CPhysicalCapsule::GetName()
 	return "Physical Capsule";
 }
 
+std::string OvCore::ECS::Components::CPhysicalCapsule::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalCapsule>::Name};
+}
+
 void OvCore::ECS::Components::CPhysicalCapsule::SetRadius(float p_radius)
 {
 	GetPhysicalObjectAs<PhysicalCapsule>().SetRadius(p_radius);

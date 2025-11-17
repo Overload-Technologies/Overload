@@ -17,6 +17,11 @@ std::string OvCore::ECS::Components::CTransform::GetName()
 	return "Transform";
 }
 
+std::string OvCore::ECS::Components::CTransform::GetTypeName()
+{
+	return std::string{ComponentTraits<CTransform>::Name};
+}
+
 void OvCore::ECS::Components::CTransform::SetParent(CTransform& p_parent)
 {
 	m_transform.SetParent(p_parent.GetFTransform());

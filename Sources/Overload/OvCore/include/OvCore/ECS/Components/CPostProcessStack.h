@@ -36,6 +36,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node

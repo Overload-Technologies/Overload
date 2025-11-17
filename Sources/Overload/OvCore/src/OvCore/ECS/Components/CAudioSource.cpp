@@ -25,6 +25,11 @@ std::string OvCore::ECS::Components::CAudioSource::GetName()
 	return "Audio Source";
 }
 
+std::string OvCore::ECS::Components::CAudioSource::GetTypeName()
+{
+	return std::string{ComponentTraits<CAudioSource>::Name};
+}
+
 void OvCore::ECS::Components::CAudioSource::SetSound(OvAudio::Resources::Sound* p_sound)
 {
 	m_sound = p_sound;

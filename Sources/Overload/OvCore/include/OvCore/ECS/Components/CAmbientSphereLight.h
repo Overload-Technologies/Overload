@@ -30,6 +30,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Returns the radius of the sphere
 		*/
 		float GetRadius() const;

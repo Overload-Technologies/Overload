@@ -28,6 +28,11 @@ std::string OvCore::ECS::Components::CAmbientBoxLight::GetName()
 	return "Ambient Box Light";
 }
 
+std::string OvCore::ECS::Components::CAmbientBoxLight::GetTypeName()
+{
+	return std::string{ComponentTraits<CAmbientBoxLight>::Name};
+}
+
 OvMaths::FVector3 OvCore::ECS::Components::CAmbientBoxLight::GetSize() const
 {
 	return { m_data.constant, m_data.linear, m_data.quadratic };

@@ -26,6 +26,11 @@ std::string OvCore::ECS::Components::CAmbientSphereLight::GetName()
 	return "Ambient Sphere Light";
 }
 
+std::string OvCore::ECS::Components::CAmbientSphereLight::GetTypeName()
+{
+	return std::string{ComponentTraits<CAmbientSphereLight>::Name};
+}
+
 float OvCore::ECS::Components::CAmbientSphereLight::GetRadius() const
 {
 	return m_data.quadratic;

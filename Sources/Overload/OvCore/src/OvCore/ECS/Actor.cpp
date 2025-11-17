@@ -412,7 +412,7 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 		componentsNode->InsertEndChild(componentNode);
 
 		/* Component type */
-		OvCore::Helpers::Serializer::SerializeString(p_doc, componentNode, "type", typeid(*component).name());
+		OvCore::Helpers::Serializer::SerializeString(p_doc, componentNode, "type", component->GetTypeName());
 
 		/* Data node (Will be passed to the component) */
 		tinyxml2::XMLElement* data = p_doc.NewElement("data");

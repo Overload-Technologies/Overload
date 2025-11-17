@@ -27,6 +27,11 @@ std::string OvCore::ECS::Components::CPhysicalBox::GetName()
 	return "Physical Box";
 }
 
+std::string OvCore::ECS::Components::CPhysicalBox::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalBox>::Name};
+}
+
 void OvCore::ECS::Components::CPhysicalBox::SetSize(const OvMaths::FVector3 & p_size)
 {
 	GetPhysicalObjectAs<PhysicalBox>().SetSize(p_size);

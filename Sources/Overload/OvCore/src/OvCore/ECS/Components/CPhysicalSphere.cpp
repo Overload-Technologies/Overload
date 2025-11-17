@@ -29,6 +29,11 @@ std::string OvCore::ECS::Components::CPhysicalSphere::GetName()
 	return "Physical Sphere";
 }
 
+std::string OvCore::ECS::Components::CPhysicalSphere::GetTypeName()
+{
+	return std::string{ComponentTraits<CPhysicalSphere>::Name};
+}
+
 void OvCore::ECS::Components::CPhysicalSphere::SetRadius(float p_radius)
 {
 	GetPhysicalObjectAs<PhysicalSphere>().SetRadius(p_radius);

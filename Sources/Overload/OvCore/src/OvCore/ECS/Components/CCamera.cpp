@@ -25,6 +25,11 @@ std::string OvCore::ECS::Components::CCamera::GetName()
 	return "Camera";
 }
 
+std::string OvCore::ECS::Components::CCamera::GetTypeName()
+{
+	return std::string{ComponentTraits<CCamera>::Name};
+}
+
 void OvCore::ECS::Components::CCamera::SetFov(float p_value)
 {
 	m_camera.SetFov(p_value);

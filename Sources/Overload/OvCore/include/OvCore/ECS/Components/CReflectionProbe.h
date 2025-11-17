@@ -61,6 +61,11 @@ namespace OvCore::ECS::Components
 		std::string GetName() override;
 
 		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
 		* Sets the refresh mode of the reflection probe
 		* @param p_mode
 		*/

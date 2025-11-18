@@ -28,9 +28,6 @@ jobs:
       working-directory: ${{env.SOLUTION_FILE_PATH}}
       run: ./gen_proj_linux.sh
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v2
-
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).

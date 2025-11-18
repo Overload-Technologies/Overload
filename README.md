@@ -51,18 +51,48 @@ Overload pillars are:
 
 Check out our [issues](https://github.com/Overload-Technologies/Overload/issues) and [pull requests](https://github.com/Overload-Technologies/Overload/pulls) to learn more about what's coming next!
 
-# Quick Start (TL;DR)
-*Assuming you are on Windows, have Visual Studio 2022 installed, and have about 5 minutes to spare!*
-1. Clone Overload
-2. Inside of the repository folder, run `OpenInVisualStudio.bat`
-3. Build the project, voilà!
+# Documentation
+Check-out Overload's [documentation](https://github.com/Overload-Technologies/Overload/wiki) to find **sample projects**, **tutorials** & the **scripting API**!
 
-- **⭐ Bonus:** get one of Overload's [sample projects](https://github.com/Overload-Technologies/Overload/wiki/Sample-Projects)!
-- **✨ Extra Bonus:** check-out the [documentation](https://github.com/Overload-Technologies/Overload/wiki).
+# Getting Started
 
-More in-depth guide on getting started available [here](#getting-started).
+Before running Overload, we highly recommend [downloading one of Overload's sample projects](https://github.com/Overload-Technologies/Overload/wiki/Sample-Projects)!
 
+## Pre-Built Binaries
 In a rush? [Get the latest release](https://github.com/Overload-Technologies/Overload/releases)!
+> [!warning] Pre-built binaries are only available for Windows at the moment.
+
+## Building From Sources
+### Windows (MSVC)
+```powershell
+git clone https://github.com/Overload-Technologies/Overload
+cd Overload
+.\gen_proj_win32.bat # generate project files for Visual Studio 2022
+
+# (Optional) open the solution in Visual Studio
+.\Overload.sln
+```
+
+### Linux (Clang)
+```bash
+git clone https://github.com/Overload-Technologies/Overload
+cd Overload
+./gen_proj_linux.sh # generate Makefiles
+
+# (Optional) build the project
+make
+```
+
+### Other Platforms & IDEs
+`gen_proj` scripts can be invoked with an argument to specify the the action to perform.
+```bash
+# Generating Makefile on Windows
+.\gen_proj_win32.bat gmake
+
+# Generating CodeLite project on Linux
+./gen_proj_linux.sh codelite
+``` 
+*Please refer to [Premake5's documentation](https://premake.github.io/docs/Using-Premake) to find supported IDEs.*
 
 # Architecture
 Overload is divided into 11 modules: 9 libraries (SDK), and 2 executables (Applications).
@@ -99,51 +129,6 @@ Overload depends on a few third-party libraries:
 - [ImGui](https://github.com/ocornut/imgui) (GUI)
 - [Premake5](https://github.com/premake/premake-core) (Project generation)
 
-# Getting started
-## Running Overload from a Release Build
-Get started with Overload in no time by downloading one of our [release builds](https://github.com/Overload-Technologies/Overload/releases). While this is the fastest way to get started, you might miss out on some cool features we're cooking up!
-
-After downloading the archive, unzip it and run the `Overload.exe` executable file.
-
-## Building Overload from Sources
-
-### Quick Start (For Visual Studio 2022)
-To start working with Overload quickly, clone the repository and run the `OpenInVisualStudio.bat` script. Project files will be automatically generated, and Visual Studio will open with the generated solution (`Overload/Sources/Overload.sln`).
-
-```powershell
-# These 2 lines will clone Overload, generate project files, and open the Visual Studio solution.
-git clone https://github.com/Overload-Technologies/Overload
-.\Overload\OpenInVisualStudio.bat
-```
-
-### Generating Project Files (For Any IDE)
-*Note: This step is performed automatically when using `OpenInVisualStudio.bat`*
-
-Overload uses Premake5 to generate project files. To generate these files, execute the `GenerateProjects.bat` located in the `Scripts/` folder.
-
-By default, `GenerateProjects.bat` will generate project files for Visual Studio 2022.
-
-If you'd like to use another IDE, you'll need to run `GenerateProjects.bat` from the command line:
-
-```powershell
-.\Scripts\GenerateProjects.bat <ide_of_your_choice>
-```
-
-*Please refer to [Premake5's documentation](https://premake.github.io/docs/Using-Premake) to find supported IDEs.*
-
-> ⚠️ Some Premake5-supported IDEs might still not work with Overload.
-
-### Building From the Command Line (MSVC Only)
-*Note: Before building, make sure that you generated the Visual Studio solution.*
-
-If you'd like to build Overload directly from the command line (without opening Visual Studio), you can use the `BuildAll.bat` script located in `Scripts/MSVC/`. By default, `BuildAll.bat` will build the project in `Debug` mode, but you can choose the configuration you want by providing an argument:
-```powershell
-.\Scripts\MSVC\BuildAll.bat Release
-```
-
-## Tutorials & Scripting API
-Learn how to create your own games using Overload by visiting our [wiki](https://github.com/Overload-Technologies/Overload/wiki).
-
 # Contributing
 Overload is open to contributions of all kinds. Feel free to open issues (feature requests or bug reports) or submit pull requests.
 
@@ -153,9 +138,9 @@ If you'd like to contribute, please refer to our [contribution guildelines](http
 | | |
 |-|-|
 | **RAM** | 1GB |
-| **OS**  | Windows 7 |
+| **OS**  | Windows 7 & Linux |
 | **GPU** | Graphics card supporting OpenGL 4.5 |
-| **CPU** | x64 |
+| **CPU** | x86_64 |
 
 # Screenshots
 ![editor](https://github.com/user-attachments/assets/b1ab6300-774a-4733-a810-4cece269aef2)

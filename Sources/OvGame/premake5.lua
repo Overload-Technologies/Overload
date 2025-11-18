@@ -99,14 +99,14 @@ project "OvGame"
 		-- Force inclusion of all symbols from these libraries
 		linkoptions {
 			"-Wl,--whole-archive",
-			outputdir .. "Debug/ImGui/libImGui.a",
-			outputdir .. "Debug/bullet3/libbullet3.a",
-			outputdir .. "Debug/lua/liblua.a",
-			outputdir .. "Debug/soloud/libsoloud.a",
-			outputdir .. "Debug/OvAudio/libOvAudio.a",
-			outputdir .. "Debug/assimp/libassimp.a",
-			outputdir .. "Debug/tinyxml2/libtinyxml2.a",
-			outputdir .. "Debug/glad/libglad.a",
+			outputdir .. "%{cfg.buildcfg}/ImGui/libImGui.a",
+			outputdir .. "%{cfg.buildcfg}/bullet3/libbullet3.a",
+			outputdir .. "%{cfg.buildcfg}/lua/liblua.a",
+			outputdir .. "%{cfg.buildcfg}/soloud/libsoloud.a",
+			outputdir .. "%{cfg.buildcfg}/OvAudio/libOvAudio.a",
+			outputdir .. "%{cfg.buildcfg}/assimp/libassimp.a",
+			outputdir .. "%{cfg.buildcfg}/tinyxml2/libtinyxml2.a",
+			outputdir .. "%{cfg.buildcfg}/glad/libglad.a",
 			"-Wl,--no-whole-archive",
 			"-Wl,--allow-multiple-definition",  -- Tracy and Bullet3 have some duplicate symbols
 		}

@@ -24,8 +24,8 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Install OpenGL development headers
-      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libx11-dev
 
     - name: Generate premake5 solution
       working-directory: ${{env.SOLUTION_FILE_PATH}}

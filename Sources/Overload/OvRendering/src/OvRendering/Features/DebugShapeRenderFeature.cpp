@@ -148,9 +148,9 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawSphere(OvRendering::Dat
 	{
 		for (float i = 0; i <= 360.0f; i += 10.0f)
 		{
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
-			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), sinf(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), sinf((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ 0.f, sinf(i * (3.14f / 180.0f)), cosf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)), cosf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), 0.f, sinf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 		}
 	}
 }
@@ -165,18 +165,18 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawCapsule(OvRendering::Da
 
 		for (float i = 0; i < 360.0f; i += 10.0f)
 		{
-			DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
-			DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), 0.f, sin(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), 0.f, sin((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), 0.f, sinf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+			DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), 0.f, sinf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 
 			if (i < 180.f)
 			{
-				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
-				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), sinf(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), sinf((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sinf(i * (3.14f / 180.0f)), cosf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (hVec + OvMaths::FVector3{ 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)), cosf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 			}
 			else
 			{
-				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos(i * (3.14f / 180.0f)), sin(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cos((i + 10.0f) * (3.14f / 180.0f)), sin((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
-				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin(i * (3.14f / 180.0f)), cos(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sin((i + 10.0f) * (3.14f / 180.0f)), cos((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ cosf(i * (3.14f / 180.0f)), sinf(i * (3.14f / 180.0f)), 0.f } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ cosf((i + 10.0f) * (3.14f / 180.0f)), sinf((i + 10.0f) * (3.14f / 180.0f)), 0.f } *p_radius), p_color, p_lineWidth, p_depthTest);
+				DrawLine(p_pso, p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sinf(i * (3.14f / 180.0f)), cosf(i * (3.14f / 180.0f)) } *p_radius), p_position + p_rotation * (-hVec + OvMaths::FVector3{ 0.f, sinf((i + 10.0f) * (3.14f / 180.0f)), cosf((i + 10.0f) * (3.14f / 180.0f)) } *p_radius), p_color, p_lineWidth, p_depthTest);
 			}
 		}
 

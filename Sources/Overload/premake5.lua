@@ -25,6 +25,13 @@ workspace "Overload"
 		"TRACY_MEMORY_ENABLE"
 	}
 
+	-- Set toolset based on operating system
+	filter {"system:windows"}
+		toolset("msc")
+	filter {"system:linux"}
+		toolset("clang") -- Use Clang on Linux (sol2 doesn't work well with GCC)
+	filter {}
+
 	-- Disable "Hot Reload": Doesn't work with Tracy.
 	editandcontinue "Off"
 

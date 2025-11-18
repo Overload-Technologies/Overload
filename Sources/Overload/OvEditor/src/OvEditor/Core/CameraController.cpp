@@ -188,7 +188,8 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 			{
 				if (m_middleMousePressed)
 				{
-					if (m_inputManager.GetKeyState(OvWindowing::Inputs::EKey::KEY_LEFT_ALT) == OvWindowing::Inputs::EKeyState::KEY_DOWN)
+					if (m_inputManager.GetKeyState(OvWindowing::Inputs::EKey::KEY_LEFT_ALT) == OvWindowing::Inputs::EKeyState::KEY_DOWN ||
+						m_inputManager.GetKeyState(OvWindowing::Inputs::EKey::KEY_LEFT_CONTROL) == OvWindowing::Inputs::EKeyState::KEY_DOWN)
 					{
 						if (auto target = GetTargetActor())
 						{

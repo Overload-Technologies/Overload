@@ -2,7 +2,7 @@ name: Linux Clang
 
 on:
   pull_request:
-    types: ready_for_review
+    types: [ready_for_review, synchronize]
   push:
     branches:
       - main

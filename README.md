@@ -60,7 +60,8 @@ Before running Overload, we highly recommend [downloading one of Overload's samp
 
 ## Pre-Built Binaries
 In a rush? [Get the latest release](https://github.com/Overload-Technologies/Overload/releases)!
-> [!warning] Pre-built binaries are only available for Windows at the moment.
+> [!warning]
+> Pre-built binaries are only available for Windows at the moment.
 
 ## Building From Sources
 ### Windows (MSVC)

@@ -45,72 +45,45 @@ void OvWindowing::Dialogs::MessageBox::Spawn()
 	m_userResult = static_cast<EUserAction>(msgboxID);
 #else
 	// Linux implementation using zenity
-	std::string command = "zenity ";
-	
-	// Determine message type
-	switch (m_messageType)
-	{
-		case EMessageType::QUESTION:
-			command += "--question";
-			break;
-		case EMessageType::INFORMATION:
-			command += "--info";
-			break;
-		case EMessageType::WARNING:
-			command += "--warning";
-			break;
-		case EMessageType::ERROR:
-			command += "--error";
-			break;
-	}
+	std::string command = "zenity --question"; // Always use question dialog for flexibility
 	
 	// Add title and message
 	command += " --title=\"" + m_title + "\"";
 	command += " --text=\"" + m_message + "\"";
+	command += " --no-markup"; // Prevent markup interpretation issues
 	
 	// Handle button layout
 	bool useExtraButtons = false;
-	std::string extraButtons;
 	
 	switch (m_buttonLayout)
 	{
 		case EButtonLayout::OK:
-			command += " --ok-label=\"OK\"";
+			command += " --ok-label=\"OK\" --no-cancel";
 			break;
 		case EButtonLayout::OK_CANCEL:
 			command += " --ok-label=\"OK\" --cancel-label=\"Cancel\"";
 			break;
 		case EButtonLayout::YES_NO:
-			// For question dialogs, zenity uses yes/no by default
-			if (m_messageType == EMessageType::QUESTION)
-			{
-				command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
-			}
-			else
-			{
-				command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
-			}
+			command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
 			break;
 		case EButtonLayout::YES_NO_CANCEL:
 			useExtraButtons = true;
-			extraButtons = " --extra-button=\"Yes\" --extra-button=\"No\"";
-			command += " --cancel-label=\"Cancel\"" + extraButtons;
+			// When using extra buttons, don't use ok-label or cancel-label
+			command += " --extra-button=\"Yes\" --extra-button=\"No\" --extra-button=\"Cancel\"";
 			break;
 		case EButtonLayout::RETRY_CANCEL:
 			command += " --ok-label=\"Retry\" --cancel-label=\"Cancel\"";
 			break;
 		case EButtonLayout::ABORT_RETRY_IGNORE:
 			useExtraButtons = true;
-			extraButtons = " --extra-button=\"Abort\" --extra-button=\"Retry\"";
-			command += " --cancel-label=\"Ignore\"" + extraButtons;
+			command += " --extra-button=\"Abort\" --extra-button=\"Retry\" --extra-button=\"Ignore\"";
 			break;
 		case EButtonLayout::CANCEL_TRYAGAIN_CONTINUE:
 			useExtraButtons = true;
-			extraButtons = " --extra-button=\"Try Again\" --extra-button=\"Continue\"";
-			command += " --cancel-label=\"Cancel\"" + extraButtons;
+			command += " --extra-button=\"Cancel\" --extra-button=\"Try Again\" --extra-button=\"Continue\"";
 			break;
 		case EButtonLayout::HELP:
-			command += " --ok-label=\"Help\"";
+			command += " --ok-label=\"Help\" --no-cancel";
 			break;
 	}
 	
@@ -159,11 +132,13 @@ void OvWindowing::Dialogs::MessageBox::Spawn()
 		else if (m_buttonLayout == EButtonLayout::ABORT_RETRY_IGNORE)
 		{
 			if (result == "Abort")
-				m_userResult = EUserAction::CANCEL; // Map Abort to Cancel
+				m_userResult = EUserAction::CANCEL; // Map Abort to Cancel (no direct equivalent)
 			else if (result == "Retry")
 				m_userResult = EUserAction::RETRY;
-			else
+			else if (result == "Ignore")
 				m_userResult = EUserAction::IGNORE;
+			else
+				m_userResult = EUserAction::CANCEL; // Dialog closed
 		}
 		else if (m_buttonLayout == EButtonLayout::CANCEL_TRYAGAIN_CONTINUE)
 		{

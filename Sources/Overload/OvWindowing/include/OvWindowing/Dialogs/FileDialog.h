@@ -117,5 +117,6 @@ namespace OvWindowing::Dialogs
 		std::string m_filename;
 		std::string m_filepath;
 		bool m_succeeded;
+		bool m_isSaveDialog = false;
 	};
 }

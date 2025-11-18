@@ -18,6 +18,7 @@ static int DummySaveCallback(tagOFNA*) { return 0; }
 
 OvWindowing::Dialogs::SaveFileDialog::SaveFileDialog(const std::string & p_dialogTitle) : FileDialog(DummySaveCallback, p_dialogTitle)
 {
+	m_isSaveDialog = true;
 }
 #endif
 

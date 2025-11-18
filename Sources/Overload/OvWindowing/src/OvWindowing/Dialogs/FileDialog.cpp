@@ -69,20 +69,22 @@ void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
 	// Linux implementation using zenity
 	std::string command = "zenity --file-selection --title=\"" + m_dialogTitle + "\"";
 	
-	// Check if this is a save dialog (callback would be for save)
-	bool isSaveDialog = false;
-	if (reinterpret_cast<void*>(m_callback.target<int(*)(tagOFNA*)>()) != nullptr)
-	{
-		// This is a heuristic - if OVERWRITEPROMPT flag is set, it's likely a save dialog
-		if ((static_cast<int>(p_flags) & static_cast<int>(EExplorerFlags::OVERWRITEPROMPT)) != 0)
-			isSaveDialog = true;
-	}
-	
-	if (isSaveDialog)
+	if (m_isSaveDialog)
 		command += " --save";
 	
 	if (!m_initialDirectory.empty())
-		command += " --filename=\"" + m_initialDirectory + "/\"";
+	{
+		// Add trailing slash to indicate directory for zenity
+		command += " --filename=\"" + m_initialDirectory;
+		if (m_initialDirectory.back() != '/')
+			command += "/";
+		command += "\"";
+	}
+	else
+	{
+		// Even without initial directory, --filename="" helps show the filename entry
+		command += " --filename=\"\"";
+	}
 	
 	// Add file filters if present
 	if (!m_filter.empty())

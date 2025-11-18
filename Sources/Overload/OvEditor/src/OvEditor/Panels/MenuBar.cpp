@@ -237,8 +237,13 @@ void OvEditor::Panels::MenuBar::CreateResourcesMenu()
 
 void OvEditor::Panels::MenuBar::CreateToolsMenu()
 {
+// No Tracy profiler (front-end) on non-Windows platforms at the moment.
+// You'll need to build it yourself if you want to use it on other platforms.
+// https://github.com/Overload-Technologies/Overload/issues/614
+#ifdef _WIN32
 	auto& toolsMenu = CreateWidget<MenuList>("Tools");
 	toolsMenu.CreateWidget<MenuItem>("Open Profiler").ClickedEvent += EDITOR_BIND(OpenProfiler);
+#endif
 }
 
 void OvEditor::Panels::MenuBar::CreateSettingsMenu()

@@ -1,4 +1,4 @@
-project "OvDebug"
+project "OvWindowing"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
@@ -14,12 +14,19 @@ project "OvDebug"
 	}
 
 	includedirs {
+		-- Dependencies
+		dependdir .. "glfw/include",
+		dependdir .. "stb_image/include",
+
 		-- Overload SDK
-		"%{wks.location}/OvTools/include",
+		"%{wks.location}/Sources/OvTools/include",
 
 		-- Current Project
 		"include"
 	}
+
+	filter { "system:windows" }
+		characterset ("MBCS")
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

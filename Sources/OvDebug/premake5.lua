@@ -1,4 +1,4 @@
-project "OvPhysics"
+project "OvDebug"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
@@ -13,15 +13,9 @@ project "OvPhysics"
 		"**.ini"
 	}
 
-	includedirs { 
-		-- Dependencies
-		dependdir .. "bullet3/",
-		dependdir .. "bullet3/bullet",
-
+	includedirs {
 		-- Overload SDK
-		"%{wks.location}/OvDebug/include",
-		"%{wks.location}/OvMaths/include",
-		"%{wks.location}/OvTools/include",
+		"%{wks.location}/Sources/OvTools/include",
 
 		-- Current Project
 		"include"

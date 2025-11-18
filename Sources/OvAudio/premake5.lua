@@ -1,4 +1,4 @@
-project "OvUI"
+project "OvAudio"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
@@ -15,11 +15,12 @@ project "OvUI"
 
 	includedirs {
 		-- Dependencies
-		dependdir .. "ImGui/include",
+		dependdir .. "soloud/include",
 
 		-- Overload SDK
-		"%{wks.location}/OvMaths/include",
-		"%{wks.location}/OvTools/include",
+		"%{wks.location}/Sources/OvDebug/include",
+		"%{wks.location}/Sources/OvMaths/include",
+		"%{wks.location}/Sources/OvTools/include",
 
 		-- Current Project
 		"include"

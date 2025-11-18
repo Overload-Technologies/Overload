@@ -28,14 +28,14 @@ project "OvCore"
 		dependdir .. "tracy",
 
 		-- Overload SDK
-		"%{wks.location}/OvAudio/include",
-		"%{wks.location}/OvDebug/include",
-		"%{wks.location}/OvMaths/include",
-		"%{wks.location}/OvPhysics/include",
-		"%{wks.location}/OvRendering/include",
-		"%{wks.location}/OvTools/include",
-		"%{wks.location}/OvUI/include",
-		"%{wks.location}/OvWindowing/include",
+		"%{wks.location}/Sources/OvAudio/include",
+		"%{wks.location}/Sources/OvDebug/include",
+		"%{wks.location}/Sources/OvMaths/include",
+		"%{wks.location}/Sources/OvPhysics/include",
+		"%{wks.location}/Sources/OvRendering/include",
+		"%{wks.location}/Sources/OvTools/include",
+		"%{wks.location}/Sources/OvUI/include",
+		"%{wks.location}/Sources/OvWindowing/include",
 
 		-- Current project
 		"include",

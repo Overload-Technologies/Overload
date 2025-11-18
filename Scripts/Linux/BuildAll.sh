@@ -14,7 +14,7 @@ popd > /dev/null
 # Build the solution
 echo "Building Overload in $CONFIGURATION mode..."
 
-pushd "$(dirname "$0")/../../Sources/Overload" > /dev/null
+pushd "$(dirname "$0")/../.." > /dev/null
 make config=${CONFIG_LOWER}_x64 -j$(nproc)
 BUILD_RESULT=$?
 popd > /dev/null

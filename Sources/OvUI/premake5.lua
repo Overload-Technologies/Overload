@@ -1,4 +1,4 @@
-project "OvRendering"
+project "OvUI"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
@@ -15,15 +15,11 @@ project "OvRendering"
 
 	includedirs {
 		-- Dependencies
-		dependdir .. "assimp/include",
-		dependdir .. "glad/include",
-		dependdir .. "stb_image/include",
-		dependdir .. "tracy",
+		dependdir .. "ImGui/include",
 
 		-- Overload SDK
-		"%{wks.location}/OvDebug/include",
-		"%{wks.location}/OvMaths/include",
-		"%{wks.location}/OvTools/include",
+		"%{wks.location}/Sources/OvMaths/include",
+		"%{wks.location}/Sources/OvTools/include",
 
 		-- Current Project
 		"include"

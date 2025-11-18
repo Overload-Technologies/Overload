@@ -59,7 +59,10 @@ echo msbuild.exe found at: "!MSBUILD_PATH!"
 echo.
 
 :: Build the solution
-pushd "%~dp0..\..\Sources\Overload\"
+echo Building Overload in !CONFIGURATION! mode...
+echo.
+
+pushd "%~dp0..\..\"
 if "%CONFIGURATION%"=="" (
     echo Building with default configuration configuration...
     "!MSBUILD_PATH!" Overload.sln -m -verbosity:minimal

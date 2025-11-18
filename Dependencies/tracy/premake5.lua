@@ -13,6 +13,11 @@ project "tracy"
 		"**.cpp",
 		"**.lua"
 	}
+
+	-- Not needed on Windows
+	filter { "system:windows" }
+		removefiles { "libbacktrace/**" }
+	filter {}
 	
 	filter { "configurations:Debug" }
 		defines { "DEBUG" }

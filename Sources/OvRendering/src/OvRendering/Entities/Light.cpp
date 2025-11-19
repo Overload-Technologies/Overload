@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <bit>
 #include <format>
 
 #include <OvDebug/Assertion.h>
@@ -58,6 +59,13 @@ namespace
 
 	uint32_t Pack(const OvMaths::FVector3& p_toPack)
 	{
+		OVASSERT(
+			p_toPack.x >= 0.f && p_toPack.x <= 1.f &&
+			p_toPack.y >= 0.f && p_toPack.y <= 1.f &&
+			p_toPack.z >= 0.f && p_toPack.z <= 1.f,
+			"Cannot pack color vector, one of its component is out of range [0;1]!"
+		);
+		
 		return Pack(static_cast<uint8_t>(p_toPack.x * 255.f), static_cast<uint8_t>(p_toPack.y * 255.f), static_cast<uint8_t>(p_toPack.z * 255.f), 0);
 	}
 
@@ -134,7 +142,7 @@ OvMaths::FMatrix4 OvRendering::Entities::Light::GenerateMatrix() const
 	result.data[5] = forward.y;
 	result.data[6] = forward.z;
 
-	result.data[8] = static_cast<float>(Pack(color));
+	result.data[8] = std::bit_cast<float>(Pack(color));
 
 	result.data[12] = static_cast<float>(type);
 	result.data[13] = cutoff;

@@ -7,8 +7,8 @@ CONFIGURATION="${1:-debug}"
 CONFIG_LOWER=$(echo "$CONFIGURATION" | tr '[:upper:]' '[:lower:]')
 
 # Generate the projects
-pushd "$(dirname "$0")/.." > /dev/null
-./Linux/GenerateProjects.sh gmake
+pushd "$(dirname "$0")" > /dev/null
+./GenerateProjects.sh gmake
 popd > /dev/null
 
 # Build the solution

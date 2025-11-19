@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 set "CONFIGURATION=%~1"
 
 :: Generate the projects
-pushd "%~dp0\..\"
+pushd "%~dp0"
 call GenerateProjects vs2022 %CONFIGURATION%
 popd
 

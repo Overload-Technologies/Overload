@@ -3,8 +3,6 @@ name: Windows Release Build
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
     branch:
       - feature/build_artifacts
 

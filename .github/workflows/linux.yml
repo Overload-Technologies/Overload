@@ -18,8 +18,8 @@ env:
   BUILD_PLATFORM: x64
 
 jobs:
-  name: Linux Clang Build
   build:
+    name: Linux Clang Build
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
 

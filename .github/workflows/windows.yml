@@ -17,8 +17,8 @@ env:
   BUILD_CONFIGURATION: Release
 
 jobs:
-  name: Windows MSVC Build
   build:
+    name: Windows MSVC Build
     runs-on: windows-latest
     if: github.event.pull_request.draft == false
 

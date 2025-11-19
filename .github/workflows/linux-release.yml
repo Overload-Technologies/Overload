@@ -2,10 +2,7 @@ name: Linux Release Build
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,9 +12,6 @@ jobs:
 
     - name: Install Dependencies
       run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
-
-    - name: Generate premake5 solution
-      run: ./gen_proj_linux.sh
 
     - name: Make Release Build
       run: bash Scripts/Linux/MakeReleaseBuild.sh --no-open

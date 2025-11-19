@@ -2,9 +2,6 @@ name: Windows Release Build
 
 on:
   workflow_dispatch:
-  push:
-    branch:
-      - feature/build_artifacts
 
 jobs:
   build:
@@ -13,9 +10,6 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     
-    - name: Generate premake5 solution
-      run: .\gen_proj_win32.bat
-
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 

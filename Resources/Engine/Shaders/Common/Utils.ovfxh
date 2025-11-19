@@ -1,12 +1,15 @@
-vec3 UnPack(float target)
+vec3 UnPack(float packedFloat)
 {
-    uint v = floatBitsToUint(target);
+    // Reinterpret the float bits as a uint
+    uint value = floatBitsToUint(packedFloat);
 
-    return vec3(
-        float((v >> 24u) & 0xFFu) * (1.0 / 255.0),
-        float((v >> 16u) & 0xFFu) * (1.0 / 255.0),
-        float((v >>  8u) & 0xFFu) * (1.0 / 255.0)
-    );
+    // Extract bytes
+    uint c0 = (value >> 24) & 0xFFu;
+    uint c1 = (value >> 16) & 0xFFu;
+    uint c2 = (value >>  8) & 0xFFu;
+
+    // Convert back to float in [0,1]
+    return vec3(c0, c1, c2) / 255.0;
 }
 
 vec2 TileAndOffsetTexCoords(vec2 texCoords, vec2 tiling, vec2 offset)

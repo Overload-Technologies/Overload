@@ -1,9 +1,11 @@
 vec3 UnPack(float target)
 {
-    return vec3 (
-        float((uint(target) >> 24) & 0xff) * 0.003921568627451,
-        float((uint(target) >> 16) & 0xff) * 0.003921568627451,
-        float((uint(target) >> 8) & 0xff) * 0.003921568627451
+    uint v = floatBitsToUint(target);
+
+    return vec3(
+        float((v >> 24u) & 0xFFu) * (1.0 / 255.0),
+        float((v >> 16u) & 0xFFu) * (1.0 / 255.0),
+        float((v >>  8u) & 0xFFu) * (1.0 / 255.0)
     );
 }
 

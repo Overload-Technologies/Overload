@@ -211,8 +211,15 @@ void main()
     // Simple built-in tonemapping (Reinhard) and gamma correction for elements
     // not affected by post-processing (e.g. debug, UI, etc.), but still aiming
     // to approximate the final PBR look.
-    pbr = mix(pbr, pbr / (pbr + vec3(1.0)), u_BuiltInToneMapping);
-    pbr = mix(pbr, pow(pbr, vec3(1.0 / 2.2)), u_BuiltInGammaCorrection);
+    if (u_BuiltInToneMapping)
+    {
+        pbr = pbr / (pbr + vec3(1.0));
+    }
+
+    if (u_BuiltInGammaCorrection)
+    {
+        pbr = pow(pbr, vec3(1.0 / 2.2));
+    }
 
     const vec3 emissive = texture(u_EmissiveMap, texCoords).rgb * u_EmissiveColor * u_EmissiveIntensity;
     pbr += emissive;

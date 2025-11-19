@@ -22,7 +22,7 @@ jobs:
       run: ./gen_proj_linux.sh
 
     - name: Make Release Build
-      run: bash Scripts/Linux/MakeReleaseBuild.sh
+      run: bash Scripts/Linux/MakeReleaseBuild.sh --no-open
 
     - name: Get Version
       id: version

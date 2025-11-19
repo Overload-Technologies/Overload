@@ -22,7 +22,7 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Make Release Build
-      run: .\Scripts\Windows\MakeReleaseBuild.bat
+      run: .\Scripts\Windows\MakeReleaseBuild.bat --no-open
 
     - name: Get Version
       id: version

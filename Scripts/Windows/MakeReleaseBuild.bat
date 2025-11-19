@@ -1,5 +1,8 @@
 pushd "%~dp0"
 
+set NO_OPEN=false
+if "%1"=="--no-open" set NO_OPEN=true
+
 call .\BuildAll.bat Debug
 if %ERRORLEVEL% neq 0 (
     echo Debug build failed. Exiting.
@@ -46,8 +49,8 @@ if exist ..\Releases\Overload-%version%-%platform% (
     echo Temporary build deleted.
 )
 
-:: Open the output folder in the file explorer
-explorer ..\Releases
+:: Open the output folder in the file explorer (if not disabled)
+if "%NO_OPEN%"=="false" explorer ..\Releases
 
 :: Return to the original directory
 popd

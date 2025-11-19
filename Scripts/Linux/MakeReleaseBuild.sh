@@ -1,6 +1,14 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(dirname "$0")"
+NO_OPEN=false
+
+# Parse arguments
+for arg in "$@"; do
+    if [ "$arg" = "--no-open" ]; then
+        NO_OPEN=true
+    fi
+done
 
 # Build Debug
 "$SCRIPT_DIR/BuildAll.sh" debug
@@ -52,7 +60,7 @@ fi
 
 popd > /dev/null
 
-# Open the output folder in the file manager (if available)
-if command -v xdg-open &> /dev/null; then
+# Open the output folder in the file manager (if available and not disabled)
+if [ "$NO_OPEN" = false ] && command -v xdg-open &> /dev/null; then
     xdg-open "$SCRIPT_DIR/../../Releases"
 fi

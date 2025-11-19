@@ -1,0 +1,38 @@
+name: Windows Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v5
+    
+    - name: Generate premake5 solution
+      run: .\gen_proj_win32.bat
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Make Release Build
+      run: .\Scripts\Windows\MakeReleaseBuild.bat
+
+    - name: Get Version
+      id: version
+      run: |
+        $version = Get-Content VERSION.txt
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Overload-${{ steps.version.outputs.VERSION }}-win32_x64
+        path: Releases/Overload-${{ steps.version.outputs.VERSION }}-win32_x64.zip
+        retention-days: 90

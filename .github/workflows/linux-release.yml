@@ -1,0 +1,36 @@
+name: Linux Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - feature/build_artifacts
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
+
+    - name: Generate premake5 solution
+      run: ./gen_proj_linux.sh
+
+    - name: Make Release Build
+      run: bash Scripts/Linux/MakeReleaseBuild.sh
+
+    - name: Get Version
+      id: version
+      run: echo "VERSION=$(cat VERSION.txt)" >> $GITHUB_OUTPUT
+
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Overload-${{ steps.version.outputs.VERSION }}-linux_x64
+        path: Releases/Overload-${{ steps.version.outputs.VERSION }}-linux_x64.tar.gz
+        retention-days: 90

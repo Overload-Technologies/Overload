@@ -1,10 +1,11 @@
-name: Linux Release Build
+name: Linux Release
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
+    name: Generate Linux x64 Release Artifact
     runs-on: ubuntu-latest
 
     steps:

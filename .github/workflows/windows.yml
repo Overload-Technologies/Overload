@@ -1,4 +1,4 @@
-name: Windows MSBuild
+name: Windows MSVC
 
 on:
   pull_request:
@@ -17,6 +17,7 @@ env:
   BUILD_CONFIGURATION: Release
 
 jobs:
+  name: Windows MSVC Build
   build:
     runs-on: windows-latest
     if: github.event.pull_request.draft == false

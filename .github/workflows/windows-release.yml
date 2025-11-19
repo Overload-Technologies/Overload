@@ -5,8 +5,8 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - main
+    branch:
+      - feature/build_artifacts
 
 jobs:
   build:

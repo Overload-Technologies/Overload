@@ -5,9 +5,7 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - feature/build_artifacts
-
+      
 jobs:
   build:
     runs-on: ubuntu-latest

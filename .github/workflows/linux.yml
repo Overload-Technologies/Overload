@@ -1,4 +1,4 @@
-name: Linux Clang
+name: Linux
 
 on:
   workflow_dispatch:

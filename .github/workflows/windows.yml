@@ -11,11 +11,10 @@ on:
 env:
   # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: .\
-  BUILD_PLATFORM: x64
 
 jobs:
   build:
-    name: ${{ matrix.configuration }} (${{ env.BUILD_PLATFORM }})
+    name: windows_msvc_x64_${{ matrix.configuration }}
     runs-on: windows-latest
     if: github.event.pull_request.draft == false
     
@@ -28,11 +27,11 @@ jobs:
     
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
-      
+
     - name: Generate premake5 solution
       working-directory: ${{env.SOLUTION_FILE_PATH}}
       run: .\gen_proj.bat
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=${{env.BUILD_PLATFORM}}
+      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64

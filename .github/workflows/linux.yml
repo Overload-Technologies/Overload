@@ -11,11 +11,10 @@ on:
 env:
   # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: ./
-  BUILD_PLATFORM: x64
 
 jobs:
   build:
-    name: ${{ matrix.configuration }} (${{ env.BUILD_PLATFORM }})
+    name: linux_clang_x64_${{ matrix.configuration }}
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     
@@ -37,4 +36,4 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         CONFIG_LOWER=$(echo "${{ matrix.configuration }}" | tr '[:upper:]' '[:lower:]')
-        make -j$(nproc) config=${CONFIG_LOWER}_${{env.BUILD_PLATFORM}}
+        make -j$(nproc) config=${CONFIG_LOWER}_x64

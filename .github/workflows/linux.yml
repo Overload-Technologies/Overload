@@ -35,4 +35,6 @@ jobs:
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: make -j$(nproc) config=${{ lower(matrix.configuration) }}_${{env.BUILD_PLATFORM}}
+      run: |
+        CONFIG_LOWER=$(echo "${{ matrix.configuration }}" | tr '[:upper:]' '[:lower:]')
+        make -j$(nproc) config=${CONFIG_LOWER}_${{env.BUILD_PLATFORM}}

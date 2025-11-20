@@ -14,7 +14,7 @@ env:
 
 jobs:
   build:
-    name: windows_msvc_x64_${{ matrix.configuration }}
+    name: MSVC ${{ matrix.configuration }} x64
     runs-on: windows-latest
     if: github.event.pull_request.draft == false
     

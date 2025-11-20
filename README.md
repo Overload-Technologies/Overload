@@ -68,12 +68,12 @@ In a rush? [Get the latest release](https://github.com/Overload-Technologies/Ove
 ```powershell
 git clone https://github.com/Overload-Technologies/Overload
 cd Overload
-.\gen_proj.bat vs2026 # generate project files for Visual Studio 2026
+.\gen_proj.bat vs2022 # generate project files for Visual Studio 2022
 .\Overload.sln # Open the solution in Visual Studio
 ```
 
 > [!note]
-> Officially supported actions for `gen_proj.bat` are: `vs2026` (default), `vs2022`, `gmake`, `codelite`.<br/>
+> Officially supported actions for `gen_proj.bat` are: `vs2022` (default), `gmake`, `codelite`.<br/>
 > Refer to [premake's website](https://premake.github.io/docs/Using-Premake) for more information.
 
 ### Linux (Clang)

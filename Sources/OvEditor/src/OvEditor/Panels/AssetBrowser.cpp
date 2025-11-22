@@ -4,10 +4,12 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <vector>
 #include <tinyxml2.h>
 
 #include <OvCore/Global/ServiceLocator.h>
@@ -909,8 +911,20 @@ void OvEditor::Panels::AssetBrowser::Refresh()
 
 void OvEditor::Panels::AssetBrowser::ParseFolder(Layout::TreeNode& p_root, const std::filesystem::directory_entry& p_directory, bool p_isEngineItem, bool p_scriptFolder)
 {
-	// Iterates another time to display list files
+	// Collect all entries first
+	std::vector<std::filesystem::directory_entry> entries;
 	for (auto& item : std::filesystem::directory_iterator(p_directory))
+	{
+		entries.push_back(item);
+	}
+
+	// Sort entries alphabetically by filename
+	std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+		return a.path().filename().string() < b.path().filename().string();
+	});
+
+	// Display directories first, in alphabetical order
+	for (auto& item : entries)
 	{
 		if (item.is_directory())
 		{
@@ -918,8 +932,8 @@ void OvEditor::Panels::AssetBrowser::ParseFolder(Layout::TreeNode& p_root, const
 		}
 	}
 
-	// Iterates another time to display list files
-	for (auto& item : std::filesystem::directory_iterator(p_directory))
+	// Display files second, in alphabetical order
+	for (auto& item : entries)
 	{
 		if (!item.is_directory())
 		{

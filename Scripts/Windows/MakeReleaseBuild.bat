@@ -17,7 +17,7 @@ if %ERRORLEVEL% neq 0 (
 
 :: The output is located in a folder called ..\..\Build\Release. Create an archive with this folder's content, and name the archive Overload-<version>-<platform>.zip.
 for /f "delims=" %%v in (..\..\VERSION.txt) do set version=%%v
-set platform=win32_x64
+set platform=windows_x64
 
 :: Navigate to the release folder
 pushd ..\..\Build\

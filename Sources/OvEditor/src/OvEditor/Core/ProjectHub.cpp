@@ -144,17 +144,16 @@ namespace OvEditor::Core
 					}
 				};
 
-				deleteButton.ClickedEvent += [this, &text, &actions, project] {
-					text.Destroy();
-					actions.Destroy();
-					Utils::ProjectManagement::UnregisterProject(project);
-				};
+			deleteButton.ClickedEvent += [this, &text, &actions, project] {
+				text.Destroy();
+				actions.Destroy();
+				Utils::ProjectManagement::UnregisterProject(project);
+			};
 
-				openButton.lineBreak = false;
-				deleteButton.lineBreak;
+			openButton.lineBreak = false;
 			}
 		}
-
+		
 		std::optional<ProjectHubResult> GetResult() const
 		{
 			return m_result;

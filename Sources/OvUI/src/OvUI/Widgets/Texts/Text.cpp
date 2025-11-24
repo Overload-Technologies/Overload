@@ -16,5 +16,5 @@ OvUI::Widgets::Texts::Text::Text(const std::string & p_content) :
 
 void OvUI::Widgets::Texts::Text::_Draw_Impl()
 {
-	ImGui::Text(content.c_str());
+	ImGui::Text("%s", content.c_str());
 }

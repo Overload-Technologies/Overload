@@ -207,7 +207,7 @@ void OvCore::ECS::Components::CAudioSource::OnInspector(OvUI::Internal::WidgetCo
 		{
 			float graphY = graphX < m_audioSource.GetAttenuationThreshold() ? 1.0f : 1.0f / (1.0f + 1.0f * (graphX - m_audioSource.GetAttenuationThreshold()));
 
-			if (abs(graphX - distanceToListener) <= 0.25f)
+			if (std::abs(graphX - distanceToListener) <= 0.25f)
 			{
 				graph.forceHover = static_cast<int>(graphX * 4.0f);
 				graph.overlay = std::to_string(static_cast<int>(graphY * 100.0f)) + "%";

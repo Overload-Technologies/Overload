@@ -14,5 +14,5 @@ OvUI::Widgets::Texts::TextColored::TextColored(const std::string& p_content, con
 
 void OvUI::Widgets::Texts::TextColored::_Draw_Impl()
 {
-	ImGui::TextColored(Internal::Converter::ToImVec4(color), content.c_str());
+	ImGui::TextColored(Internal::Converter::ToImVec4(color), "%s", content.c_str());
 }

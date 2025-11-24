@@ -61,9 +61,10 @@ OvEditor::Panels::SceneView::SceneView
 			case SCENE: OnSceneDropped(path); break;
 			case MODEL: OnModelDropped(path); break;
 			case MATERIAL: OnMaterialDropped(path); break;
+			default: break;
 		}
 	};
-
+	
 	OvCore::ECS::Actor::DestroyedEvent += [this](const OvCore::ECS::Actor& actor)
 	{
 		if (m_highlightedActor.has_value() && m_highlightedActor.value().GetID() == actor.GetID())

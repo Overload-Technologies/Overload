@@ -297,6 +297,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				case MESH_BOUNDS: return mesh->GetBoundingSphere();
 				case DEPRECATED_MODEL_BOUNDS: return model->GetBoundingSphere();
 				case CUSTOM_BOUNDS: return modelRenderer->GetCustomBoundingSphere();
+				default: return std::nullopt;
 				}
 				return std::nullopt;
 			}();

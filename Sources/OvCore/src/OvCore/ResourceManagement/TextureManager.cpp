@@ -56,7 +56,9 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 	);
 
 	if (texture)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(texture) + offsetof(OvRendering::Resources::Texture, path)) = p_path.string(); // Force the resource path to fit the given path
+	{
+		const_cast<std::string&>(texture->path) = p_path.string(); // Force the resource path to fit the given path
+	}
 
 	return texture;
 }

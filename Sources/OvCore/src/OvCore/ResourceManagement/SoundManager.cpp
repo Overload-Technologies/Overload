@@ -11,7 +11,9 @@ OvAudio::Resources::Sound* OvCore::ResourceManagement::SoundManager::CreateResou
 	std::string realPath = GetRealPath(p_path).string();
 	OvAudio::Resources::Sound* sound = OvAudio::Resources::Loaders::SoundLoader::Create(realPath);
 	if (sound)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(sound) + offsetof(OvAudio::Resources::Sound, path)) = p_path.string(); // Force the resource path to fit the given path
+	{
+		const_cast<std::string&>(sound->path) = p_path.string(); // Force the resource path to fit the given path
+	}
 
 	return sound;
 }

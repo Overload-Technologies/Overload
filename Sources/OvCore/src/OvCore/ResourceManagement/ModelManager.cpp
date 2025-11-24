@@ -46,7 +46,7 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	if (metaFile.GetOrDefault("DROP_NORMALS",				false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::DROP_NORMALS;
 	if (metaFile.GetOrDefault("GEN_BOUNDING_BOXES",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::GEN_BOUNDING_BOXES;
 
-	return { flags };
+	return flags;
 }
 
 OvRendering::Resources::Model* OvCore::ResourceManagement::ModelManager::CreateResource(const std::filesystem::path& p_path)
@@ -54,7 +54,9 @@ OvRendering::Resources::Model* OvCore::ResourceManagement::ModelManager::CreateR
 	std::string realPath = GetRealPath(p_path).string();
 	auto model = OvRendering::Resources::Loaders::ModelLoader::Create(realPath, GetAssetMetadata(realPath));
 	if (model)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(model) + offsetof(OvRendering::Resources::Model, path)) = p_path.string(); // Force the resource path to fit the given path
+	{
+		const_cast<std::string&>(model->path) = p_path.string(); // Force the resource path to fit the given path
+	}
 
 	return model;
 }

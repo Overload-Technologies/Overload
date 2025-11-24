@@ -122,10 +122,10 @@ void OvEditor::Core::EditorActions::SaveAs()
 			switch (message.GetUserAction())
 			{
 			case OvWindowing::Dialogs::MessageBox::EUserAction::YES: break;
-			case OvWindowing::Dialogs::MessageBox::EUserAction::NO: return;
+			default: return;
 			}
 		}
-
+		
 		auto currentScene = m_context.sceneManager.GetCurrentScene();
 		SaveSceneToDisk(*currentScene, dialog.GetSelectedFilePath());
 		OVLOG_INFO("Current scene saved to: " + dialog.GetSelectedFilePath());
@@ -939,6 +939,8 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	{
 		/* If not a real rename is asked (Not delete) */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvRendering::Resources::Model* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>()[p_newName];
@@ -968,6 +970,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 			OvAudio::Resources::Sound* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[p_newName];
 			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvAudio::Resources::Sound, path)) = p_newName;
 		}
+#pragma GCC diagnostic pop
 	}
 	else
 	{
@@ -1071,6 +1074,8 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		break;
+	default:
 		break;
 	}
 

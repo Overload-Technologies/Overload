@@ -50,7 +50,7 @@ namespace OvEditor::Panels
 		/**
 		* Returns the camera used by the camera controller
 		*/
-		virtual OvRendering::Entities::Camera* GetCamera();
+		virtual OvRendering::Entities::Camera* GetCamera() override;
 
 		/**
 		* Returns the grid color of the view

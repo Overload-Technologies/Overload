@@ -60,7 +60,7 @@ void OvUI::Widgets::AWidget::Draw()
 		{
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 			{
-				ImGui::SetTooltip(tooltip.c_str());
+				ImGui::SetTooltip("%s", tooltip.c_str());
 			}
 		}
 

@@ -13,7 +13,7 @@ OvCore::Resources::Material * OvCore::ResourceManagement::MaterialManager::Creat
 	Resources::Material* material = OvCore::Resources::Loaders::MaterialLoader::Create(realPath);
 	if (material)
 	{
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(material) + offsetof(Resources::Material, path)) = p_path.string(); // Force the resource path to fit the given path
+		const_cast<std::string&>(material->path) = p_path.string(); // Force the resource path to fit the given path
 	}
 
 	return material;

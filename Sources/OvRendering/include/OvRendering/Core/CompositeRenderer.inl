@@ -69,6 +69,6 @@ namespace OvRendering::Core
 		}
 
 		OVASSERT(true, "Couldn't find a render pass matching the given type T.");
-		return *static_cast<T*>(nullptr);
+		std::abort(); // Terminate if pass not found
 	}
 }

@@ -14,6 +14,10 @@
 
 #include <stdexcept>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 std::unordered_map<GLFWwindow*, OvWindowing::Window*> OvWindowing::Window::__WINDOWS_MAP;
 
 OvWindowing::Window::Window(const Context::Device& p_device, const Settings::WindowSettings& p_windowSettings) :
@@ -229,6 +233,14 @@ void OvWindowing::Window::SwapBuffers()
 void OvWindowing::Window::SetCursorMode(Cursor::ECursorMode p_cursorMode)
 {
 	m_cursorMode = p_cursorMode;
+
+#if defined(_WIN32)
+	if (p_cursorMode == Cursor::ECursorMode::DISABLED && GetSystemMetrics(SM_REMOTESESSION))
+	{
+		return;
+	}
+#endif
+
 	glfwSetInputMode(m_glfwWindow, GLFW_CURSOR, static_cast<int>(p_cursorMode));
 }
 

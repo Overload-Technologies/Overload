@@ -220,7 +220,6 @@ float OvRendering::Entities::Light::CalculateEffectRange() const
 	case Settings::ELightType::SPOT: return CalculatePointLightRadius(constant, linear, quadratic, intensity);
 	case Settings::ELightType::AMBIENT_BOX: return CalculateAmbientBoxLightRadius(transform.Get().GetWorldPosition(), {constant, linear, quadratic});
 	case Settings::ELightType::AMBIENT_SPHERE: return constant;
+	default: return std::numeric_limits<float>::infinity();
 	}
-
-	return std::numeric_limits<float>::infinity();
 }

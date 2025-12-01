@@ -65,14 +65,14 @@ namespace OvPhysics::Entities
 		/**
 		* PhysicalObject destructor (Free memory if the transform is internally managed)
 		*/
-		~PhysicalObject();
+		virtual ~PhysicalObject();
 
 		/**
 		* Add a force to the physical object
 		* @param p_force
 		*/
 		void AddForce(const OvMaths::FVector3& p_force);
-
+		
 		/**
 		* Add an impulse to the physical object
 		* @param p_impulse

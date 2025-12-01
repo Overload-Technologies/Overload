@@ -4,6 +4,7 @@ project "OvGame"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	debugdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
+	fatalwarnings { "All" }
 	
 	files {
 		"**.h",

@@ -4,6 +4,7 @@ project "OvEditor"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 	debugdir "%{wks.location}/Build/%{cfg.buildcfg}"
+	fatalwarnings { "All" }
 	
 	files {
 		"**.h",

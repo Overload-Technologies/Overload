@@ -68,18 +68,23 @@ void OvCore::Rendering::PostProcessRenderPass::Draw(OvRendering::Data::PipelineS
 
 		for (auto& effect : m_effects)
 		{
-			const auto& settings = stack->Get(typeid(*effect));
-
-			if (effect && effect->IsApplicable(settings))
+			if (effect)
 			{
-				effect->Draw(
-					p_pso,
-					m_pingPongBuffers[0],
-					m_pingPongBuffers[1],
-					settings
-				);
+				auto& effectRef = *effect;
+				const auto& effectType = typeid(effectRef);
+				const auto& settings = stack->Get(effectType);
 
-				++m_pingPongBuffers;
+				if (effect->IsApplicable(settings))
+				{
+					effect->Draw(
+						p_pso,
+						m_pingPongBuffers[0],
+						m_pingPongBuffers[1],
+						settings
+					);
+
+					++m_pingPongBuffers;
+				}
 			}
 		}
 

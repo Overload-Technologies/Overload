@@ -94,9 +94,8 @@ std::string OvTools::Utils::PathParser::FileTypeToString(EFileType p_fileType)
 	case OvTools::Utils::PathParser::EFileType::SCENE:		return "Scene";
 	case OvTools::Utils::PathParser::EFileType::SCRIPT:		return "Script";
 	case OvTools::Utils::PathParser::EFileType::FONT:		return "Font";
+	default:												return "Unknown";
 	}
-
-	return "Unknown";
 }
 
 OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(const std::string & p_path)

@@ -15,5 +15,5 @@ OvUI::Widgets::Texts::TextLabelled::TextLabelled(const std::string& p_content, c
 
 void OvUI::Widgets::Texts::TextLabelled::_Draw_Impl()
 {
-	ImGui::LabelText((label + m_widgetID).c_str(), content.c_str());
+	ImGui::LabelText((label + m_widgetID).c_str(), "%s", content.c_str());
 }

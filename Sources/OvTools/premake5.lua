@@ -4,6 +4,7 @@ project "OvTools"
 	cppdialect "C++20"
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
+	fatalwarnings { "All" }
 
 	files {
 		"**.h",

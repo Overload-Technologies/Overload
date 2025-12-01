@@ -14,8 +14,7 @@ namespace OvRendering::Utils
 		{
 		case OvRendering::Settings::EShaderType::VERTEX: return "Vertex";
 		case OvRendering::Settings::EShaderType::FRAGMENT: return "Fragment";
+		default: return "None";
 		}
-
-		return "None";
 	}
 }

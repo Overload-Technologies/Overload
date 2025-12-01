@@ -28,7 +28,7 @@ void OvUI::Modules::Canvas::Draw()
 
 			ImGui::Begin("##dockspace", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking);
 			ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
-			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoWindowMenuButton);
+			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), static_cast<ImGuiDockNodeFlags>(static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode) | static_cast<int>(ImGuiDockNodeFlags_NoWindowMenuButton)));
 			ImGui::SetWindowPos({ 0.f, 0.f });
 			ImVec2 displaySize = ImGui::GetIO().DisplaySize;
 			ImGui::SetWindowSize({ (float)displaySize.x, (float)displaySize.y });

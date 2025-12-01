@@ -122,10 +122,10 @@ void OvEditor::Core::EditorActions::SaveAs()
 			switch (message.GetUserAction())
 			{
 			case OvWindowing::Dialogs::MessageBox::EUserAction::YES: break;
-			case OvWindowing::Dialogs::MessageBox::EUserAction::NO: return;
+			default: return;
 			}
 		}
-
+		
 		auto currentScene = m_context.sceneManager.GetCurrentScene();
 		SaveSceneToDisk(*currentScene, dialog.GetSelectedFilePath());
 		OVLOG_INFO("Current scene saved to: " + dialog.GetSelectedFilePath());
@@ -942,31 +942,31 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvRendering::Resources::Model* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>()[p_newName];
-			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvRendering::Resources::Model, path)) = p_newName;
+			const_cast<std::string&>(resource->path) = p_newName;
 		}
 
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvRendering::Resources::Texture* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[p_newName];
-			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvRendering::Resources::Texture, path)) = p_newName;
+			const_cast<std::string&>(resource->path) = p_newName;
 		}
 
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvRendering::Resources::Shader* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[p_newName];
-			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvRendering::Resources::Shader, path)) = p_newName;
+			const_cast<std::string&>(resource->path) = p_newName;
 		}
 
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvCore::Resources::Material* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>()[p_newName];
-			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvCore::Resources::Material, path)) = p_newName;
+			const_cast<std::string&>(resource->path) = p_newName;
 		}
 
 		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>().MoveResource(p_previousName, p_newName))
 		{
 			OvAudio::Resources::Sound* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[p_newName];
-			*reinterpret_cast<std::string*>(reinterpret_cast<char*>(resource) + offsetof(OvAudio::Resources::Sound, path)) = p_newName;
+			const_cast<std::string&>(resource->path) = p_newName;
 		}
 	}
 	else
@@ -1071,6 +1071,8 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		break;
+	default:
 		break;
 	}
 

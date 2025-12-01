@@ -12,7 +12,9 @@ OvRendering::Resources::Shader* OvCore::ResourceManagement::ShaderManager::Creat
 	auto pathParserCallback = [this](const std::string& s) { return GetRealPath(std::filesystem::path{s}).string(); };
 	OvRendering::Resources::Shader* shader = OvRendering::Resources::Loaders::ShaderLoader::Create(realPath, pathParserCallback);
 	if (shader)
-		*reinterpret_cast<std::string*>(reinterpret_cast<char*>(shader) + offsetof(OvRendering::Resources::Shader, path)) = p_path.string(); // Force the resource path to fit the given path
+	{
+		const_cast<std::string&>(shader->path) = p_path.string(); // Force the resource path to fit the given path
+	}
 
 	return shader;
 }

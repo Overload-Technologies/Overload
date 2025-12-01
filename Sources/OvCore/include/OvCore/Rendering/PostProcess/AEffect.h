@@ -33,12 +33,17 @@ namespace OvCore::Rendering::PostProcess
 		AEffect(OvRendering::Core::CompositeRenderer& p_renderer);
 
 		/**
+		* Virtual destructor
+		*/
+		virtual ~AEffect() = default;
+
+		/**
 		* Returns true if the effect is applicable with the given settings.
 		* If the effect is not applicable, it will be skipped by the post processing render pass
 		* @param p_settings
 		*/
 		virtual bool IsApplicable(const EffectSettings& p_settings) const;
-
+		
 		/**
 		* Draw the effect
 		* @note: make sure the effect is applicable before calling this method

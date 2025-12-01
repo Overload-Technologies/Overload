@@ -83,6 +83,9 @@ OvEditor::Panels::AssetView::AssetView
 			if (auto resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>().GetResource(path); resource)
 				SetMaterial(*resource);
 			break;
+
+		default:
+			break;
 		}
 	};
 }

@@ -104,9 +104,12 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 		return;
 	}
 
+	const auto& currentPass = m_currentPass.value();
+	const auto& passTypeId = typeid(currentPass);
+
 	for (const auto& feature : m_features | std::views::values)
 	{
-		if (feature->IsEnabledFor(typeid(m_currentPass.value())))
+		if (feature->IsEnabledFor(passTypeId))
 		{
 			feature->OnBeforeDraw(p_pso, p_drawable);
 		}
@@ -116,7 +119,7 @@ void OvRendering::Core::CompositeRenderer::DrawEntity(
 	
 	for (const auto& feature : m_features | std::views::values)
 	{
-		if (feature->IsEnabledFor(typeid(m_currentPass.value())))
+		if (feature->IsEnabledFor(passTypeId))
 		{
 			feature->OnAfterDraw(p_drawable);
 		}

@@ -130,6 +130,8 @@ OvMaths::FVector2 OvUI::Panels::APanelTransformable::CalculatePositionAlignmentO
 	case OvUI::Settings::EHorizontalAlignment::RIGHT:
 		result.x -= m_size.x;
 		break;
+	default:
+		break;
 	}
 
 	switch (p_default ? m_defaultVerticalAlignment : m_verticalAlignment)
@@ -139,6 +141,8 @@ OvMaths::FVector2 OvUI::Panels::APanelTransformable::CalculatePositionAlignmentO
 		break;
 	case OvUI::Settings::EVerticalAlignment::BOTTOM:
 		result.y -= m_size.y;
+		break;
+	default:
 		break;
 	}
 

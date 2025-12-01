@@ -119,7 +119,7 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 				{
 					auto camPos = targetPos + offset * dist;
 					auto direction = OvMaths::FVector3::Normalize(targetPos - camPos);
-					m_camera.SetRotation(OvMaths::FQuaternion::LookAt(direction, abs(direction.y) == 1.0f ? OvMaths::FVector3::Right : OvMaths::FVector3::Up));
+					m_camera.SetRotation(OvMaths::FQuaternion::LookAt(direction, std::abs(direction.y) == 1.0f ? OvMaths::FVector3::Right : OvMaths::FVector3::Up));
 					m_cameraDestinations.push({ camPos, m_camera.GetRotation() });
 				};
 

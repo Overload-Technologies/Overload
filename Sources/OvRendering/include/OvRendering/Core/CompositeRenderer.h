@@ -37,7 +37,7 @@ namespace OvRendering::Core
 		* Begin Frame
 		* @param p_frameDescriptor
 		*/
-		virtual void BeginFrame(const Data::FrameDescriptor& p_frameDescriptor);
+		virtual void BeginFrame(const Data::FrameDescriptor& p_frameDescriptor) override;
 
 		/**
 		* Handle the drawing logic of render pass, invoking DrawPass on the renderer and its

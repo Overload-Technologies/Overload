@@ -25,6 +25,11 @@ namespace OvUI::Plugins
 	{
 	public:
 		/**
+		* Virtual destructor
+		*/
+		virtual ~IPlugin() = default;
+
+		/**
 		* Execute the plugin behaviour
 		* @param p_context
 		*/

@@ -237,7 +237,7 @@ bool OvMaths::FQuaternion::IsPure(const FQuaternion & p_target)
 
 bool OvMaths::FQuaternion::IsNormalized(const FQuaternion & p_target)
 {
-	return abs(Length(p_target) - 1.0f) < 0.0001f;
+	return std::abs(Length(p_target) - 1.0f) < 0.0001f;
 }
 
 float OvMaths::FQuaternion::DotProduct(const FQuaternion & p_left, const FQuaternion & p_right)

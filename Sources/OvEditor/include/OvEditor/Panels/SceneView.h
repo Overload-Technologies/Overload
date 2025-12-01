@@ -41,14 +41,14 @@ namespace OvEditor::Panels
 		/**
 		* Returns the scene used by this view
 		*/
-		virtual OvCore::SceneSystem::Scene* GetScene();
+		virtual OvCore::SceneSystem::Scene* GetScene() override;
 
 		/**
 		* Set the gizmo operation
 		* @param p_operation
 		*/
 		void SetGizmoOperation(Core::EGizmoOperation p_operation);
-
+	
 		/**
 		* Returns the current gizmo operation
 		*/

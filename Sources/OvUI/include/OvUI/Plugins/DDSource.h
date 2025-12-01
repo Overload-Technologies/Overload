@@ -58,7 +58,10 @@ namespace OvUI::Plugins
 				m_isDragged = true;
 
 				if (!(src_flags & ImGuiDragDropFlags_SourceNoPreviewTooltip))
-					ImGui::Text(tooltip.c_str());
+				{
+					ImGui::Text("%s", tooltip.c_str());
+				}
+				
 				ImGui::SetDragDropPayload(identifier.c_str(), &data, sizeof(data));
 				ImGui::EndDragDropSource();
 			}

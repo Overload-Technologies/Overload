@@ -10,13 +10,13 @@
 
 #include <stb_image/stb_image.h>
 
-#include <GLFW/glfw3.h>
-
-#include <stdexcept>
-
 #if defined(_WIN32)
 #include <windows.h>
 #endif
+
+#include <GLFW/glfw3.h>
+
+#include <stdexcept>
 
 std::unordered_map<GLFWwindow*, OvWindowing::Window*> OvWindowing::Window::__WINDOWS_MAP;
 

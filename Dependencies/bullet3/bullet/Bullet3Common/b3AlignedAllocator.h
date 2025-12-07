@@ -21,22 +21,24 @@ subject to the following restrictions:
 ///that is better portable and more predictable
 
 #include "b3Scalar.h"
+#include <cstddef>
+#include <source_location>
 //#define B3_DEBUG_MEMORY_ALLOCATIONS 1
 #ifdef B3_DEBUG_MEMORY_ALLOCATIONS
 
 #define b3AlignedAlloc(a, b) \
-	b3AlignedAllocInternal(a, b, __LINE__, __FILE__)
+	b3AlignedAllocInternal(a, b, std::source_location::current())
 
 #define b3AlignedFree(ptr) \
-	b3AlignedFreeInternal(ptr, __LINE__, __FILE__)
+	b3AlignedFreeInternal(ptr, std::source_location::current())
 
 void* b3AlignedAllocInternal(size_t size, int alignment, int line, char* filename);
 
 void b3AlignedFreeInternal(void* ptr, int line, char* filename);
 
 #else
-void* b3AlignedAllocInternal(size_t size, int alignment);
-void b3AlignedFreeInternal(void* ptr);
+void* b3AlignedAllocInternal(size_t size, size_t alignment, const std::source_location& location = std::source_location::current());
+void b3AlignedFreeInternal(void* ptr, const std::source_location& location = std::source_location::current());
 
 #define b3AlignedAlloc(size, alignment) b3AlignedAllocInternal(size, alignment)
 #define b3AlignedFree(ptr) b3AlignedFreeInternal(ptr)

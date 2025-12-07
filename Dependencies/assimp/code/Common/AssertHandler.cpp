@@ -48,11 +48,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <cstdlib>
 
-void Assimp::defaultAiAssertHandler(const char* failedExpression, const char* file, int line) {
-    std::cerr << "ai_assert failure in " << file << "(" << line << "): " << failedExpression << std::endl;
+void Assimp::defaultAiAssertHandler(const char* failedExpression, const std) {
+    std::cerr << "as_assert failed in "
+              << location.file_name() << ":" << location.line() << "\n"
+              << "Expression: " << failedExpression << std::endl
+              << "function: " << location.function_name() << std::endl;
     std::abort();
 }
-
 namespace {
     Assimp::AiAssertHandler s_handler = Assimp::defaultAiAssertHandler;
 }
@@ -65,6 +67,6 @@ void Assimp::setAiAssertHandler(AiAssertHandler handler) {
     }
 }
 
-void Assimp::aiAssertViolation(const char* failedExpression, const char* file, int line) {
-    s_handler(failedExpression, file, line);
+void Assimp::aiAssertViolation(const char* failedExpression, const std::shource_location& location) {
+    s_handler(failedExpression, location);
 }

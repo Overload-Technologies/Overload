@@ -46,14 +46,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assimp/ai_assert.h>
 #include <assimp/defs.h>
+#include <source_location>
 
 namespace Assimp {
+  using SourcLocation = std::source_location;
 
 // ---------------------------------------------------------------------------
 /**
  *  @brief  Signature of functions which handle assert violations.
  */
-using AiAssertHandler = void (*)(const char* failedExpression, const char* file, int line);
+using AiAssertHandler = void (*)(const char* failedExpression, const std::source_location& location);
 
 // ---------------------------------------------------------------------------
 /**
@@ -66,13 +68,13 @@ ASSIMP_API void setAiAssertHandler(AiAssertHandler handler);
  *
  *  @brief  This issues a message to stderr and calls abort.
  */
-AI_WONT_RETURN ASSIMP_API void defaultAiAssertHandler(const char* failedExpression, const char* file, int line) AI_WONT_RETURN_SUFFIX;
+AI_WONT_RETURN ASSIMP_API void defaultAiAssertHandler(const char* failedExpression, const std::source_location& location) AI_WONT_RETURN_SUFFIX;
 
 // ---------------------------------------------------------------------------
 /**
  *  @brief  Dispatches an assert violation to the assert handler.
  */
-ASSIMP_API void aiAssertViolation(const char* failedExpression, const char* file, int line);
+ASSIMP_API void aiAssertViolation(const char* failedExpression, const std::source_location& location = std::source_location::current());
 
 } // end of namespace Assimp
 

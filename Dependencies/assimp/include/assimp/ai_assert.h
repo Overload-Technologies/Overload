@@ -48,6 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_ASSERT_H_INC
 
 #include <assimp/defs.h>
+#include <source_location>
 
 #if defined(ASSIMP_BUILD_DEBUG)
 
@@ -55,16 +56,16 @@ namespace Assimp {
 
 /// @brief Assert violation behavior can be customized: see AssertHandler.h.
 /// @param failedExpression     The expression to validate.
-/// @param file                 The file location
-/// @param line                 The line number
-ASSIMP_API void aiAssertViolation(const char* failedExpression, const char* file, int line);
+/// @param location             The source location
+ASSIMP_API void aiAssertViolation(const char* failedExpression, 
+                                  const std::source_location& location = std::source_location::current());
 
 }
 #endif
 
-// Define assertion resolinig
+// Define assertion resolving
 #if defined(ASSIMP_BUILD_DEBUG)
-#   define ai_assert(expression) (void)((!!(expression)) || (Assimp::aiAssertViolation(#expression, __FILE__, __LINE__), 0))
+#   define ai_assert(expression) (void)((!!(expression)) || (Assimp::aiAssertViolation(#expression), 0))
 #   define ai_assert_entry() ai_assert(false)
 #else
 #   define  ai_assert(expression)

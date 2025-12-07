@@ -825,7 +825,7 @@ typedef uint_least32_t uint_fast32_t;
 
 #define TESTUMAX(bits) glue3(u,bits,) = ~glue3(u,bits,); if (glue3(UINT,bits,_MAX) != glue3(u,bits,)) printf ("Something wrong with UINT%d_MAX\n", bits)
 
-#define REPORTERROR(msg) { err_n++; if (err_first <= 0) err_first = __LINE__; printf msg; }
+#define REPORTERROR(msg) { err_n++; if (err_first <= 0) err_first = std::source_location::current().lin e(); printf msg; }
 
 int main () {
 	int err_n = 0;

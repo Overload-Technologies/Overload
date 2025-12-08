@@ -32,10 +32,9 @@ OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_sty
 {
 	ImGui::CreateContext();
 
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigWindowsMoveFromTitleBarOnly = true; /* Disable moving windows by dragging another thing than the title bar */
-	io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports;
-	io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+	ImGui::GetIO().ConfigWindowsMoveFromTitleBarOnly = true; /* Disable moving windows by dragging another thing than the title bar */
+
+	EnableDPIScaling(true);
 	EnableDocking(false);
 
 	ApplyStyle(p_style);
@@ -142,7 +141,23 @@ void OvUI::Core::UIManager::EnableDocking(bool p_value)
 		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_DockingEnable;
 }
 
-void OvUI::Core::UIManager::ResetLayout(const std::string& p_config) const
+void OvUI::Core::UIManager::EnableDPIScaling(bool p_value)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	const auto dpiScalingFlags = ImGuiConfigFlags_DpiEnableScaleViewports | ImGuiConfigFlags_DpiEnableScaleFonts;
+
+	if (p_value)
+	{
+		io.ConfigFlags |= dpiScalingFlags;
+	}
+	else
+	{
+		io.ConfigFlags &= ~dpiScalingFlags;
+	}
+}
+
+void OvUI::Core::UIManager::ResetLayout(const std::string &p_config) const
 {
     ImGui::LoadIniSettingsFromDisk(p_config.c_str());
 }

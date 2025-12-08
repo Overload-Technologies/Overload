@@ -96,6 +96,12 @@ namespace OvUI::Core
 		*/
 		void EnableDocking(bool p_value);
 
+		/**
+		* Enable DPI scaling
+		* @param p_value
+		*/
+		void EnableDPIScaling(bool p_value);
+
         /**
         * Reset the UI layout to the given configuration file
         * @param p_config

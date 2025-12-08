@@ -193,18 +193,28 @@ extern int madvise(caddr_t, size_t, int);
 #    define _DEBUG
 #  endif
 #  include <assert.h>
+#  include <source_location>
+#  include <cstdlib>
 #define RPMALLOC_TOSTRING_M(x) #x
 #define RPMALLOC_TOSTRING(x) RPMALLOC_TOSTRING_M(x)
 #define rpmalloc_assert(truth, message)                                                                      \
 	do {                                                                                                     \
 		if (!(truth)) {                                                                                      \
 			if (_memory_config.error_callback) {                                                             \
+				const std::source_location loc = std::source_location::current();							 \
 				_memory_config.error_callback(                                                               \
-				    message " (" RPMALLOC_TOSTRING(truth) ") at " __FILE__ ":" RPMALLOC_TOSTRING(__LINE__)); \
+					std::string(message) + " (" + RPMALLOC_TOSTRING(truth) + ") at " + 						 \
+						loc.file_name() + ":" +std::to_string(loc.line()) + " in function '" + 				 \
+						loc.function_name() + "'");															 \
 			} else {                                                                                         \
-				assert((truth) && message);                                                                  \
-			}                                                                                                \
-		}                                                                                                    \
+               const std::source_location loc = std::source_location::current();                             \
+            	std::cerr << "Assertion failed: " << message << " (" << RPMALLOC_TOSTRING(truth) << ")\n"    \
+                          << "  File: " << loc.file_name() << "\n"                                           \
+                          << "  Line: " << loc.line() << ", Column: " << loc.column() << "\n"                \
+                          << "  Function: " << loc.function_name() << std::endl;                             \
+                std::abort();                                                                                \
+            }                                                                               				 \
+			}                                                                                          		 \
 	} while (0)
 #else
 #  define rpmalloc_assert(truth, message) do {} while(0)

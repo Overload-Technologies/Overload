@@ -872,7 +872,9 @@ cl_program b3OpenCLUtils_compileCLProgramFromString(cl_context clContext, cl_dev
 			// there's no information in the reference whether the string is 0 terminated or not
 			build_log[ret_val_size] = '\0';
 
-			b3Error("Error in clBuildProgram, Line %u in file %s, Log: \n%s\n !!!\n\n", __LINE__, __FILE__, build_log);
+			const auto loc = std::source_location::current();
+			b3Error("Error in clBuildProgram, Line %u in file %s, Log: \n%s\n !!!\n\n"
+				, loc.file_name(), loc.line(), build_log);
 			free(build_log);
 			if (pErrNum)
 				*pErrNum = localErrNum;
@@ -944,7 +946,9 @@ cl_kernel b3OpenCLUtils_compileCLKernelFromString(cl_context clContext, cl_devic
 	kernel = clCreateKernel(m_cpProgram, kernelName, &localErrNum);
 	if (localErrNum != CL_SUCCESS)
 	{
-		b3Error("Error in clCreateKernel, Line %u in file %s, cannot find kernel function %s !!!\n\n", __LINE__, __FILE__, kernelName);
+		const auto loc = std::source_location::current();
+		b3Error("Error in clCreateKernel, Line %u in file %s, cannot find kernel function %s !!!\n\n", 
+			loc.file_name(), loc.line(), kernelName);
 		assert(0);
 		if (pErrNum)
 			*pErrNum = localErrNum;

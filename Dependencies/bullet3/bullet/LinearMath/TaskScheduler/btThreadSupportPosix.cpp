@@ -109,12 +109,19 @@ public:
 	virtual void deleteCriticalSection(btCriticalSection* criticalSection) BT_OVERRIDE;
 };
 
-#define checkPThreadFunction(returnValue)                                                                 \
-	if (0 != returnValue)                                                                                 \
-	{                                                                                                     \
-		printf("PThread problem at line %i in file %s: %i %d\n", __LINE__, __FILE__, returnValue, errno); \
-	}
+#include <cstdio>
+#include <source_location>
+#include <cerrno>
 
+#define checkPThreadFunction(returnValue)                         				\
+	do{																			\
+		if (0 != returnValue)                                                   \
+		{                                                   					\
+			const auto _loc = std::source_location::current(); 					\
+			fprintf(stderr, "PThread error at %s:%d: return=%d, errno=%d\n, "	\
+			_loc.file_name(), _loc.line(), returnValue, errno); 				\
+		}																		\
+	}while(0);
 // The number of threads should be equal to the number of available cores
 // Todo: each worker should be linked to a single core, using SetThreadIdealProcessor.
 

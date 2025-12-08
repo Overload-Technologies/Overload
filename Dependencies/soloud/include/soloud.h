@@ -39,11 +39,39 @@ freely, subject to the following restrictions:
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+#include <cstdio>
+#include <cstdlib>
 #include <windows.h> // only needed for OutputDebugStringA, should be solved somehow.
-#define SOLOUD_ASSERT(x) if (!(x)) { char temp[200]; sprintf(temp, "%s(%d): assert(%s) failed.\n", __FILE__, __LINE__, #x); OutputDebugStringA(temp); __debugbreak(); }
+#define SOLOUD_ASSERT(x) 																\
+	do{																					\
+		if (!(x)) 																		\
+		{																				\
+			const std::source_location loc = std::source_location::current(); 			\
+			char temp[300];																\
+			std::snprintf(temp, sizeof(temp), "%s(%d, %d): assert(%s) failed in %s\n",	\
+			loc.file_name(), loc.line(), loc.column(), #x, loc.function_name());		\
+			OutputDebugString(temp);													\
+			__debugbreak();																\
+			std::abort();																\
+		}																				\
+	} while(false);
 #else
-#include <assert.h> // assert
-#define SOLOUD_ASSERT(x) assert(x)
+	#include <cassert>
+	#include <source_location>
+	#include <iostream>
+
+	#define SOLOUD_ASSERT(x) 																				\
+	do																										\
+	{																										\
+		if(!(x))																							\
+		{																									\
+			const std::source_location loc = std::source_location::current();								\
+			std::cerr << "Assertion failed: " << #x << '\n' << "  File: "									\
+			<< loc.file_name() << '\n' << "  Line: " << loc.line() << '\n'									\
+			<< "  Column: " << loc.column() << '\n' << "  Function: " << loc.function_name() << std::endl;	\
+			std::abort();																					\
+		}																									\
+	}while(false);
 #endif
 #endif
 

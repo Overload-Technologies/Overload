@@ -102,7 +102,13 @@ inline int b3GetVersion()
 #ifdef B3_DEBUG
 #ifdef _MSC_VER
 #include <stdio.h>
-#define b3Assert(x) { if(!(x)){b3Error("Assert " __FILE__ ":%u (%s)\n", __LINE__, #x);__debugbreak();	}}
+#define b3Assert(x) { \
+    if (!(x)) { \
+        const auto _b3_assert_loc = std::source_location::current(); \
+        b3Error("Assert failed: %s", #x); \
+        __debugbreak(); \
+    } \
+}
 #else  //_MSC_VER
 #include <assert.h>
 #define b3Assert assert
@@ -130,26 +136,39 @@ inline int b3GetVersion()
 #ifdef __SPU__
 #include <spu_printf.h>
 #define printf spu_printf
-#define b3Assert(x)               \
-	{                             \
-		if (!(x))                 \
-		{                         \
-			b3Error(              \
-				"Assert "__FILE__ \
-				":%u (" #x ")\n", \
-				__LINE__);        \
-			spu_hcmpeq(0, 0);     \
-		}                         \
-	}
+#define b3Assert(x){              
+	if (!(x)){                         
+		const auto _b3_loc = std::source_location::current(); \
+		b3Error("Assert %s failed at %s:%u\n",				  \
+		#x, _b3_loc.file_name(), _b3_loc.line());             \
+		spu_hcmeq(0, 0);									  \
+	}                         
+}
 #else
-#define b3Assert assert
+#include <cassert>
+#define b3Assert(x) assert(x)
 #endif
 
 #else
-#define b3Assert(x)
+#define b3Assert(x) ((void)0)
 #endif
 //b3FullAssert is optional, slows down a lot
-#define b3FullAssert(x)
+#define b3FullAssert(x) {
+    if(!(x)) { 															    \
+		const auto _b3_loc = std::source_location::current(); 			    \
+    	b3Error("FullAssert %s failed at %s:%d in %s()\n",       		    \
+    	#x, _b3_loc.file_name(), _b3_loc.line(), _b3_loc.function_name());  \
+		#ifdef __SPU__													    \
+        spu_hcmpeq(0, 0); 												    \
+        #elif _WIN32 													    \ 
+        __debugbreak(); 													\
+        #elif defined(__GNUC__) || defined(__clang__) 						\
+        __builtin_trap(); 													\
+        #else 																\
+        std::abort(); 														\
+        #endif 																\
+	} 																		\
+}
 
 #define b3Likely(_c) _c
 #define b3Unlikely(_c) _c
@@ -219,23 +238,35 @@ inline int b3GetVersion()
 #if defined(DEBUG) || defined(_DEBUG)
 #if defined(__i386__) || defined(__x86_64__)
 #include <stdio.h>
-#define b3Assert(x)                                                             \
-	{                                                                           \
-		if (!(x))                                                               \
-		{                                                                       \
-			b3Error("Assert %s in line %d, file %s\n", #x, __LINE__, __FILE__); \
-			asm volatile("int3");                                               \
-		}                                                                       \
-	}
+#include <source_location>
+#define b3Assert(x)																		\                                           
+	{                                													\                                           
+		if (!(x))                                                               		\
+		{          																		\
+			cont auto _loc = std::source_location::current(); 							\
+			b3Error("Assert %s failed at %s:%d\n", #x, _loc.file_name(), _loc.line()); 	\
+			__asm__ __volatile__("int3");     											\                                                        
+		}                                           									\	                            
+	}																					\
 #else  //defined (__i386__) || defined (__x86_64__)
+#include <cassert>
 #define b3Assert assert
 #endif  //defined (__i386__) || defined (__x86_64__)
 #else   //defined(DEBUG) || defined (_DEBUG)
-#define b3Assert(x)
+#define b3Assert(x) ((void)0)
 #endif  //defined(DEBUG) || defined (_DEBUG)
 
 //b3FullAssert is optional, slows down a lot
-#define b3FullAssert(x)
+#define b3FullAssert(x) 																\
+	{																					\																					\
+		if (!(x))                                                               		\
+		{          																		\
+			cont auto _loc = std::source_location::current(); 							\
+			b3Error("FullAssert %s failed at %s:%d in %s()\n",							\
+			#x, _loc.file_name(), _loc.line(), _loc.funtion_name()); 					\
+			__asm__ __volatile__("int3");     											\                                                        
+		} 																				\
+	}																					\
 #define b3Likely(_c) _c
 #define b3Unlikely(_c) _c
 

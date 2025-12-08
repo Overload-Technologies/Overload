@@ -141,22 +141,41 @@ inline int btIsDoublePrecision()
 
 	#endif //__MINGW32__
 
+	#include <source_location>
+	#include <cstdio>
+
 	#ifdef BT_DEBUG
 		#ifdef _MSC_VER
-			#include <stdio.h>
-			#define btAssert(x) { if(!(x)){printf("Assert " __FILE__ ":%u (%s)\n", __LINE__, #x);__debugbreak();	}}
+			#define btAssert(x) 													\
+			{																		\
+				if(!(x))															\
+				{																	\
+					const auto _loc = std::source_location::current();				\
+					fprintf(stderr, "Assert %s in line %u, file %s\n", 				\
+						#x, _loc.line(), _loc.file_name());	\
+					__debugbreak();													\
+				}																	\
+			}
 		#else//_MSC_VER
-			#include <assert.h>
-			#define btAssert assert
+			#define btAssert(x)											\
+			{ 															\
+				if(!(x))												\
+				{														\
+					const auto _loc = std::source_location::current();	\
+					fprintf(stderr, "Assert %s in line %u, file %s\n", 	\
+						#x, _loc.line(), _loc.file_name());				\
+					__builtin_trap();									\
+				}														\
+			}
 		#endif//_MSC_VER
 	#else
-		#define btAssert(x)
+		#define btAssert(x) (void(0))
 	#endif
 		//btFullAssert is optional, slows down a lot
-		#define btFullAssert(x)
-
-		#define btLikely(_c)  _c
-		#define btUnlikely(_c) _c
+	
+	#define btFullAssert(x)													
+	#define btLikely(_c)  __builtin_expect((_c), 1)
+	#define btUnlikely(_c) __builtin_expect((_c), 0)
 
 #else//_WIN32
 	
@@ -172,13 +191,24 @@ inline int btIsDoublePrecision()
 			#ifdef __SPU__
 				#include <spu_printf.h>
 				#define printf spu_printf
-				#define btAssert(x) {if(!(x)){printf("Assert " __FILE__ ":%u ("#x")\n", __LINE__);spu_hcmpeq(0,0);}}
+				#define btAssert(x) 												\
+				{																	\
+					do{																\
+						if(!(x))													\
+						{															\
+							const auto _loc = std::source_location::current();		\
+							fprintf(stderr, "Assert %s in line %d, file %s\n",#x,	\
+								_loc.line(), _loc.file_name());						\
+							spu_hcmpeq(0, 0);										\
+						}															\
+					}while(0);														\
+				}
 			#else
 				#define btAssert assert
 			#endif
 	
 		#else//BT_DEBUG
-				#define btAssert(x)
+				#define btAssert(x) (void(0))
 		#endif//BT_DEBUG
 		//btFullAssert is optional, slows down a lot
 		#define btFullAssert(x)
@@ -255,13 +285,15 @@ inline int btIsDoublePrecision()
 				#if defined(DEBUG) || defined (_DEBUG)
 				 #if defined (__i386__) || defined (__x86_64__)
 				#include <stdio.h>
-				 #define btAssert(x)\
+				#include <source_location>
+				#define btAssert(x)\
 				{\
-				if(!(x))\
-				{\
-					printf("Assert %s in line %d, file %s\n",#x, __LINE__, __FILE__);\
-					asm volatile ("int3");\
-				}\
+					if(!(x))\
+					{\
+						const auto _loc = std::source_location::current();\
+						printf("Assert %s in line %d, file %s\n",#x, _loc.line(), _loc.file_name());\
+						asm volatile ("int3");\
+					}\
 				}
 				#else//defined (__i386__) || defined (__x86_64__)
 					#define btAssert assert

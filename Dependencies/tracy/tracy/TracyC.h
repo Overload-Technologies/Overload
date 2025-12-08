@@ -23,16 +23,18 @@ TRACY_API void ___tracy_set_thread_name( const char* name );
 
 #define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
 
+#include <source_location>
+
 #ifndef TracyFunction
-#  define TracyFunction __FUNCTION__
+#  define TracyFunction std::source_location::current().function_name()
 #endif
 
 #ifndef TracyFile
-#  define TracyFile __FILE__
+#  define TracyFile std::source_location::current().file_name()
 #endif
 
 #ifndef TracyLine
-#  define TracyLine __LINE__
+#  define TracyLine std::source_location::current().line()
 #endif
 
 #ifndef TRACY_ENABLE

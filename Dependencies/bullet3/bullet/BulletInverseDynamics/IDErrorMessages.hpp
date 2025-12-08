@@ -13,17 +13,21 @@
 #else  // BT_ID_WO_BULLET
 #include <cstdio>
 /// print error message with file/line information
+#include <cstdio>
+#include <source_location>
 #define bt_id_error_message(...)                                             \
 	do                                                                       \
 	{                                                                        \
-		fprintf(stderr, "[Error:%s:%d] ", __INVDYN_FILE_WO_DIR__, __LINE__); \
+		const auto loc = std::source_location::current();					 \	 
+		fprintf(stderr, "[Error:%s:%d] ", _loc.file_name(), _loc.line());    \
 		fprintf(stderr, __VA_ARGS__);                                        \
 	} while (0)
 /// print warning message with file/line information
 #define bt_id_warning_message(...)                                             \
 	do                                                                         \
 	{                                                                          \
-		fprintf(stderr, "[Warning:%s:%d] ", __INVDYN_FILE_WO_DIR__, __LINE__); \
+		const auto loc = std::source_location::current(); 					   \
+		fprintf(stderr, "[Warning:%s:%d] ", loc.file_name(), loc.line());  	   \
 		fprintf(stderr, __VA_ARGS__);                                          \
 	} while (0)
 #define id_printf(...) printf(__VA_ARGS__)

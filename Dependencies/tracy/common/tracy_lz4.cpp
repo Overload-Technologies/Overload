@@ -275,14 +275,32 @@ static const int LZ4_minLength = (MFLIMIT+1);
 #define LZ4_STATIC_ASSERT(c)   { enum { LZ4_static_assert = 1/(int)(!!(c)) }; }   /* use after variable declarations */
 
 #if defined(LZ4_DEBUG) && (LZ4_DEBUG>=2)
-#  include <stdio.h>
-   static int g_debuglog_enable = 1;
-#  define DEBUGLOG(l, ...) {                          \
-        if ((g_debuglog_enable) && (l<=LZ4_DEBUG)) {  \
-            fprintf(stderr, __FILE__ ": ");           \
-            fprintf(stderr, __VA_ARGS__);             \
-            fprintf(stderr, " \n");                   \
-    }   }
+#  include <cstdio>
+#  include <source_location>
+#  include <string_view>
+  
+  static int g_debuglog_enable = 1;
+  
+  consteval std::string_view get_filename_wo_dir(std::source_location loc = std::source_location::current()) {
+    constexpr std::string_view path = loc.file_name();
+    constexpr size_t pos = path.find_last_of("/\\");
+    if constexpr (pos == std::string_view::npos) {
+      return path;
+    } else {
+      return path.substr(pos + 1);
+    }
+  }
+  
+#  define DEBUGLOG(l, ...) {                                                    \
+      if ((g_debuglog_enable) && ((l) <= LZ4_DEBUG)) {                          \
+        constexpr auto file = get_filename_wo_dir();                            \
+        std::fprintf(stderr, "%.*s:%u: ",                                       \
+                     static_cast<int>(file.size()), file.data(),                \
+                     std::source_location::current().line());                   \
+        std::fprintf(stderr, __VA_ARGS__);                                      \
+        std::fprintf(stderr, "\n");                                             \
+      }                                                                         \
+    }
 #else
 #  define DEBUGLOG(l, ...) {}    /* disabled */
 #endif

@@ -29,15 +29,17 @@ subject to the following restrictions:
 
 int btDumpMemoryLeaks();
 
+#include <source_location>
+
 #define btAlignedAlloc(a, b) \
-	btAlignedAllocInternal(a, b, __LINE__, __FILE__)
+	btAlignedAllocInternal(a, b, std::source_location::current())
 
 #define btAlignedFree(ptr) \
-	btAlignedFreeInternal(ptr, __LINE__, __FILE__)
+	btAlignedFreeInternal(ptr, std::source_location::current())
 
-void* btAlignedAllocInternal(size_t size, int alignment, int line, const char* filename);
+void* btAlignedAllocInternal(size_t size, int alignment, const std::source_location& location = std::source_location::current());
 
-void btAlignedFreeInternal(void* ptr, int line, const char* filename);
+void btAlignedFreeInternal(void* ptr, const std::source_location& location = std::source_location::current());
 
 #else
 void* btAlignedAllocInternal(size_t size, int alignment);

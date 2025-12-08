@@ -1553,7 +1553,12 @@ float nanf(const char *);
  */
 #define __CL_STRINGIFY(_x) #_x
 #define _CL_STRINGIFY(_x) __CL_STRINGIFY(_x)
-#define CL_PROGRAM_STRING_DEBUG_INFO "#line " _CL_STRINGIFY(__LINE__) " \"" __FILE__ "\" \n\n"
+#define CL_PROGRAM_STRING_DEBUG_INFO 							\
+	(std::string("#line ") + 									\
+	std::to_string(std::source_location::current().line()) + 	\
+	" \"" + 													\
+	std::source_location::current().file_name() + 				\
+	"\" \n\n").c_str()
 
 	//  CL.h contents
 	/******************************************************************************/

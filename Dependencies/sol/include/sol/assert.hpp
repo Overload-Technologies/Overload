@@ -50,22 +50,30 @@ struct pre_main {
 		#include <exception>
 		#include <iostream>
 		#include <cstdlib>
+		#include <source_location>
+		#include <string_view>
 
-			#define SOL_ASSERT(...)                                                                                               \
-				do {                                                                                                               \
-					if (!(__VA_ARGS__)) {                                                                                           \
-						std::cerr << "Assertion `" #__VA_ARGS__ "` failed in " << __FILE__ << " line " << __LINE__ << std::endl; \
-						std::terminate();                                                                                        \
-					}                                                                                                             \
+		#ifdef SOL_ASSERT_CHECK
+			#define SOL_ASSERT(...) 	                                                    \
+				do {                                                                        \
+					if (!(__VA_ARGS__))                                                     \
+					{																		\
+						const std::source_location loc = std::source_location::current();	\
+						std::cerr << "Assertion `" #__VA_ARGS__ "` failed in "				\
+						<< loc.file_name() << "(" << loc.line() << ":" 						\
+						<< loc.column() << ") `" << loc.function_name() << "`\n"; 			\
+						std::terminate(); 													\
+					}                                                                       \
 				} while (false)
 	#else
-		#define SOL_ASSERT(...)           \
+		#define SOL_ASSERT(...)            \
 			do {                           \
-				if (false) {              \
-					(void)(__VA_ARGS__); \
-				}                         \
-			} while (false)
-	#endif
+				if (false) {               \
+					(void)(__VA_ARGS__);   \
+				}                          \
+			} while (false)				   
+	#endif										   
+#endif
 #endif
 
 #if SOL_IS_ON(SOL_USER_ASSERT_MSG)
@@ -75,11 +83,16 @@ struct pre_main {
 		#include <exception>
 		#include <iostream>
 		#include <cstdlib>
+		#include <source_location>
+		#include <string_view>
 
 		#define SOL_ASSERT_MSG(message, ...)                                                                                                         \
 			do {                                                                                                                                  \
 				if (!(__VA_ARGS__)) {                                                                                                              \
-					std::cerr << "Assertion `" #__VA_ARGS__ "` failed in " << __FILE__ << " line " << __LINE__ << ": " << message << std::endl; \
+					const std::source_location loc = std::source_location::current();															\
+					std::cerr << "Assertion `" #__VA_ARGS__ "` failed in " << loc.filename() \
+						<< "(" << loc.line() << ":" <<loc.column() << ") `" << loc.function_name()\
+							<< "`: " << message << '\n'; \
 					std::terminate();                                                                                                           \
 				}                                                                                                                                \
 			} while (false)

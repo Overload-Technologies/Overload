@@ -88,7 +88,19 @@ distribution.
 #       define TIXMLASSERT( x )           if ( !((void)0,(x))) { __debugbreak(); }
 #   elif defined (ANDROID_NDK)
 #       include <android/log.h>
-#       define TIXMLASSERT( x )           if ( !(x)) { __android_log_assert( "assert", "grinliz", "ASSERT in '%s' at %d.", __FILE__, __LINE__ ); }
+#       include <source_location>
+#       include <cstdlib>
+#       define TIXMLASSERT(x)                                                                                       \
+            do                                                                                                      \
+            {                                                                                                       \
+                if (!(x))                                                                                           \
+                {                                                                                                   \
+                    const std::source_location loc = std::source_location::current();                               \
+                    __android_log_assert("assert", "grinliz", "ASSERT '%s' failed in %s at %s:%d (function: %s)",   \
+                        #x, loc.function_name(), loc.file_name(), loc.line(), loc.column());                        \
+                    std::abort();                                                                                   \
+                }                                                                                                   \
+            }while(false);
 #   else
 #       include <assert.h>
 #       define TIXMLASSERT                assert

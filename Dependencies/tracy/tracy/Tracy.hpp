@@ -4,17 +4,18 @@
 #include "../common/TracyColor.hpp"
 #include "../common/TracySystem.hpp"
 
-#ifndef TracyFunction
-#  define TracyFunction __FUNCTION__
-#endif
-
-#ifndef TracyFile
-#  define TracyFile __FILE__
-#endif
-
-#ifndef TracyLine
-#  define TracyLine __LINE__
-#endif
+#include <source_location>
+#include <string_view>
+namespace Tracy {
+    void LogMessage(
+        std::string_view message, 
+        const std::source_location& location = std::source_location::current()
+    );
+    void EnterContext(
+        const char* name, 
+        const std::source_location& location = std::source_location::current()
+    );
+}
 
 #ifndef TRACY_ENABLE
 

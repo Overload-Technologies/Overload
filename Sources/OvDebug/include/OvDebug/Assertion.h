@@ -6,30 +6,23 @@
 
 #pragma once
 
+#include <source_location>
 #include <string>
 
-
-#define OVASSERT(condition, message) OvDebug::Assertion::Assert(condition, message)
+#ifdef NDEBUG
+#define OVASSERT(condition, message) static_cast<void>(0)
+#else
+#define OVASSERT(condition, message) \
+	static_cast<bool>(condition) ? \
+	static_cast<void>(0) : \
+	OvDebug::_Assert(#condition, message, std::source_location::current());
+#endif
 
 namespace OvDebug
 {
-	/**
-	* Wrapper for C++ assert
-	*/
-	class Assertion
-	{
-	public:
-
-		/**
-		* Disabled constructor
-		*/
-		Assertion() = delete;
-
-		/**
-		* C++ assertion wrapped call
-		* @param p_condition
-		* @param p_message
-		*/
-		static void Assert(bool p_condition, const std::string& p_message = "");
-	};
+	void _Assert(
+		const char* p_expression,
+		const std::string_view p_message,
+		const std::source_location& p_location
+	);
 }

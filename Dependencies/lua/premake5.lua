@@ -8,7 +8,7 @@ project "lua"
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
 
 	filter { "configurations:Debug" }
-		defines { "DEBUG" }
+		defines { "DEBUG", "_DEBUG" }
 		optimize "On"
 		symbols "Off"
 		runtime "Debug" -- Ensures /MDd is used

@@ -17,7 +17,7 @@ project "glad"
 	}
 
 	filter { "configurations:Debug" }
-		defines { "DEBUG" }
+		defines { "DEBUG", "_DEBUG" }
 		optimize "On"
 
 	filter { "configurations:Release" }

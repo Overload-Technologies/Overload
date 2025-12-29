@@ -60,7 +60,7 @@ project "OvGame"
     }
 
 	filter { "configurations:Debug" }
-		defines { "DEBUG" }
+		defines { "DEBUG", "_DEBUG" }
 		symbols "On"
 		kind "ConsoleApp"
 

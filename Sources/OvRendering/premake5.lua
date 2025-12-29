@@ -31,7 +31,7 @@ project "OvRendering"
 	}
 
 	filter { "configurations:Debug" }
-		defines { "DEBUG" }
+		defines { "DEBUG", "_DEBUG" }
 		symbols "On"
 
 	filter { "configurations:Release" }

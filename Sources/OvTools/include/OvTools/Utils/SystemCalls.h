@@ -33,6 +33,13 @@ namespace OvTools::Utils
 		static void OpenFile(const std::string& p_file, const std::string & p_workingDir = "");
 
 		/**
+		* Run a program
+		* @param p_file
+		* @param p_workingDir
+		*/
+		static void RunProgram(const std::string& p_file, const std::string& p_workingDir = "");
+
+		/**
 		* Open the given file for edition with the default application
 		* @param p_file
 		*/

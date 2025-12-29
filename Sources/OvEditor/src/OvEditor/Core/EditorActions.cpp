@@ -216,7 +216,14 @@ void OvEditor::Core::EditorActions::Build(bool p_autoRun, bool p_tempFolder)
 
 void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_configuration, const std::filesystem::path& p_buildPath, bool p_autoRun)
 {
-	std::string executableName = m_context.projectSettings.Get<std::string>("executable_name") + ".exe";
+	const std::string extension = 
+#if defined(_WIN32)
+		".exe";
+#else
+		"";
+#endif
+
+	const std::string executableName = m_context.projectSettings.Get<std::string>("executable_name") + extension;
 
 	bool failed = false;
 
@@ -251,7 +258,8 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 						err
 					);
 
-					const auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
+					auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
+					sceneFileName = OvTools::Utils::PathParser::MakeNonWindowsStyle(sceneFileName);
 
 					if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
 					{
@@ -330,8 +338,10 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 					if (!err)
 					{
 						OVLOG_INFO("Builder data (Dlls and executable) copied");
+							
+						const std::string initialExecutableName = "OvGame" + extension;
 
-						std::filesystem::rename(p_buildPath / "OvGame.exe", p_buildPath / executableName, err);
+						std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
 
 						if (!err)
 						{
@@ -344,7 +354,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 
 								if (std::filesystem::exists(exePath))
 								{
-									OvTools::Utils::SystemCalls::OpenFile(exePath.string(), p_buildPath.string());
+									OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
 								}
 								else
 								{

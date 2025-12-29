@@ -8,6 +8,7 @@
 
 #include <OvDebug/Logger.h>
 #include <OvGame/Core/Game.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvUI/Widgets/Texts/Text.h>
 
 #ifdef _DEBUG
@@ -35,7 +36,9 @@ OvGame::Core::Game::Game(Context & p_context) :
 	>();
 	#endif
 
-	m_context.sceneManager.LoadScene(m_context.projectSettings.Get<std::string>("start_scene"));
+	std::string startupScenePath = m_context.projectSettings.Get<std::string>("start_scene");
+	startupScenePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(startupScenePath);
+	m_context.sceneManager.LoadScene(startupScenePath);
 	m_context.sceneManager.GetCurrentScene()->Play();
 }
 

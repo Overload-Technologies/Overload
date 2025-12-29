@@ -50,6 +50,7 @@ project "OvEditor"
 		"OvAudio",
 		"OvCore",
 		"OvDebug",
+		"OvGame", -- Necessary to be built before the editor to allow building
 		"OvMaths",
 		"OvPhysics",
 		"OvRendering",

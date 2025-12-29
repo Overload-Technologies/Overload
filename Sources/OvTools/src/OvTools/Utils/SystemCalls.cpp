@@ -46,6 +46,20 @@ void OvTools::Utils::SystemCalls::OpenFile(const std::string & p_file, const std
 #endif
 }
 
+void OvTools::Utils::SystemCalls::RunProgram(const std::string& p_file, const std::string& p_workingDir)
+{
+#ifdef _WIN32
+	OpenFile(p_file, p_workingDir);
+#else
+	std::string command = "\"" + p_file + "\" &";
+	if (!p_workingDir.empty())
+	{
+		command = "cd \"" + p_workingDir + "\" && " + command;
+	}
+	std::system(command.c_str());
+#endif
+}
+
 void OvTools::Utils::SystemCalls::EditFile(const std::string & p_file)
 {
 #ifdef _WIN32

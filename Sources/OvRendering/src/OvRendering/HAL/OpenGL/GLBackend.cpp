@@ -87,18 +87,21 @@ namespace
 		return static_cast<bool>(result);
 	}
 
-	int GetInt(uint32_t p_parameter)
+	int GetInt(uint32_t p_parameter) 
 	{
-		GLint result;
-		glGetIntegerv(p_parameter, &result);
-		return static_cast<int>(result);
+		GLint result[4] = {}; // HACK! The crash occurs because 
+		                      // glGetIntegerv receives a variable
+                                      // integer value ​​depending on the enum;
+                                      // this is not a definitive solution!
+		glGetIntegerv(p_parameter, result);
+		return static_cast<int>(result[0]);
 	}
 
 	int GetInt(uint32_t p_parameter, uint32_t p_index)
 	{
-		GLint result;
-		glGetIntegeri_v(p_parameter, p_index, &result);
-		return static_cast<int>(result);
+		GLint result[4]; // The highest value that the function returns. 
+		glGetIntegeri_v(p_parameter, p_index, result);
+		return static_cast<int>(result[0]);
 	}
 
 	float GetFloat(uint32_t p_parameter)

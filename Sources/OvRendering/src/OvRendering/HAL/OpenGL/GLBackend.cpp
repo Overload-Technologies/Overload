@@ -91,7 +91,7 @@ namespace
 	{
 		GLint result[4];
 		glGetIntegerv(p_parameter, result);
-		return static_cast<int>(result[0);
+		return static_cast<int>(result[0]);
 	}
 
 	int GetInt(uint32_t p_parameter, uint32_t p_index)

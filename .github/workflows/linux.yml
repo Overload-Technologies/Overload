@@ -3,7 +3,6 @@ name: Linux
 on:
   workflow_dispatch:
   pull_request:
-    types: [ready_for_review, synchronize]
   push:
     branches:
       - main
@@ -17,7 +16,7 @@ jobs:
     name: Clang ${{ matrix.configuration }} x64
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
-    
+
     strategy:
       matrix:
         configuration: [Debug, Release]

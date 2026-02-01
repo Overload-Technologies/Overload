@@ -20,12 +20,11 @@
 
 #ifdef _WIN32
 #undef APIENTRY
+FORCE_DEDICATED_GPU
 #include "Windows.h"
 #else
 #include <cstdlib>
 #endif
-
-FORCE_DEDICATED_GPU
 
 namespace
 {
@@ -80,7 +79,10 @@ namespace
 int main(int argc, char** argv)
 {
 	// UpdateWorkingDirectory(argv[0]);
-
+	#ifdef __linux__
+	FORCE_DEDICATED_GPU
+	#endif
+	
 	OvEditor::Settings::EditorSettings::Load();
 
 	std::optional<std::filesystem::path> projectPath;

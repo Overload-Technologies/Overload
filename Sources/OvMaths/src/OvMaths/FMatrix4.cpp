@@ -446,9 +446,15 @@ OvMaths::FMatrix4 OvMaths::FMatrix4::RotateYXZ(const FMatrix4& p_matrix, float p
 
 OvMaths::FMatrix4 OvMaths::FMatrix4::Scaling(const FVector3& p_scale)
 {
-	return FMatrix4(p_scale.x, 0, 0, 0,
-					0, p_scale.y, 0, 0,
-					0, 0, p_scale.z, 0,
+	// NOTE: 0-scaled axis produce degenerate matrices, so we want to avoid that!
+	FVector3 safeScale = p_scale;
+	if (safeScale.x == 0.0f) safeScale.x = kEpsilon;
+	if (safeScale.y == 0.0f) safeScale.y = kEpsilon;
+	if (safeScale.z == 0.0f) safeScale.z = kEpsilon;
+
+	return FMatrix4(safeScale.x, 0, 0, 0,
+					0, safeScale.y, 0, 0,
+					0, 0, safeScale.z, 0,
 					0, 0, 0, 1);
 }
 

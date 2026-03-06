@@ -2,15 +2,45 @@ project "glfw"
 	kind "StaticLib"
 	language "C"
 	cdialect "C17"
-	files { "**.h", "**.c", "**.m", "**.lua" }
-	includedirs { "include" }
 	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
-	defines { "_GLFW_WIN32" }
+	warnings "Off"
+
+	files {
+		"**.h",
+		"**.c",
+		"**.m",
+		"**.lua"
+	}
+
+	includedirs {
+		"include"
+	}
+
+	filter { "system:windows" }
+		defines { "_GLFW_WIN32" }
+		removefiles {
+			"src/cocoa_*",
+			"src/posix_time.h",
+			"src/x11_*",
+			"src/glx_*",
+			"src/nsgl_*"
+		}
+	filter {}
+
+	filter { "system:linux" }
+		defines { "_GLFW_X11", "_GNU_SOURCE" }
+		removefiles {
+			"src/win32_*",
+			"src/cocoa_*",
+			"src/posix_time.h",
+			"src/wgl_*",
+				"src/nsgl_*"
+		}
+	filter {}
 
 	filter { "configurations:Debug" }
-		defines { "DEBUG" }
+		defines { "DEBUG", "_DEBUG" }
 		symbols "On"
 
 	filter { "configurations:Release" }

@@ -1,0 +1,19 @@
+#shader vertex
+#version 450 core
+
+layout (location = 0) in vec3 geo_Pos;
+
+#include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+
+void main()
+{
+    gl_Position = ubo_Projection * ubo_View * ubo_Model * vec4(geo_Pos, 1.0);
+}
+
+#shader fragment
+#version 450 core
+
+void main()
+{
+    gl_FragDepth = gl_FragCoord.z;
+}

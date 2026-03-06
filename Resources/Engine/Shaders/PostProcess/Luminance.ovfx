@@ -21,7 +21,7 @@ out vec4 FRAGMENT_COLOR;
 uniform sampler2D _InputTexture;
 uniform float _CenterWeightBias;
 
-const float EPSILON = 0.0001f;
+const float EPSILON = 0.0001;
 
 float luminance(vec3 v)
 {

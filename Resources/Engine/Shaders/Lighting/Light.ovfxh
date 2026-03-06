@@ -1,0 +1,195 @@
+#include ":Shaders/Common/Physics.ovfxh"
+#include ":Shaders/Lighting/Shadow.ovfxh"
+
+struct Light
+{
+    int type;
+    float intensity;
+    vec3 color;
+    mat4 data;
+};
+
+struct PointLight
+{
+    float intensity;
+    vec3 color;
+    vec3 position;
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct DirectionalLight
+{
+    float intensity;
+    vec3 color;
+    vec3 direction;
+    bool hasShadow;
+};
+
+struct SpotLight
+{
+    float intensity;
+    vec3 color;
+    vec3 position;
+    vec3 direction;
+    float innerCutoff;
+    float outerCutoff;
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct AmbientBoxLight
+{
+    float intensity;
+    vec3 color;
+    vec3 position;
+    vec3 size;
+};
+
+struct AmbientSphereLight
+{
+    float intensity;
+    vec3 color;
+    vec3 position;
+    float radius;
+};
+
+Light ExtractLight(mat4 light)
+{
+    Light lightInfo;
+    lightInfo.type = int(light[3][0]);
+    lightInfo.intensity = light[3][3];
+    lightInfo.color = UnPack(light[2][0]);
+    lightInfo.data = light;
+    return lightInfo;
+}
+
+PointLight ExtractPointLight(Light light)
+{
+    PointLight pointLight;
+    pointLight.intensity = light.intensity;
+    pointLight.color = light.color;
+    pointLight.position = light.data[0].rgb;
+    pointLight.constant = light.data[0][3];
+    pointLight.linear = light.data[1][3];
+    pointLight.quadratic = light.data[2][3];
+    return pointLight;
+}
+
+DirectionalLight ExtractDirectionalLight(Light light)
+{
+    DirectionalLight dirLight;
+    dirLight.intensity = light.intensity;
+    dirLight.color = light.color;
+    dirLight.direction = light.data[1].rgb;
+    dirLight.hasShadow = light.data[2][1] > 0.0;
+    return dirLight;
+}
+
+SpotLight ExtractSpotLight(Light light)
+{
+    SpotLight spotLight;
+    spotLight.intensity = light.intensity;
+    spotLight.color = light.color;
+    spotLight.position = light.data[0].rgb;
+    spotLight.direction = light.data[1].rgb;
+    spotLight.innerCutoff = light.data[3][1];
+    spotLight.outerCutoff = light.data[3][1] + light.data[3][2];
+    spotLight.constant = light.data[0][3];
+    spotLight.linear = light.data[1][3];
+    spotLight.quadratic = light.data[2][3];
+    return spotLight;
+}
+
+AmbientBoxLight ExtractAmbientBoxLight(Light light)
+{
+    AmbientBoxLight boxLight;
+    boxLight.intensity = light.intensity;
+    boxLight.color = light.color;
+    boxLight.position = light.data[0].rgb;
+    boxLight.size = vec3(light.data[0][3], light.data[1][3], light.data[2][3]);
+    return boxLight;
+}
+
+AmbientSphereLight ExtractAmbientSphereLight(Light light)
+{
+    AmbientSphereLight sphereLight;
+    sphereLight.position = light.data[0].rgb;
+    sphereLight.color = light.color;
+    sphereLight.intensity = light.intensity;
+    sphereLight.radius = light.data[0][3];
+    return sphereLight;
+}
+
+struct LightContribution
+{
+    vec3 radiance;
+    vec3 L;
+};
+
+float CalculateAttenuation(vec3 lightPos, vec3 fragPos, float constant, float linear, float quadratic)
+{
+    const float distance = length(lightPos - fragPos);
+    const float attenuation = constant + linear * distance + quadratic * (distance * distance);
+    return 1.0 / attenuation;
+}
+
+LightContribution CalculatePointLightContribution(PointLight light, vec3 fragPos)
+{
+    const vec3 L = normalize(light.position - fragPos);
+    const float attenuation = CalculateAttenuation(light.position, fragPos, light.constant, light.linear, light.quadratic);
+    const vec3 radiance = light.color * light.intensity * attenuation;
+    
+    return LightContribution(radiance, L);
+}
+
+LightContribution CalculateDirectionalLightContribution(DirectionalLight light, vec3 fragPos, vec3 N, sampler2D shadowMap, mat4 lightSpaceMatrix)
+{
+    const vec3 L = -light.direction;
+    
+    float lightCoeff = light.intensity;
+    
+    // Apply shadow if enabled
+    if (light.hasShadow)
+    {
+        vec4 fragPosLightSpace = lightSpaceMatrix * vec4(fragPos, 1.0);
+        float shadow = CalculateShadow(fragPosLightSpace, shadowMap, N, light.direction);
+        lightCoeff *= (1.0 - shadow);
+    }
+    
+    const vec3 radiance = light.color * lightCoeff;
+    
+    return LightContribution(radiance, L);
+}
+
+LightContribution CalculateSpotLightContribution(SpotLight light, vec3 fragPos)
+{
+    const vec3 L = normalize(light.position - fragPos);
+    const float attenuation = CalculateAttenuation(light.position, fragPos, light.constant, light.linear, light.quadratic);
+    
+    // Calculate spot intensity
+    const float cutOff = cos(radians(light.innerCutoff));
+    const float outerCutOff = cos(radians(light.outerCutoff));
+    const vec3 lightDirection = normalize(light.position - fragPos);
+    const float theta = dot(lightDirection, normalize(-light.direction));
+    const float epsilon = cutOff - outerCutOff;
+    const float spotIntensity = clamp((theta - outerCutOff) / epsilon, 0.0, 1.0);
+    
+    const vec3 radiance = light.color * light.intensity * attenuation * spotIntensity;
+    
+    return LightContribution(radiance, L);
+}
+
+vec3 CalculateAmbientBoxLightContribution(AmbientBoxLight light, vec3 fragPos)
+{
+    float inside = IsPointInAABB(fragPos, light.position, light.size);
+    return inside * light.color * light.intensity;
+}
+
+vec3 CalculateAmbientSphereLightContribution(AmbientSphereLight light, vec3 fragPos)
+{
+    float inside = IsPointInSphere(fragPos, light.position, light.radius);
+    return inside * light.color * light.intensity;
+}

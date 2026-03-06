@@ -1,0 +1,34 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Generate Windows x64 Release Artifact
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v5
+    
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Make Release Build
+      run: .\Scripts\Windows\MakeReleaseBuild.bat --no-open
+
+    - name: Get Version
+      id: version
+      run: |
+        $version = Get-Content VERSION.txt
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Upload Release Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Overload-${{ steps.version.outputs.VERSION }}-windows_x64
+        path: Releases/Overload-${{ steps.version.outputs.VERSION }}-windows_x64.zip
+        retention-days: 90

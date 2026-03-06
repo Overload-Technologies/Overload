@@ -1,5 +1,32 @@
 project "bullet3"
-	kind "SharedItems"
-	files { "**.h", "**.lua" }
+	kind "StaticLib"
+	language "C++"
+	cppdialect "C++20"
+	targetdir (outputdir .. "%{cfg.buildcfg}/%{prj.name}")
 	objdir (objoutdir .. "%{cfg.buildcfg}/%{prj.name}")
-	characterset ("MBCS")
+	warnings "Off"
+	linkoptions { "/ignore:4006" } -- Ignore "symbol already defined" warnings
+
+	files {
+		"**.h",
+		"**.cpp",
+		"**.c",
+		"**.lua"
+	}
+
+	includedirs {
+		"bullet/"
+	}
+
+	defines {
+		"B3_USE_CLEW",
+		"BT_USE_SSE_IN_API",
+	}
+
+	filter { "configurations:Debug" }
+		defines { "DEBUG", "_DEBUG" }
+		symbols "On"
+
+	filter { "configurations:Release" }
+		defines { "NDEBUG" }
+		optimize "On"

@@ -1,0 +1,38 @@
+name: Linux
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: ./
+
+jobs:
+  build:
+    name: Clang ${{ matrix.configuration }} x64
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
+
+    - name: Generate premake5 solution
+      working-directory: ${{env.SOLUTION_FILE_PATH}}
+      run: ./gen_proj.sh
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        CONFIG_LOWER=$(echo "${{ matrix.configuration }}" | tr '[:upper:]' '[:lower:]')
+        make -j$(nproc) config=${CONFIG_LOWER}_x64

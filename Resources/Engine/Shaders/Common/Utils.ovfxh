@@ -1,17 +1,108 @@
-vec3 UnPack(float target)
+vec3 UnPack(float packedFloat)
 {
-    return vec3 (
-        float((uint(target) >> 24) & 0xff) * 0.003921568627451,
-        float((uint(target) >> 16) & 0xff) * 0.003921568627451,
-        float((uint(target) >> 8) & 0xff) * 0.003921568627451
-    );
+    // Reinterpret the float bits as a uint
+    uint value = floatBitsToUint(packedFloat);
+
+    // Extract bytes
+    uint c0 = (value >> 24) & 0xFFu;
+    uint c1 = (value >> 16) & 0xFFu;
+    uint c2 = (value >>  8) & 0xFFu;
+
+    // Convert back to float in [0,1]
+    return vec3(c0, c1, c2) / 255.0;
 }
 
 vec2 TileAndOffsetTexCoords(vec2 texCoords, vec2 tiling, vec2 offset)
 {
-    return vec2(mod(texCoords.x * tiling.x, 1), mod(texCoords.y * tiling.y, 1)) + offset;
+    return texCoords * tiling + offset;
 }
 
+bool IsOrthographic(mat4 projectionMatrix)
+{
+    // In an orthographic projection matrix, the [3][3] element is 1.0
+    // In a perspective projection matrix, it's 0.0
+    return projectionMatrix[3][3] > 0.5;
+}
+
+float DistanceFadeAlpha(vec3 fragPos, vec3 viewPos, float fadeStart, float fadeLength)
+{
+    const float distanceToFragment = length(fragPos - viewPos);
+    const float alphaBasedOnDistance = 1.0 - (distanceToFragment - fadeStart) / fadeLength;
+    return alphaBasedOnDistance;
+}
+
+float Dithering(float alpha, vec2 fragCoord)
+{
+    const mat4 kThresholdMatrix = mat4(
+        1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+        13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+        4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+        16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
+    );
+
+    return alpha - kThresholdMatrix[int(fragCoord.x) % 4][int(fragCoord.y) % 4];
+}
+
+// Expects a height map with values in the range [0, 1].
+// 1.0 means the height is at the maximum depth, 0.0 means the height is at the minimum depth.
+vec2 ApplyParallaxOcclusionMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale, int minLayers, int maxLayers)
+{
+    const vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
+
+    // calculate optimal layer count
+    minLayers = max(minLayers, 1); // Ensure minLayers is at least 1
+    maxLayers = min(maxLayers, 8192); // Limit maxLayers to a reasonable value (2^13)
+    maxLayers = max(maxLayers, minLayers); // Ensure maxLayers is at least minLayers
+
+    // clamp alpha to prevent extrapolating (which could make the fragment very expensive, and potentially result in a crash).
+    const float alpha = clamp(abs(dot(vec3(0.0, 0.0, 1.0), viewDir)), 0.0, 1.0);
+    const float numLayers = mix(maxLayers, minLayers, alpha);
+
+    // calculate the size of each layer
+    const float layerDepth = 1.0 / numLayers;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    const vec2 P = viewDir.xy / viewDir.z * heightScale; 
+    const vec2 deltaTexCoords = P / numLayers;
+  
+    // get initial values
+    vec2 currentTexCoords = texCoords;
+    float currentDepthMapValue = 1.0 - texture(heightMap, currentTexCoords).r;
+    float currentLayerDepth = 0.0;
+      
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        currentTexCoords -= deltaTexCoords;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = 1.0 - texture(heightMap, currentTexCoords).r;
+        // get depth of next layer
+        currentLayerDepth += layerDepth;
+    }
+    
+    // get texture coordinates before collision (reverse operations)
+    const vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // get depth after and before collision for linear interpolation
+    const float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    const float beforeDepth = 1.0 - texture(heightMap, prevTexCoords).r - currentLayerDepth + layerDepth;
+ 
+    // interpolation of texture coordinates
+    const float weight = afterDepth / (afterDepth - beforeDepth);
+    const vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+    return finalTexCoords;
+}
+
+bool IsParallaxOutOfBounds(vec2 texCoords, vec2 tiling, vec2 offset, mat4 projectionMatrix)
+{
+    const vec2 adjustedCoords = texCoords - offset;
+
+    return
+        !IsOrthographic(projectionMatrix) && // No clipping in orthographic projection (not supported)
+        (adjustedCoords.x < 0.0 || adjustedCoords.x > tiling.x || adjustedCoords.y < 0.0 || adjustedCoords.y > tiling.y);
+}
+
+// [Deprecated] Kept for backward compatibility. Prefer using `ApplyParallaxOcclusionMapping()` instead.
 vec2 ApplyParallaxMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewPos, vec3 tangentFragPos, float heightScale)
 {
     if (heightScale > 0)
@@ -24,6 +115,7 @@ vec2 ApplyParallaxMapping(vec2 texCoords, sampler2D heightMap, vec3 tangentViewP
     return texCoords;
 }
 
+// [Deprecated] Kept for backward compatibility.
 bool IsMasked(sampler2D maskMap, vec2 texCoords)
 {
     return texture(maskMap, texCoords).r == 0.0;
@@ -38,17 +130,23 @@ mat3 ConstructTBN(mat4 model, vec3 normal, vec3 tangent, vec3 bitangent)
     );
 }
 
+
+vec3 ComputeNormal(vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
+{
+    normal = texture(normalMap, texCoords).rgb;
+    normal = normalize(normal * 2.0 - 1.0);
+    normal = normalize(TBN * normal);
+    return normal;
+}
+
+// [Deprecated] Kept for backward compatibility. Prefer using `ComputeNormal()` without the `enableNormalMapping` parameter,
+// and handle branching using preprocessor directives instead.
 vec3 ComputeNormal(bool enableNormalMapping, vec2 texCoords, vec3 normal, sampler2D normalMap, mat3 TBN)
 {
     if (enableNormalMapping)
     {
-        normal = texture(normalMap, texCoords).rgb;
-        normal = normalize(normal * 2.0 - 1.0);   
-        normal = normalize(TBN * normal);
-        return normal;
+        return ComputeNormal(texCoords, normal, normalMap, TBN);
     }
-    else
-    {
-        return normalize(normal);
-    }
+
+    return normalize(normal);
 }

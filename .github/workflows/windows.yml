@@ -1,0 +1,36 @@
+name: Windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .\
+
+jobs:
+  build:
+    name: MSVC ${{ matrix.configuration }} x64
+    runs-on: windows-latest
+    if: github.event.pull_request.draft == false
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Generate premake5 solution
+      working-directory: ${{env.SOLUTION_FILE_PATH}}
+      run: .\gen_proj.bat
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64

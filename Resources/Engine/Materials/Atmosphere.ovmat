@@ -1,0 +1,37 @@
+<root>
+    <shader>:Shaders\Atmosphere.ovfx</shader>
+    <settings>
+        <support_orthographic>false</support_orthographic>
+        <support_perspective>true</support_perspective>
+        <blendable>false</blendable>
+        <backface_culling>false</backface_culling>
+        <frontface_culling>true</frontface_culling>
+        <depth_test>false</depth_test>
+        <depth_writing>false</depth_writing>
+        <color_writing>true</color_writing>
+        <cast_shadows>false</cast_shadows>
+        <receive_shadows>false</receive_shadows>
+        <user_interface>false</user_interface>
+        <gpu_instances>1</gpu_instances>
+        <draw_order>10</draw_order>
+    </settings>
+    <uniforms>
+        <uniform>
+            <name>u_MiePreferredScatteringDirection</name>
+            <value>0.75800002</value>
+        </uniform>
+        <uniform>
+            <name>u_SunIntensity</name>
+            <value>22</value>
+        </uniform>
+        <uniform>
+            <name>u_SunPosition</name>
+            <value>
+                <x>0</x>
+                <y>0.1</y>
+                <z>-1</z>
+            </value>
+        </uniform>
+    </uniforms>
+    <features></features>
+</root>

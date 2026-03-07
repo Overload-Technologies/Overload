@@ -13,6 +13,7 @@
 #include <OvDebug/Logger.h>
 #include <json_fwd.hpp>
 #include <iostream>
+#include <format>
 #include <fstream>
 
 OvCore::Resources::Material * OvCore::Resources::Loaders::MaterialLoader::Create(const std::string & p_path)

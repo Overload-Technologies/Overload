@@ -66,25 +66,23 @@ In a rush? [Get the latest release](https://github.com/Overload-Technologies/Ove
 ```powershell
 git clone https://github.com/Overload-Technologies/Overload
 cd Overload
-.\gen_proj.bat vs2022 # generate project files for Visual Studio 2022
-.\Overload.sln # Open the solution in Visual Studio
+.\Scripts\Windows\GenerateProjects.bat # configure build with CMake (Visual Studio generator)
+cmake --build Build --config Release
 ```
 
 > [!note]
-> Officially supported actions for `gen_proj.bat` are: `vs2022` (default), `gmake`, `codelite`.<br/>
-> Refer to [premake's website](https://premake.github.io/docs/Using-Premake) for more information.
+> Project generation now uses CMake. To target a specific generator or configuration, pass arguments to the script (for example: `vs2022` is replaced by `-G "Visual Studio 17 2022" -A x64`).
 
 ### Linux (Clang)
 ```bash
 git clone https://github.com/Overload-Technologies/Overload
 cd Overload
-./gen_proj.sh gmake # generate project files for Makefile
-make -j$(nproc) # build the project using all available CPU cores
+./Scripts/Linux/GenerateProjects.sh # configure build with CMake (Unix Makefiles)
+cmake --build Build -- -j$(nproc)
 ```
 
 > [!note]
-> Officially supported actions for `gen_proj.sh` are: `gmake` (default), `codelite`.<br/>
-> Refer to [premake's website](https://premake.github.io/docs/Using-Premake) for more information.
+> Project generation now uses CMake. To choose a different generator or build type, pass CMake options to the script (for example: `./Scripts/Linux/GenerateProjects.sh -DCMAKE_BUILD_TYPE=Debug`).
 
 # Architecture
 Overload is divided into 11 modules: 9 libraries (SDK), and 2 executables (Applications).

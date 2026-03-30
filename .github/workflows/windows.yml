@@ -27,10 +27,10 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
-    - name: Generate premake5 solution
+    - name: Configure CMake
       working-directory: ${{env.SOLUTION_FILE_PATH}}
-      run: .\gen_proj.bat
+      run: .\gen_proj.bat -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64
+      run: cmake --build Build --config ${{ matrix.configuration }} -- /m

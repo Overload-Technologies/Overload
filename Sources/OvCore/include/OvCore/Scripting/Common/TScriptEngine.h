@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include <OvCore/Scripting/Common/EScriptingLanguage.h>
 

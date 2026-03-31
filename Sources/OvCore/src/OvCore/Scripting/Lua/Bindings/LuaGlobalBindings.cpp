@@ -25,6 +25,8 @@
 
 #include <sol/sol.hpp>
 
+#include "OvCore/Scripting/Lua/LuaDebugFormatter.h"
+
 void BindLuaGlobal(sol::state& p_luaState)
 {
 	using namespace OvWindowing;
@@ -183,10 +185,10 @@ void BindLuaGlobal(sol::state& p_luaState)
 	});
 
 	p_luaState.create_named_table("Debug",
-		"Log", [](const std::string& p_message) { OVLOG(p_message); },
-		"LogInfo", [](const std::string& p_message) { OVLOG_INFO(p_message); },
-		"LogWarning", [](const std::string& p_message) { OVLOG_WARNING(p_message); },
-		"LogError", [](const std::string& p_message) { OVLOG_ERROR(p_message); }
+		"Log", [](const std::string& p_format, sol::variadic_args p_args) { OVLOG(OvCore::Scripting::Lua::BuildDebugMessage(p_format, p_args)); },
+		"LogInfo", [](const std::string& p_format, sol::variadic_args p_args) { OVLOG_INFO(OvCore::Scripting::Lua::BuildDebugMessage(p_format, p_args)); },
+		"LogWarning", [](const std::string& p_format, sol::variadic_args p_args) { OVLOG_WARNING(OvCore::Scripting::Lua::BuildDebugMessage(p_format, p_args)); },
+		"LogError", [](const std::string& p_format, sol::variadic_args p_args) { OVLOG_ERROR(OvCore::Scripting::Lua::BuildDebugMessage(p_format, p_args)); }
 	);
 
 	p_luaState.create_named_table("Inputs",

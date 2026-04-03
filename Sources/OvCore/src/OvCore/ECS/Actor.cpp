@@ -23,6 +23,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 
 #include <iostream>
@@ -480,6 +481,7 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 				else if (IsType<CAmbientSphereLight>(componentType)) component = &AddComponent<CAmbientSphereLight>();
 				else if (IsType<CPostProcessStack>(componentType)) component = &AddComponent<CPostProcessStack>();
 				else if (IsType<CReflectionProbe>(componentType)) component = &AddComponent<CReflectionProbe>();
+				else if (IsType<CSkinnedMeshRenderer>(componentType)) component = &AddComponent<CSkinnedMeshRenderer>();
 
 				if (component)
 				{

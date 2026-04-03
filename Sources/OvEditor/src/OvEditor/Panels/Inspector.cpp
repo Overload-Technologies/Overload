@@ -21,6 +21,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -91,6 +92,7 @@ namespace
 		CreateComponentInfo<CAmbientBoxLight>("Ambient Box Light"),
 		CreateComponentInfo<CAmbientSphereLight>("Ambient Sphere Light"),
 		CreateComponentInfo<CMaterialRenderer>("Material Renderer"),
+		CreateComponentInfo<CSkinnedMeshRenderer>("Skinned Mesh Renderer"),
 		CreateComponentInfo<CAudioSource>("Audio Source"),
 		CreateComponentInfo<CAudioListener>("Audio Listener"),
 		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),

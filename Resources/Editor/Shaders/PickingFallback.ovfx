@@ -1,7 +1,12 @@
+#pass PICKING_PASS
+#feature SKINNING
+
 #shader vertex
 #version 450 core
 
 layout (location = 0) in vec3 geo_Pos;
+layout (location = 5) in vec4 geo_BoneIDs;
+layout (location = 6) in vec4 geo_BoneWeights;
 
 layout (std140) uniform EngineUBO
 {
@@ -12,9 +17,65 @@ layout (std140) uniform EngineUBO
     float   ubo_Time;
 };
 
+layout(std430, binding = 2) buffer SkinningSSBO
+{
+    mat4 ssbo_Bones[];
+};
+
+mat4 ComputeSkinningMatrix(vec4 p_boneIDs, vec4 p_boneWeights)
+{
+    const int boneCount = ssbo_Bones.length();
+
+    mat4 skinning = mat4(0.0);
+    float appliedWeight = 0.0;
+
+    #define OV_APPLY_BONE(BONE_ID, BONE_WEIGHT)                                \
+    {                                                                           \
+        const float w = (BONE_WEIGHT);                                          \
+        if (w > 0.0)                                                            \
+        {                                                                       \
+            const int index = int(floor((BONE_ID) + 0.5));                     \
+            if (index >= 0 && index < boneCount)                               \
+            {                                                                   \
+                skinning += ssbo_Bones[index] * w;                             \
+                appliedWeight += w;                                             \
+            }                                                                   \
+        }                                                                       \
+    }
+
+    OV_APPLY_BONE(p_boneIDs.x, p_boneWeights.x);
+    OV_APPLY_BONE(p_boneIDs.y, p_boneWeights.y);
+    OV_APPLY_BONE(p_boneIDs.z, p_boneWeights.z);
+    OV_APPLY_BONE(p_boneIDs.w, p_boneWeights.w);
+
+    #undef OV_APPLY_BONE
+
+    if (appliedWeight <= 0.0)
+    {
+        return mat4(1.0);
+    }
+
+    if (appliedWeight < 1.0)
+    {
+        return skinning + mat4(1.0) * (1.0 - appliedWeight);
+    }
+
+    if (appliedWeight > 1.0)
+    {
+        return skinning / appliedWeight;
+    }
+
+    return skinning;
+}
+
 void main()
 {
-    gl_Position = ubo_Projection * ubo_View * ubo_Model * vec4(geo_Pos, 1.0);
+    mat4 skinningMatrix = mat4(1.0);
+#if defined(SKINNING)
+    skinningMatrix = ComputeSkinningMatrix(geo_BoneIDs, geo_BoneWeights);
+#endif
+
+    gl_Position = ubo_Projection * ubo_View * ubo_Model * skinningMatrix * vec4(geo_Pos, 1.0);
 }
 
 #shader fragment

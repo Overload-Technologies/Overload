@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <OvRendering/Animation/SkeletalData.h>
+
 namespace OvRendering::Geometry
 {
 	/**
@@ -18,5 +20,7 @@ namespace OvRendering::Geometry
 		float normals[3];
 		float tangent[3];
 		float bitangent[3];
+		float boneIDs[Animation::kMaxBonesPerVertex];
+		float boneWeights[Animation::kMaxBonesPerVertex];
 	};
 }

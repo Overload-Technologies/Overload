@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 
 #include <OvDebug/Logger.h>
 #include <OvRendering/Resources/Mesh.h>
@@ -69,7 +70,9 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_ve
 				{ Settings::EDataType::FLOAT, 2 }, // texCoords
 				{ Settings::EDataType::FLOAT, 3 }, // normal
 				{ Settings::EDataType::FLOAT, 3 }, // tangent
-				{ Settings::EDataType::FLOAT, 3 }  // bitangent
+				{ Settings::EDataType::FLOAT, 3 }, // bitangent
+				{ Settings::EDataType::FLOAT, 4 }, // bone IDs
+				{ Settings::EDataType::FLOAT, 4 }  // bone weights
 			}), m_vertexBuffer, m_indexBuffer);
 		}
 		else
@@ -94,9 +97,9 @@ void OvRendering::Resources::Mesh::ComputeBoundingSphere(std::span<const Geometr
 		float minY = std::numeric_limits<float>::max();
 		float minZ = std::numeric_limits<float>::max();
 
-		float maxX = std::numeric_limits<float>::min();
-		float maxY = std::numeric_limits<float>::min();
-		float maxZ = std::numeric_limits<float>::min();
+		float maxX = std::numeric_limits<float>::lowest();
+		float maxY = std::numeric_limits<float>::lowest();
+		float maxZ = std::numeric_limits<float>::lowest();
 
 		for (const auto& vertex : p_vertices)
 		{

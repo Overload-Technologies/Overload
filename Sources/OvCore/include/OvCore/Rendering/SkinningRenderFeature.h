@@ -1,0 +1,74 @@
+/**
+* @project: Overload
+* @author: Overload Tech.
+* @licence: MIT
+*/
+
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <memory>
+
+#include <OvMaths/FMatrix4.h>
+#include <OvRendering/Features/ARenderFeature.h>
+#include <OvRendering/HAL/ShaderStorageBuffer.h>
+
+namespace OvCore::Rendering
+{
+	/**
+	* Render feature responsible for uploading and binding skinning matrices.
+	*/
+	class SkinningRenderFeature : public OvRendering::Features::ARenderFeature
+	{
+	public:
+		/**
+		* Constructor
+		* @param p_renderer
+		* @param p_executionPolicy
+		* @param p_bufferBindingPoint
+		*/
+		SkinningRenderFeature(
+			OvRendering::Core::CompositeRenderer& p_renderer,
+			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy,
+			uint32_t p_bufferBindingPoint = 2
+		);
+
+		/**
+		* Returns the skinning buffer binding point
+		*/
+		uint32_t GetBufferBindingPoint() const;
+
+	protected:
+		virtual void OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor) override;
+		virtual void OnEndFrame() override;
+		virtual void OnBeforeDraw(OvRendering::Data::PipelineState& p_pso, const OvRendering::Entities::Drawable& p_drawable) override;
+
+	private:
+		void BindIdentityPalette() const;
+		OvRendering::HAL::ShaderStorageBuffer& GetCurrentSkinningBuffer() const;
+
+	private:
+		static constexpr uint32_t kSkinningBufferRingSize = 3;
+
+		enum class EBoundPalette
+		{
+			NONE,
+			IDENTITY,
+			SKINNING
+		};
+
+		uint32_t m_bufferBindingPoint = 2;
+		mutable uint32_t m_skinningBufferIndex = kSkinningBufferRingSize - 1;
+		std::array<std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer>, kSkinningBufferRingSize> m_skinningBuffers;
+		std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_identityBuffer;
+
+		const OvMaths::FMatrix4* m_lastPalettePtr = nullptr;
+		uint32_t m_lastPaletteCount = 0;
+		uint64_t m_lastPoseVersion = 0;
+		mutable EBoundPalette m_boundPalette = EBoundPalette::NONE;
+		mutable const OvMaths::FMatrix4* m_boundPalettePtr = nullptr;
+		mutable uint32_t m_boundPaletteCount = 0;
+		mutable uint64_t m_boundPoseVersion = 0;
+	};
+}

@@ -167,7 +167,7 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 		for (auto& drawable : drawables)
 		{
 			const auto& actor = drawable.template GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
-			const auto skinnedRenderer = actor.GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
+			const auto skinnedRenderer = actor.template GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
 			const bool hasSkinning = OvCore::Rendering::SkinningUtils::IsSkinningActive(skinnedRenderer);
 
 			if (hasSkinning)

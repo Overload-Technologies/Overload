@@ -115,7 +115,7 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 						continue;
 					}
 
-					const auto skinnedRenderer = actor.GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
+					const auto skinnedRenderer = actor.template GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
 					const bool hasSkinning = SkinningUtils::IsSkinningActive(skinnedRenderer);
 
 					const auto& materials = materialRenderer->GetMaterials();

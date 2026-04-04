@@ -1,5 +1,24 @@
 #include ":Shaders/Common/Buffers/SkinningSSBO.ovfxh"
 
+void ApplyBone(
+    float p_boneID,
+    float p_boneWeight,
+    int p_boneCount,
+    inout mat4 p_skinning,
+    inout float p_appliedWeight
+)
+{
+    if (p_boneWeight > 0.0)
+    {
+        const int index = int(floor(p_boneID + 0.5));
+        if (index >= 0 && index < p_boneCount)
+        {
+            p_skinning += ssbo_Bones[index] * p_boneWeight;
+            p_appliedWeight += p_boneWeight;
+        }
+    }
+}
+
 mat4 ComputeSkinningMatrix(vec4 p_boneIDs, vec4 p_boneWeights)
 {
     const int boneCount = ssbo_Bones.length();
@@ -7,26 +26,10 @@ mat4 ComputeSkinningMatrix(vec4 p_boneIDs, vec4 p_boneWeights)
     mat4 skinning = mat4(0.0);
     float appliedWeight = 0.0;
 
-    #define OV_APPLY_BONE(BONE_ID, BONE_WEIGHT)                                \
-    {                                                                           \
-        const float w = (BONE_WEIGHT);                                          \
-        if (w > 0.0)                                                            \
-        {                                                                       \
-            const int index = int(floor((BONE_ID) + 0.5));                     \
-            if (index >= 0 && index < boneCount)                               \
-            {                                                                   \
-                skinning += ssbo_Bones[index] * w;                             \
-                appliedWeight += w;                                             \
-            }                                                                   \
-        }                                                                       \
+    for (int i = 0; i < 4; ++i)
+    {
+        ApplyBone(p_boneIDs[i], p_boneWeights[i], boneCount, skinning, appliedWeight);
     }
-
-    OV_APPLY_BONE(p_boneIDs.x, p_boneWeights.x);
-    OV_APPLY_BONE(p_boneIDs.y, p_boneWeights.y);
-    OV_APPLY_BONE(p_boneIDs.z, p_boneWeights.z);
-    OV_APPLY_BONE(p_boneIDs.w, p_boneWeights.w);
-
-    #undef OV_APPLY_BONE
 
     if (appliedWeight <= 0.0)
     {

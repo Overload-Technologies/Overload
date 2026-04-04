@@ -51,28 +51,27 @@ namespace
 
 	auto CreateShader(const std::filesystem::path& p_path, const std::filesystem::path& p_editorAssetsPath)
 	{
-		auto pathParser = [p_editorAssetsPath](const std::string& p_includePath)
-		{
-			const auto normalizedIncludePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_includePath);
-			const auto includePath = std::filesystem::path{ normalizedIncludePath };
-
-			if (includePath.is_absolute())
-			{
-				return includePath.lexically_normal().string();
-			}
-
-			if (!normalizedIncludePath.empty() && normalizedIncludePath.front() == ':')
-			{
-				const auto engineAssetsPath = p_editorAssetsPath.parent_path() / "Engine";
-				return (engineAssetsPath / normalizedIncludePath.substr(1)).lexically_normal().string();
-			}
-
-			return (p_editorAssetsPath / includePath).lexically_normal().string();
-		};
+		const auto engineAssetsPath = p_editorAssetsPath.parent_path() / "Engine";
 
 		return OvRendering::Resources::Loaders::ShaderLoader::Create(
 			p_path.string(),
-			pathParser
+			[p_editorAssetsPath, engineAssetsPath](const std::string& p_includePath)
+			{
+				const auto normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_includePath);
+				const auto includePath = std::filesystem::path{ normalizedPath };
+
+				if (includePath.is_absolute())
+				{
+					return includePath.lexically_normal().string();
+				}
+
+				if (!normalizedPath.empty() && normalizedPath.front() == ':')
+				{
+					return (engineAssetsPath / normalizedPath.substr(1)).lexically_normal().string();
+				}
+
+				return (p_editorAssetsPath / includePath).lexically_normal().string();
+			}
 		);
 	}
 

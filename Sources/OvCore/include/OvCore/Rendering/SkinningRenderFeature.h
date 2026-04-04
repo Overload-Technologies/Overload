@@ -22,6 +22,8 @@ namespace OvCore::Rendering
 	class SkinningRenderFeature : public OvRendering::Features::ARenderFeature
 	{
 	public:
+		static constexpr uint32_t kDefaultBufferBindingPoint = 1;
+
 		/**
 		* Constructor
 		* @param p_renderer
@@ -31,7 +33,7 @@ namespace OvCore::Rendering
 		SkinningRenderFeature(
 			OvRendering::Core::CompositeRenderer& p_renderer,
 			OvRendering::Features::EFeatureExecutionPolicy p_executionPolicy,
-			uint32_t p_bufferBindingPoint = 2
+			uint32_t p_bufferBindingPoint = kDefaultBufferBindingPoint
 		);
 
 		/**
@@ -58,7 +60,7 @@ namespace OvCore::Rendering
 			SKINNING
 		};
 
-		uint32_t m_bufferBindingPoint = 2;
+		uint32_t m_bufferBindingPoint;
 		mutable uint32_t m_skinningBufferIndex = kSkinningBufferRingSize - 1;
 		std::array<std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer>, kSkinningBufferRingSize> m_skinningBuffers;
 		std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_identityBuffer;

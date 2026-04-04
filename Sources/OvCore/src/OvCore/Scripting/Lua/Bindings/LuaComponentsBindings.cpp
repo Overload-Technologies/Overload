@@ -21,6 +21,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>  
 #include <OvCore/ECS/Components/CPostProcessStack.h>  
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
 #include <OvCore/ECS/Components/CTransform.h>
 
@@ -85,6 +86,33 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetMaterial", &CMaterialRenderer::SetMaterialAtIndex,
 		"SetUserMatrixElement", &CMaterialRenderer::SetUserMatrixElement,
 		"GetUserMatrixElement", &CMaterialRenderer::GetUserMatrixElement
+	);
+
+	p_luaState.new_usertype<CSkinnedMeshRenderer>("SkinnedMeshRenderer",
+		sol::base_classes, sol::bases<AComponent>(),
+		"NotifyModelChanged", &CSkinnedMeshRenderer::NotifyModelChanged,
+		"HasCompatibleModel", &CSkinnedMeshRenderer::HasCompatibleModel,
+		"HasSkinningData", &CSkinnedMeshRenderer::HasSkinningData,
+		"SetEnabled", &CSkinnedMeshRenderer::SetEnabled,
+		"IsEnabled", &CSkinnedMeshRenderer::IsEnabled,
+		"Play", &CSkinnedMeshRenderer::Play,
+		"Pause", &CSkinnedMeshRenderer::Pause,
+		"Stop", &CSkinnedMeshRenderer::Stop,
+		"IsPlaying", &CSkinnedMeshRenderer::IsPlaying,
+		"SetLooping", &CSkinnedMeshRenderer::SetLooping,
+		"IsLooping", &CSkinnedMeshRenderer::IsLooping,
+		"SetPlaybackSpeed", &CSkinnedMeshRenderer::SetPlaybackSpeed,
+		"GetPlaybackSpeed", &CSkinnedMeshRenderer::GetPlaybackSpeed,
+		"SetTime", &CSkinnedMeshRenderer::SetTime,
+		"GetTime", &CSkinnedMeshRenderer::GetTime,
+		"GetAnimationCount", &CSkinnedMeshRenderer::GetAnimationCount,
+		"GetAnimationName", &CSkinnedMeshRenderer::GetAnimationName,
+		"SetAnimation", sol::overload(
+			sol::resolve<bool(uint32_t)>(&CSkinnedMeshRenderer::SetAnimation),
+			sol::resolve<bool(const std::string&)>(&CSkinnedMeshRenderer::SetAnimation)
+		),
+		"GetAnimationIndex", &CSkinnedMeshRenderer::GetAnimationIndex,
+		"GetAnimation", &CSkinnedMeshRenderer::GetAnimation
 	);
 
 	p_luaState.new_enum<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>("CollisionDetectionMode", {

@@ -21,6 +21,7 @@
 #include <OvCore/ECS/Components/CPointLight.h>  
 #include <OvCore/ECS/Components/CPostProcessStack.h>  
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
@@ -61,6 +62,7 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetAmbientSphereLight", &Actor::GetComponent<CAmbientSphereLight>,
 		"GetModelRenderer", &Actor::GetComponent<CModelRenderer>,
 		"GetMaterialRenderer", &Actor::GetComponent<CMaterialRenderer>,
+		"GetSkinnedMeshRenderer", &Actor::GetComponent<CSkinnedMeshRenderer>,
 		"GetAudioSource", &Actor::GetComponent<CAudioSource>,
 		"GetAudioListener", &Actor::GetComponent<CAudioListener>,
 		"GetPostProcessStack", & Actor::GetComponent<CPostProcessStack>,
@@ -91,6 +93,7 @@ void BindLuaActor(sol::state& p_luaState)
 		"AddAmbientBoxLight", &Actor::AddComponent<CAmbientBoxLight>,
 		"AddAmbientSphereLight", &Actor::AddComponent<CAmbientSphereLight>,
 		"AddMaterialRenderer", &Actor::AddComponent<CMaterialRenderer>,
+		"AddSkinnedMeshRenderer", &Actor::AddComponent<CSkinnedMeshRenderer>,
 		"AddAudioSource", &Actor::AddComponent<CAudioSource>,
 		"AddAudioListener", &Actor::AddComponent<CAudioListener>,
 		"AddPostProcessStack", & Actor::AddComponent<CPostProcessStack>,
@@ -108,6 +111,7 @@ void BindLuaActor(sol::state& p_luaState)
 		"RemoveAmbientBoxLight", &Actor::RemoveComponent<CAmbientBoxLight>,
 		"RemoveAmbientSphereLight", &Actor::RemoveComponent<CAmbientSphereLight>,
 		"RemoveMaterialRenderer", &Actor::RemoveComponent<CMaterialRenderer>,
+		"RemoveSkinnedMeshRenderer", &Actor::RemoveComponent<CSkinnedMeshRenderer>,
 		"RemoveAudioSource", &Actor::RemoveComponent<CAudioSource>,
 		"RemoveAudioListener", &Actor::RemoveComponent<CAudioListener>,
 		"RemovePostProcessStack", & Actor::RemoveComponent<CPostProcessStack>,

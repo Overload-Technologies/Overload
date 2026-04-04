@@ -7,18 +7,60 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <vector>
 
 #include <OvDebug/Logger.h>
 #include <OvRendering/Resources/Mesh.h>
 
+namespace
+{
+	struct StaticVertex
+	{
+		float position[3];
+		float texCoords[2];
+		float normals[3];
+		float tangent[3];
+		float bitangent[3];
+	};
+
+	StaticVertex ToStaticVertex(const OvRendering::Geometry::Vertex& p_vertex)
+	{
+		StaticVertex result{};
+
+		result.position[0] = p_vertex.position[0];
+		result.position[1] = p_vertex.position[1];
+		result.position[2] = p_vertex.position[2];
+
+		result.texCoords[0] = p_vertex.texCoords[0];
+		result.texCoords[1] = p_vertex.texCoords[1];
+
+		result.normals[0] = p_vertex.normals[0];
+		result.normals[1] = p_vertex.normals[1];
+		result.normals[2] = p_vertex.normals[2];
+
+		result.tangent[0] = p_vertex.tangent[0];
+		result.tangent[1] = p_vertex.tangent[1];
+		result.tangent[2] = p_vertex.tangent[2];
+
+		result.bitangent[0] = p_vertex.bitangent[0];
+		result.bitangent[1] = p_vertex.bitangent[1];
+		result.bitangent[2] = p_vertex.bitangent[2];
+
+		return result;
+	}
+}
+
 OvRendering::Resources::Mesh::Mesh(
 	std::span<const Geometry::Vertex> p_vertices,
 	std::span<const uint32_t> p_indices,
-	uint32_t p_materialIndex
+	uint32_t p_materialIndex,
+	bool p_hasSkinningData
 ) :
 	m_vertexCount(static_cast<uint32_t>(p_vertices.size())),
 	m_indicesCount(static_cast<uint32_t>(p_indices.size())),
-	m_materialIndex(p_materialIndex)
+	m_materialIndex(p_materialIndex),
+	m_hasSkinningData(p_hasSkinningData)
 {
 	Upload(p_vertices, p_indices);
 	ComputeBoundingSphere(p_vertices);
@@ -54,23 +96,64 @@ uint32_t OvRendering::Resources::Mesh::GetMaterialIndex() const
 	return m_materialIndex;
 }
 
+bool OvRendering::Resources::Mesh::HasSkinningData() const
+{
+	return m_hasSkinningData;
+}
+
 void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices)
 {
-	if (m_vertexBuffer.Allocate(p_vertices.size_bytes()))
+	const auto staticLayout = std::to_array<Settings::VertexAttribute>({
+		{ Settings::EDataType::FLOAT, 3 }, // position
+		{ Settings::EDataType::FLOAT, 2 }, // texCoords
+		{ Settings::EDataType::FLOAT, 3 }, // normal
+		{ Settings::EDataType::FLOAT, 3 }, // tangent
+		{ Settings::EDataType::FLOAT, 3 }  // bitangent
+	});
+
+	const auto skinnedLayout = std::to_array<Settings::VertexAttribute>({
+		{ Settings::EDataType::FLOAT, 3 }, // position
+		{ Settings::EDataType::FLOAT, 2 }, // texCoords
+		{ Settings::EDataType::FLOAT, 3 }, // normal
+		{ Settings::EDataType::FLOAT, 3 }, // tangent
+		{ Settings::EDataType::FLOAT, 3 }, // bitangent
+		{ Settings::EDataType::FLOAT, 4 }, // bone IDs
+		{ Settings::EDataType::FLOAT, 4 }  // bone weights
+	});
+
+	std::vector<StaticVertex> staticVertices;
+	const void* vertexData = nullptr;
+	uint64_t vertexBufferSize = 0;
+	Settings::VertexAttributeLayout layout = staticLayout;
+
+	if (m_hasSkinningData)
 	{
-		m_vertexBuffer.Upload(p_vertices.data());
+		vertexData = p_vertices.data();
+		vertexBufferSize = p_vertices.size_bytes();
+		layout = skinnedLayout;
+	}
+	else
+	{
+		staticVertices.reserve(p_vertices.size());
+
+		for (const auto& vertex : p_vertices)
+		{
+			staticVertices.push_back(ToStaticVertex(vertex));
+		}
+
+		vertexData = staticVertices.data();
+		vertexBufferSize = static_cast<uint64_t>(staticVertices.size()) * sizeof(StaticVertex);
+	}
+
+	if (m_vertexBuffer.Allocate(vertexBufferSize))
+	{
+		m_vertexBuffer.Upload(vertexData);
 
 		if (m_indexBuffer.Allocate(p_indices.size_bytes()))
 		{
 			m_indexBuffer.Upload(p_indices.data());
 
-			m_vertexArray.SetLayout(std::to_array<Settings::VertexAttribute>({
-				{ Settings::EDataType::FLOAT, 3 }, // position
-				{ Settings::EDataType::FLOAT, 2 }, // texCoords
-				{ Settings::EDataType::FLOAT, 3 }, // normal
-				{ Settings::EDataType::FLOAT, 3 }, // tangent
-				{ Settings::EDataType::FLOAT, 3 }  // bitangent
-			}), m_vertexBuffer, m_indexBuffer);
+			m_vertexArray.SetLayout(layout, m_vertexBuffer, m_indexBuffer);
 		}
 		else
 		{
@@ -94,9 +177,9 @@ void OvRendering::Resources::Mesh::ComputeBoundingSphere(std::span<const Geometr
 		float minY = std::numeric_limits<float>::max();
 		float minZ = std::numeric_limits<float>::max();
 
-		float maxX = std::numeric_limits<float>::min();
-		float maxY = std::numeric_limits<float>::min();
-		float maxZ = std::numeric_limits<float>::min();
+		float maxX = std::numeric_limits<float>::lowest();
+		float maxY = std::numeric_limits<float>::lowest();
+		float maxZ = std::numeric_limits<float>::lowest();
 
 		for (const auto& vertex : p_vertices)
 		{

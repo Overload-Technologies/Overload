@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <utility>
+
 #include "OvRendering/Resources/Loaders/ModelLoader.h"
 
 OvRendering::Resources::Parsers::AssimpParser OvRendering::Resources::Loaders::ModelLoader::__ASSIMP;
@@ -12,7 +14,14 @@ OvRendering::Resources::Model* OvRendering::Resources::Loaders::ModelLoader::Cre
 {
 	Model* result = new Model(p_filepath);
 
-	if (__ASSIMP.LoadModel(p_filepath, result->m_meshes, result->m_materialNames, p_parserFlags))
+	if (__ASSIMP.LoadModel(
+		p_filepath,
+		result->m_meshes,
+		result->m_materialNames,
+		result->m_skeleton,
+		result->m_animations,
+		p_parserFlags
+	))
 	{
 		result->ComputeBoundingSphere();
 		return result;
@@ -31,7 +40,9 @@ void OvRendering::Resources::Loaders::ModelLoader::Reload(Model& p_model, const 
 	{
 		p_model.m_meshes = newModel->m_meshes;
 		p_model.m_materialNames = newModel->m_materialNames;
-        p_model.m_boundingSphere = newModel->m_boundingSphere;
+		p_model.m_skeleton = std::move(newModel->m_skeleton);
+		p_model.m_animations = std::move(newModel->m_animations);
+		p_model.m_boundingSphere = newModel->m_boundingSphere;
 		newModel->m_meshes.clear();
 		delete newModel;
 	}

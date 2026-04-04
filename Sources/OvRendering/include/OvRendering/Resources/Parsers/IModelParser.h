@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 
+#include "OvRendering/Animation/SkeletalData.h"
 #include "OvRendering/Resources/Mesh.h"
 #include "OvRendering/Resources/Parsers/EModelParserFlags.h"
 
@@ -31,6 +33,8 @@ namespace OvRendering::Resources::Parsers
 			const std::string& p_fileName,
 			std::vector<Mesh*>& p_meshes,
 			std::vector<std::string>& p_materials,
+			std::optional<Animation::Skeleton>& p_skeleton,
+			std::vector<Animation::SkeletalAnimation>& p_animations,
 			EModelParserFlags p_parserFlags
 		) = 0;
 	};

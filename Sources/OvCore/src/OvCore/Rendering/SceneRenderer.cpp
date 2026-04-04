@@ -5,10 +5,12 @@
 */
 
 #include <ranges>
+#include <string>
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
@@ -18,6 +20,9 @@
 #include <OvCore/Rendering/SceneRenderer.h>
 #include <OvCore/Rendering/ShadowRenderFeature.h>
 #include <OvCore/Rendering/ShadowRenderPass.h>
+#include <OvCore/Rendering/SkinningDrawableDescriptor.h>
+#include <OvCore/Rendering/SkinningRenderFeature.h>
+#include <OvCore/Rendering/SkinningUtils.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Features/LightingRenderFeature.h>
@@ -27,6 +32,7 @@
 namespace
 {
 	using namespace OvCore::Rendering;
+	const std::string kSkinningFeatureName{ SkinningUtils::kFeatureName };
 
 	class SceneRenderPass : public OvRendering::Core::ARenderPass
 	{
@@ -168,6 +174,7 @@ OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_
 
 	AddFeature<EngineBufferRenderFeature, ALWAYS>();
 	AddFeature<LightingRenderFeature, ALWAYS>();
+	AddFeature<SkinningRenderFeature, ALWAYS>();
 
 	AddFeature<ReflectionRenderFeature, WHITELIST_ONLY>()
 		.Include<OpaqueRenderPass>()
@@ -271,6 +278,8 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 		if (!model) continue;
 		const auto materialRenderer = modelRenderer->owner.GetComponent<CMaterialRenderer>();
 		if (!materialRenderer) continue;
+		const auto* skinnedRenderer = owner.GetComponent<CSkinnedMeshRenderer>();
+		const bool hasSkinning = SkinningUtils::IsSkinningActive(skinnedRenderer);
 				
 		const auto& transform = owner.transform.GetFTransform();
 		const auto& materials = materialRenderer->GetMaterials();
@@ -313,6 +322,11 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				materialRenderer->GetUserMatrix()
 			});
 
+			if (hasSkinning && mesh->HasSkinningData())
+			{
+				SkinningUtils::ApplyDescriptor(drawable, *skinnedRenderer);
+			}
+
 			result.drawables.push_back(drawable);
 		}
 	}
@@ -345,6 +359,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 	for (const auto& drawable : p_drawables.drawables)
 	{
 		const auto& desc = drawable.GetDescriptor<SceneDrawableDescriptor>();
+		const bool hasSkinningDescriptor = drawable.HasDescriptor<SkinningDrawableDescriptor>();
 
 		// Skip drawables that do not satisfy the required visibility flags
 		if (!SatisfiesVisibility(desc.visibilityFlags, p_filteringInput.requiredVisibilityFlags))
@@ -371,12 +386,9 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		}
 
 		// Perform frustum culling if enabled
-		if (frustum && desc.bounds.has_value())
+		if (frustum && desc.bounds.has_value() && !hasSkinningDescriptor)
 		{
 			ZoneScopedN("Frustum Culling");
-
-			// Get the engine drawable descriptor to access transform information
-			const auto& engineDesc = drawable.GetDescriptor<EngineDrawableDescriptor>();
 
 			if (!frustum->BoundingSphereInFrustum(desc.bounds.value(), desc.actor.transform.GetFTransform()))
 			{
@@ -396,6 +408,19 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		auto drawableCopy = drawable;
 		drawableCopy.material = targetMaterial;
 		drawableCopy.stateMask = targetMaterial->GenerateStateMask();
+
+		if (
+			hasSkinningDescriptor &&
+			targetMaterial->HasShader() &&
+			targetMaterial->SupportsFeature(kSkinningFeatureName)
+		)
+		{
+			drawableCopy.featureSetOverride = SkinningUtils::BuildFeatureSet(&targetMaterial->GetFeatures());
+		}
+		else
+		{
+			drawableCopy.featureSetOverride = std::nullopt;
+		}
 
 		// Categorize drawable based on their type.
 		// This is also where sorting happens, using

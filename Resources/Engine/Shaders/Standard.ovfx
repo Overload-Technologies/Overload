@@ -5,11 +5,13 @@
 #feature NORMAL_MAPPING
 #feature DISTANCE_FADE
 #feature SPECULAR_WORKFLOW
+#feature SKINNING
 
 #shader vertex
 #version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+#include ":Shaders/Common/Skinning.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
 
 layout (location = 0) in vec3 geo_Pos;
@@ -17,6 +19,8 @@ layout (location = 1) in vec2 geo_TexCoords;
 layout (location = 2) in vec3 geo_Normal;
 layout (location = 3) in vec3 geo_Tangent;
 layout (location = 4) in vec3 geo_Bitangent;
+layout (location = 5) in vec4 geo_BoneIDs;
+layout (location = 6) in vec4 geo_BoneWeights;
 
 out VS_OUT
 {
@@ -32,10 +36,17 @@ out VS_OUT
 
 void main()
 {
-    vs_out.FragPos = vec3(ubo_Model * vec4(geo_Pos, 1.0));
+    mat4 skinningMatrix = mat4(1.0);
+#if defined(SKINNING)
+    skinningMatrix = ComputeSkinningMatrix(geo_BoneIDs, geo_BoneWeights);
+#endif
+
+    const mat4 modelMatrix = ubo_Model * skinningMatrix;
+
+    vs_out.FragPos = vec3(modelMatrix * vec4(geo_Pos, 1.0));
     vs_out.TexCoords = geo_TexCoords;
-    vs_out.Normal = normalize(mat3(transpose(inverse(ubo_Model))) * geo_Normal);
-    vs_out.TBN = ConstructTBN(ubo_Model, geo_Normal, geo_Tangent, geo_Bitangent);
+    vs_out.Normal = normalize(mat3(transpose(inverse(modelMatrix))) * geo_Normal);
+    vs_out.TBN = ConstructTBN(modelMatrix, geo_Normal, geo_Tangent, geo_Bitangent);
 
 #if defined(PARALLAX_MAPPING)
     const mat3 TBNi = transpose(vs_out.TBN);

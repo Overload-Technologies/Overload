@@ -49,10 +49,30 @@ namespace
 		);
 	}
 
-	auto CreateShader(const std::filesystem::path& p_path)
+	auto CreateShader(const std::filesystem::path& p_path, const std::filesystem::path& p_editorAssetsPath)
 	{
+		auto pathParser = [p_editorAssetsPath](const std::string& p_includePath)
+		{
+			const auto normalizedIncludePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_includePath);
+			const auto includePath = std::filesystem::path{ normalizedIncludePath };
+
+			if (includePath.is_absolute())
+			{
+				return includePath.lexically_normal().string();
+			}
+
+			if (!normalizedIncludePath.empty() && normalizedIncludePath.front() == ':')
+			{
+				const auto engineAssetsPath = p_editorAssetsPath.parent_path() / "Engine";
+				return (engineAssetsPath / normalizedIncludePath.substr(1)).lexically_normal().string();
+			}
+
+			return (p_editorAssetsPath / includePath).lexically_normal().string();
+		};
+
 		return OvRendering::Resources::Loaders::ShaderLoader::Create(
-			p_path.string()
+			p_path.string(),
+			pathParser
 		);
 	}
 
@@ -128,11 +148,11 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 	};
 
 	m_shaders = {
-		{"Grid", CreateShader(shadersFolder / "Grid.ovfx")},
-		{"Gizmo", CreateShader(shadersFolder / "Gizmo.ovfx")},
-		{"Billboard", CreateShader(shadersFolder / "Billboard.ovfx")},
-		{"PickingFallback", CreateShader(shadersFolder / "PickingFallback.ovfx")},
-		{"OutlineFallback", CreateShader(shadersFolder / "OutlineFallback.ovfx")}
+		{"Grid", CreateShader(shadersFolder / "Grid.ovfx", editorAssetsPath)},
+		{"Gizmo", CreateShader(shadersFolder / "Gizmo.ovfx", editorAssetsPath)},
+		{"Billboard", CreateShader(shadersFolder / "Billboard.ovfx", editorAssetsPath)},
+		{"PickingFallback", CreateShader(shadersFolder / "PickingFallback.ovfx", editorAssetsPath)},
+		{"OutlineFallback", CreateShader(shadersFolder / "OutlineFallback.ovfx", editorAssetsPath)}
 	};
 
 	// Ensure that all resources have been loaded successfully

@@ -6,12 +6,38 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "OvRendering/Resources/Model.h"
 
 const OvRendering::Geometry::BoundingSphere& OvRendering::Resources::Model::GetBoundingSphere() const
 {
 	return m_boundingSphere;
+}
+
+bool OvRendering::Resources::Model::IsSkinned() const
+{
+	return m_skeleton.has_value() && m_skeleton->IsValid();
+}
+
+const std::optional<OvRendering::Animation::Skeleton>& OvRendering::Resources::Model::GetSkeleton() const
+{
+	return m_skeleton;
+}
+
+const std::vector<OvRendering::Animation::SkeletalAnimation>& OvRendering::Resources::Model::GetAnimations() const
+{
+	return m_animations;
+}
+
+const OvRendering::Animation::SkeletalAnimation* OvRendering::Resources::Model::FindAnimation(std::string_view p_name) const
+{
+	const auto found = std::find_if(m_animations.begin(), m_animations.end(), [p_name](const auto& p_animation)
+	{
+		return p_animation.name == p_name;
+	});
+
+	return found != m_animations.end() ? &(*found) : nullptr;
 }
 
 OvRendering::Resources::Model::Model(const std::string & p_path) : path(p_path)
@@ -41,9 +67,9 @@ void OvRendering::Resources::Model::ComputeBoundingSphere()
 			float minY = std::numeric_limits<float>::max();
 			float minZ = std::numeric_limits<float>::max();
 
-			float maxX = std::numeric_limits<float>::min();
-			float maxY = std::numeric_limits<float>::min();
-			float maxZ = std::numeric_limits<float>::min();
+			float maxX = std::numeric_limits<float>::lowest();
+			float maxY = std::numeric_limits<float>::lowest();
+			float maxZ = std::numeric_limits<float>::lowest();
 
 			for (const auto& mesh : m_meshes)
 			{

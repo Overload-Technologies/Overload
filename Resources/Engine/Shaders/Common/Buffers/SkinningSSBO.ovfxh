@@ -1,0 +1,4 @@
+layout(std430, binding = 1) buffer SkinningSSBO
+{
+    mat4 ssbo_Bones[];
+};

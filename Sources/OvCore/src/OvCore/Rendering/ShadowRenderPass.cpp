@@ -4,17 +4,24 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+#include <string>
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/ShadowRenderPass.h>
+#include <OvCore/Rendering/SkinningUtils.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 #include <OvRendering/Features/LightingRenderFeature.h>
 #include <OvRendering/HAL/Profiling.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
+const std::string kShadowPassName = "SHADOW_PASS";
+const std::string kSkinningFeatureName = std::string{ OvCore::Rendering::SkinningUtils::kFeatureName };
 
 OvCore::Rendering::ShadowRenderPass::ShadowRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)
@@ -91,6 +98,8 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 	OvCore::SceneSystem::Scene& p_scene
 )
 {
+	using namespace OvCore::Rendering;
+
 	for (auto modelRenderer : p_scene.GetFastAccessComponents().modelRenderers)
 	{
 		auto& actor = modelRenderer->owner;
@@ -106,6 +115,9 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 						continue;
 					}
 
+					const auto skinnedRenderer = actor.template GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
+					const bool hasSkinning = SkinningUtils::IsSkinningActive(skinnedRenderer);
+
 					const auto& materials = materialRenderer->GetMaterials();
 					const auto& modelMatrix = actor.transform.GetWorldMatrix();
 
@@ -113,11 +125,15 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 					{
 						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid() && material->IsShadowCaster())
 						{
-							const std::string shadowPassName = "SHADOW_PASS";
+							const bool materialHasShadowPass = material->HasPass(kShadowPassName);
+							const bool canUseMaterialShadowPass =
+								materialHasShadowPass &&
+								(!hasSkinning || material->SupportsFeature(kSkinningFeatureName));
 
-							// If the material has shadow pass, use it, otherwise use the shadow fallback material
+							// If the material has a compatible shadow pass, use it.
+							// Otherwise, use the shadow fallback material.
 							auto& targetMaterial =
-								material->HasPass(shadowPassName) ?
+								canUseMaterialShadowPass ?
 								*material :
 								m_shadowMaterial;
 
@@ -138,12 +154,17 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 							drawable.stateMask.frontfaceCulling = false;
 							drawable.stateMask.backfaceCulling = false;
 
-							drawable.pass = shadowPassName;
+							drawable.pass = kShadowPassName;
 
 							drawable.AddDescriptor<EngineDrawableDescriptor>({
 								modelMatrix,
 								materialRenderer->GetUserMatrix()
 							});
+
+							if (hasSkinning && targetMaterial.SupportsFeature(kSkinningFeatureName))
+							{
+								SkinningUtils::ApplyToDrawable(drawable, *skinnedRenderer, &targetMaterial.GetFeatures());
+							}
 
 							m_renderer.DrawEntity(p_pso, drawable);
 						}

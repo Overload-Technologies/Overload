@@ -1,0 +1,245 @@
+/**
+* @project: Overload
+* @author: Overload Tech.
+* @licence: MIT
+*/
+
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <OvCore/ECS/Components/AComponent.h>
+#include <OvMaths/FMatrix4.h>
+#include <OvMaths/FTransform.h>
+
+namespace OvCore::ECS { class Actor; }
+namespace OvRendering::Resources { class Model; }
+
+namespace OvCore::ECS::Components
+{
+	/**
+	* Component responsible for skeletal animation playback and skinning data generation.
+	*/
+	class CSkinnedMeshRenderer : public AComponent
+	{
+	public:
+		/**
+		* Constructor
+		* @param p_owner
+		*/
+		CSkinnedMeshRenderer(ECS::Actor& p_owner);
+
+		/**
+		* Returns the name of the component
+		*/
+		std::string GetName() override;
+
+		/**
+		* Returns the type name of the component
+		*/
+		virtual std::string GetTypeName() override;
+
+		/**
+		* Called by the model renderer when its model changes
+		*/
+		void NotifyModelChanged();
+
+		/**
+		* Returns true if a valid skinned model is currently attached
+		*/
+		bool HasCompatibleModel() const;
+
+		/**
+		* Returns true if the component has a valid skinning palette ready for rendering
+		*/
+		bool HasSkinningData() const;
+
+		/**
+		* Enable / disable this component
+		* @param p_value
+		*/
+		void SetEnabled(bool p_value);
+
+		/**
+		* Returns true if the component is enabled
+		*/
+		bool IsEnabled() const;
+
+		/**
+		* Start animation playback
+		*/
+		void Play();
+
+		/**
+		* Pause animation playback
+		*/
+		void Pause();
+
+		/**
+		* Stop animation playback and reset time to 0
+		*/
+		void Stop();
+
+		/**
+		* Returns true if playback is active
+		*/
+		bool IsPlaying() const;
+
+		/**
+		* Sets loop mode
+		* @param p_value
+		*/
+		void SetLooping(bool p_value);
+
+		/**
+		* Returns true if loop mode is enabled
+		*/
+		bool IsLooping() const;
+
+		/**
+		* Set playback speed
+		* @param p_value
+		*/
+		void SetPlaybackSpeed(float p_value);
+
+		/**
+		* Get playback speed
+		*/
+		float GetPlaybackSpeed() const;
+
+		/**
+		* Sets the current playback time in seconds
+		* @param p_timeSeconds
+		*/
+		void SetTime(float p_timeSeconds);
+
+		/**
+		* Returns the current playback time in seconds
+		*/
+		float GetTime() const;
+
+		/**
+		* Returns the number of available animations
+		*/
+		uint32_t GetAnimationCount() const;
+
+		/**
+		* Returns the animation name at index (std::nullopt if index is invalid)
+		* @param p_index
+		*/
+		std::optional<std::string> GetAnimationName(uint32_t p_index) const;
+
+		/**
+		* Sets the active animation by index
+		* @param p_index
+		*/
+		bool SetAnimation(uint32_t p_index);
+
+		/**
+		* Sets the active animation by name
+		* @param p_name
+		*/
+		bool SetAnimation(const std::string& p_name);
+
+		/**
+		* Returns the active animation index (-1 if none)
+		*/
+		int32_t GetAnimationIndex() const;
+
+		/**
+		* Returns the active animation name (empty if none)
+		*/
+		std::string GetAnimation() const;
+
+		/**
+		* Returns the current skinning matrix palette
+		*/
+		const std::vector<OvMaths::FMatrix4>& GetBoneMatrices() const;
+
+		/**
+		* Returns the transposed skinning matrix palette ready for GPU upload
+		*/
+		const std::vector<OvMaths::FMatrix4>& GetBoneMatricesTransposed() const;
+
+		/**
+		* Returns an incrementing pose version, updated whenever bone matrices change
+		*/
+		uint64_t GetPoseVersion() const;
+
+		/**
+		* Called each frame by the actor
+		* @param p_deltaTime
+		*/
+		void OnUpdate(float p_deltaTime) override;
+
+		/**
+		* Serialize the component
+		* @param p_doc
+		* @param p_node
+		*/
+		virtual void OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node) override;
+
+		/**
+		* Deserialize the component
+		* @param p_doc
+		* @param p_node
+		*/
+		virtual void OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node) override;
+
+		/**
+		* Draw component inspector widgets
+		* @param p_root
+		*/
+		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+
+	private:
+		struct TrackSamplingCursor
+		{
+			size_t positionKeyIndex = 0;
+			size_t rotationKeyIndex = 0;
+			size_t scaleKeyIndex = 0;
+		};
+
+		void SyncWithModel();
+		void RebuildRuntimeData();
+		void EvaluatePose();
+		float GetAnimationDurationSeconds() const;
+		void UpdatePlayback(float p_deltaTime);
+
+	private:
+		const OvRendering::Resources::Model* m_model = nullptr;
+
+		bool m_enabled = true;
+		bool m_playing = true;
+		bool m_looping = true;
+		float m_playbackSpeed = 1.0f;
+		float m_poseEvaluationRate = 60.0f;
+		float m_poseEvaluationAccumulator = 0.0f;
+
+		float m_currentTimeTicks = 0.0f;
+		std::optional<uint32_t> m_animationIndex = std::nullopt;
+		std::string m_deserializedAnimationName;
+
+		uint64_t m_poseVersion = 0;
+
+		std::vector<std::string> m_animationNames;
+		std::vector<OvMaths::FTransform> m_bindPoseTransforms;
+		std::vector<OvMaths::FMatrix4> m_localPose;
+		std::vector<OvMaths::FMatrix4> m_globalPose;
+		std::vector<OvMaths::FMatrix4> m_boneMatrices;
+		std::vector<OvMaths::FMatrix4> m_boneMatricesTransposed;
+		std::vector<TrackSamplingCursor> m_trackSamplingCursors;
+		float m_lastSampleTimeTicks = 0.0f;
+		std::optional<uint32_t> m_lastSampledAnimationIndex = std::nullopt;
+	};
+
+	template<>
+	struct ComponentTraits<OvCore::ECS::Components::CSkinnedMeshRenderer>
+	{
+		static constexpr std::string_view Name = "class OvCore::ECS::Components::CSkinnedMeshRenderer";
+	};
+}

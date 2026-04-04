@@ -1,15 +1,19 @@
 #pass SHADOW_PASS
 
 #feature ALPHA_CLIPPING
+#feature SKINNING
 
 #shader vertex
 #version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
+#include ":Shaders/Common/Skinning.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
 
 layout (location = 0) in vec3 geo_Pos;
 layout (location = 1) in vec2 geo_TexCoords;
+layout (location = 5) in vec4 geo_BoneIDs;
+layout (location = 6) in vec4 geo_BoneWeights;
 
 out VS_OUT
 {
@@ -19,7 +23,14 @@ out VS_OUT
 
 void main()
 {
-    vs_out.FragPos = vec3(ubo_Model * vec4(geo_Pos, 1.0));
+    mat4 skinningMatrix = mat4(1.0);
+#if defined(SKINNING)
+    skinningMatrix = ComputeSkinningMatrix(geo_BoneIDs, geo_BoneWeights);
+#endif
+
+    const mat4 modelMatrix = ubo_Model * skinningMatrix;
+
+    vs_out.FragPos = vec3(modelMatrix * vec4(geo_Pos, 1.0));
     vs_out.TexCoords = geo_TexCoords;
 
     gl_Position = ubo_Projection * ubo_View * vec4(vs_out.FragPos, 1.0);

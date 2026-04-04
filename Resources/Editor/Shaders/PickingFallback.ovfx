@@ -1,7 +1,12 @@
+#pass PICKING_PASS
+#feature SKINNING
+
 #shader vertex
 #version 450 core
 
 layout (location = 0) in vec3 geo_Pos;
+layout (location = 5) in vec4 geo_BoneIDs;
+layout (location = 6) in vec4 geo_BoneWeights;
 
 layout (std140) uniform EngineUBO
 {
@@ -12,9 +17,16 @@ layout (std140) uniform EngineUBO
     float   ubo_Time;
 };
 
+#include ":Shaders/Common/Skinning.ovfxh"
+
 void main()
 {
-    gl_Position = ubo_Projection * ubo_View * ubo_Model * vec4(geo_Pos, 1.0);
+    mat4 skinningMatrix = mat4(1.0);
+#if defined(SKINNING)
+    skinningMatrix = ComputeSkinningMatrix(geo_BoneIDs, geo_BoneWeights);
+#endif
+
+    gl_Position = ubo_Projection * ubo_View * ubo_Model * skinningMatrix * vec4(geo_Pos, 1.0);
 }
 
 #shader fragment

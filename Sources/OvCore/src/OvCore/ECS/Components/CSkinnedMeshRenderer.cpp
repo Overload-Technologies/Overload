@@ -22,16 +22,14 @@ namespace
 {
 	constexpr float kDefaultTicksPerSecond = 25.0f;
 
-	void DecomposeTRS(
-		const OvMaths::FMatrix4& p_matrix,
-		OvMaths::FVector3& p_position,
-		OvMaths::FQuaternion& p_rotation,
-		OvMaths::FVector3& p_scale
-	)
+	OvMaths::FTransform DecomposeTransform(const OvMaths::FMatrix4& p_matrix)
 	{
 		constexpr float kEpsilon = 1e-8f;
+		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
+		OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
+		OvMaths::FVector3 scale = OvMaths::FVector3::One;
 
-		p_position = {
+		position = {
 			p_matrix.data[3],
 			p_matrix.data[7],
 			p_matrix.data[11]
@@ -43,13 +41,13 @@ namespace
 			{ p_matrix.data[2], p_matrix.data[6], p_matrix.data[10] }
 		};
 
-		p_scale.x = OvMaths::FVector3::Length(columns[0]);
-		p_scale.y = OvMaths::FVector3::Length(columns[1]);
-		p_scale.z = OvMaths::FVector3::Length(columns[2]);
+		scale.x = OvMaths::FVector3::Length(columns[0]);
+		scale.y = OvMaths::FVector3::Length(columns[1]);
+		scale.z = OvMaths::FVector3::Length(columns[2]);
 
-		if (p_scale.x > kEpsilon) columns[0] /= p_scale.x;
-		if (p_scale.y > kEpsilon) columns[1] /= p_scale.y;
-		if (p_scale.z > kEpsilon) columns[2] /= p_scale.z;
+		if (scale.x > kEpsilon) columns[0] /= scale.x;
+		if (scale.y > kEpsilon) columns[1] /= scale.y;
+		if (scale.z > kEpsilon) columns[2] /= scale.z;
 
 		const float basisDeterminant = OvMaths::FVector3::Dot(
 			OvMaths::FVector3::Cross(columns[0], columns[1]),
@@ -58,19 +56,19 @@ namespace
 
 		if (basisDeterminant < 0.0f)
 		{
-			if (p_scale.x >= p_scale.y && p_scale.x >= p_scale.z)
+			if (scale.x >= scale.y && scale.x >= scale.z)
 			{
-				p_scale.x = -p_scale.x;
+				scale.x = -scale.x;
 				columns[0] = -columns[0];
 			}
-			else if (p_scale.y >= p_scale.x && p_scale.y >= p_scale.z)
+			else if (scale.y >= scale.x && scale.y >= scale.z)
 			{
-				p_scale.y = -p_scale.y;
+				scale.y = -scale.y;
 				columns[1] = -columns[1];
 			}
 			else
 			{
-				p_scale.z = -p_scale.z;
+				scale.z = -scale.z;
 				columns[2] = -columns[2];
 			}
 		}
@@ -81,19 +79,8 @@ namespace
 			columns[0].z, columns[1].z, columns[2].z
 		};
 
-		p_rotation = OvMaths::FQuaternion::Normalize(OvMaths::FQuaternion(rotationMatrix));
-	}
-
-	OvMaths::FMatrix4 ComposeTRS(
-		const OvMaths::FVector3& p_position,
-		const OvMaths::FQuaternion& p_rotation,
-		const OvMaths::FVector3& p_scale
-	)
-	{
-		return
-			OvMaths::FMatrix4::Translation(p_position) *
-			OvMaths::FQuaternion::ToMatrix4(OvMaths::FQuaternion::Normalize(p_rotation)) *
-			OvMaths::FMatrix4::Scaling(p_scale);
+		rotation = OvMaths::FQuaternion::Normalize(OvMaths::FQuaternion(rotationMatrix));
+		return OvMaths::FTransform(position, rotation, scale);
 	}
 
 	float WrapTime(float p_value, float p_duration)
@@ -599,7 +586,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	const std::string requestedAnimationName = m_deserializedAnimationName;
 
 	m_animationNames.clear();
-	m_bindPoseTRS.clear();
+	m_bindPoseTransforms.clear();
 	m_localPose.clear();
 	m_globalPose.clear();
 	m_boneMatrices.clear();
@@ -619,19 +606,10 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	const auto& skeleton = m_model->GetSkeleton().value();
 	const auto& animations = m_model->GetAnimations();
 
-	m_bindPoseTRS.reserve(skeleton.nodes.size());
+	m_bindPoseTransforms.reserve(skeleton.nodes.size());
 	for (const auto& node : skeleton.nodes)
 	{
-		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
-		OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
-		OvMaths::FVector3 scale = OvMaths::FVector3::One;
-		DecomposeTRS(node.localBindTransform, position, rotation, scale);
-
-		m_bindPoseTRS.push_back({
-			.position = position,
-			.rotation = rotation,
-			.scale = scale
-		});
+		m_bindPoseTransforms.push_back(DecomposeTransform(node.localBindTransform));
 	}
 
 	m_localPose.resize(skeleton.nodes.size(), OvMaths::FMatrix4::Identity);
@@ -688,23 +666,14 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 
 	const auto& skeleton = m_model->GetSkeleton().value();
 
-	if (m_bindPoseTRS.size() != skeleton.nodes.size())
+	if (m_bindPoseTransforms.size() != skeleton.nodes.size())
 	{
-		m_bindPoseTRS.clear();
-		m_bindPoseTRS.reserve(skeleton.nodes.size());
+		m_bindPoseTransforms.clear();
+		m_bindPoseTransforms.reserve(skeleton.nodes.size());
 
 		for (const auto& node : skeleton.nodes)
 		{
-			OvMaths::FVector3 position = OvMaths::FVector3::Zero;
-			OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
-			OvMaths::FVector3 scale = OvMaths::FVector3::One;
-			DecomposeTRS(node.localBindTransform, position, rotation, scale);
-
-			m_bindPoseTRS.push_back({
-				.position = position,
-				.rotation = rotation,
-				.scale = scale
-			});
+			m_bindPoseTransforms.push_back(DecomposeTransform(node.localBindTransform));
 		}
 	}
 
@@ -764,46 +733,49 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 			const auto& track = animation.tracks[trackIndex];
 			auto& trackCursor = m_trackSamplingCursors[trackIndex];
 
-			if (track.nodeIndex >= m_localPose.size() || track.nodeIndex >= m_bindPoseTRS.size())
+			if (track.nodeIndex >= m_localPose.size() || track.nodeIndex >= m_bindPoseTransforms.size())
 			{
 				continue;
 			}
 
-			const auto& bindTRS = m_bindPoseTRS[track.nodeIndex];
-			TRS sampled{
-				.position = SampleKeys(
-					track.positionKeys,
-					sampleTime,
-					duration,
-					bindTRS.position,
-					m_looping,
-					[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
-					&trackCursor.positionKeyIndex,
-					useSamplingCursorHint
-				),
-				.rotation = SampleKeys(
-					track.rotationKeys,
-					sampleTime,
-					duration,
-					bindTRS.rotation,
-					m_looping,
-					[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FQuaternion::Slerp(p_a, p_b, p_alpha); },
-					&trackCursor.rotationKeyIndex,
-					useSamplingCursorHint
-				),
-				.scale = SampleKeys(
-					track.scaleKeys,
-					sampleTime,
-					duration,
-					bindTRS.scale,
-					m_looping,
-					[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
-					&trackCursor.scaleKeyIndex,
-					useSamplingCursorHint
-				)
-			};
+			const auto& bindPoseTransform = m_bindPoseTransforms[track.nodeIndex];
 
-			m_localPose[track.nodeIndex] = ComposeTRS(sampled.position, sampled.rotation, sampled.scale);
+			const OvMaths::FVector3 sampledPosition = SampleKeys(
+				track.positionKeys,
+				sampleTime,
+				duration,
+				bindPoseTransform.GetLocalPosition(),
+				m_looping,
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
+				&trackCursor.positionKeyIndex,
+				useSamplingCursorHint
+			);
+
+			const OvMaths::FQuaternion sampledRotation = SampleKeys(
+				track.rotationKeys,
+				sampleTime,
+				duration,
+				bindPoseTransform.GetLocalRotation(),
+				m_looping,
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FQuaternion::Slerp(p_a, p_b, p_alpha); },
+				&trackCursor.rotationKeyIndex,
+				useSamplingCursorHint
+			);
+
+			const OvMaths::FVector3 sampledScale = SampleKeys(
+				track.scaleKeys,
+				sampleTime,
+				duration,
+				bindPoseTransform.GetLocalScale(),
+				m_looping,
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
+				&trackCursor.scaleKeyIndex,
+				useSamplingCursorHint
+			);
+
+			const OvMaths::FTransform sampled(sampledPosition, sampledRotation, sampledScale);
+
+			m_localPose[track.nodeIndex] = sampled.GetLocalMatrix();
 		}
 
 		m_lastSampledAnimationIndex = m_animationIndex;

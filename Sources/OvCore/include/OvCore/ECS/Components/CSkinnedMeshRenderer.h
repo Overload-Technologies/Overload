@@ -13,8 +13,7 @@
 
 #include <OvCore/ECS/Components/AComponent.h>
 #include <OvMaths/FMatrix4.h>
-#include <OvMaths/FQuaternion.h>
-#include <OvMaths/FVector3.h>
+#include <OvMaths/FTransform.h>
 
 namespace OvCore::ECS { class Actor; }
 namespace OvRendering::Resources { class Model; }
@@ -197,13 +196,6 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
-		struct TRS
-		{
-			OvMaths::FVector3 position = OvMaths::FVector3::Zero;
-			OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
-			OvMaths::FVector3 scale = OvMaths::FVector3::One;
-		};
-
 		struct TrackSamplingCursor
 		{
 			size_t positionKeyIndex = 0;
@@ -234,7 +226,7 @@ namespace OvCore::ECS::Components
 		uint64_t m_poseVersion = 0;
 
 		std::vector<std::string> m_animationNames;
-		std::vector<TRS> m_bindPoseTRS;
+		std::vector<OvMaths::FTransform> m_bindPoseTransforms;
 		std::vector<OvMaths::FMatrix4> m_localPose;
 		std::vector<OvMaths::FMatrix4> m_globalPose;
 		std::vector<OvMaths::FMatrix4> m_boneMatrices;

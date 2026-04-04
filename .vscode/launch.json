@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug OvEditor (Debug)",
+      "type": "lldb",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Build/Debug",
+      "program": "${workspaceFolder}/Build/Debug/OvEditor",
+      "preLaunchTask": "Build (Debug x64)"
+    },
+    {
+      "name": "Debug OvEditor (Release)",
+      "type": "lldb",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Build/Release",
+      "program": "${workspaceFolder}/Build/Release/OvEditor",
+      "preLaunchTask": "Build (Release x64)"
+    }
+  ]
+}

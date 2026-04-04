@@ -409,13 +409,13 @@ int32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationIndex() const
 
 std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimation() const
 {
-	if (!HasCompatibleModel() || !m_animationIndex.has_value())
+	if (!m_animationIndex.has_value())
 	{
 		return {};
 	}
 
-	const auto animationIndex = static_cast<size_t>(*m_animationIndex);
-	return animationIndex < m_animationNames.size() ? m_animationNames[animationIndex] : std::string{};
+	const auto animationName = GetAnimationName(*m_animationIndex);
+	return animationName.has_value() ? *animationName : std::string{};
 }
 
 const std::vector<OvMaths::FMatrix4>& OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneMatrices() const

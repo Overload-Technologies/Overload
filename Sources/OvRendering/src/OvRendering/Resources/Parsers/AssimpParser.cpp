@@ -59,7 +59,7 @@ namespace
 		};
 	}
 
-	bool AddBoneData(OvRendering::Geometry::Vertex& p_vertex, uint32_t p_boneIndex, float p_weight)
+	bool AddBoneData(OvRendering::Geometry::SkinnedVertex& p_vertex, uint32_t p_boneIndex, float p_weight)
 	{
 		if (!std::isfinite(p_weight) || p_weight <= 0.0f)
 		{
@@ -71,7 +71,7 @@ namespace
 		{
 			if (p_vertex.boneWeights[i] <= 0.0f)
 			{
-				p_vertex.boneIDs[i] = static_cast<float>(p_boneIndex);
+				p_vertex.boneIDs[i] = p_boneIndex;
 				p_vertex.boneWeights[i] = p_weight;
 				return true;
 			}
@@ -273,19 +273,11 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessNode(
 	// Process all the node's meshes (if any)
 	for (uint32_t i = 0; i < p_node->mNumMeshes; ++i)
 	{
-		std::vector<Geometry::Vertex> vertices;
-		std::vector<uint32_t> indices;
-		bool hasSkinningData = false;
 		aiMesh* mesh = p_scene->mMeshes[p_node->mMeshes[i]];
-
-		ProcessMesh(&nodeTransformation, mesh, p_scene, vertices, indices, p_skeleton, hasSkinningData);
-
-		if (vertices.empty() || indices.empty())
+		if (Mesh* result = ProcessMesh(&nodeTransformation, mesh, p_scene, p_skeleton))
 		{
-			continue;
+			p_meshes.push_back(result); // The model will handle mesh destruction
 		}
-
-		p_meshes.push_back(new Mesh(vertices, indices, mesh->mMaterialIndex, hasSkinningData)); // The model will handle mesh destruction
 	}
 
 	// Then do the same for each of its children
@@ -295,56 +287,23 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessNode(
 	}
 }
 
-void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
+OvRendering::Resources::Mesh* OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 	void* p_transform,
 	aiMesh* p_mesh,
 	const aiScene* p_scene,
-	std::vector<Geometry::Vertex>& p_outVertices,
-	std::vector<uint32_t>& p_outIndices,
-	Animation::Skeleton* p_skeleton,
-	bool& p_outHasSkinningData
+	Animation::Skeleton* p_skeleton
 )
 {
 	(void)p_scene;
-	p_outHasSkinningData = false;
 
 	aiMatrix4x4 meshTransformation = *reinterpret_cast<aiMatrix4x4*>(p_transform);
-	p_outVertices.reserve(p_mesh->mNumVertices);
 
-	for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
-	{
-		const aiVector3D position = meshTransformation * p_mesh->mVertices[i];
-		const aiVector3D texCoords = p_mesh->mTextureCoords[0] ? p_mesh->mTextureCoords[0][i] : aiVector3D(0.0f, 0.0f, 0.0f);
-		const aiVector3D normal = meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
-		const aiVector3D tangent = meshTransformation * (p_mesh->mTangents ? p_mesh->mTangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
-		const aiVector3D bitangent = meshTransformation * (p_mesh->mBitangents ? p_mesh->mBitangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
-
-		Geometry::Vertex vertex{};
-		vertex.position[0] = position.x;
-		vertex.position[1] = position.y;
-		vertex.position[2] = position.z;
-		vertex.texCoords[0] = texCoords.x;
-		vertex.texCoords[1] = texCoords.y;
-		vertex.normals[0] = normal.x;
-		vertex.normals[1] = normal.y;
-		vertex.normals[2] = normal.z;
-		vertex.tangent[0] = tangent.x;
-		vertex.tangent[1] = tangent.y;
-		vertex.tangent[2] = tangent.z;
-		// Assimp calculates the tangent space vectors in a right-handed system.
-		// But our shader code expects a left-handed system.
-		// Multiplying the bitangent by -1 will convert it to a left-handed system.
-		// Learn OpenGL also uses a left-handed tangent space for normal mapping and parallax mapping.
-		vertex.bitangent[0] = -bitangent.x;
-		vertex.bitangent[1] = -bitangent.y;
-		vertex.bitangent[2] = -bitangent.z;
-
-		p_outVertices.push_back(vertex);
-	}
+	std::vector<uint32_t> indices;
+	indices.reserve(p_mesh->mNumFaces * 3);
 
 	for (uint32_t faceID = 0; faceID < p_mesh->mNumFaces; ++faceID)
 	{
-		auto& face = p_mesh->mFaces[faceID];
+		const auto& face = p_mesh->mFaces[faceID];
 
 		if (face.mNumIndices < 3)
 		{
@@ -359,58 +318,104 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 			continue;
 		}
 
-		p_outIndices.push_back(a);
-		p_outIndices.push_back(b);
-		p_outIndices.push_back(c);
+		indices.push_back(a);
+		indices.push_back(b);
+		indices.push_back(c);
 	}
 
-	if (!p_skeleton || !p_mesh->HasBones())
+	if (p_mesh->mNumVertices == 0 || indices.empty())
 	{
-		return;
+		return nullptr;
 	}
 
-	for (uint32_t boneID = 0; boneID < p_mesh->mNumBones; ++boneID)
+	auto fillGeometry = [&](Geometry::Vertex& v, uint32_t i)
 	{
-		const aiBone* bone = p_mesh->mBones[boneID];
-		const std::string boneName = bone->mName.C_Str();
-		const auto offsetMatrix = ToMatrix4(bone->mOffsetMatrix);
+		const aiVector3D position = meshTransformation * p_mesh->mVertices[i];
+		const aiVector3D texCoords = p_mesh->mTextureCoords[0] ? p_mesh->mTextureCoords[0][i] : aiVector3D(0.0f, 0.0f, 0.0f);
+		const aiVector3D normal = meshTransformation * (p_mesh->mNormals ? p_mesh->mNormals[i] : aiVector3D(0.0f, 0.0f, 0.0f));
+		const aiVector3D tangent = meshTransformation * (p_mesh->mTangents ? p_mesh->mTangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
+		const aiVector3D bitangent = meshTransformation * (p_mesh->mBitangents ? p_mesh->mBitangents[i] : aiVector3D(0.0f, 0.0f, 0.0f));
 
-		auto nodeIndex = p_skeleton->FindNodeIndex(boneName);
-		if (!nodeIndex)
+		v.position[0] = position.x;
+		v.position[1] = position.y;
+		v.position[2] = position.z;
+		v.texCoords[0] = texCoords.x;
+		v.texCoords[1] = texCoords.y;
+		v.normals[0] = normal.x;
+		v.normals[1] = normal.y;
+		v.normals[2] = normal.z;
+		v.tangent[0] = tangent.x;
+		v.tangent[1] = tangent.y;
+		v.tangent[2] = tangent.z;
+		// Assimp calculates the tangent space vectors in a right-handed system.
+		// But our shader code expects a left-handed system.
+		// Multiplying the bitangent by -1 will convert it to a left-handed system.
+		// Learn OpenGL also uses a left-handed tangent space for normal mapping and parallax mapping.
+		v.bitangent[0] = -bitangent.x;
+		v.bitangent[1] = -bitangent.y;
+		v.bitangent[2] = -bitangent.z;
+	};
+
+	if (p_skeleton && p_mesh->HasBones())
+	{
+		std::vector<Geometry::SkinnedVertex> vertices(p_mesh->mNumVertices);
+		for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
 		{
-			OVLOG_WARNING("AssimpParser: Bone '" + boneName + "' has no matching node in hierarchy and will be ignored.");
-			continue;
+			fillGeometry(vertices[i], i);
 		}
 
-		uint32_t boneIndex = 0;
-
-		if (auto existing = p_skeleton->FindBoneIndex(boneName))
+		for (uint32_t boneID = 0; boneID < p_mesh->mNumBones; ++boneID)
 		{
-			boneIndex = existing.value();
-		}
-		else
-		{
-			boneIndex = static_cast<uint32_t>(p_skeleton->bones.size());
-			p_skeleton->boneByName.emplace(boneName, boneIndex);
-			p_skeleton->bones.push_back({
-				.name = boneName,
-				.nodeIndex = nodeIndex.value(),
-				.offsetMatrix = offsetMatrix
-			});
-		}
+			const aiBone* bone = p_mesh->mBones[boneID];
+			const std::string boneName = bone->mName.C_Str();
+			const auto offsetMatrix = ToMatrix4(bone->mOffsetMatrix);
 
-		p_skeleton->nodes[nodeIndex.value()].boneIndex = static_cast<int32_t>(boneIndex);
-
-		for (uint32_t weightID = 0; weightID < bone->mNumWeights; ++weightID)
-		{
-			const auto& weight = bone->mWeights[weightID];
-			if (weight.mVertexId < p_outVertices.size())
+			auto nodeIndex = p_skeleton->FindNodeIndex(boneName);
+			if (!nodeIndex)
 			{
-				if (AddBoneData(p_outVertices[weight.mVertexId], boneIndex, weight.mWeight))
+				OVLOG_WARNING("AssimpParser: Bone '" + boneName + "' has no matching node in hierarchy and will be ignored.");
+				continue;
+			}
+
+			uint32_t boneIndex = 0;
+
+			if (auto existing = p_skeleton->FindBoneIndex(boneName))
+			{
+				boneIndex = existing.value();
+			}
+			else
+			{
+				boneIndex = static_cast<uint32_t>(p_skeleton->bones.size());
+				p_skeleton->boneByName.emplace(boneName, boneIndex);
+				p_skeleton->bones.push_back({
+					.name = boneName,
+					.nodeIndex = nodeIndex.value(),
+					.offsetMatrix = offsetMatrix
+				});
+			}
+
+			p_skeleton->nodes[nodeIndex.value()].boneIndex = static_cast<int32_t>(boneIndex);
+
+			for (uint32_t weightID = 0; weightID < bone->mNumWeights; ++weightID)
+			{
+				const auto& weight = bone->mWeights[weightID];
+				if (weight.mVertexId < vertices.size())
 				{
-					p_outHasSkinningData = true;
+					AddBoneData(vertices[weight.mVertexId], boneIndex, weight.mWeight);
 				}
 			}
 		}
+
+		return new Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
+	}
+	else
+	{
+		std::vector<Geometry::Vertex> vertices(p_mesh->mNumVertices);
+		for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
+		{
+			fillGeometry(vertices[i], i);
+		}
+
+		return new Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
 	}
 }

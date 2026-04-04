@@ -95,14 +95,27 @@ void OvRendering::HAL::GLVertexArray::SetLayout(
 
 		glEnableVertexAttribArray(attributeIndex);
 
-		glVertexAttribPointer(
-			static_cast<GLuint>(attributeIndex),
-			static_cast<GLint>(attribute.count),
-			EnumToValue<GLenum>(attribute.type),
-			static_cast<GLboolean>(attribute.normalized),
-			static_cast<GLsizei>(totalSize),
-			reinterpret_cast<const GLvoid*>(currentOffset)
-		);
+		if (attribute.integer)
+		{
+			glVertexAttribIPointer(
+				static_cast<GLuint>(attributeIndex),
+				static_cast<GLint>(attribute.count),
+				EnumToValue<GLenum>(attribute.type),
+				static_cast<GLsizei>(totalSize),
+				reinterpret_cast<const GLvoid*>(currentOffset)
+			);
+		}
+		else
+		{
+			glVertexAttribPointer(
+				static_cast<GLuint>(attributeIndex),
+				static_cast<GLint>(attribute.count),
+				EnumToValue<GLenum>(attribute.type),
+				static_cast<GLboolean>(attribute.normalized),
+				static_cast<GLsizei>(totalSize),
+				reinterpret_cast<const GLvoid*>(currentOffset)
+			);
+		}
 
 		const uint64_t typeSize = GetDataTypeSizeInBytes(attribute.type);
 		const uint64_t attributeSize = typeSize * attribute.count;

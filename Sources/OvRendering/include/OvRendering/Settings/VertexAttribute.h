@@ -20,6 +20,7 @@ namespace OvRendering::Settings
 		EDataType type = EDataType::FLOAT;
 		uint8_t count = 4;
 		bool normalized = false;
+		bool integer = false;
 	};
 
 	using VertexAttributeLayout = std::span<const Settings::VertexAttribute>;

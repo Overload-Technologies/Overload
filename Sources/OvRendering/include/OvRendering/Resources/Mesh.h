@@ -24,7 +24,7 @@ namespace OvRendering::Resources
 	{
 	public:
 		/**
-		* Create a mesh with the given vertices, indices and material index
+		* Create a non-skinned mesh with the given vertices, indices and material index
 		* @param p_vertices
 		* @param p_indices
 		* @param p_materialIndex
@@ -32,8 +32,19 @@ namespace OvRendering::Resources
 		Mesh(
 			std::span<const Geometry::Vertex> p_vertices,
 			std::span<const uint32_t> p_indices,
-			uint32_t p_materialIndex = 0,
-			bool p_hasSkinningData = false
+			uint32_t p_materialIndex = 0
+		);
+
+		/**
+		* Create a skinned mesh with the given vertices, indices and material index
+		* @param p_vertices
+		* @param p_indices
+		* @param p_materialIndex
+		*/
+		Mesh(
+			std::span<const Geometry::SkinnedVertex> p_vertices,
+			std::span<const uint32_t> p_indices,
+			uint32_t p_materialIndex = 0
 		);
 
 		/**
@@ -73,7 +84,7 @@ namespace OvRendering::Resources
 
 	private:
 		void Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices);
-		void ComputeBoundingSphere(std::span<const Geometry::Vertex> p_vertices);
+		void Upload(std::span<const Geometry::SkinnedVertex> p_vertices, std::span<const uint32_t> p_indices);
 
 	private:
 		const uint32_t m_vertexCount;

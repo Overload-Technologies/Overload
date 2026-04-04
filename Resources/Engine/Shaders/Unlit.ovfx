@@ -12,8 +12,10 @@
 
 layout (location = 0) in vec3 geo_Pos;
 layout (location = 1) in vec2 geo_TexCoords;
-layout (location = 5) in vec4 geo_BoneIDs;
+#if defined(SKINNING)
+layout (location = 5) in uvec4 geo_BoneIDs;
 layout (location = 6) in vec4 geo_BoneWeights;
+#endif
 
 out VS_OUT
 {

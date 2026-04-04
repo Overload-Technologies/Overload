@@ -128,10 +128,10 @@ namespace OvCore::ECS::Components
 		uint32_t GetAnimationCount() const;
 
 		/**
-		* Returns the animation name at index
+		* Returns the animation name at index (std::nullopt if index is invalid)
 		* @param p_index
 		*/
-		std::string GetAnimationName(uint32_t p_index) const;
+		std::optional<std::string> GetAnimationName(uint32_t p_index) const;
 
 		/**
 		* Sets the active animation by index

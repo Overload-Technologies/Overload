@@ -356,14 +356,14 @@ uint32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationCount() cons
 	return static_cast<uint32_t>(m_animationNames.size());
 }
 
-std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationName(uint32_t p_index) const
+std::optional<std::string> OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationName(uint32_t p_index) const
 {
 	if (p_index < m_animationNames.size())
 	{
 		return m_animationNames[p_index];
 	}
 
-	return {};
+	return std::nullopt;
 }
 
 bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(uint32_t p_index)

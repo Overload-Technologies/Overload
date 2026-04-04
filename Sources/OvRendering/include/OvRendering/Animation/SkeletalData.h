@@ -27,7 +27,11 @@ namespace OvRendering::Animation
 		int32_t parentIndex = -1;
 		int32_t boneIndex = -1;
 		OvMaths::FMatrix4 localBindTransform = OvMaths::FMatrix4::Identity;
-		OvMaths::FMatrix4 globalBindTransform = OvMaths::FMatrix4::Identity;
+
+		// Decomposed from localBindTransform — used as default values when a track has no keys
+		OvMaths::FVector3 bindPosition;
+		OvMaths::FQuaternion bindRotation;
+		OvMaths::FVector3 bindScale = OvMaths::FVector3(1.0f, 1.0f, 1.0f);
 	};
 
 	struct Bone
@@ -43,7 +47,6 @@ namespace OvRendering::Animation
 		std::vector<Bone> bones;
 		std::unordered_map<std::string, uint32_t> nodeByName;
 		std::unordered_map<std::string, uint32_t> boneByName;
-		OvMaths::FMatrix4 globalInverseTransform = OvMaths::FMatrix4::Identity;
 
 		bool IsValid() const
 		{
@@ -102,6 +105,11 @@ namespace OvRendering::Animation
 		float GetDurationSeconds() const
 		{
 			return ticksPerSecond > 0.0f ? duration / ticksPerSecond : 0.0f;
+		}
+
+		float GetEffectiveTicksPerSecond() const
+		{
+			return ticksPerSecond > 0.0f ? ticksPerSecond : 25.0f;
 		}
 
 		const NodeAnimationTrack* FindTrack(uint32_t p_nodeIndex) const

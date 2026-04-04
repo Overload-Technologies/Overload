@@ -43,15 +43,16 @@ namespace
 		OvCore::Resources::Material& p_fallbackMaterial
 	)
 	{
-		if (p_hasSkinning)
-		{
-			return p_fallbackMaterial;
-		}
-
 		auto* material = FindMeshMaterial(p_materials, p_materialIndex);
 		if (material && material->IsValid() && material->HasPass(std::string{ p_passName }))
 		{
-			return *material;
+			const bool skinningCompatible = !p_hasSkinning ||
+				material->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
+
+			if (skinningCompatible)
+			{
+				return *material;
+			}
 		}
 
 		return p_fallbackMaterial;

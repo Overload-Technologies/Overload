@@ -219,7 +219,7 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 	m_metadata->Add("GEN_NORMALS", false);
 	m_metadata->Add("GEN_SMOOTH_NORMALS", true);
 	m_metadata->Add("SPLIT_LARGE_MESHES", false);
-	m_metadata->Add("PRE_TRANSFORM_VERTICES", true);
+	m_metadata->Add("PRE_TRANSFORM_VERTICES", false);
 	m_metadata->Add("LIMIT_BONE_WEIGHTS", false);
 	m_metadata->Add("VALIDATE_DATA_STRUCTURE", false);
 	m_metadata->Add("IMPROVE_CACHE_LOCALITY", true);

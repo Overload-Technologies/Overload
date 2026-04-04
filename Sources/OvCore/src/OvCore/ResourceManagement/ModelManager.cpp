@@ -22,7 +22,7 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	if (metaFile.GetOrDefault("GEN_NORMALS",				false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::GEN_NORMALS;
 	if (metaFile.GetOrDefault("GEN_SMOOTH_NORMALS",			true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::GEN_SMOOTH_NORMALS;
 	if (metaFile.GetOrDefault("SPLIT_LARGE_MESHES",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::SPLIT_LARGE_MESHES;
-	if (metaFile.GetOrDefault("PRE_TRANSFORM_VERTICES",		true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::PRE_TRANSFORM_VERTICES;
+	if (metaFile.GetOrDefault("PRE_TRANSFORM_VERTICES",		false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::PRE_TRANSFORM_VERTICES;
 	if (metaFile.GetOrDefault("LIMIT_BONE_WEIGHTS",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::LIMIT_BONE_WEIGHTS;
 	if (metaFile.GetOrDefault("VALIDATE_DATA_STRUCTURE",	false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::VALIDATE_DATA_STRUCTURE;
 	if (metaFile.GetOrDefault("IMPROVE_CACHE_LOCALITY",		true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::IMPROVE_CACHE_LOCALITY;

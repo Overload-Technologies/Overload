@@ -37,7 +37,13 @@ namespace
 
 		p_flags |= TRIANGULATE;
 		p_flags |= LIMIT_BONE_WEIGHTS;
-		p_flags &= ~PRE_TRANSFORM_VERTICES;
+
+		if (static_cast<bool>(p_flags & PRE_TRANSFORM_VERTICES))
+		{
+			p_flags &= ~PRE_TRANSFORM_VERTICES;
+			OVLOG_WARNING("AssimpParser: PRE_TRANSFORM_VERTICES is incompatible with skeletal animation and has been removed.");
+		}
+
 		p_flags &= ~DEBONE;
 
 		return p_flags;
@@ -60,6 +66,7 @@ namespace
 			return false;
 		}
 
+		// aiProcess_LimitBoneWeights guarantees at most kMaxBonesPerVertex influences per vertex.
 		for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
 		{
 			if (p_vertex.boneWeights[i] <= 0.0f)
@@ -70,48 +77,7 @@ namespace
 			}
 		}
 
-		auto minSlot = 0u;
-		for (uint8_t i = 1; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-		{
-			if (p_vertex.boneWeights[i] < p_vertex.boneWeights[minSlot])
-			{
-				minSlot = i;
-			}
-		}
-
-		if (p_weight > p_vertex.boneWeights[minSlot])
-		{
-			p_vertex.boneIDs[minSlot] = static_cast<float>(p_boneIndex);
-			p_vertex.boneWeights[minSlot] = p_weight;
-			return true;
-		}
-
 		return false;
-	}
-
-	float GetBoneWeightSum(const OvRendering::Geometry::Vertex& p_vertex)
-	{
-		float sum = 0.0f;
-
-		for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-		{
-			sum += p_vertex.boneWeights[i];
-		}
-
-		return sum;
-	}
-
-	void NormalizeBoneData(OvRendering::Geometry::Vertex& p_vertex)
-	{
-		const float sum = GetBoneWeightSum(p_vertex);
-
-		if (sum > 0.0f)
-		{
-			for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-			{
-				p_vertex.boneWeights[i] /= sum;
-			}
-		}
 	}
 
 }
@@ -180,40 +146,34 @@ void OvRendering::Resources::Parsers::AssimpParser::BuildSkeleton(const aiScene*
 	const auto addNodeRecursive = [&p_skeleton](
 		const auto& p_self,
 		aiNode* p_node,
-		int32_t p_parentIndex,
-		const OvMaths::FMatrix4& p_parentGlobal
+		int32_t p_parentIndex
 	) -> void
 	{
-		const auto localBind = ToMatrix4(p_node->mTransformation);
-		const auto globalBind = p_parentGlobal * localBind;
 		const auto currentIndex = static_cast<uint32_t>(p_skeleton.nodes.size());
+
+		aiVector3D aiPosition, aiScale;
+		aiQuaternion aiRotation;
+		p_node->mTransformation.Decompose(aiScale, aiRotation, aiPosition);
 
 		p_skeleton.nodes.push_back({
 			.name = p_node->mName.C_Str(),
 			.parentIndex = p_parentIndex,
 			.boneIndex = -1,
-			.localBindTransform = localBind,
-			.globalBindTransform = globalBind
+			.localBindTransform = ToMatrix4(p_node->mTransformation),
+			.bindPosition = { aiPosition.x, aiPosition.y, aiPosition.z },
+			.bindRotation = { aiRotation.x, aiRotation.y, aiRotation.z, aiRotation.w },
+			.bindScale = { aiScale.x, aiScale.y, aiScale.z }
 		});
 
 		p_skeleton.nodeByName.emplace(p_node->mName.C_Str(), currentIndex);
 
 		for (uint32_t i = 0; i < p_node->mNumChildren; ++i)
 		{
-			p_self(
-				p_self,
-				p_node->mChildren[i],
-				static_cast<int32_t>(currentIndex),
-				globalBind
-			);
+			p_self(p_self, p_node->mChildren[i], static_cast<int32_t>(currentIndex));
 		}
 	};
 
-	addNodeRecursive(addNodeRecursive, p_scene->mRootNode, -1, OvMaths::FMatrix4::Identity);
-
-	auto globalInverse = p_scene->mRootNode->mTransformation;
-	globalInverse.Inverse();
-	p_skeleton.globalInverseTransform = ToMatrix4(globalInverse);
+	addNodeRecursive(addNodeRecursive, p_scene->mRootNode, -1);
 }
 
 void OvRendering::Resources::Parsers::AssimpParser::ProcessAnimations(
@@ -452,10 +412,5 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 				}
 			}
 		}
-	}
-
-	for (auto& vertex : p_outVertices)
-	{
-		NormalizeBoneData(vertex);
 	}
 }

@@ -44,15 +44,6 @@ void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::M
 {
 	m_model = p_model;
 	m_modelChangedEvent.Invoke();
-
-	if (m_model && m_model->IsSkinned())
-	{
-		owner.AddComponent<CSkinnedMeshRenderer>().NotifyModelChanged();
-	}
-	else if (auto skinnedRenderer = owner.GetComponent<CSkinnedMeshRenderer>())
-	{
-		skinnedRenderer->NotifyModelChanged();
-	}
 }
 
 OvRendering::Resources::Model * OvCore::ECS::Components::CModelRenderer::GetModel() const
@@ -90,9 +81,7 @@ void OvCore::ECS::Components::CModelRenderer::OnSerialize(tinyxml2::XMLDocument 
 
 void OvCore::ECS::Components::CModelRenderer::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode* p_node)
 {
-	OvRendering::Resources::Model* deserializedModel = nullptr;
-	OvCore::Helpers::Serializer::DeserializeModel(p_doc, p_node, "model", deserializedModel);
-	SetModel(deserializedModel);
+	OvCore::Helpers::Serializer::DeserializeModel(p_doc, p_node, "model", m_model);
 	OvCore::Helpers::Serializer::DeserializeInt(p_doc, p_node, "frustum_behaviour", reinterpret_cast<int&>(m_frustumBehaviour));
 	OvCore::Helpers::Serializer::DeserializeVec3(p_doc, p_node, "custom_bounding_sphere_position", m_customBoundingSphere.position);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "custom_bounding_sphere_radius", m_customBoundingSphere.radius);

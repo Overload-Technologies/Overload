@@ -200,6 +200,8 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 			OvRendering::Entities::Drawable finalDrawable = drawable;
 			finalDrawable.material = &targetMaterial;
 			finalDrawable.stateMask = targetMaterial.GenerateStateMask();
+			finalDrawable.stateMask.frontfaceCulling = false;
+			finalDrawable.stateMask.backfaceCulling = false;
 			finalDrawable.pass = kPickingPassName;
 			finalDrawable.featureSetOverride = std::nullopt;
 

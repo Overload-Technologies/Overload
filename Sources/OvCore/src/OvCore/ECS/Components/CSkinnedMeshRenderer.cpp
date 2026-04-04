@@ -15,74 +15,12 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
+#include <OvMaths/FTransform.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Widgets/Texts/Text.h>
 
 namespace
 {
-	constexpr float kDefaultTicksPerSecond = 25.0f;
-
-	OvMaths::FTransform DecomposeTransform(const OvMaths::FMatrix4& p_matrix)
-	{
-		constexpr float kEpsilon = 1e-8f;
-		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
-		OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
-		OvMaths::FVector3 scale = OvMaths::FVector3::One;
-
-		position = {
-			p_matrix.data[3],
-			p_matrix.data[7],
-			p_matrix.data[11]
-		};
-
-		OvMaths::FVector3 columns[3] = {
-			{ p_matrix.data[0], p_matrix.data[4], p_matrix.data[8] },
-			{ p_matrix.data[1], p_matrix.data[5], p_matrix.data[9] },
-			{ p_matrix.data[2], p_matrix.data[6], p_matrix.data[10] }
-		};
-
-		scale.x = OvMaths::FVector3::Length(columns[0]);
-		scale.y = OvMaths::FVector3::Length(columns[1]);
-		scale.z = OvMaths::FVector3::Length(columns[2]);
-
-		if (scale.x > kEpsilon) columns[0] /= scale.x;
-		if (scale.y > kEpsilon) columns[1] /= scale.y;
-		if (scale.z > kEpsilon) columns[2] /= scale.z;
-
-		const float basisDeterminant = OvMaths::FVector3::Dot(
-			OvMaths::FVector3::Cross(columns[0], columns[1]),
-			columns[2]
-		);
-
-		if (basisDeterminant < 0.0f)
-		{
-			if (scale.x >= scale.y && scale.x >= scale.z)
-			{
-				scale.x = -scale.x;
-				columns[0] = -columns[0];
-			}
-			else if (scale.y >= scale.x && scale.y >= scale.z)
-			{
-				scale.y = -scale.y;
-				columns[1] = -columns[1];
-			}
-			else
-			{
-				scale.z = -scale.z;
-				columns[2] = -columns[2];
-			}
-		}
-
-		const OvMaths::FMatrix3 rotationMatrix{
-			columns[0].x, columns[1].x, columns[2].x,
-			columns[0].y, columns[1].y, columns[2].y,
-			columns[0].z, columns[1].z, columns[2].z
-		};
-
-		rotation = OvMaths::FQuaternion::Normalize(OvMaths::FQuaternion(rotationMatrix));
-		return OvMaths::FTransform(position, rotation, scale);
-	}
-
 	float WrapTime(float p_value, float p_duration)
 	{
 		if (p_duration <= 0.0f)
@@ -101,9 +39,7 @@ namespace
 		float p_duration,
 		const T& p_defaultValue,
 		bool p_looping,
-		TLerp p_lerp,
-		size_t* p_cursor = nullptr,
-		bool p_useCursorHint = false
+		TLerp p_lerp
 	)
 	{
 		if (p_keys.empty())
@@ -116,64 +52,10 @@ namespace
 			return p_keys.front().value;
 		}
 
-		const auto sampleWithSegment = [&](const auto& p_prev, const auto& p_next, float p_segmentDuration, float p_alphaBias = 0.0f)
-		{
-			if (p_segmentDuration <= std::numeric_limits<float>::epsilon())
-			{
-				return p_prev.value;
-			}
-
-			const float alpha = std::clamp(((p_time - p_prev.time) + p_alphaBias) / p_segmentDuration, 0.0f, 1.0f);
-			return p_lerp(p_prev.value, p_next.value, alpha);
-		};
-
-		if (p_useCursorHint && p_cursor)
-		{
-			size_t cursor = std::min(*p_cursor, p_keys.size() - 1);
-			while (cursor + 1 < p_keys.size() && p_time >= p_keys[cursor + 1].time)
-			{
-				++cursor;
-			}
-
-			*p_cursor = cursor;
-
-			if (cursor + 1 < p_keys.size())
-			{
-				return sampleWithSegment(p_keys[cursor], p_keys[cursor + 1], p_keys[cursor + 1].time - p_keys[cursor].time);
-			}
-
-			if (!p_looping)
-			{
-				return p_keys.back().value;
-			}
-
-			const auto& prev = p_keys.back();
-			const auto& next = p_keys.front();
-			const float segmentDuration = (p_duration - prev.time) + next.time;
-			return sampleWithSegment(prev, next, segmentDuration);
-		}
-
 		if (!p_looping)
 		{
-			if (p_time <= p_keys.front().time)
-			{
-				if (p_cursor)
-				{
-					*p_cursor = 0;
-				}
-
-				return p_keys.front().value;
-			}
-
-			if (p_time >= p_keys.back().time)
-			{
-				if (p_cursor)
-				{
-					*p_cursor = p_keys.size() - 1;
-				}
-
-				return p_keys.back().value;
-			}
+			if (p_time <= p_keys.front().time) return p_keys.front().value;
+			if (p_time >= p_keys.back().time)  return p_keys.back().value;
 		}
 
 		const auto nextIt = std::upper_bound(
@@ -183,48 +65,37 @@ namespace
 			[](float p_lhs, const auto& p_rhs) { return p_lhs < p_rhs.time; }
 		);
 
+		const auto interpolate = [&](const auto& p_prev, const auto& p_next, float p_segmentDuration)
+		{
+			if (p_segmentDuration <= std::numeric_limits<float>::epsilon())
+			{
+				return p_prev.value;
+			}
+
+			const float alpha = std::clamp((p_time - p_prev.time) / p_segmentDuration, 0.0f, 1.0f);
+			return p_lerp(p_prev.value, p_next.value, alpha);
+		};
+
 		if (nextIt == p_keys.end())
 		{
 			if (!p_looping)
 			{
-				if (p_cursor)
-				{
-					*p_cursor = p_keys.size() - 1;
-				}
-
 				return p_keys.back().value;
 			}
 
 			const auto& prev = p_keys.back();
 			const auto& next = p_keys.front();
-
-			const float segmentDuration = (p_duration - prev.time) + next.time;
-			if (p_cursor)
-			{
-				*p_cursor = p_keys.size() - 1;
-			}
-
-			return sampleWithSegment(prev, next, segmentDuration);
+			return interpolate(prev, next, (p_duration - prev.time) + next.time);
 		}
 
 		if (nextIt == p_keys.begin())
 		{
-			if (p_cursor)
-			{
-				*p_cursor = 0;
-			}
-
 			return nextIt->value;
 		}
 
 		const auto& prev = *std::prev(nextIt);
 		const auto& next = *nextIt;
-		if (p_cursor)
-		{
-			*p_cursor = static_cast<size_t>(std::distance(p_keys.begin(), std::prev(nextIt)));
-		}
-
-		return sampleWithSegment(prev, next, next.time - prev.time);
+		return interpolate(prev, next, next.time - prev.time);
 	}
 }
 
@@ -323,7 +194,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::SetTime(float p_timeSeconds)
 	}
 
 	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
-	const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : kDefaultTicksPerSecond;
+	const float ticksPerSecond = animation.GetEffectiveTicksPerSecond();
 
 	m_currentTimeTicks = p_timeSeconds * ticksPerSecond;
 	if (m_looping)
@@ -347,8 +218,8 @@ float OvCore::ECS::Components::CSkinnedMeshRenderer::GetTime() const
 	}
 
 	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
-	const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : kDefaultTicksPerSecond;
-	return ticksPerSecond > 0.0f ? m_currentTimeTicks / ticksPerSecond : 0.0f;
+	const float ticksPerSecond = animation.GetEffectiveTicksPerSecond();
+	return m_currentTimeTicks / ticksPerSecond;
 }
 
 uint32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationCount() const
@@ -586,17 +457,13 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	const std::string requestedAnimationName = m_deserializedAnimationName;
 
 	m_animationNames.clear();
-	m_bindPoseTransforms.clear();
 	m_localPose.clear();
 	m_globalPose.clear();
 	m_boneMatrices.clear();
 	m_boneMatricesTransposed.clear();
-	m_trackSamplingCursors.clear();
 	m_animationIndex = std::nullopt;
 	m_currentTimeTicks = preservedTimeTicks;
 	m_poseEvaluationAccumulator = 0.0f;
-	m_lastSampleTimeTicks = 0.0f;
-	m_lastSampledAnimationIndex = std::nullopt;
 
 	if (!HasCompatibleModel())
 	{
@@ -605,12 +472,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 
 	const auto& skeleton = m_model->GetSkeleton().value();
 	const auto& animations = m_model->GetAnimations();
-
-	m_bindPoseTransforms.reserve(skeleton.nodes.size());
-	for (const auto& node : skeleton.nodes)
-	{
-		m_bindPoseTransforms.push_back(DecomposeTransform(node.localBindTransform));
-	}
 
 	m_localPose.resize(skeleton.nodes.size(), OvMaths::FMatrix4::Identity);
 	m_globalPose.resize(skeleton.nodes.size(), OvMaths::FMatrix4::Identity);
@@ -668,37 +529,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 
 	const auto& skeleton = m_model->GetSkeleton().value();
 
-	if (m_bindPoseTransforms.size() != skeleton.nodes.size())
-	{
-		m_bindPoseTransforms.clear();
-		m_bindPoseTransforms.reserve(skeleton.nodes.size());
-
-		for (const auto& node : skeleton.nodes)
-		{
-			m_bindPoseTransforms.push_back(DecomposeTransform(node.localBindTransform));
-		}
-	}
-
-	if (m_localPose.size() != skeleton.nodes.size())
-	{
-		m_localPose.assign(skeleton.nodes.size(), OvMaths::FMatrix4::Identity);
-	}
-
-	if (m_globalPose.size() != skeleton.nodes.size())
-	{
-		m_globalPose.assign(skeleton.nodes.size(), OvMaths::FMatrix4::Identity);
-	}
-
-	if (m_boneMatrices.size() != skeleton.bones.size())
-	{
-		m_boneMatrices.assign(skeleton.bones.size(), OvMaths::FMatrix4::Identity);
-	}
-
-	if (m_boneMatricesTransposed.size() != skeleton.bones.size())
-	{
-		m_boneMatricesTransposed.assign(skeleton.bones.size(), OvMaths::FMatrix4::Identity);
-	}
-
 	for (size_t nodeIndex = 0; nodeIndex < skeleton.nodes.size(); ++nodeIndex)
 	{
 		m_localPose[nodeIndex] = skeleton.nodes[nodeIndex].localBindTransform;
@@ -713,80 +543,45 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 			(m_looping ? WrapTime(m_currentTimeTicks, duration) : std::clamp(m_currentTimeTicks, 0.0f, duration)) :
 			0.0f;
 
-		if (m_trackSamplingCursors.size() != animation.tracks.size())
+		for (const auto& track : animation.tracks)
 		{
-			m_trackSamplingCursors.assign(animation.tracks.size(), TrackSamplingCursor{});
-		}
-
-		const bool useSamplingCursorHint =
-			m_lastSampledAnimationIndex == m_animationIndex &&
-			sampleTime >= m_lastSampleTimeTicks;
-
-		if (!useSamplingCursorHint)
-		{
-			for (auto& cursor : m_trackSamplingCursors)
-			{
-				cursor = {};
-			}
-		}
-
-		for (size_t trackIndex = 0; trackIndex < animation.tracks.size(); ++trackIndex)
-		{
-			const auto& track = animation.tracks[trackIndex];
-			auto& trackCursor = m_trackSamplingCursors[trackIndex];
-
-			if (track.nodeIndex >= m_localPose.size() || track.nodeIndex >= m_bindPoseTransforms.size())
+			if (track.nodeIndex >= m_localPose.size())
 			{
 				continue;
 			}
 
-			const auto& bindPoseTransform = m_bindPoseTransforms[track.nodeIndex];
+			const auto& node = skeleton.nodes[track.nodeIndex];
 
 			const OvMaths::FVector3 sampledPosition = SampleKeys(
 				track.positionKeys,
 				sampleTime,
 				duration,
-				bindPoseTransform.GetLocalPosition(),
+				node.bindPosition,
 				m_looping,
-				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
-				&trackCursor.positionKeyIndex,
-				useSamplingCursorHint
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); }
 			);
 
 			const OvMaths::FQuaternion sampledRotation = SampleKeys(
 				track.rotationKeys,
 				sampleTime,
 				duration,
-				bindPoseTransform.GetLocalRotation(),
+				node.bindRotation,
 				m_looping,
-				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FQuaternion::Slerp(p_a, p_b, p_alpha); },
-				&trackCursor.rotationKeyIndex,
-				useSamplingCursorHint
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FQuaternion::Slerp(p_a, p_b, p_alpha); }
 			);
 
 			const OvMaths::FVector3 sampledScale = SampleKeys(
 				track.scaleKeys,
 				sampleTime,
 				duration,
-				bindPoseTransform.GetLocalScale(),
+				node.bindScale,
 				m_looping,
-				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); },
-				&trackCursor.scaleKeyIndex,
-				useSamplingCursorHint
+				[](const auto& p_a, const auto& p_b, float p_alpha) { return OvMaths::FVector3::Lerp(p_a, p_b, p_alpha); }
 			);
 
 			const OvMaths::FTransform sampled(sampledPosition, sampledRotation, sampledScale);
-
 			m_localPose[track.nodeIndex] = sampled.GetLocalMatrix();
 		}
-
-		m_lastSampledAnimationIndex = m_animationIndex;
-		m_lastSampleTimeTicks = sampleTime;
-	}
-	else
-	{
-		m_lastSampledAnimationIndex = std::nullopt;
-		m_lastSampleTimeTicks = 0.0f;
 	}
 
 	for (size_t nodeIndex = 0; nodeIndex < skeleton.nodes.size(); ++nodeIndex)
@@ -801,16 +596,10 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 	for (size_t boneIndex = 0; boneIndex < skeleton.bones.size(); ++boneIndex)
 	{
 		const auto& bone = skeleton.bones[boneIndex];
-		if (bone.nodeIndex < m_globalPose.size())
-		{
-			m_boneMatrices[boneIndex] =
-				m_globalPose[bone.nodeIndex] *
-				bone.offsetMatrix;
-		}
-		else
-		{
-			m_boneMatrices[boneIndex] = OvMaths::FMatrix4::Identity;
-		}
+		m_boneMatrices[boneIndex] =
+			bone.nodeIndex < m_globalPose.size() ?
+			m_globalPose[bone.nodeIndex] * bone.offsetMatrix :
+			OvMaths::FMatrix4::Identity;
 
 		m_boneMatricesTransposed[boneIndex] = OvMaths::FMatrix4::Transpose(m_boneMatrices[boneIndex]);
 	}
@@ -847,7 +636,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::UpdatePlayback(float p_delta
 		return;
 	}
 
-	const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : kDefaultTicksPerSecond;
+	const float ticksPerSecond = animation.GetEffectiveTicksPerSecond();
 	m_currentTimeTicks += p_deltaTime * ticksPerSecond * m_playbackSpeed;
 
 	if (m_looping)

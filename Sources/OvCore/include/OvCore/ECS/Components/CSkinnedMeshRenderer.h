@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -14,7 +13,6 @@
 
 #include <OvCore/ECS/Components/AComponent.h>
 #include <OvMaths/FMatrix4.h>
-#include <OvMaths/FTransform.h>
 
 namespace OvCore::ECS { class Actor; }
 namespace OvRendering::Resources { class Model; }
@@ -197,13 +195,6 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
-		struct TrackSamplingCursor
-		{
-			size_t positionKeyIndex = 0;
-			size_t rotationKeyIndex = 0;
-			size_t scaleKeyIndex = 0;
-		};
-
 		void SyncWithModel();
 		void RebuildRuntimeData();
 		void EvaluatePose();
@@ -227,14 +218,10 @@ namespace OvCore::ECS::Components
 		uint64_t m_poseVersion = 0;
 
 		std::vector<std::string> m_animationNames;
-		std::vector<OvMaths::FTransform> m_bindPoseTransforms;
 		std::vector<OvMaths::FMatrix4> m_localPose;
 		std::vector<OvMaths::FMatrix4> m_globalPose;
 		std::vector<OvMaths::FMatrix4> m_boneMatrices;
 		std::vector<OvMaths::FMatrix4> m_boneMatricesTransposed;
-		std::vector<TrackSamplingCursor> m_trackSamplingCursors;
-		float m_lastSampleTimeTicks = 0.0f;
-		std::optional<uint32_t> m_lastSampledAnimationIndex = std::nullopt;
 	};
 
 	template<>

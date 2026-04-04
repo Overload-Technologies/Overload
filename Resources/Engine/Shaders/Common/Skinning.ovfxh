@@ -36,15 +36,12 @@ mat4 ComputeSkinningMatrix(vec4 p_boneIDs, vec4 p_boneWeights)
         return mat4(1.0);
     }
 
-    if (appliedWeight < 1.0)
+    if (appliedWeight == 1.0)
     {
-        return skinning + mat4(1.0) * (1.0 - appliedWeight);
+        return skinning;
     }
 
-    if (appliedWeight > 1.0)
-    {
-        return skinning / appliedWeight;
-    }
-
-    return skinning;
+    return appliedWeight < 1.0 ?
+        skinning + mat4(1.0 - appliedWeight) :
+        skinning / appliedWeight;
 }

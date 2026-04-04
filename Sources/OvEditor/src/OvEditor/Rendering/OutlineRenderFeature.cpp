@@ -39,20 +39,13 @@ namespace
 		uint32_t p_materialIndex,
 		std::string_view p_passName,
 		OvTools::Utils::OptRef<const MaterialList> p_materials,
-		bool p_hasSkinning,
 		OvCore::Resources::Material& p_fallbackMaterial
 	)
 	{
 		auto* material = FindMeshMaterial(p_materials, p_materialIndex);
 		if (material && material->IsValid() && material->HasPass(std::string{ p_passName }))
 		{
-			const bool skinningCompatible = !p_hasSkinning ||
-				material->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
-
-			if (skinningCompatible)
-			{
-				return *material;
-			}
+			return *material;
 		}
 
 		return p_fallbackMaterial;
@@ -61,19 +54,18 @@ namespace
 	void ApplySkinningIfNeeded(
 		OvRendering::Entities::Drawable& p_drawable,
 		const OvCore::ECS::Components::CSkinnedMeshRenderer* p_skinnedRenderer,
+		bool p_skinningEnabled,
 		OvCore::Resources::Material& p_targetMaterial
 	)
 	{
-		if (!OvCore::Rendering::SkinningUtils::IsSkinningActive(p_skinnedRenderer))
+		if (p_skinningEnabled)
 		{
-			return;
+			OvCore::Rendering::SkinningUtils::ApplyToDrawable(
+				p_drawable,
+				*p_skinnedRenderer,
+				&p_targetMaterial.GetFeatures()
+			);
 		}
-
-		OvCore::Rendering::SkinningUtils::ApplyToDrawable(
-			p_drawable,
-			*p_skinnedRenderer,
-			&p_targetMaterial.GetFeatures()
-		);
 	}
 }
 
@@ -249,11 +241,14 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 
 	for (auto mesh : p_model.GetMeshes())
 	{
+		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
+		const bool skinningEnabled = hasSkinning && originalMaterial &&
+			originalMaterial->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
+
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
-			hasSkinning,
 			m_stencilFillMaterial
 		);
 
@@ -273,7 +268,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 		element.pass = outlinePassName;
 
 		element.AddDescriptor(engineDrawableDescriptor);
-		ApplySkinningIfNeeded(element, p_skinnedRenderer, targetMaterial);
+		ApplySkinningIfNeeded(element, p_skinnedRenderer, skinningEnabled, targetMaterial);
 
 		m_renderer.DrawEntity(p_pso, element);
 	}
@@ -293,11 +288,14 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 
 	for (auto mesh : p_model.GetMeshes())
 	{
+		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
+		const bool skinningEnabled = hasSkinning && originalMaterial &&
+			originalMaterial->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
+
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
-			hasSkinning,
 			m_outlineMaterial
 		);
 
@@ -322,7 +320,7 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 		drawable.pass = outlinePassName;
 
 		drawable.AddDescriptor(engineDrawableDescriptor);
-		ApplySkinningIfNeeded(drawable, p_skinnedRenderer, targetMaterial);
+		ApplySkinningIfNeeded(drawable, p_skinnedRenderer, skinningEnabled, targetMaterial);
 
 		m_renderer.DrawEntity(p_pso, drawable);
 	}

@@ -125,15 +125,12 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 					{
 						if (auto material = materials.at(mesh->GetMaterialIndex()); material && material->IsValid() && material->IsShadowCaster())
 						{
-							const bool materialHasShadowPass = material->HasPass(kShadowPassName);
-							const bool canUseMaterialShadowPass =
-								materialHasShadowPass &&
-								(!hasSkinning || material->SupportsFeature(kSkinningFeatureName));
+							// Skinning is only applied if the original material explicitly supports it.
+							const bool skinningEnabled = hasSkinning && material->SupportsFeature(kSkinningFeatureName);
 
-							// If the material has a compatible shadow pass, use it.
-							// Otherwise, use the shadow fallback material.
+							// If the material has a shadow pass, use it. Otherwise, use the shadow fallback.
 							auto& targetMaterial =
-								canUseMaterialShadowPass ?
+								material->HasPass(kShadowPassName) ?
 								*material :
 								m_shadowMaterial;
 
@@ -161,7 +158,7 @@ void OvCore::Rendering::ShadowRenderPass::_DrawShadows(
 								materialRenderer->GetUserMatrix()
 							});
 
-							if (hasSkinning && targetMaterial.SupportsFeature(kSkinningFeatureName))
+							if (skinningEnabled && targetMaterial.SupportsFeature(kSkinningFeatureName))
 							{
 								SkinningUtils::ApplyToDrawable(drawable, *skinnedRenderer, &targetMaterial.GetFeatures());
 							}

@@ -22,19 +22,16 @@ namespace
 {
 	constexpr float kDefaultTicksPerSecond = 25.0f;
 
-	struct TRSValue
+	void DecomposeTRS(
+		const OvMaths::FMatrix4& p_matrix,
+		OvMaths::FVector3& p_position,
+		OvMaths::FQuaternion& p_rotation,
+		OvMaths::FVector3& p_scale
+	)
 	{
-		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
-		OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
-		OvMaths::FVector3 scale = OvMaths::FVector3::One;
-	};
-
-	TRSValue DecomposeTRS(const OvMaths::FMatrix4& p_matrix)
-	{
-		TRSValue result;
 		constexpr float kEpsilon = 1e-8f;
 
-		result.position = {
+		p_position = {
 			p_matrix.data[3],
 			p_matrix.data[7],
 			p_matrix.data[11]
@@ -46,13 +43,13 @@ namespace
 			{ p_matrix.data[2], p_matrix.data[6], p_matrix.data[10] }
 		};
 
-		result.scale.x = OvMaths::FVector3::Length(columns[0]);
-		result.scale.y = OvMaths::FVector3::Length(columns[1]);
-		result.scale.z = OvMaths::FVector3::Length(columns[2]);
+		p_scale.x = OvMaths::FVector3::Length(columns[0]);
+		p_scale.y = OvMaths::FVector3::Length(columns[1]);
+		p_scale.z = OvMaths::FVector3::Length(columns[2]);
 
-		if (result.scale.x > kEpsilon) columns[0] /= result.scale.x;
-		if (result.scale.y > kEpsilon) columns[1] /= result.scale.y;
-		if (result.scale.z > kEpsilon) columns[2] /= result.scale.z;
+		if (p_scale.x > kEpsilon) columns[0] /= p_scale.x;
+		if (p_scale.y > kEpsilon) columns[1] /= p_scale.y;
+		if (p_scale.z > kEpsilon) columns[2] /= p_scale.z;
 
 		const float basisDeterminant = OvMaths::FVector3::Dot(
 			OvMaths::FVector3::Cross(columns[0], columns[1]),
@@ -61,19 +58,19 @@ namespace
 
 		if (basisDeterminant < 0.0f)
 		{
-			if (result.scale.x >= result.scale.y && result.scale.x >= result.scale.z)
+			if (p_scale.x >= p_scale.y && p_scale.x >= p_scale.z)
 			{
-				result.scale.x = -result.scale.x;
+				p_scale.x = -p_scale.x;
 				columns[0] = -columns[0];
 			}
-			else if (result.scale.y >= result.scale.x && result.scale.y >= result.scale.z)
+			else if (p_scale.y >= p_scale.x && p_scale.y >= p_scale.z)
 			{
-				result.scale.y = -result.scale.y;
+				p_scale.y = -p_scale.y;
 				columns[1] = -columns[1];
 			}
 			else
 			{
-				result.scale.z = -result.scale.z;
+				p_scale.z = -p_scale.z;
 				columns[2] = -columns[2];
 			}
 		}
@@ -84,17 +81,19 @@ namespace
 			columns[0].z, columns[1].z, columns[2].z
 		};
 
-		result.rotation = OvMaths::FQuaternion::Normalize(OvMaths::FQuaternion(rotationMatrix));
-
-		return result;
+		p_rotation = OvMaths::FQuaternion::Normalize(OvMaths::FQuaternion(rotationMatrix));
 	}
 
-	OvMaths::FMatrix4 ComposeTRS(const TRSValue& p_value)
+	OvMaths::FMatrix4 ComposeTRS(
+		const OvMaths::FVector3& p_position,
+		const OvMaths::FQuaternion& p_rotation,
+		const OvMaths::FVector3& p_scale
+	)
 	{
 		return
-			OvMaths::FMatrix4::Translation(p_value.position) *
-			OvMaths::FQuaternion::ToMatrix4(OvMaths::FQuaternion::Normalize(p_value.rotation)) *
-			OvMaths::FMatrix4::Scaling(p_value.scale);
+			OvMaths::FMatrix4::Translation(p_position) *
+			OvMaths::FQuaternion::ToMatrix4(OvMaths::FQuaternion::Normalize(p_rotation)) *
+			OvMaths::FMatrix4::Scaling(p_scale);
 	}
 
 	float WrapTime(float p_value, float p_duration)
@@ -623,11 +622,15 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	m_bindPoseTRS.reserve(skeleton.nodes.size());
 	for (const auto& node : skeleton.nodes)
 	{
-		const auto decomposed = DecomposeTRS(node.localBindTransform);
+		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
+		OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
+		OvMaths::FVector3 scale = OvMaths::FVector3::One;
+		DecomposeTRS(node.localBindTransform, position, rotation, scale);
+
 		m_bindPoseTRS.push_back({
-			.position = decomposed.position,
-			.rotation = decomposed.rotation,
-			.scale = decomposed.scale
+			.position = position,
+			.rotation = rotation,
+			.scale = scale
 		});
 	}
 
@@ -692,11 +695,15 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 
 		for (const auto& node : skeleton.nodes)
 		{
-			const auto decomposed = DecomposeTRS(node.localBindTransform);
+			OvMaths::FVector3 position = OvMaths::FVector3::Zero;
+			OvMaths::FQuaternion rotation = OvMaths::FQuaternion::Identity;
+			OvMaths::FVector3 scale = OvMaths::FVector3::One;
+			DecomposeTRS(node.localBindTransform, position, rotation, scale);
+
 			m_bindPoseTRS.push_back({
-				.position = decomposed.position,
-				.rotation = decomposed.rotation,
-				.scale = decomposed.scale
+				.position = position,
+				.rotation = rotation,
+				.scale = scale
 			});
 		}
 	}
@@ -763,7 +770,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 			}
 
 			const auto& bindTRS = m_bindPoseTRS[track.nodeIndex];
-			TRSValue sampled{
+			TRS sampled{
 				.position = SampleKeys(
 					track.positionKeys,
 					sampleTime,
@@ -796,7 +803,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 				)
 			};
 
-			m_localPose[track.nodeIndex] = ComposeTRS(sampled);
+			m_localPose[track.nodeIndex] = ComposeTRS(sampled.position, sampled.rotation, sampled.scale);
 		}
 
 		m_lastSampledAnimationIndex = m_animationIndex;

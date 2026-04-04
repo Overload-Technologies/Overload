@@ -32,7 +32,8 @@ namespace OvRendering::Resources
 		Mesh(
 			std::span<const Geometry::Vertex> p_vertices,
 			std::span<const uint32_t> p_indices,
-			uint32_t p_materialIndex = 0
+			uint32_t p_materialIndex = 0,
+			bool p_hasSkinningData = false
 		);
 
 		/**
@@ -65,6 +66,11 @@ namespace OvRendering::Resources
 		*/
 		uint32_t GetMaterialIndex() const;
 
+		/**
+		* Returns true if this mesh stores skinning vertex attributes
+		*/
+		bool HasSkinningData() const;
+
 	private:
 		void Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices);
 		void ComputeBoundingSphere(std::span<const Geometry::Vertex> p_vertices);
@@ -73,6 +79,7 @@ namespace OvRendering::Resources
 		const uint32_t m_vertexCount;
 		const uint32_t m_indicesCount;
 		const uint32_t m_materialIndex;
+		const bool m_hasSkinningData;
 
 		HAL::VertexArray m_vertexArray;
 		HAL::VertexBuffer m_vertexBuffer;

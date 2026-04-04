@@ -53,11 +53,11 @@ namespace
 		};
 	}
 
-	void AddBoneData(OvRendering::Geometry::Vertex& p_vertex, uint32_t p_boneIndex, float p_weight)
+	bool AddBoneData(OvRendering::Geometry::Vertex& p_vertex, uint32_t p_boneIndex, float p_weight)
 	{
 		if (!std::isfinite(p_weight) || p_weight <= 0.0f)
 		{
-			return;
+			return false;
 		}
 
 		for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
@@ -66,7 +66,7 @@ namespace
 			{
 				p_vertex.boneIDs[i] = static_cast<float>(p_boneIndex);
 				p_vertex.boneWeights[i] = p_weight;
-				return;
+				return true;
 			}
 		}
 
@@ -83,7 +83,10 @@ namespace
 		{
 			p_vertex.boneIDs[minSlot] = static_cast<float>(p_boneIndex);
 			p_vertex.boneWeights[minSlot] = p_weight;
+			return true;
 		}
+
+		return false;
 	}
 
 	float GetBoneWeightSum(const OvRendering::Geometry::Vertex& p_vertex)
@@ -312,16 +315,17 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessNode(
 	{
 		std::vector<Geometry::Vertex> vertices;
 		std::vector<uint32_t> indices;
+		bool hasSkinningData = false;
 		aiMesh* mesh = p_scene->mMeshes[p_node->mMeshes[i]];
 
-		ProcessMesh(&nodeTransformation, mesh, p_scene, vertices, indices, p_skeleton);
+		ProcessMesh(&nodeTransformation, mesh, p_scene, vertices, indices, p_skeleton, hasSkinningData);
 
 		if (vertices.empty() || indices.empty())
 		{
 			continue;
 		}
 
-		p_meshes.push_back(new Mesh(vertices, indices, mesh->mMaterialIndex)); // The model will handle mesh destruction
+		p_meshes.push_back(new Mesh(vertices, indices, mesh->mMaterialIndex, hasSkinningData)); // The model will handle mesh destruction
 	}
 
 	// Then do the same for each of its children
@@ -337,10 +341,12 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 	const aiScene* p_scene,
 	std::vector<Geometry::Vertex>& p_outVertices,
 	std::vector<uint32_t>& p_outIndices,
-	Animation::Skeleton* p_skeleton
+	Animation::Skeleton* p_skeleton,
+	bool& p_outHasSkinningData
 )
 {
 	(void)p_scene;
+	p_outHasSkinningData = false;
 
 	aiMatrix4x4 meshTransformation = *reinterpret_cast<aiMatrix4x4*>(p_transform);
 	p_outVertices.reserve(p_mesh->mNumVertices);
@@ -440,7 +446,10 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 			const auto& weight = bone->mWeights[weightID];
 			if (weight.mVertexId < p_outVertices.size())
 			{
-				AddBoneData(p_outVertices[weight.mVertexId], boneIndex, weight.mWeight);
+				if (AddBoneData(p_outVertices[weight.mVertexId], boneIndex, weight.mWeight))
+				{
+					p_outHasSkinningData = true;
+				}
 			}
 		}
 	}

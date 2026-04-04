@@ -42,6 +42,14 @@ namespace OvRendering::Resources::Parsers
 		void ProcessAnimations(const struct aiScene* p_scene, const Animation::Skeleton& p_skeleton, std::vector<Animation::SkeletalAnimation>& p_animations);
 		void ProcessMaterials(const struct aiScene* p_scene, std::vector<std::string>& p_materials);
 		void ProcessNode(void* p_transform, struct aiNode* p_node, const struct aiScene* p_scene, std::vector<Mesh*>& p_meshes, Animation::Skeleton* p_skeleton);
-		void ProcessMesh(void* p_transform, struct aiMesh* p_mesh, const struct aiScene* p_scene, std::vector<Geometry::Vertex>& p_outVertices, std::vector<uint32_t>& p_outIndices, Animation::Skeleton* p_skeleton);
+		void ProcessMesh(
+			void* p_transform,
+			struct aiMesh* p_mesh,
+			const struct aiScene* p_scene,
+			std::vector<Geometry::Vertex>& p_outVertices,
+			std::vector<uint32_t>& p_outIndices,
+			Animation::Skeleton* p_skeleton,
+			bool& p_outHasSkinningData
+		);
 	};
 }

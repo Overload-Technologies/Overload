@@ -322,7 +322,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				materialRenderer->GetUserMatrix()
 			});
 
-			if (hasSkinning)
+			if (hasSkinning && mesh->HasSkinningData())
 			{
 				SkinningUtils::ApplyDescriptor(drawable, *skinnedRenderer);
 			}

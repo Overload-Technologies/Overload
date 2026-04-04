@@ -7,7 +7,7 @@
 #version 450 core
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
-#include ":Shaders/Common/Buffers/SkinningSSBO.ovfxh"
+#include ":Shaders/Common/Skinning.ovfxh"
 #include ":Shaders/Common/Utils.ovfxh"
 
 layout (location = 0) in vec3 geo_Pos;

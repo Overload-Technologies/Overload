@@ -9,7 +9,7 @@ layout (location = 5) in vec4 geo_BoneIDs;
 layout (location = 6) in vec4 geo_BoneWeights;
 
 #include ":Shaders/Common/Buffers/EngineUBO.ovfxh"
-#include ":Shaders/Common/Buffers/SkinningSSBO.ovfxh"
+#include ":Shaders/Common/Skinning.ovfxh"
 
 void main()
 {

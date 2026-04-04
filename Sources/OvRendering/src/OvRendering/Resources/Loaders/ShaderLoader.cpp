@@ -31,6 +31,7 @@ namespace
 	{
 		constexpr std::string_view kPassToken = "#pass";
 		constexpr std::string_view kFeatureToken = "#feature";
+		constexpr std::string_view kEngineFeatureToken = "#engine_feature";
 		constexpr std::string_view kVertexShaderToken = "#shader vertex";
 		constexpr std::string_view kFragmentShaderToken = "#shader fragment";
 		constexpr std::string_view kIncludeToken = "#include";
@@ -64,7 +65,8 @@ namespace
 		const std::string vertexShader;
 		const std::string fragmentShader;
 		const std::unordered_set<std::string> passes;
-		const OvRendering::Data::FeatureSet features;
+		const OvRendering::Data::FeatureSet userFeatures;
+		const OvRendering::Data::FeatureSet engineFeatures;
 	};
 
 	struct ShaderAssembleResult
@@ -72,6 +74,7 @@ namespace
 		const ShaderInputInfo inputInfo;
 		const uint32_t failures; // How many variants failed to compile
 		OvRendering::Resources::Shader::Variants variants;
+		OvRendering::Data::FeatureSet engineFeatures;
 	};
 
 	struct ShaderStageDesc
@@ -383,7 +386,8 @@ void main()
 		std::istringstream stream(p_shaderLoadResult.source); // Add this line to create a stringstream from shaderCode
 		std::string line;
 		std::unordered_map<EShaderType, std::stringstream> shaderSources;
-		OvRendering::Data::FeatureSet features;
+		OvRendering::Data::FeatureSet userFeatures;
+		OvRendering::Data::FeatureSet engineFeatures;
 		std::unordered_set<std::string> passes;
 		passes.emplace(); // Default pass if none is specified (empty string)
 
@@ -408,6 +412,21 @@ void main()
 
 				passes.insert(passName);
 			}
+			else if (trimmedLine.starts_with(Grammar::kEngineFeatureToken))
+			{
+				std::string featureName;
+				featureName.reserve(16);
+
+				for (auto& c : trimmedLine |
+					std::views::drop(Grammar::kEngineFeatureToken.size()) |
+					std::views::drop_while(isspace) |
+					std::views::take_while([](char c) { return !isspace(c); }))
+				{
+					featureName += c;
+				}
+
+				engineFeatures.insert(featureName);
+			}
 			else if (trimmedLine.starts_with(Grammar::kFeatureToken))
 			{
 				std::string featureName;
@@ -421,7 +440,7 @@ void main()
 					featureName += c;
 				}
 
-				features.insert(featureName);
+				userFeatures.insert(featureName);
 			}
 			else if (trimmedLine.starts_with(Grammar::kVertexShaderToken))
 			{
@@ -442,7 +461,8 @@ void main()
 			.vertexShader = shaderSources[EShaderType::VERTEX].str(),
 			.fragmentShader = shaderSources[EShaderType::FRAGMENT].str(),
 			.passes = passes,
-			.features = features
+			.userFeatures = userFeatures,
+			.engineFeatures = engineFeatures
 		};
 	}
 
@@ -453,7 +473,10 @@ void main()
 	{
 		const auto startTime = std::chrono::high_resolution_clock::now();
 
-		const auto featureVariantCount = (size_t{ 1UL } << p_parseResult.features.size());
+		OvRendering::Data::FeatureSet allFeatures = p_parseResult.userFeatures;
+		allFeatures.insert(p_parseResult.engineFeatures.begin(), p_parseResult.engineFeatures.end());
+
+		const auto featureVariantCount = (size_t{ 1UL } << allFeatures.size());
 
 		uint32_t failures = 0;
 
@@ -470,11 +493,11 @@ void main()
 			for (size_t i = 0; i < featureVariantCount; ++i)
 			{
 				OvRendering::Data::FeatureSet featureSet;
-				for (size_t j = 0; j < p_parseResult.features.size(); ++j)
+				for (size_t j = 0; j < allFeatures.size(); ++j)
 				{
 					if (i & (size_t{ 1UL } << j))
 					{
-						featureSet.insert(*std::next(p_parseResult.features.begin(), j));
+						featureSet.insert(*std::next(allFeatures.begin(), j));
 					}
 				}
 
@@ -545,7 +568,8 @@ void main()
 		return ShaderAssembleResult{
 			p_parseResult.inputInfo,
 			failures,
-			std::move(variants)
+			std::move(variants),
+			p_parseResult.engineFeatures
 		};
 	}
 
@@ -577,7 +601,8 @@ void main()
 			.vertexShader = p_vertexShader,
 			.fragmentShader = p_fragmentShader,
 			.passes = {{}}, // Default pass (empty string)
-			.features = {} // No support for features in embedded shaders
+			.userFeatures = {}, // No support for features in embedded shaders
+			.engineFeatures = {}
 		};
 
 		return AssembleShader(shaderParseResult);
@@ -599,7 +624,7 @@ namespace OvRendering::Resources::Loaders
 	Shader* ShaderLoader::Create(const std::string& p_filePath, FilePathParserCallback p_pathParser)
 	{
 		auto result = CompileShaderFromFile(p_filePath, p_pathParser);
-		return new Shader(p_filePath, std::move(result.variants));
+		return new Shader(p_filePath, std::move(result.variants), std::move(result.engineFeatures));
 	}
 
 	Shader* ShaderLoader::CreateFromSource(const std::string& p_vertexShader, const std::string& p_fragmentShader)
@@ -614,7 +639,7 @@ namespace OvRendering::Resources::Loaders
 
 		if (result.failures == 0)
 		{
-			p_shader.SetVariants(std::move(result.variants));
+			p_shader.SetVariants(std::move(result.variants), std::move(result.engineFeatures));
 		}
 		else
 		{

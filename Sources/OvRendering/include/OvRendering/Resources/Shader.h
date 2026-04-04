@@ -52,9 +52,15 @@ namespace OvRendering::Resources
 		);
 
 		/**
-		* Returns supported features
+		* Returns user-configurable features (declared with #feature).
+		* Engine-controlled features (declared with #engine_feature) are excluded.
 		*/
 		const Data::FeatureSet& GetFeatures() const;
+
+		/**
+		* Returns engine-controlled features (declared with #engine_feature).
+		*/
+		const Data::FeatureSet& GetEngineFeatures() const;
 
 		/**
 		* Returns supported passes
@@ -69,11 +75,12 @@ namespace OvRendering::Resources
 	private:
 		Shader(
 			const std::string p_path,
-			Variants&& p_variants
+			Variants&& p_variants,
+			Data::FeatureSet p_engineFeatures = {}
 		);
 
 		~Shader() = default;
-		void SetVariants(Variants&& p_variants);
+		void SetVariants(Variants&& p_variants, Data::FeatureSet p_engineFeatures = {});
 
 	public:
 		const std::string path;
@@ -81,6 +88,7 @@ namespace OvRendering::Resources
 	private:
 		std::unordered_set<std::string> m_passes;
 		Data::FeatureSet m_features;
+		Data::FeatureSet m_engineFeatures;
 		Variants m_variants;
 	};
 }

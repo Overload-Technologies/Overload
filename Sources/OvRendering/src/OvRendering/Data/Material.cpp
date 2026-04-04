@@ -474,7 +474,9 @@ bool OvRendering::Data::Material::HasFeature(const std::string& p_feature) const
 
 bool OvRendering::Data::Material::SupportsFeature(const std::string& p_feature) const
 {
-	return m_shader->GetFeatures().contains(p_feature);
+	return m_shader &&
+		(m_shader->GetFeatures().contains(p_feature) ||
+		 m_shader->GetEngineFeatures().contains(p_feature));
 }
 
 bool OvRendering::Data::Material::HasPass(const std::string& p_pass) const

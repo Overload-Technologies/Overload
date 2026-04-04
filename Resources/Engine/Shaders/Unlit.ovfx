@@ -1,7 +1,7 @@
 #pass SHADOW_PASS
 
 #feature ALPHA_CLIPPING
-#feature SKINNING
+#engine_feature SKINNING
 
 #shader vertex
 #version 450 core

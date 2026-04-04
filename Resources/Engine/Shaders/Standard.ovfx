@@ -5,7 +5,7 @@
 #feature NORMAL_MAPPING
 #feature DISTANCE_FADE
 #feature SPECULAR_WORKFLOW
-#feature SKINNING
+#engine_feature SKINNING
 
 #shader vertex
 #version 450 core

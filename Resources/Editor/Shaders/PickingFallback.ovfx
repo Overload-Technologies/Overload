@@ -1,5 +1,5 @@
 #pass PICKING_PASS
-#feature SKINNING
+#engine_feature SKINNING
 
 #shader vertex
 #version 450 core

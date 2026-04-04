@@ -317,12 +317,12 @@ float OvCore::ECS::Components::CSkinnedMeshRenderer::GetPlaybackSpeed() const
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::SetTime(float p_timeSeconds)
 {
-	if (!HasCompatibleModel() || m_animationIndex < 0)
+	if (!HasCompatibleModel() || !m_animationIndex.has_value())
 	{
 		return;
 	}
 
-	const auto& animation = m_model->GetAnimations().at(static_cast<size_t>(m_animationIndex));
+	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
 	const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : kDefaultTicksPerSecond;
 
 	m_currentTimeTicks = p_timeSeconds * ticksPerSecond;
@@ -341,12 +341,12 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::SetTime(float p_timeSeconds)
 
 float OvCore::ECS::Components::CSkinnedMeshRenderer::GetTime() const
 {
-	if (!HasCompatibleModel() || m_animationIndex < 0)
+	if (!HasCompatibleModel() || !m_animationIndex.has_value())
 	{
 		return 0.0f;
 	}
 
-	const auto& animation = m_model->GetAnimations().at(static_cast<size_t>(m_animationIndex));
+	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
 	const float ticksPerSecond = animation.ticksPerSecond > 0.0f ? animation.ticksPerSecond : kDefaultTicksPerSecond;
 	return ticksPerSecond > 0.0f ? m_currentTimeTicks / ticksPerSecond : 0.0f;
 }
@@ -373,7 +373,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(uint32_t p_inde
 		return false;
 	}
 
-	m_animationIndex = static_cast<int32_t>(p_index);
+	m_animationIndex = p_index;
 	m_currentTimeTicks = 0.0f;
 	m_poseEvaluationAccumulator = 0.0f;
 	EvaluatePose();
@@ -404,17 +404,17 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(const std::stri
 
 int32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationIndex() const
 {
-	return m_animationIndex;
+	return m_animationIndex.has_value() ? static_cast<int32_t>(*m_animationIndex) : -1;
 }
 
 std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimation() const
 {
-	if (!HasCompatibleModel() || m_animationIndex < 0)
+	if (!HasCompatibleModel() || !m_animationIndex.has_value())
 	{
 		return {};
 	}
 
-	const auto animationIndex = static_cast<size_t>(m_animationIndex);
+	const auto animationIndex = static_cast<size_t>(*m_animationIndex);
 	return animationIndex < m_animationNames.size() ? m_animationNames[animationIndex] : std::string{};
 }
 
@@ -532,7 +532,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	);
 
 	GUIDrawer::CreateTitle(p_root, "Active Animation");
-	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_animationIndex);
+	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(GetAnimationIndex());
 	animationChoice.choices.emplace(-1, "<None>");
 
 	for (size_t i = 0; i < m_animationNames.size(); ++i)
@@ -544,7 +544,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	{
 		if (p_choice < 0)
 		{
-			m_animationIndex = -1;
+			m_animationIndex = std::nullopt;
 			m_currentTimeTicks = 0.0f;
 			m_poseEvaluationAccumulator = 0.0f;
 			EvaluatePose();
@@ -582,7 +582,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::SyncWithModel()
 void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 {
 	const float preservedTimeTicks = m_currentTimeTicks;
-	const int32_t preservedAnimationIndex = m_animationIndex;
+	const std::optional<uint32_t> preservedAnimationIndex = m_animationIndex;
 	const std::string requestedAnimationName = m_deserializedAnimationName;
 
 	m_animationNames.clear();
@@ -592,11 +592,11 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	m_boneMatrices.clear();
 	m_boneMatricesTransposed.clear();
 	m_trackSamplingCursors.clear();
-	m_animationIndex = -1;
+	m_animationIndex = std::nullopt;
 	m_currentTimeTicks = preservedTimeTicks;
 	m_poseEvaluationAccumulator = 0.0f;
 	m_lastSampleTimeTicks = 0.0f;
-	m_lastSampledAnimationIndex = -1;
+	m_lastSampledAnimationIndex = std::nullopt;
 
 	if (!HasCompatibleModel())
 	{
@@ -628,17 +628,19 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 		if (!requestedAnimationName.empty())
 		{
 			const auto found = std::find(m_animationNames.begin(), m_animationNames.end(), requestedAnimationName);
-			m_animationIndex = found != m_animationNames.end() ? static_cast<int32_t>(std::distance(m_animationNames.begin(), found)) : 0;
+			m_animationIndex = found != m_animationNames.end() ?
+				std::optional<uint32_t>{ static_cast<uint32_t>(std::distance(m_animationNames.begin(), found)) } :
+				std::optional<uint32_t>{ 0 };
 		}
-		else if (preservedAnimationIndex >= 0 && static_cast<size_t>(preservedAnimationIndex) < animations.size())
+		else if (preservedAnimationIndex.has_value() && *preservedAnimationIndex < animations.size())
 		{
-			m_animationIndex = preservedAnimationIndex;
+			m_animationIndex = *preservedAnimationIndex;
 		}
 	}
 
-	if (m_animationIndex >= 0 && static_cast<size_t>(m_animationIndex) < animations.size())
+	if (m_animationIndex.has_value() && *m_animationIndex < animations.size())
 	{
-		const auto& animation = animations.at(static_cast<size_t>(m_animationIndex));
+		const auto& animation = animations.at(*m_animationIndex);
 		if (m_looping)
 		{
 			m_currentTimeTicks = WrapTime(m_currentTimeTicks, animation.duration);
@@ -702,9 +704,9 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 		m_localPose[nodeIndex] = skeleton.nodes[nodeIndex].localBindTransform;
 	}
 
-	if (m_animationIndex >= 0 && static_cast<size_t>(m_animationIndex) < m_model->GetAnimations().size())
+	if (m_animationIndex.has_value() && *m_animationIndex < m_model->GetAnimations().size())
 	{
-		const auto& animation = m_model->GetAnimations().at(static_cast<size_t>(m_animationIndex));
+		const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
 		const float duration = std::max(animation.duration, 0.0f);
 		const float sampleTime =
 			duration > 0.0f ?
@@ -783,7 +785,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 	}
 	else
 	{
-		m_lastSampledAnimationIndex = -1;
+		m_lastSampledAnimationIndex = std::nullopt;
 		m_lastSampleTimeTicks = 0.0f;
 	}
 
@@ -818,23 +820,23 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 
 float OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationDurationSeconds() const
 {
-	if (!HasCompatibleModel() || m_animationIndex < 0)
+	if (!HasCompatibleModel() || !m_animationIndex.has_value())
 	{
 		return 0.0f;
 	}
 
-	const auto& animation = m_model->GetAnimations().at(static_cast<size_t>(m_animationIndex));
+	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
 	return animation.GetDurationSeconds();
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::UpdatePlayback(float p_deltaTime)
 {
-	if (!HasCompatibleModel() || m_animationIndex < 0)
+	if (!HasCompatibleModel() || !m_animationIndex.has_value())
 	{
 		return;
 	}
 
-	const auto& animation = m_model->GetAnimations().at(static_cast<size_t>(m_animationIndex));
+	const auto& animation = m_model->GetAnimations().at(*m_animationIndex);
 	if (animation.duration <= 0.0f)
 	{
 		return;

@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -220,7 +221,7 @@ namespace OvCore::ECS::Components
 		float m_poseEvaluationAccumulator = 0.0f;
 
 		float m_currentTimeTicks = 0.0f;
-		int32_t m_animationIndex = -1;
+		std::optional<uint32_t> m_animationIndex = std::nullopt;
 		std::string m_deserializedAnimationName;
 
 		uint64_t m_poseVersion = 0;
@@ -233,7 +234,7 @@ namespace OvCore::ECS::Components
 		std::vector<OvMaths::FMatrix4> m_boneMatricesTransposed;
 		std::vector<TrackSamplingCursor> m_trackSamplingCursors;
 		float m_lastSampleTimeTicks = 0.0f;
-		int32_t m_lastSampledAnimationIndex = -1;
+		std::optional<uint32_t> m_lastSampledAnimationIndex = std::nullopt;
 	};
 
 	template<>

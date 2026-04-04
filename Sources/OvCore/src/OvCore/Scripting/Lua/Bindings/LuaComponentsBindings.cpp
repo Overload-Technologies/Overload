@@ -108,7 +108,7 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetAnimationCount", &CSkinnedMeshRenderer::GetAnimationCount,
 		"GetAnimationName", &CSkinnedMeshRenderer::GetAnimationName,
 		"SetAnimation", sol::overload(
-			sol::resolve<bool(uint32_t)>(&CSkinnedMeshRenderer::SetAnimation),
+			sol::resolve<bool(std::optional<uint32_t>)>(&CSkinnedMeshRenderer::SetAnimation),
 			sol::resolve<bool(const std::string&)>(&CSkinnedMeshRenderer::SetAnimation)
 		),
 		"GetAnimationIndex", &CSkinnedMeshRenderer::GetAnimationIndex,

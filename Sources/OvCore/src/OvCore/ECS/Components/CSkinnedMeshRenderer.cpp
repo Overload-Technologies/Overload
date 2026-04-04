@@ -16,6 +16,7 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 #include <OvMaths/FTransform.h>
+#include <OvUI/Plugins/DataDispatcher.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Widgets/Texts/Text.h>
 
@@ -128,7 +129,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasCompatibleModel() const
 
 bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasSkinningData() const
 {
-	return HasCompatibleModel() && !m_boneMatrices.empty();
+	return HasCompatibleModel() && m_animationIndex.has_value() && !m_boneMatrices.empty();
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::SetEnabled(bool p_value)
@@ -237,9 +238,18 @@ std::optional<std::string> OvCore::ECS::Components::CSkinnedMeshRenderer::GetAni
 	return std::nullopt;
 }
 
-bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(uint32_t p_index)
+bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(std::optional<uint32_t> p_index)
 {
-	if (!HasCompatibleModel() || p_index >= m_model->GetAnimations().size())
+	if (!p_index.has_value())
+	{
+		m_animationIndex = std::nullopt;
+		m_currentTimeTicks = 0.0f;
+		m_poseEvaluationAccumulator = 0.0f;
+		EvaluatePose();
+		return true;
+	}
+
+	if (!HasCompatibleModel() || *p_index >= m_model->GetAnimations().size())
 	{
 		return false;
 	}
@@ -273,9 +283,9 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(const std::stri
 	return SetAnimation(static_cast<uint32_t>(std::distance(animations.begin(), found)));
 }
 
-int32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationIndex() const
+std::optional<uint32_t> OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationIndex() const
 {
-	return m_animationIndex.has_value() ? static_cast<int32_t>(*m_animationIndex) : -1;
+	return m_animationIndex;
 }
 
 std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimation() const
@@ -403,7 +413,8 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	);
 
 	GUIDrawer::CreateTitle(p_root, "Active Animation");
-	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(GetAnimationIndex());
+	const int currentAnimIndex = GetAnimationIndex().has_value() ? static_cast<int>(*GetAnimationIndex()) : -1;
+	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(currentAnimIndex);
 	animationChoice.choices.emplace(-1, "<None>");
 
 	for (size_t i = 0; i < m_animationNames.size(); ++i)
@@ -411,20 +422,15 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 		animationChoice.choices.emplace(static_cast<int>(i), m_animationNames[i]);
 	}
 
-	animationChoice.ValueChangedEvent += [this](int p_choice)
+	auto& animDispatcher = animationChoice.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
+	animDispatcher.RegisterGatherer([this]
 	{
-		if (p_choice < 0)
-		{
-			m_animationIndex = std::nullopt;
-			m_currentTimeTicks = 0.0f;
-			m_poseEvaluationAccumulator = 0.0f;
-			EvaluatePose();
-		}
-		else
-		{
-			SetAnimation(static_cast<uint32_t>(p_choice));
-		}
-	};
+		return GetAnimationIndex().has_value() ? static_cast<int>(*GetAnimationIndex()) : -1;
+	});
+	animDispatcher.RegisterProvider([this](int p_choice)
+	{
+		SetAnimation(p_choice >= 0 ? std::make_optional(static_cast<uint32_t>(p_choice)) : std::nullopt);
+	});
 
 	if (!HasCompatibleModel())
 	{

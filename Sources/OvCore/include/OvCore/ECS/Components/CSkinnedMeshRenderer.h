@@ -132,10 +132,10 @@ namespace OvCore::ECS::Components
 		std::optional<std::string> GetAnimationName(uint32_t p_index) const;
 
 		/**
-		* Sets the active animation by index
+		* Sets the active animation by index. Pass std::nullopt to clear and return to T-pose.
 		* @param p_index
 		*/
-		bool SetAnimation(uint32_t p_index);
+		bool SetAnimation(std::optional<uint32_t> p_index);
 
 		/**
 		* Sets the active animation by name
@@ -144,9 +144,9 @@ namespace OvCore::ECS::Components
 		bool SetAnimation(const std::string& p_name);
 
 		/**
-		* Returns the active animation index (-1 if none)
+		* Returns the active animation index, or std::nullopt if none is set
 		*/
-		int32_t GetAnimationIndex() const;
+		std::optional<uint32_t> GetAnimationIndex() const;
 
 		/**
 		* Returns the active animation name (empty if none)

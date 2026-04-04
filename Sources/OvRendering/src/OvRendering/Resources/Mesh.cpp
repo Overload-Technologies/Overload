@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -24,20 +23,6 @@ namespace
 		float tangent[3];
 		float bitangent[3];
 	};
-
-	struct SkinnedPackedVertex
-	{
-		float position[3];
-		float texCoords[2];
-		float normals[3];
-		float tangent[3];
-		float bitangent[3];
-		uint8_t boneIDs[OvRendering::Animation::kMaxBonesPerVertex];
-		uint8_t boneWeights[OvRendering::Animation::kMaxBonesPerVertex];
-	};
-
-	static_assert(sizeof(StaticVertex) == 56, "Unexpected StaticVertex size");
-	static_assert(sizeof(SkinnedPackedVertex) == 64, "Unexpected SkinnedPackedVertex size");
 
 	StaticVertex ToStaticVertex(const OvRendering::Geometry::Vertex& p_vertex)
 	{
@@ -61,84 +46,6 @@ namespace
 		result.bitangent[0] = p_vertex.bitangent[0];
 		result.bitangent[1] = p_vertex.bitangent[1];
 		result.bitangent[2] = p_vertex.bitangent[2];
-
-		return result;
-	}
-
-	uint8_t QuantizeBoneID(float p_boneID)
-	{
-		const auto rounded = std::lround(p_boneID);
-		const auto clamped = std::clamp<long>(rounded, 0, 255);
-		return static_cast<uint8_t>(clamped);
-	}
-
-	uint8_t QuantizeBoneWeight(float p_boneWeight)
-	{
-		if (!std::isfinite(p_boneWeight))
-		{
-			return 0;
-		}
-
-		const float clamped = std::clamp(p_boneWeight, 0.0f, 1.0f);
-		const auto rounded = std::lround(clamped * 255.0f);
-		const auto packed = std::clamp<long>(rounded, 0, 255);
-		return static_cast<uint8_t>(packed);
-	}
-
-	bool CanUsePackedSkinningData(std::span<const OvRendering::Geometry::Vertex> p_vertices)
-	{
-		for (const auto& vertex : p_vertices)
-		{
-			for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-			{
-				const float weight = vertex.boneWeights[i];
-
-				// Ignore slots that do not contribute to skinning.
-				if (!std::isfinite(weight) || weight <= 0.0f)
-				{
-					continue;
-				}
-
-				const float boneID = vertex.boneIDs[i];
-				if (!std::isfinite(boneID) || boneID < 0.0f || boneID > 255.0f)
-				{
-					return false;
-				}
-			}
-		}
-
-		return true;
-	}
-
-	SkinnedPackedVertex ToSkinnedPackedVertex(const OvRendering::Geometry::Vertex& p_vertex)
-	{
-		SkinnedPackedVertex result{};
-
-		result.position[0] = p_vertex.position[0];
-		result.position[1] = p_vertex.position[1];
-		result.position[2] = p_vertex.position[2];
-
-		result.texCoords[0] = p_vertex.texCoords[0];
-		result.texCoords[1] = p_vertex.texCoords[1];
-
-		result.normals[0] = p_vertex.normals[0];
-		result.normals[1] = p_vertex.normals[1];
-		result.normals[2] = p_vertex.normals[2];
-
-		result.tangent[0] = p_vertex.tangent[0];
-		result.tangent[1] = p_vertex.tangent[1];
-		result.tangent[2] = p_vertex.tangent[2];
-
-		result.bitangent[0] = p_vertex.bitangent[0];
-		result.bitangent[1] = p_vertex.bitangent[1];
-		result.bitangent[2] = p_vertex.bitangent[2];
-
-		for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-		{
-			const auto weight = QuantizeBoneWeight(p_vertex.boneWeights[i]);
-			result.boneWeights[i] = weight;
-			result.boneIDs[i] = weight > 0 ? QuantizeBoneID(p_vertex.boneIDs[i]) : 0;
-		}
 
 		return result;
 	}
@@ -214,43 +121,16 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_ve
 		{ Settings::EDataType::FLOAT, 4 }  // bone weights
 	});
 
-	const auto packedSkinningLayout = std::to_array<Settings::VertexAttribute>({
-		{ Settings::EDataType::FLOAT, 3 }, // position
-		{ Settings::EDataType::FLOAT, 2 }, // texCoords
-		{ Settings::EDataType::FLOAT, 3 }, // normal
-		{ Settings::EDataType::FLOAT, 3 }, // tangent
-		{ Settings::EDataType::FLOAT, 3 }, // bitangent
-		{ Settings::EDataType::UNSIGNED_BYTE, 4, false }, // bone IDs
-		{ Settings::EDataType::UNSIGNED_BYTE, 4, true }   // bone weights (normalized)
-	});
-
 	std::vector<StaticVertex> staticVertices;
-	std::vector<SkinnedPackedVertex> packedSkinnedVertices;
 	const void* vertexData = nullptr;
 	uint64_t vertexBufferSize = 0;
 	Settings::VertexAttributeLayout layout = staticLayout;
 
 	if (m_hasSkinningData)
 	{
-		if (CanUsePackedSkinningData(p_vertices))
-		{
-			packedSkinnedVertices.reserve(p_vertices.size());
-			for (const auto& vertex : p_vertices)
-			{
-				packedSkinnedVertices.push_back(ToSkinnedPackedVertex(vertex));
-			}
-
-			vertexData = packedSkinnedVertices.data();
-			vertexBufferSize = static_cast<uint64_t>(packedSkinnedVertices.size()) * sizeof(SkinnedPackedVertex);
-			layout = packedSkinningLayout;
-		}
-		else
-		{
-			OVLOG_WARNING("Mesh: Falling back to FLOAT skinning vertex attributes because bone IDs exceed packed range [0..255].");
-			vertexData = p_vertices.data();
-			vertexBufferSize = p_vertices.size_bytes();
-			layout = skinnedLayout;
-		}
+		vertexData = p_vertices.data();
+		vertexBufferSize = p_vertices.size_bytes();
+		layout = skinnedLayout;
 	}
 	else
 	{

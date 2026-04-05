@@ -3,7 +3,6 @@
 mat4 ComputeSkinningMatrix(uvec4 p_boneIDs, vec4 p_boneWeights)
 {
     const int boneCount = ssbo_Bones.length();
-
     mat4 skinning = mat4(0.0);
     float totalWeight = 0.0;
 
@@ -18,10 +17,7 @@ mat4 ComputeSkinningMatrix(uvec4 p_boneIDs, vec4 p_boneWeights)
     }
 
     if (totalWeight <= 0.0) return mat4(1.0);
-    if (totalWeight == 1.0) return skinning;
 
-    return totalWeight < 1.0
-        ? skinning + mat4(1.0 - totalWeight)
-        : skinning / totalWeight;
+    return skinning / totalWeight;
 }
 

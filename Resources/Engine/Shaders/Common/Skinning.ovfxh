@@ -1,46 +1,14 @@
 #include ":Shaders/Common/Buffers/SkinningSSBO.ovfxh"
 
-void ApplyBone(
-    uint p_boneID,
-    float p_boneWeight,
-    int p_boneCount,
-    inout mat4 p_skinning,
-    inout float p_appliedWeight
-)
-{
-    if (p_boneWeight > 0.0)
-    {
-        if (int(p_boneID) < p_boneCount)
-        {
-            p_skinning += ssbo_Bones[p_boneID] * p_boneWeight;
-            p_appliedWeight += p_boneWeight;
-        }
-    }
-}
-
 mat4 ComputeSkinningMatrix(uvec4 p_boneIDs, vec4 p_boneWeights)
 {
-    const int boneCount = ssbo_Bones.length();
+    mat4 skinMat = mat4(0.0);
 
-    mat4 skinning = mat4(0.0);
-    float appliedWeight = 0.0;
+    skinMat += p_boneWeights.x * ssbo_Bones[p_boneIDs.x];
+    skinMat += p_boneWeights.y * ssbo_Bones[p_boneIDs.y];
+    skinMat += p_boneWeights.z * ssbo_Bones[p_boneIDs.z];
+    skinMat += p_boneWeights.w * ssbo_Bones[p_boneIDs.w];
 
-    for (int i = 0; i < 4; ++i)
-    {
-        ApplyBone(p_boneIDs[i], p_boneWeights[i], boneCount, skinning, appliedWeight);
-    }
-
-    if (appliedWeight <= 0.0)
-    {
-        return mat4(1.0);
-    }
-
-    if (appliedWeight == 1.0)
-    {
-        return skinning;
-    }
-
-    return appliedWeight < 1.0 ?
-        skinning + mat4(1.0 - appliedWeight) :
-        skinning / appliedWeight;
+    return skinMat;
 }
+

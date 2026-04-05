@@ -388,9 +388,25 @@ OvRendering::Resources::Mesh* OvRendering::Resources::Parsers::AssimpParser::Pro
 			}
 		}
 
+		for (auto& vertex : vertices)
+		{
+			float weightSum = 0.0f;
+			for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
+			{
+				weightSum += vertex.boneWeights[i];
+			}
+
+			if (weightSum > 0.0f)
+			{
+				for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
+				{
+					vertex.boneWeights[i] /= weightSum;
+				}
+			}
+		}
+
 		return new Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
 	}
-	else
 	{
 		std::vector<Geometry::Vertex> vertices(p_mesh->mNumVertices);
 		for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)

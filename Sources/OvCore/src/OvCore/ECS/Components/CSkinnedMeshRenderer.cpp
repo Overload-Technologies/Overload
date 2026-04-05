@@ -8,6 +8,8 @@
 #include <cmath>
 #include <limits>
 
+#include <optional>
+#include <string>
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
@@ -268,20 +270,19 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(const std::stri
 	return SetAnimation(static_cast<uint32_t>(std::distance(animations.begin(), found)));
 }
 
-std::optional<uint32_t> OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimationIndex() const
+std::optional<uint32_t> OvCore::ECS::Components::CSkinnedMeshRenderer::GetActiveAnimationIndex() const
 {
 	return m_animationIndex;
 }
 
-std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimation() const
+std::optional<std::string> OvCore::ECS::Components::CSkinnedMeshRenderer::GetActiveAnimationName() const
 {
 	if (!m_animationIndex.has_value())
 	{
-		return {};
+		return std::nullopt;
 	}
 
-	const auto animationName = GetAnimationName(*m_animationIndex);
-	return animationName.has_value() ? *animationName : std::string{};
+	return GetAnimationName(m_animationIndex.value());
 }
 
 const std::vector<OvMaths::FMatrix4>& OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneMatricesTransposed() const
@@ -348,7 +349,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnSerialize(tinyxml2::XMLDoc
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "pose_eval_rate", m_poseEvaluationRate);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "time_ticks", m_currentTimeTicks);
-	OvCore::Helpers::Serializer::SerializeString(p_doc, p_node, "animation", GetAnimation());
+	OvCore::Helpers::Serializer::SerializeString(p_doc, p_node, "animation", GetActiveAnimationName().value_or(std::string{}));
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -387,7 +388,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	);
 
 	GUIDrawer::CreateTitle(p_root, "Active Animation");
-	const int currentAnimIndex = GetAnimationIndex().has_value() ? static_cast<int>(*GetAnimationIndex()) : -1;
+	const int currentAnimIndex = GetActiveAnimationIndex().has_value() ? static_cast<int>(*GetActiveAnimationIndex()) : -1;
 	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(currentAnimIndex);
 	animationChoice.choices.emplace(-1, "<None>");
 
@@ -399,7 +400,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	auto& animDispatcher = animationChoice.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
 	animDispatcher.RegisterGatherer([this]
 	{
-		return GetAnimationIndex().has_value() ? static_cast<int>(*GetAnimationIndex()) : -1;
+		return GetActiveAnimationIndex().has_value() ? static_cast<int>(*GetActiveAnimationIndex()) : -1;
 	});
 	animDispatcher.RegisterProvider([this](int p_choice)
 	{

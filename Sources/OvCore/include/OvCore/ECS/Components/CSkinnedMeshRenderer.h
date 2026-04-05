@@ -130,12 +130,12 @@ namespace OvCore::ECS::Components
 		/**
 		* Returns the active animation index, or std::nullopt if none is set
 		*/
-		std::optional<uint32_t> GetAnimationIndex() const;
+		std::optional<uint32_t> GetActiveAnimationIndex() const;
 
 		/**
 		* Returns the active animation name (empty if none)
 		*/
-		std::string GetAnimation() const;
+		std::optional<std::string> GetActiveAnimationName() const;
 
 		/**
 		* Returns the transposed skinning matrix palette ready for GPU upload

@@ -220,7 +220,7 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 	m_metadata->Add("GEN_SMOOTH_NORMALS", true);
 	m_metadata->Add("SPLIT_LARGE_MESHES", false);
 	m_metadata->Add("PRE_TRANSFORM_VERTICES", false);
-	m_metadata->Add("LIMIT_BONE_WEIGHTS", false);
+	m_metadata->Add("LIMIT_BONE_WEIGHTS", true);
 	m_metadata->Add("VALIDATE_DATA_STRUCTURE", false);
 	m_metadata->Add("IMPROVE_CACHE_LOCALITY", true);
 	m_metadata->Add("REMOVE_REDUNDANT_MATERIALS", false);
@@ -236,7 +236,7 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 	m_metadata->Add("FLIP_UVS", false);
 	m_metadata->Add("FLIP_WINDING_ORDER", false);
 	m_metadata->Add("SPLIT_BY_BONE_COUNT", false);
-	m_metadata->Add("DEBONE", true);
+	m_metadata->Add("DEBONE", false);
 	m_metadata->Add("GLOBAL_SCALE", true);
 	m_metadata->Add("EMBED_TEXTURES", false);
 	m_metadata->Add("FORCE_GEN_NORMALS", false);

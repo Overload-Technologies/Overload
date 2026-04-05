@@ -35,21 +35,6 @@ namespace
 			OVLOG_WARNING("AssimpParser: OPTIMIZE_GRAPH and PRE_TRANSFORM_VERTICES are mutually exclusive. OPTIMIZE_GRAPH will be ignored.");
 		}
 
-		p_flags |= TRIANGULATE;
-		p_flags |= LIMIT_BONE_WEIGHTS;
-
-		if (static_cast<bool>(p_flags & PRE_TRANSFORM_VERTICES))
-		{
-			p_flags &= ~PRE_TRANSFORM_VERTICES;
-			OVLOG_WARNING("AssimpParser: PRE_TRANSFORM_VERTICES is incompatible with skeletal animation and has been removed.");
-		}
-
-		if (static_cast<bool>(p_flags & DEBONE))
-		{
-			p_flags &= ~DEBONE;
-			OVLOG_WARNING("AssimpParser: DEBONE removes bone data and is incompatible with skeletal animation. DEBONE will be ignored.");
-		}
-
 		return p_flags;
 	}
 

@@ -23,7 +23,7 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	if (metaFile.GetOrDefault("GEN_SMOOTH_NORMALS",			true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::GEN_SMOOTH_NORMALS;
 	if (metaFile.GetOrDefault("SPLIT_LARGE_MESHES",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::SPLIT_LARGE_MESHES;
 	if (metaFile.GetOrDefault("PRE_TRANSFORM_VERTICES",		false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::PRE_TRANSFORM_VERTICES;
-	if (metaFile.GetOrDefault("LIMIT_BONE_WEIGHTS",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::LIMIT_BONE_WEIGHTS;
+	if (metaFile.GetOrDefault("LIMIT_BONE_WEIGHTS",			true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::LIMIT_BONE_WEIGHTS;
 	if (metaFile.GetOrDefault("VALIDATE_DATA_STRUCTURE",	false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::VALIDATE_DATA_STRUCTURE;
 	if (metaFile.GetOrDefault("IMPROVE_CACHE_LOCALITY",		true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::IMPROVE_CACHE_LOCALITY;
 	if (metaFile.GetOrDefault("REMOVE_REDUNDANT_MATERIALS", false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::REMOVE_REDUNDANT_MATERIALS;
@@ -39,7 +39,7 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	if (metaFile.GetOrDefault("FLIP_UVS",					false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FLIP_UVS;
 	if (metaFile.GetOrDefault("FLIP_WINDING_ORDER",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FLIP_WINDING_ORDER;
 	if (metaFile.GetOrDefault("SPLIT_BY_BONE_COUNT",		false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::SPLIT_BY_BONE_COUNT;
-	if (metaFile.GetOrDefault("DEBONE",						true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::DEBONE;
+	if (metaFile.GetOrDefault("DEBONE",						false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::DEBONE;
 	if (metaFile.GetOrDefault("GLOBAL_SCALE",				true))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::GLOBAL_SCALE;
 	if (metaFile.GetOrDefault("EMBED_TEXTURES",				false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::EMBED_TEXTURES;
 	if (metaFile.GetOrDefault("FORCE_GEN_NORMALS",			false))	flags |= OvRendering::Resources::Parsers::EModelParserFlags::FORCE_GEN_NORMALS;

@@ -95,7 +95,11 @@ void OvRendering::HAL::GLVertexArray::SetLayout(
 
 		glEnableVertexAttribArray(attributeIndex);
 
-		if (attribute.integer)
+		const bool isIntegerType =
+			attribute.type != Settings::EDataType::FLOAT &&
+			attribute.type != Settings::EDataType::DOUBLE;
+
+		if (isIntegerType && !attribute.normalized)
 		{
 			glVertexAttribIPointer(
 				static_cast<GLuint>(attributeIndex),

@@ -60,17 +60,27 @@ namespace OvCore::Rendering
 			SKINNING
 		};
 
+		struct UploadedPaletteState
+		{
+			const OvMaths::FMatrix4* ptr = nullptr;
+			uint32_t count = 0;
+			uint64_t poseVersion = 0;
+		};
+
+		struct BoundPaletteState
+		{
+			EBoundPalette type = EBoundPalette::NONE;
+			const OvMaths::FMatrix4* ptr = nullptr;
+			uint32_t count = 0;
+			uint64_t poseVersion = 0;
+		};
+
 		uint32_t m_bufferBindingPoint;
 		mutable uint32_t m_skinningBufferIndex = kSkinningBufferRingSize - 1;
 		std::array<std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer>, kSkinningBufferRingSize> m_skinningBuffers;
 		std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_identityBuffer;
 
-		const OvMaths::FMatrix4* m_lastPalettePtr = nullptr;
-		uint32_t m_lastPaletteCount = 0;
-		uint64_t m_lastPoseVersion = 0;
-		mutable EBoundPalette m_boundPalette = EBoundPalette::NONE;
-		mutable const OvMaths::FMatrix4* m_boundPalettePtr = nullptr;
-		mutable uint32_t m_boundPaletteCount = 0;
-		mutable uint64_t m_boundPoseVersion = 0;
+		UploadedPaletteState m_lastUploaded;
+		mutable BoundPaletteState m_bound;
 	};
 }

@@ -154,11 +154,6 @@ namespace OvCore::ECS::Components
 		std::string GetAnimation() const;
 
 		/**
-		* Returns the current skinning matrix palette
-		*/
-		const std::vector<OvMaths::FMatrix4>& GetBoneMatrices() const;
-
-		/**
 		* Returns the transposed skinning matrix palette ready for GPU upload
 		*/
 		const std::vector<OvMaths::FMatrix4>& GetBoneMatricesTransposed() const;

@@ -19,6 +19,12 @@ namespace OvRendering::Data
 	}
 
 	template<typename T>
+	inline void Describable::SetDescriptor(T&& p_descriptor)
+	{
+		m_descriptors.insert_or_assign(typeid(T), std::move(p_descriptor));
+	}
+
+	template<typename T>
 	inline void Describable::RemoveDescriptor()
 	{
 		OVASSERT(HasDescriptor<T>(), "Descriptor doesn't exist.");

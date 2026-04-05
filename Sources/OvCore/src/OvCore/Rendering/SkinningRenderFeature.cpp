@@ -41,13 +41,8 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeginFrame(const OvRendering::D
 	(void)p_frameDescriptor;
 	m_skinningBufferIndex = (m_skinningBufferIndex + 1) % kSkinningBufferRingSize;
 
-	m_lastPalettePtr = nullptr;
-	m_lastPaletteCount = 0;
-	m_lastPoseVersion = 0;
-	m_boundPalette = EBoundPalette::NONE;
-	m_boundPalettePtr = nullptr;
-	m_boundPaletteCount = 0;
-	m_boundPoseVersion = 0;
+	m_lastUploaded = {};
+	m_bound = {};
 
 	if (m_identityBuffer->GetSize() == 0)
 	{
@@ -61,10 +56,7 @@ void OvCore::Rendering::SkinningRenderFeature::OnEndFrame()
 {
 	GetCurrentSkinningBuffer().Unbind();
 	m_identityBuffer->Unbind();
-	m_boundPalette = EBoundPalette::NONE;
-	m_boundPalettePtr = nullptr;
-	m_boundPaletteCount = 0;
-	m_boundPoseVersion = 0;
+	m_bound = {};
 }
 
 void OvCore::Rendering::SkinningRenderFeature::OnBeforeDraw(
@@ -95,9 +87,9 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeforeDraw(
 	}
 
 	const bool mustUpload =
-		m_lastPalettePtr != skinningDescriptor->matrices ||
-		m_lastPaletteCount != skinningDescriptor->count ||
-		m_lastPoseVersion != skinningDescriptor->poseVersion;
+		m_lastUploaded.ptr != skinningDescriptor->matrices ||
+		m_lastUploaded.count != skinningDescriptor->count ||
+		m_lastUploaded.poseVersion != skinningDescriptor->poseVersion;
 
 	auto& skinningBuffer = GetCurrentSkinningBuffer();
 
@@ -114,24 +106,19 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeforeDraw(
 			.size = uploadSize
 		});
 
-		m_lastPalettePtr = skinningDescriptor->matrices;
-		m_lastPaletteCount = skinningDescriptor->count;
-		m_lastPoseVersion = skinningDescriptor->poseVersion;
+		m_lastUploaded = { skinningDescriptor->matrices, skinningDescriptor->count, skinningDescriptor->poseVersion };
 	}
 
 	const bool mustBindSkinningPalette =
-		m_boundPalette != EBoundPalette::SKINNING ||
-		m_boundPalettePtr != skinningDescriptor->matrices ||
-		m_boundPaletteCount != skinningDescriptor->count ||
-		m_boundPoseVersion != skinningDescriptor->poseVersion;
+		m_bound.type != EBoundPalette::SKINNING ||
+		m_bound.ptr != skinningDescriptor->matrices ||
+		m_bound.count != skinningDescriptor->count ||
+		m_bound.poseVersion != skinningDescriptor->poseVersion;
 
 	if (mustBindSkinningPalette)
 	{
 		skinningBuffer.Bind(m_bufferBindingPoint);
-		m_boundPalette = EBoundPalette::SKINNING;
-		m_boundPalettePtr = skinningDescriptor->matrices;
-		m_boundPaletteCount = skinningDescriptor->count;
-		m_boundPoseVersion = skinningDescriptor->poseVersion;
+		m_bound = { EBoundPalette::SKINNING, skinningDescriptor->matrices, skinningDescriptor->count, skinningDescriptor->poseVersion };
 	}
 }
 
@@ -142,12 +129,9 @@ OvRendering::HAL::ShaderStorageBuffer& OvCore::Rendering::SkinningRenderFeature:
 
 void OvCore::Rendering::SkinningRenderFeature::BindIdentityPalette() const
 {
-	if (m_boundPalette != EBoundPalette::IDENTITY)
+	if (m_bound.type != EBoundPalette::IDENTITY)
 	{
 		m_identityBuffer->Bind(m_bufferBindingPoint);
-		m_boundPalette = EBoundPalette::IDENTITY;
-		m_boundPalettePtr = nullptr;
-		m_boundPaletteCount = 0;
-		m_boundPoseVersion = 0;
+		m_bound = { EBoundPalette::IDENTITY };
 	}
 }

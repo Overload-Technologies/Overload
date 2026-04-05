@@ -28,6 +28,12 @@ namespace OvRendering::Data
 		void AddDescriptor(T&& p_descriptor);
 
 		/**
+		* Add or replace a descriptor (no-op if same type already exists with the same value)
+		*/
+		template<typename T>
+		void SetDescriptor(T&& p_descriptor);
+
+		/**
 		* Remove a descriptor
 		*/
 		template<typename T>

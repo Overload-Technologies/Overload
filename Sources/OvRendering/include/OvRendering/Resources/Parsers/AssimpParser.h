@@ -45,7 +45,6 @@ namespace OvRendering::Resources::Parsers
 		Mesh* ProcessMesh(
 			void* p_transform,
 			struct aiMesh* p_mesh,
-			const struct aiScene* p_scene,
 			Animation::Skeleton* p_skeleton
 		);
 	};

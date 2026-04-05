@@ -299,11 +299,6 @@ std::string OvCore::ECS::Components::CSkinnedMeshRenderer::GetAnimation() const
 	return animationName.has_value() ? *animationName : std::string{};
 }
 
-const std::vector<OvMaths::FMatrix4>& OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneMatrices() const
-{
-	return m_boneMatrices;
-}
-
 const std::vector<OvMaths::FMatrix4>& OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneMatricesTransposed() const
 {
 	return m_boneMatricesTransposed;

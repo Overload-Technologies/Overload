@@ -80,6 +80,32 @@ namespace
 		return false;
 	}
 
+	void AddSkeletonNodeRecursive(OvRendering::Animation::Skeleton& p_skeleton, aiNode* p_node, int32_t p_parentIndex)
+	{
+		const auto currentIndex = static_cast<uint32_t>(p_skeleton.nodes.size());
+
+		aiVector3D aiPosition, aiScale;
+		aiQuaternion aiRotation;
+		p_node->mTransformation.Decompose(aiScale, aiRotation, aiPosition);
+
+		p_skeleton.nodes.push_back({
+			.name = p_node->mName.C_Str(),
+			.parentIndex = p_parentIndex,
+			.boneIndex = -1,
+			.localBindTransform = ToMatrix4(p_node->mTransformation),
+			.bindPosition = { aiPosition.x, aiPosition.y, aiPosition.z },
+			.bindRotation = { aiRotation.x, aiRotation.y, aiRotation.z, aiRotation.w },
+			.bindScale = { aiScale.x, aiScale.y, aiScale.z }
+		});
+
+		p_skeleton.nodeByName.emplace(p_node->mName.C_Str(), currentIndex);
+
+		for (uint32_t i = 0; i < p_node->mNumChildren; ++i)
+		{
+			AddSkeletonNodeRecursive(p_skeleton, p_node->mChildren[i], static_cast<int32_t>(currentIndex));
+		}
+	}
+
 }
 
 bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
@@ -143,37 +169,7 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 
 void OvRendering::Resources::Parsers::AssimpParser::BuildSkeleton(const aiScene* p_scene, Animation::Skeleton& p_skeleton)
 {
-	const auto addNodeRecursive = [&p_skeleton](
-		const auto& p_self,
-		aiNode* p_node,
-		int32_t p_parentIndex
-	) -> void
-	{
-		const auto currentIndex = static_cast<uint32_t>(p_skeleton.nodes.size());
-
-		aiVector3D aiPosition, aiScale;
-		aiQuaternion aiRotation;
-		p_node->mTransformation.Decompose(aiScale, aiRotation, aiPosition);
-
-		p_skeleton.nodes.push_back({
-			.name = p_node->mName.C_Str(),
-			.parentIndex = p_parentIndex,
-			.boneIndex = -1,
-			.localBindTransform = ToMatrix4(p_node->mTransformation),
-			.bindPosition = { aiPosition.x, aiPosition.y, aiPosition.z },
-			.bindRotation = { aiRotation.x, aiRotation.y, aiRotation.z, aiRotation.w },
-			.bindScale = { aiScale.x, aiScale.y, aiScale.z }
-		});
-
-		p_skeleton.nodeByName.emplace(p_node->mName.C_Str(), currentIndex);
-
-		for (uint32_t i = 0; i < p_node->mNumChildren; ++i)
-		{
-			p_self(p_self, p_node->mChildren[i], static_cast<int32_t>(currentIndex));
-		}
-	};
-
-	addNodeRecursive(addNodeRecursive, p_scene->mRootNode, -1);
+	AddSkeletonNodeRecursive(p_skeleton, p_scene->mRootNode, -1);
 }
 
 void OvRendering::Resources::Parsers::AssimpParser::ProcessAnimations(
@@ -274,7 +270,7 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessNode(
 	for (uint32_t i = 0; i < p_node->mNumMeshes; ++i)
 	{
 		aiMesh* mesh = p_scene->mMeshes[p_node->mMeshes[i]];
-		if (Mesh* result = ProcessMesh(&nodeTransformation, mesh, p_scene, p_skeleton))
+		if (Mesh* result = ProcessMesh(&nodeTransformation, mesh, p_skeleton))
 		{
 			p_meshes.push_back(result); // The model will handle mesh destruction
 		}
@@ -290,12 +286,9 @@ void OvRendering::Resources::Parsers::AssimpParser::ProcessNode(
 OvRendering::Resources::Mesh* OvRendering::Resources::Parsers::AssimpParser::ProcessMesh(
 	void* p_transform,
 	aiMesh* p_mesh,
-	const aiScene* p_scene,
 	Animation::Skeleton* p_skeleton
 )
 {
-	(void)p_scene;
-
 	aiMatrix4x4 meshTransformation = *reinterpret_cast<aiMatrix4x4*>(p_transform);
 
 	std::vector<uint32_t> indices;

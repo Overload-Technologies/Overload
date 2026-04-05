@@ -31,12 +31,7 @@ void OvCore::Rendering::SkinningUtils::ApplyDescriptor(
 {
 	const auto& boneMatrices = p_renderer.GetBoneMatricesTransposed();
 
-	if (p_drawable.HasDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>())
-	{
-		p_drawable.RemoveDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>();
-	}
-
-	p_drawable.AddDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>({
+	p_drawable.SetDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>({
 		.matrices = boneMatrices.data(),
 		.count = static_cast<uint32_t>(boneMatrices.size()),
 		.poseVersion = p_renderer.GetPoseVersion()

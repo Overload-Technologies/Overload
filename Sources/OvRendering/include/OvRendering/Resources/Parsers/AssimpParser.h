@@ -8,9 +8,8 @@
 
 #include <vector>
 
-#include "OvRendering/Geometry/Vertex.h"
-#include "OvRendering/Resources/Mesh.h"
-#include "OvRendering/Resources/Parsers/IModelParser.h"
+#include <OvRendering/Resources/Mesh.h>
+#include <OvRendering/Resources/Parsers/IModelParser.h>
 
 namespace OvRendering::Resources::Parsers
 {
@@ -36,16 +35,5 @@ namespace OvRendering::Resources::Parsers
 			std::vector<Animation::SkeletalAnimation>& p_animations,
 			EModelParserFlags p_parserFlags
 		) override;
-
-	private:
-		void BuildSkeleton(const struct aiScene* p_scene, Animation::Skeleton& p_skeleton);
-		void ProcessAnimations(const struct aiScene* p_scene, const Animation::Skeleton& p_skeleton, std::vector<Animation::SkeletalAnimation>& p_animations);
-		void ProcessMaterials(const struct aiScene* p_scene, std::vector<std::string>& p_materials);
-		void ProcessNode(void* p_transform, struct aiNode* p_node, const struct aiScene* p_scene, std::vector<Mesh*>& p_meshes, Animation::Skeleton* p_skeleton);
-		Mesh* ProcessMesh(
-			void* p_transform,
-			struct aiMesh* p_mesh,
-			Animation::Skeleton* p_skeleton
-		);
 	};
 }

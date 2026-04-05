@@ -293,23 +293,6 @@ namespace
 				}
 			}
 
-			for (auto& vertex : vertices)
-			{
-				float weightSum = 0.0f;
-				for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-				{
-					weightSum += vertex.boneWeights[i];
-				}
-
-				if (weightSum > 0.0f)
-				{
-					for (uint8_t i = 0; i < OvRendering::Animation::kMaxBonesPerVertex; ++i)
-					{
-						vertex.boneWeights[i] /= weightSum;
-					}
-				}
-			}
-
 			return new OvRendering::Resources::Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
 		}
 		else

@@ -122,24 +122,9 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::NotifyModelChanged()
 	SyncWithModel();
 }
 
-bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasCompatibleModel() const
-{
-	return m_model && m_model->IsSkinned() && m_model->GetSkeleton().has_value();
-}
-
 bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasSkinningData() const
 {
 	return HasCompatibleModel() && m_animationIndex.has_value() && !m_boneMatrices.empty();
-}
-
-void OvCore::ECS::Components::CSkinnedMeshRenderer::SetEnabled(bool p_value)
-{
-	m_enabled = p_value;
-}
-
-bool OvCore::ECS::Components::CSkinnedMeshRenderer::IsEnabled() const
-{
-	return m_enabled;
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::Play()
@@ -318,50 +303,46 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnUpdate(float p_deltaTime)
 
 	SyncWithModel();
 
-	if (!m_enabled || !HasCompatibleModel())
+	if (!HasCompatibleModel() || !m_playing)
 	{
 		return;
 	}
 
-	if (m_playing)
+	const float previousTimeTicks = m_currentTimeTicks;
+	const bool wasPlaying = m_playing;
+
+	UpdatePlayback(p_deltaTime);
+
+	const bool timeChanged = std::abs(m_currentTimeTicks - previousTimeTicks) > std::numeric_limits<float>::epsilon();
+	const bool playbackStateChanged = wasPlaying != m_playing;
+
+	if (timeChanged || playbackStateChanged)
 	{
-		const float previousTimeTicks = m_currentTimeTicks;
-		const bool wasPlaying = m_playing;
+		const float clampedPoseEvaluationRate = std::max(0.0f, m_poseEvaluationRate);
+		const bool hasRateLimit = clampedPoseEvaluationRate > std::numeric_limits<float>::epsilon();
 
-		UpdatePlayback(p_deltaTime);
-
-		const bool timeChanged = std::abs(m_currentTimeTicks - previousTimeTicks) > std::numeric_limits<float>::epsilon();
-		const bool playbackStateChanged = wasPlaying != m_playing;
-
-		if (timeChanged || playbackStateChanged)
+		if (hasRateLimit)
 		{
-			const float clampedPoseEvaluationRate = std::max(0.0f, m_poseEvaluationRate);
-			const bool hasRateLimit = clampedPoseEvaluationRate > std::numeric_limits<float>::epsilon();
-
-			if (hasRateLimit)
+			m_poseEvaluationAccumulator += p_deltaTime;
+			const float updatePeriod = 1.0f / clampedPoseEvaluationRate;
+			if (m_poseEvaluationAccumulator < updatePeriod && !playbackStateChanged)
 			{
-				m_poseEvaluationAccumulator += p_deltaTime;
-				const float updatePeriod = 1.0f / clampedPoseEvaluationRate;
-				if (m_poseEvaluationAccumulator < updatePeriod && !playbackStateChanged)
-				{
-					return;
-				}
-
-				m_poseEvaluationAccumulator = std::fmod(m_poseEvaluationAccumulator, updatePeriod);
-			}
-			else
-			{
-				m_poseEvaluationAccumulator = 0.0f;
+				return;
 			}
 
-			EvaluatePose();
+			m_poseEvaluationAccumulator = std::fmod(m_poseEvaluationAccumulator, updatePeriod);
 		}
+		else
+		{
+			m_poseEvaluationAccumulator = 0.0f;
+		}
+
+		EvaluatePose();
 	}
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
-	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "enabled", m_enabled);
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "playing", m_playing);
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "looping", m_looping);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
@@ -372,7 +353,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnSerialize(tinyxml2::XMLDoc
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
-	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "enabled", m_enabled);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "playing", m_playing);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "looping", m_looping);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
@@ -391,7 +371,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 
 	using namespace OvCore::Helpers;
 
-	GUIDrawer::DrawBoolean(p_root, "Enabled", m_enabled);
 	GUIDrawer::DrawBoolean(p_root, "Playing", m_playing);
 	GUIDrawer::DrawBoolean(p_root, "Looping", m_looping);
 	GUIDrawer::DrawScalar<float>(p_root, "Playback Speed", m_playbackSpeed, 0.01f, -10.0f, 10.0f);
@@ -435,6 +414,11 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	{
 		p_root.CreateWidget<OvUI::Widgets::Texts::Text>("Model has no animation clips");
 	}
+}
+
+bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasCompatibleModel() const
+{
+	return m_model && m_model->IsSkinned() && m_model->GetSkeleton().has_value();
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::SyncWithModel()

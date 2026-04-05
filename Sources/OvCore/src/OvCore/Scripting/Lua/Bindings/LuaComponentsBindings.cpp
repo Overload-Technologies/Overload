@@ -90,11 +90,6 @@ void BindLuaComponents(sol::state& p_luaState)
 
 	p_luaState.new_usertype<CSkinnedMeshRenderer>("SkinnedMeshRenderer",
 		sol::base_classes, sol::bases<AComponent>(),
-		"NotifyModelChanged", &CSkinnedMeshRenderer::NotifyModelChanged,
-		"HasCompatibleModel", &CSkinnedMeshRenderer::HasCompatibleModel,
-		"HasSkinningData", &CSkinnedMeshRenderer::HasSkinningData,
-		"SetEnabled", &CSkinnedMeshRenderer::SetEnabled,
-		"IsEnabled", &CSkinnedMeshRenderer::IsEnabled,
 		"Play", &CSkinnedMeshRenderer::Play,
 		"Pause", &CSkinnedMeshRenderer::Pause,
 		"Stop", &CSkinnedMeshRenderer::Stop,
@@ -118,7 +113,7 @@ void BindLuaComponents(sol::state& p_luaState)
 	p_luaState.new_enum<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>("CollisionDetectionMode", {
 		{"DISCRETE", OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode::DISCRETE},
 		{"CONTINUOUS", OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode::CONTINUOUS}
-		});
+	});
 
 	p_luaState.new_usertype<CPhysicalObject>("PhysicalObject",
 		sol::base_classes, sol::bases<AComponent>(),

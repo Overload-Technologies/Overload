@@ -14,7 +14,7 @@
 
 bool OvCore::Rendering::SkinningUtils::IsSkinningActive(const OvCore::ECS::Components::CSkinnedMeshRenderer* p_renderer)
 {
-	return p_renderer && p_renderer->IsEnabled() && p_renderer->HasSkinningData();
+	return p_renderer && p_renderer->HasSkinningData();
 }
 
 OvRendering::Data::FeatureSet OvCore::Rendering::SkinningUtils::BuildFeatureSet(const OvRendering::Data::FeatureSet* p_baseFeatures)

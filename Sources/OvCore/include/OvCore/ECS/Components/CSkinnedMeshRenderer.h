@@ -47,25 +47,9 @@ namespace OvCore::ECS::Components
 		void NotifyModelChanged();
 
 		/**
-		* Returns true if a valid skinned model is currently attached
-		*/
-		bool HasCompatibleModel() const;
-
-		/**
 		* Returns true if the component has a valid skinning palette ready for rendering
 		*/
 		bool HasSkinningData() const;
-
-		/**
-		* Enable / disable this component
-		* @param p_value
-		*/
-		void SetEnabled(bool p_value);
-
-		/**
-		* Returns true if the component is enabled
-		*/
-		bool IsEnabled() const;
 
 		/**
 		* Start animation playback
@@ -190,6 +174,7 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
+		bool HasCompatibleModel() const;
 		void SyncWithModel();
 		void RebuildRuntimeData();
 		void EvaluatePose();
@@ -199,7 +184,6 @@ namespace OvCore::ECS::Components
 	private:
 		const OvRendering::Resources::Model* m_model = nullptr;
 
-		bool m_enabled = true;
 		bool m_playing = true;
 		bool m_looping = true;
 		float m_playbackSpeed = 1.0f;

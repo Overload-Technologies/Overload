@@ -44,7 +44,11 @@ namespace
 			OVLOG_WARNING("AssimpParser: PRE_TRANSFORM_VERTICES is incompatible with skeletal animation and has been removed.");
 		}
 
-		p_flags &= ~DEBONE;
+		if (static_cast<bool>(p_flags & DEBONE))
+		{
+			p_flags &= ~DEBONE;
+			OVLOG_WARNING("AssimpParser: DEBONE removes bone data and is incompatible with skeletal animation. DEBONE will be ignored.");
+		}
 
 		return p_flags;
 	}

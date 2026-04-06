@@ -30,7 +30,7 @@ namespace OvTools::Utils
 		* @param p_file
 		* @param p_workingDir
 		*/
-		static void OpenFile(const std::string& p_file, const std::string & p_workingDir = "");
+		static void OpenFile(const std::string& p_file, const std::string& p_workingDir = "");
 
 		/**
 		* Run a program
@@ -57,3 +57,4 @@ namespace OvTools::Utils
 		static std::string GetPathToAppdata();
 	};
 }
+

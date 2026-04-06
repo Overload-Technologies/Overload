@@ -4,7 +4,20 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
+#include <functional>
+#include <format>
+#include <memory>
+#include <vector>
+
+#include <OvTools/Filesystem/IniFile.h>
+#include <OvTools/Utils/CodeEditor.h>
+#include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
+
+#include <OvDebug/Logger.h>
 
 #include <OvCore/ECS/Components/CCamera.h>
 #include <OvCore/ECS/Components/CPointLight.h>
@@ -19,11 +32,14 @@
 #include <OvCore/ECS/Components/CAudioListener.h>
 
 #include <OvUI/Widgets/Visual/Separator.h>
+#include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Sliders/SliderInt.h>
 #include <OvUI/Widgets/Sliders/SliderFloat.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Widgets/Texts/Text.h>
 
 #include "OvEditor/Core/EditorActions.h"
 #include "OvEditor/Panels/AssetView.h"
@@ -37,6 +53,311 @@ using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
 using namespace OvUI::Widgets::Menu;
 using namespace OvCore::ECS::Components;
+
+namespace
+{
+	constexpr std::string_view kCodeEditorSettingKey = "code_editor_name";
+	constexpr std::string_view kDefaultCodeEditorName = "Visual Studio Code";
+	constexpr std::string_view kSublimeTextCodeEditorName = "Sublime Text";
+	constexpr std::string_view kAtomCodeEditorName = "Atom";
+	constexpr std::string_view kCustomCodeEditorCountSettingKey = "custom_code_editor_count";
+	constexpr std::string_view kCustomCodeEditorNameKeySuffix = "name";
+	constexpr std::string_view kCustomCodeEditorCommandKeySuffix = "command";
+	constexpr std::string_view kCustomCodeEditorArgumentsKeySuffix = "arguments";
+	constexpr std::string_view kDefaultCodeEditorArguments = "\"{path}\"";
+
+	struct CustomCodeEditor
+	{
+		std::string name;
+		std::string command;
+		std::string arguments;
+	};
+
+	std::filesystem::path GetEditorIniFilePath()
+	{
+		const std::filesystem::path editorDataPath = std::filesystem::path{
+			OvTools::Utils::SystemCalls::GetPathToAppdata()
+		} / "OverloadTech" / "OvEditor";
+		std::filesystem::create_directories(editorDataPath);
+		return editorDataPath / "editor.ini";
+	}
+
+	template<typename T>
+	void SetOrAdd(OvTools::Filesystem::IniFile& p_iniFile, const std::string& p_key, const T& p_value)
+	{
+		if (!p_iniFile.Set<T>(p_key, p_value))
+		{
+			p_iniFile.Add<T>(p_key, p_value);
+		}
+	}
+
+	std::string MakeCustomCodeEditorKey(const int p_index, const std::string_view p_suffix)
+	{
+		return std::format("custom_code_editor_{}_{}", p_index, p_suffix);
+	}
+
+	std::string NormalizeCodeEditorName(std::string p_name)
+	{
+		std::transform(
+			p_name.begin(),
+			p_name.end(),
+			p_name.begin(),
+			[](const unsigned char p_character)
+			{
+				return static_cast<char>(std::tolower(p_character));
+			}
+		);
+		return p_name;
+	}
+
+	bool IsBuiltInCodeEditorName(const std::string& p_editorName)
+	{
+		const std::string normalizedName = NormalizeCodeEditorName(p_editorName);
+		return
+			normalizedName == NormalizeCodeEditorName(std::string{ kDefaultCodeEditorName }) ||
+			normalizedName == NormalizeCodeEditorName(std::string{ kSublimeTextCodeEditorName }) ||
+			normalizedName == NormalizeCodeEditorName(std::string{ kAtomCodeEditorName });
+	}
+
+	std::vector<CustomCodeEditor> LoadCustomCodeEditors(OvTools::Filesystem::IniFile& p_settingsFile)
+	{
+		const int customEditorCount = std::max(
+			0,
+			p_settingsFile.GetOrDefault<int>(std::string{ kCustomCodeEditorCountSettingKey }, 0)
+		);
+
+		std::vector<CustomCodeEditor> customEditors;
+		customEditors.reserve(static_cast<size_t>(customEditorCount));
+
+		for (int i = 0; i < customEditorCount; ++i)
+		{
+			std::string editorName = p_settingsFile.GetOrDefault<std::string>(MakeCustomCodeEditorKey(i, kCustomCodeEditorNameKeySuffix), "");
+			std::string editorCommand = p_settingsFile.GetOrDefault<std::string>(MakeCustomCodeEditorKey(i, kCustomCodeEditorCommandKeySuffix), "");
+			std::string editorArguments = p_settingsFile.GetOrDefault<std::string>(MakeCustomCodeEditorKey(i, kCustomCodeEditorArgumentsKeySuffix), std::string{ kDefaultCodeEditorArguments });
+
+			OvTools::Utils::String::Trim(editorName);
+			OvTools::Utils::String::Trim(editorCommand);
+			OvTools::Utils::String::Trim(editorArguments);
+
+			if (editorName.empty() || editorCommand.empty())
+			{
+				continue;
+			}
+
+			if (editorArguments.empty())
+			{
+				editorArguments = std::string{ kDefaultCodeEditorArguments };
+			}
+
+			customEditors.push_back(
+				CustomCodeEditor
+				{
+					editorName,
+					editorCommand,
+					editorArguments
+				}
+			);
+		}
+
+		return customEditors;
+	}
+
+	void SaveCustomCodeEditors(OvTools::Filesystem::IniFile& p_settingsFile, const std::vector<CustomCodeEditor>& p_customEditors)
+	{
+		const std::string customEditorCountKey{ kCustomCodeEditorCountSettingKey };
+		const int previousEditorCount = std::max(
+			0,
+			p_settingsFile.GetOrDefault<int>(customEditorCountKey, 0)
+		);
+
+		for (int i = 0; i < previousEditorCount; ++i)
+		{
+			p_settingsFile.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorNameKeySuffix));
+			p_settingsFile.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorCommandKeySuffix));
+			p_settingsFile.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorArgumentsKeySuffix));
+		}
+
+		SetOrAdd<int>(p_settingsFile, customEditorCountKey, static_cast<int>(p_customEditors.size()));
+
+		for (size_t i = 0; i < p_customEditors.size(); ++i)
+		{
+			const int index = static_cast<int>(i);
+			const auto& customEditor = p_customEditors[i];
+
+			SetOrAdd<std::string>(p_settingsFile, MakeCustomCodeEditorKey(index, kCustomCodeEditorNameKeySuffix), customEditor.name);
+			SetOrAdd<std::string>(p_settingsFile, MakeCustomCodeEditorKey(index, kCustomCodeEditorCommandKeySuffix), customEditor.command);
+			SetOrAdd<std::string>(p_settingsFile, MakeCustomCodeEditorKey(index, kCustomCodeEditorArgumentsKeySuffix), customEditor.arguments);
+		}
+	}
+
+	void UpsertCustomCodeEditor(OvTools::Filesystem::IniFile& p_settingsFile, const CustomCodeEditor& p_customEditor)
+	{
+		auto customEditors = LoadCustomCodeEditors(p_settingsFile);
+		const std::string normalizedCustomEditorName = NormalizeCodeEditorName(p_customEditor.name);
+
+		const auto existingEditor = std::find_if(
+			customEditors.begin(),
+			customEditors.end(),
+			[normalizedCustomEditorName](const CustomCodeEditor& p_editor)
+			{
+				return NormalizeCodeEditorName(p_editor.name) == normalizedCustomEditorName;
+			}
+		);
+
+		if (existingEditor != customEditors.end())
+		{
+			*existingEditor = p_customEditor;
+		}
+		else
+		{
+			customEditors.push_back(p_customEditor);
+		}
+
+		SaveCustomCodeEditors(p_settingsFile, customEditors);
+	}
+
+	bool RemoveCustomCodeEditor(OvTools::Filesystem::IniFile& p_settingsFile, const std::string& p_editorName)
+	{
+		auto customEditors = LoadCustomCodeEditors(p_settingsFile);
+		const std::string normalizedEditorName = NormalizeCodeEditorName(p_editorName);
+
+		const auto removedEditor = std::remove_if(
+			customEditors.begin(),
+			customEditors.end(),
+			[normalizedEditorName](const CustomCodeEditor& p_editor)
+			{
+				return NormalizeCodeEditorName(p_editor.name) == normalizedEditorName;
+			}
+		);
+
+		if (removedEditor == customEditors.end())
+		{
+			return false;
+		}
+
+		customEditors.erase(removedEditor, customEditors.end());
+		SaveCustomCodeEditors(p_settingsFile, customEditors);
+		return true;
+	}
+
+	void RegisterCustomCodeEditors(OvTools::Filesystem::IniFile& p_settingsFile)
+	{
+		for (const auto& customEditor : LoadCustomCodeEditors(p_settingsFile))
+		{
+			if (IsBuiltInCodeEditorName(customEditor.name))
+			{
+				continue;
+			}
+
+			OvTools::Utils::CodeEditor::Register(customEditor.name, customEditor.command, customEditor.arguments);
+		}
+	}
+
+	void MigrateLegacyProjectCodeEditorsToEditorSettings
+	(
+		OvTools::Filesystem::IniFile& p_projectSettings,
+		OvTools::Filesystem::IniFile& p_editorSettings
+	)
+	{
+		const int editorSettingsCustomEditorCount = std::max(
+			0,
+			p_editorSettings.GetOrDefault<int>(std::string{ kCustomCodeEditorCountSettingKey }, 0)
+		);
+
+		if (editorSettingsCustomEditorCount > 0)
+		{
+			return;
+		}
+
+		const auto legacyCustomEditors = LoadCustomCodeEditors(p_projectSettings);
+		if (legacyCustomEditors.empty())
+		{
+			return;
+		}
+
+		SaveCustomCodeEditors(p_editorSettings, legacyCustomEditors);
+		p_editorSettings.Rewrite();
+
+		const int legacyCustomEditorCount = std::max(
+			0,
+			p_projectSettings.GetOrDefault<int>(std::string{ kCustomCodeEditorCountSettingKey }, 0)
+		);
+
+		for (int i = 0; i < legacyCustomEditorCount; ++i)
+		{
+			p_projectSettings.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorNameKeySuffix));
+			p_projectSettings.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorCommandKeySuffix));
+			p_projectSettings.Remove(MakeCustomCodeEditorKey(i, kCustomCodeEditorArgumentsKeySuffix));
+		}
+
+		SetOrAdd<int>(p_projectSettings, std::string{ kCustomCodeEditorCountSettingKey }, 0);
+		p_projectSettings.Rewrite();
+	}
+
+	void MigrateLegacyProjectCodeEditorSelectionToEditorSettings
+	(
+		OvTools::Filesystem::IniFile& p_projectSettings,
+		OvTools::Filesystem::IniFile& p_editorSettings
+	)
+	{
+		const std::string codeEditorSettingKey{ kCodeEditorSettingKey };
+		bool projectSettingsChanged = false;
+
+		if (!p_editorSettings.IsKeyExisting(codeEditorSettingKey) && p_projectSettings.IsKeyExisting(codeEditorSettingKey))
+		{
+			SetOrAdd<std::string>(p_editorSettings, codeEditorSettingKey, p_projectSettings.Get<std::string>(codeEditorSettingKey));
+			p_editorSettings.Rewrite();
+		}
+
+		if (p_projectSettings.Remove(codeEditorSettingKey))
+		{
+			projectSettingsChanged = true;
+		}
+
+		if (projectSettingsChanged)
+		{
+			p_projectSettings.Rewrite();
+		}
+	}
+
+	void FillCodeEditorSelectorChoices
+	(
+		OvUI::Widgets::Selection::ComboBox* p_codeEditorSelector,
+		const std::vector<std::string>& p_codeEditors,
+		const std::string& p_selectedCodeEditor
+	)
+	{
+		if (p_codeEditorSelector == nullptr || p_codeEditors.empty())
+		{
+			return;
+		}
+
+		p_codeEditorSelector->choices.clear();
+
+		int selectedChoice = 0;
+		bool selectedCodeEditorFound = false;
+
+		for (size_t i = 0; i < p_codeEditors.size(); ++i)
+		{
+			const int choiceId = static_cast<int>(i);
+			const std::string& codeEditor = p_codeEditors[i];
+			p_codeEditorSelector->choices[choiceId] = codeEditor;
+
+			if (codeEditor == p_selectedCodeEditor)
+			{
+				selectedChoice = choiceId;
+				selectedCodeEditorFound = true;
+			}
+		}
+
+		if (!selectedCodeEditorFound)
+		{
+			selectedChoice = 0;
+		}
+
+		p_codeEditorSelector->currentChoice = selectedChoice;
+	}
+}
 
 OvEditor::Panels::MenuBar::MenuBar()
 {
@@ -72,6 +393,266 @@ void OvEditor::Panels::MenuBar::HandleShortcuts(float p_deltaTime)
 
 void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 {
+	auto& projectSettings = EDITOR_CONTEXT(projectSettings);
+	auto editorSettingsFile = std::make_shared<OvTools::Filesystem::IniFile>(GetEditorIniFilePath().string());
+	MigrateLegacyProjectCodeEditorsToEditorSettings(projectSettings, *editorSettingsFile);
+	MigrateLegacyProjectCodeEditorSelectionToEditorSettings(projectSettings, *editorSettingsFile);
+	RegisterCustomCodeEditors(*editorSettingsFile);
+
+	const std::string codeEditorSettingKey{ kCodeEditorSettingKey };
+	auto supportedCodeEditors = std::make_shared<std::vector<std::string>>(
+		OvTools::Utils::CodeEditor::GetRegistered()
+	);
+
+	auto& codeEditorMenu = m_settingsMenu->CreateWidget<MenuList>("Code Editor");
+	OvUI::Widgets::Selection::ComboBox* codeEditorSelector = nullptr;
+
+	if (supportedCodeEditors->empty())
+	{
+		codeEditorMenu.CreateWidget<Texts::Text>("No registered code editors");
+	}
+	else
+	{
+		int selectedChoice = 0;
+		auto& newCodeEditorSelector = codeEditorMenu.CreateWidget<Selection::ComboBox>(selectedChoice);
+		codeEditorSelector = &newCodeEditorSelector;
+	}
+
+	const auto RefreshCodeEditorSelection = [editorSettingsFile, supportedCodeEditors, codeEditorSelector, codeEditorSettingKey](std::string p_preferredCodeEditor, bool p_logWarningOnFallback)
+	{
+		*supportedCodeEditors = OvTools::Utils::CodeEditor::GetRegistered();
+
+		std::string selectedCodeEditor = p_preferredCodeEditor.empty() ?
+			editorSettingsFile->GetOrDefault<std::string>(codeEditorSettingKey, std::string{ kDefaultCodeEditorName }) :
+			p_preferredCodeEditor;
+
+		std::string fallbackCodeEditor;
+		if (!OvTools::Utils::CodeEditor::SetDefault(selectedCodeEditor))
+		{
+			if (!supportedCodeEditors->empty())
+			{
+				fallbackCodeEditor = supportedCodeEditors->front();
+				selectedCodeEditor = fallbackCodeEditor;
+				OvTools::Utils::CodeEditor::SetDefault(selectedCodeEditor);
+			}
+		}
+
+		if (
+			p_logWarningOnFallback &&
+			!p_preferredCodeEditor.empty() &&
+			!fallbackCodeEditor.empty() &&
+			fallbackCodeEditor != p_preferredCodeEditor
+		)
+		{
+			OVLOG_WARNING("Code editor \"" + p_preferredCodeEditor + "\" is not supported. Falling back to \"" + fallbackCodeEditor + "\".");
+		}
+
+		SetOrAdd<std::string>(*editorSettingsFile, codeEditorSettingKey, selectedCodeEditor);
+		editorSettingsFile->Rewrite();
+
+		FillCodeEditorSelectorChoices(codeEditorSelector, *supportedCodeEditors, selectedCodeEditor);
+		return selectedCodeEditor;
+	};
+
+	const std::string selectedCodeEditor = editorSettingsFile->GetOrDefault<std::string>(
+		codeEditorSettingKey,
+		std::string{ kDefaultCodeEditorName }
+	);
+	RefreshCodeEditorSelection(selectedCodeEditor, true);
+
+	if (codeEditorSelector != nullptr)
+	{
+		codeEditorSelector->ValueChangedEvent += [supportedCodeEditors, RefreshCodeEditorSelection](int p_value)
+		{
+			if (p_value < 0 || p_value >= static_cast<int>(supportedCodeEditors->size()))
+			{
+				return;
+			}
+
+			std::string codeEditor = (*supportedCodeEditors)[static_cast<size_t>(p_value)];
+			RefreshCodeEditorSelection(codeEditor, false);
+		};
+	}
+
+	auto& customCodeEditorMenu = codeEditorMenu.CreateWidget<MenuList>("Add custom editor");
+	customCodeEditorMenu.CreateWidget<Texts::Text>("Arguments placeholders:");
+	customCodeEditorMenu.CreateWidget<Texts::Text>("{path} {path_windows} {path_unix}");
+
+	auto& nameField = customCodeEditorMenu.CreateWidget<InputFields::InputText>("", "Name");
+	auto& commandField = customCodeEditorMenu.CreateWidget<InputFields::InputText>("", "Command");
+	auto& argumentsField = customCodeEditorMenu.CreateWidget<InputFields::InputText>(std::string{ kDefaultCodeEditorArguments }, "Arguments");
+
+	auto& registerEditorButton = customCodeEditorMenu.CreateWidget<Buttons::Button>("Register");
+	registerEditorButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+
+	auto& manageCustomCodeEditorsMenu = codeEditorMenu.CreateWidget<MenuList>("Manage custom editors");
+	auto rebuildManageCustomEditorsMenu = std::make_shared<std::function<void()>>();
+	const std::weak_ptr<std::function<void()>> weakRebuildManageCustomEditorsMenu = rebuildManageCustomEditorsMenu;
+	const auto ScheduleManageCustomEditorsRefresh = [weakRebuildManageCustomEditorsMenu]
+	{
+		EDITOR_EXEC(DelayAction([weakRebuildManageCustomEditorsMenu]
+		{
+			if (const auto rebuildManageCustomEditorsMenu = weakRebuildManageCustomEditorsMenu.lock();
+				rebuildManageCustomEditorsMenu && *rebuildManageCustomEditorsMenu)
+			{
+				(*rebuildManageCustomEditorsMenu)();
+			}
+		}, 0));
+	};
+
+	registerEditorButton.ClickedEvent += [editorSettingsFile, rebuildManageCustomEditorsMenu, RefreshCodeEditorSelection, ScheduleManageCustomEditorsRefresh, &nameField, &commandField, &argumentsField]
+	{
+		(void)rebuildManageCustomEditorsMenu; // Keeps the dynamic refresh callback alive for the menu lifetime.
+
+		std::string editorName = nameField.content;
+		std::string editorCommand = commandField.content;
+		std::string editorArguments = argumentsField.content;
+
+		OvTools::Utils::String::Trim(editorName);
+		OvTools::Utils::String::Trim(editorCommand);
+		OvTools::Utils::String::Trim(editorArguments);
+
+		if (editorName.empty() || editorCommand.empty())
+		{
+			OVLOG_WARNING("Please enter both a code editor name and command before registering.");
+			return;
+		}
+
+		if (IsBuiltInCodeEditorName(editorName))
+		{
+			OVLOG_WARNING("Built-in code editor names cannot be overridden. Please choose another name.");
+			return;
+		}
+
+		if (editorArguments.empty())
+		{
+			editorArguments = std::string{ kDefaultCodeEditorArguments };
+		}
+
+		OvTools::Utils::CodeEditor::Register(editorName, editorCommand, editorArguments);
+
+		UpsertCustomCodeEditor(*editorSettingsFile, CustomCodeEditor{ editorName, editorCommand, editorArguments });
+		editorSettingsFile->Rewrite();
+		RefreshCodeEditorSelection(editorName, false);
+		ScheduleManageCustomEditorsRefresh();
+		OVLOG_INFO("Code editor \"" + editorName + "\" has been registered.");
+
+		nameField.content = "";
+		commandField.content = "";
+		argumentsField.content = std::string{ kDefaultCodeEditorArguments };
+	};
+
+	*rebuildManageCustomEditorsMenu = [editorSettingsFile, &manageCustomCodeEditorsMenu, RefreshCodeEditorSelection, ScheduleManageCustomEditorsRefresh]
+	{
+		manageCustomCodeEditorsMenu.RemoveAllWidgets();
+
+		const auto customCodeEditors = LoadCustomCodeEditors(*editorSettingsFile);
+		if (customCodeEditors.empty())
+		{
+			manageCustomCodeEditorsMenu.CreateWidget<Texts::Text>("No custom code editors");
+			return;
+		}
+
+		for (const auto& customCodeEditor : customCodeEditors)
+		{
+			const std::string editorName = customCodeEditor.name;
+			auto& customCodeEditorEntry = manageCustomCodeEditorsMenu.CreateWidget<MenuList>(editorName);
+
+			auto& editorNameField = customCodeEditorEntry.CreateWidget<InputFields::InputText>(customCodeEditor.name, "Name");
+			auto& editorCommandField = customCodeEditorEntry.CreateWidget<InputFields::InputText>(customCodeEditor.command, "Command");
+			auto& editorArgumentsField = customCodeEditorEntry.CreateWidget<InputFields::InputText>(customCodeEditor.arguments, "Arguments");
+
+			auto& saveButton = customCodeEditorEntry.CreateWidget<Buttons::Button>("Save");
+			saveButton.lineBreak = false;
+			saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+
+			auto& deleteButton = customCodeEditorEntry.CreateWidget<Buttons::Button>("Delete");
+			deleteButton.idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+
+			saveButton.ClickedEvent += [editorSettingsFile, editorName, RefreshCodeEditorSelection, ScheduleManageCustomEditorsRefresh, &editorNameField, &editorCommandField, &editorArgumentsField]
+			{
+				std::string newName = editorNameField.content;
+				std::string newCommand = editorCommandField.content;
+				std::string newArguments = editorArgumentsField.content;
+
+				OvTools::Utils::String::Trim(newName);
+				OvTools::Utils::String::Trim(newCommand);
+				OvTools::Utils::String::Trim(newArguments);
+
+				if (newName.empty() || newCommand.empty())
+				{
+					OVLOG_WARNING("Please enter both a code editor name and command before saving.");
+					return;
+				}
+
+				if (newArguments.empty())
+				{
+					newArguments = std::string{ kDefaultCodeEditorArguments };
+				}
+
+				const bool nameChanged = NormalizeCodeEditorName(newName) != NormalizeCodeEditorName(editorName);
+				if (nameChanged && IsBuiltInCodeEditorName(newName))
+				{
+					OVLOG_WARNING("Built-in code editor names cannot be overridden. Please choose another name.");
+					return;
+				}
+
+				if (nameChanged)
+				{
+					RemoveCustomCodeEditor(*editorSettingsFile, editorName);
+
+					if (!IsBuiltInCodeEditorName(editorName))
+					{
+						OvTools::Utils::CodeEditor::Unregister(editorName);
+					}
+				}
+
+				OvTools::Utils::CodeEditor::Register(newName, newCommand, newArguments);
+				UpsertCustomCodeEditor(*editorSettingsFile, CustomCodeEditor{ newName, newCommand, newArguments });
+				editorSettingsFile->Rewrite();
+
+				const std::string selectedProjectEditor = editorSettingsFile->GetOrDefault<std::string>(
+					std::string{ kCodeEditorSettingKey },
+					std::string{ kDefaultCodeEditorName }
+				);
+
+				const bool wasSelected = NormalizeCodeEditorName(selectedProjectEditor) == NormalizeCodeEditorName(editorName);
+				RefreshCodeEditorSelection(wasSelected ? newName : selectedProjectEditor, false);
+				ScheduleManageCustomEditorsRefresh();
+
+				OVLOG_INFO("Code editor \"" + newName + "\" has been updated.");
+			};
+
+			deleteButton.ClickedEvent += [editorSettingsFile, editorName, RefreshCodeEditorSelection, ScheduleManageCustomEditorsRefresh]
+			{
+				if (!RemoveCustomCodeEditor(*editorSettingsFile, editorName))
+				{
+					OVLOG_WARNING("Failed to remove code editor \"" + editorName + "\" from editor settings.");
+					return;
+				}
+
+				editorSettingsFile->Rewrite();
+
+				if (!IsBuiltInCodeEditorName(editorName))
+				{
+					OvTools::Utils::CodeEditor::Unregister(editorName);
+				}
+
+				const std::string selectedProjectEditor = editorSettingsFile->GetOrDefault<std::string>(
+					std::string{ kCodeEditorSettingKey },
+					std::string{ kDefaultCodeEditorName }
+				);
+				const bool deletedSelected = NormalizeCodeEditorName(selectedProjectEditor) == NormalizeCodeEditorName(editorName);
+
+				RefreshCodeEditorSelection(selectedProjectEditor, deletedSelected);
+				ScheduleManageCustomEditorsRefresh();
+				OVLOG_INFO("Code editor \"" + editorName + "\" has been removed.");
+			};
+		}
+	};
+
+	(*rebuildManageCustomEditorsMenu)();
+
 	auto& themeButton = m_settingsMenu->CreateWidget<MenuList>("Editor Theme");
 	themeButton.CreateWidget<Texts::Text>("Some themes may require a restart");
 
@@ -301,3 +882,4 @@ void OvEditor::Panels::MenuBar::OpenEveryWindows(bool p_state)
 	for (auto&[name, panel] : m_panels)
 		panel.first.get().SetOpened(p_state);
 }
+

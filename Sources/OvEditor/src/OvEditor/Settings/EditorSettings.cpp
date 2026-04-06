@@ -7,8 +7,8 @@
 #include <filesystem>
 
 #include <OvEditor/Settings/EditorSettings.h>
+#include <OvEditor/Utils/FileSystem.h>
 #include <OvTools/Filesystem/IniFile.h>
-#include <OvTools/Utils/SystemCalls.h>
 
 template<class T>
 void LoadIniEntry(OvTools::Filesystem::IniFile& iniFile, const std::string& entry, OvEditor::Settings::EditorSettings::Property<T>& out)
@@ -19,12 +19,19 @@ void LoadIniEntry(OvTools::Filesystem::IniFile& iniFile, const std::string& entr
 	}
 }
 
+template<class T>
+void SetOrAddIniEntry(OvTools::Filesystem::IniFile& iniFile, const std::string& entry, const T& value)
+{
+	if (!iniFile.Set<T>(entry, value))
+	{
+		iniFile.Add<T>(entry, value);
+	}
+}
+
 OvTools::Filesystem::IniFile GetEditorIniFile()
 {
-	const auto filePath = std::filesystem::path{ OvTools::Utils::SystemCalls::GetPathToAppdata() } /
-		"OverloadTech" /
-		"OvEditor" /
-		"editor.ini";
+	std::filesystem::create_directories(OvEditor::Utils::FileSystem::kEditorDataPath);
+	const auto filePath = OvEditor::Utils::FileSystem::kEditorDataPath / "editor.ini";
 
 	return OvTools::Filesystem::IniFile{ filePath.string() };
 }
@@ -33,19 +40,18 @@ void OvEditor::Settings::EditorSettings::Save()
 {
 	OvTools::Filesystem::IniFile iniFile = GetEditorIniFile();
 
-	iniFile.RemoveAll();
-	iniFile.Add("show_geometry_bounds", ShowGeometryBounds.Get());
-	iniFile.Add("show_light_bounds", ShowLightBounds.Get());
-	iniFile.Add("editor_frustum_geometry_culling", EditorFrustumGeometryCulling.Get());
-	iniFile.Add("editor_frustum_light_culling", EditorFrustumLightCulling.Get());
-	iniFile.Add("light_billboard_scale", LightBillboardScale.Get());
-	iniFile.Add("reflection_probe_scale", ReflectionProbeScale.Get());
-	iniFile.Add("translation_snap_unit", TranslationSnapUnit.Get());
-	iniFile.Add("rotation_snap_unit", RotationSnapUnit.Get());
-	iniFile.Add("scaling_snap_unit", ScalingSnapUnit.Get());
-	iniFile.Add("color_theme", ColorTheme.Get());
-	iniFile.Add("console_max_logs", ConsoleMaxLogs.Get());
-	iniFile.Add("font_size", FontSize.Get());
+	SetOrAddIniEntry<bool>(iniFile, "show_geometry_bounds", ShowGeometryBounds.Get());
+	SetOrAddIniEntry<bool>(iniFile, "show_light_bounds", ShowLightBounds.Get());
+	SetOrAddIniEntry<bool>(iniFile, "editor_frustum_geometry_culling", EditorFrustumGeometryCulling.Get());
+	SetOrAddIniEntry<bool>(iniFile, "editor_frustum_light_culling", EditorFrustumLightCulling.Get());
+	SetOrAddIniEntry<float>(iniFile, "light_billboard_scale", LightBillboardScale.Get());
+	SetOrAddIniEntry<float>(iniFile, "reflection_probe_scale", ReflectionProbeScale.Get());
+	SetOrAddIniEntry<float>(iniFile, "translation_snap_unit", TranslationSnapUnit.Get());
+	SetOrAddIniEntry<float>(iniFile, "rotation_snap_unit", RotationSnapUnit.Get());
+	SetOrAddIniEntry<float>(iniFile, "scaling_snap_unit", ScalingSnapUnit.Get());
+	SetOrAddIniEntry<int>(iniFile, "color_theme", ColorTheme.Get());
+	SetOrAddIniEntry<int>(iniFile, "console_max_logs", ConsoleMaxLogs.Get());
+	SetOrAddIniEntry<int>(iniFile, "font_size", FontSize.Get());
 	iniFile.Rewrite();
 }
 
@@ -66,3 +72,4 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<int>(iniFile, "console_max_logs", ConsoleMaxLogs);
 	LoadIniEntry<int>(iniFile, "font_size", FontSize);
 }
+

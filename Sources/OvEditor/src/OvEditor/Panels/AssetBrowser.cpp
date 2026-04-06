@@ -26,6 +26,8 @@
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/MaterialEditor.h>
 
+#include <OvTools/Filesystem/IniFile.h>
+#include <OvTools/Utils/CodeEditor.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
@@ -49,6 +51,17 @@ using namespace OvUI::Widgets;
 namespace
 {
 	constexpr std::string_view kAllowedFilenameChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_=+ 0123456789()[]";
+	constexpr std::string_view kCodeEditorSettingKey = "code_editor_name";
+	constexpr std::string_view kDefaultCodeEditorName = "Visual Studio Code";
+
+	std::filesystem::path GetEditorIniFilePath()
+	{
+		const std::filesystem::path editorDataPath = std::filesystem::path{
+			OvTools::Utils::SystemCalls::GetPathToAppdata()
+		} / "OverloadTech" / "OvEditor";
+		std::filesystem::create_directories(editorDataPath);
+		return editorDataPath / "editor.ini";
+	}
 
 	template<typename ResourceManager>
 	auto& GetResource(const std::string& p_path, bool p_isEngineResource)
@@ -148,6 +161,32 @@ namespace
 
 		OVASSERT(false, "Failed to generate a unique file name.");
 		return p_path;
+	}
+
+	std::string GetSelectedCodeEditorName()
+	{
+		OvTools::Filesystem::IniFile editorSettingsFile{ GetEditorIniFilePath().string() };
+		return editorSettingsFile.GetOrDefault<std::string>(std::string{ kCodeEditorSettingKey }, std::string{ kDefaultCodeEditorName });
+	}
+
+	bool OpenPathInSelectedCodeEditor(const std::filesystem::path& p_path)
+	{
+		const std::string codeEditorName = GetSelectedCodeEditorName();
+
+		if (!OvTools::Utils::CodeEditor::SetDefault(codeEditorName))
+		{
+			OVLOG_WARNING(std::format("Code editor \"{}\" is not supported. Falling back to file explorer.", codeEditorName));
+			OvTools::Utils::SystemCalls::ShowInExplorer(p_path.string());
+			return false;
+		}
+
+		if (!OvTools::Utils::CodeEditor::OpenDefault(p_path.string()))
+		{
+			OVLOG_WARNING(std::format("Failed to open \"{}\" with \"{}\". Make sure the editor command is available from PATH.", p_path.string(), codeEditorName));
+			return false;
+		}
+
+		return true;
 	}
 
 	class TexturePreview : public OvUI::Plugins::IPlugin
@@ -348,6 +387,12 @@ namespace
 
 		virtual void CreateList() override
 		{
+			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
+			openInCodeEditor.ClickedEvent += [this]
+			{
+				OpenPathInSelectedCodeEditor(filePath);
+			};
+
 			auto& showInExplorer = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Show in explorer");
 			showInExplorer.ClickedEvent += [this]
 			{
@@ -561,8 +606,15 @@ namespace
 		{
 			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
-			editAction.ClickedEvent += [this] {
+			editAction.ClickedEvent += [this]
+			{
 				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
+			};
+
+			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
+			openInCodeEditor.ClickedEvent += [this]
+			{
+				OpenPathInSelectedCodeEditor(filePath);
 			};
 
 			if (!m_protected)
@@ -881,7 +933,15 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
+	importButton.lineBreak = false;
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+
+	auto& openInEditorButton = CreateWidget<Buttons::Button>("Open in editor");
+	openInEditorButton.ClickedEvent += []
+	{
+		OpenPathInSelectedCodeEditor(EDITOR_CONTEXT(projectFolder).string());
+	};
+	openInEditorButton.idleBackgroundColor = { 0.15f, 0.3f, 0.6f };
 
 	m_assetList = &CreateWidget<Layout::Group>();
 
@@ -1272,3 +1332,4 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 		}
 	}
 }
+

@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <imgui.h>
 
 #include <OvUI/Widgets/Selection/ComboBox.h>
@@ -17,8 +16,14 @@ OvUI::Widgets::Selection::ComboBox::ComboBox(int p_currentChoice) :
 
 void OvUI::Widgets::Selection::ComboBox::_Draw_Impl()
 {
+	if (choices.empty())
+		return;
+
 	if (choices.find(currentChoice) == choices.end())
 		currentChoice = choices.begin()->first;
+
+	int pendingChoice = currentChoice;
+	bool hasPendingSelection = false;
 
 	if (ImGui::BeginCombo(m_widgetID.c_str(), choices[currentChoice].c_str()))
 	{
@@ -30,14 +35,23 @@ void OvUI::Widgets::Selection::ComboBox::_Draw_Impl()
 			{
 				if (!selected)
 				{
-					ImGui::SetItemDefaultFocus();
-					currentChoice = key;
-					ValueChangedEvent.Invoke(currentChoice);
-					this->NotifyChange();
+					pendingChoice = key;
+					hasPendingSelection = true;
 				}
 			}
+
+			if (selected)
+				ImGui::SetItemDefaultFocus();
 		}
 
 		ImGui::EndCombo();
 	}
+
+	if (hasPendingSelection)
+	{
+		currentChoice = pendingChoice;
+		ValueChangedEvent.Invoke(currentChoice);
+		this->NotifyChange();
+	}
 }
+

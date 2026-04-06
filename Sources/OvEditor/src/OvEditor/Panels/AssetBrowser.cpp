@@ -67,10 +67,7 @@ namespace
 			auto preferredPath = p_path;
 			preferredPath.make_preferred();
 			OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
-#ifndef _WIN32
-			command += " &"; // Ensures the command is ran detached on UNIX
-#endif
-			std::system(command.c_str());
+			OvTools::Utils::SystemCalls::ExecuteCommand(command);
 		}
 	}
 

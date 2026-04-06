@@ -4,8 +4,8 @@
 * @licence: MIT
 */
 
-#include "OvTools/Utils/PathParser.h"
-#include "OvTools/Utils/SystemCalls.h"
+#include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/SystemCalls.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -17,8 +17,9 @@
 #include <sys/types.h>
 #endif
 
-#include <memory>
 #include <assert.h>
+#include <format>
+#include <memory>
 
 void OvTools::Utils::SystemCalls::ShowInExplorer(const std::string & p_path)
 {
@@ -88,7 +89,7 @@ std::string OvTools::Utils::SystemCalls::GetPathToAppdata()
 	const HRESULT hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &rawPath);
 	std::unique_ptr<wchar_t, decltype(&CoTaskMemFree)> path(rawPath, CoTaskMemFree);
 	assert(SUCCEEDED(hr) && "Failed to get AppData path");
-	
+
 	// Convert app-data path from wide char to UTF-8 string
 	const int size_needed = WideCharToMultiByte(CP_UTF8, 0, path.get(), -1, nullptr, 0, nullptr, nullptr);
 	assert(size_needed > 0 && "failed to convert from wide char to UTF-8");
@@ -102,16 +103,56 @@ std::string OvTools::Utils::SystemCalls::GetPathToAppdata()
 	{
 		return std::string(configHome);
 	}
-	
+
 	const char* home = std::getenv("HOME");
 	if (home != nullptr && home[0] != '\0')
 	{
 		return std::string(home) + "/.config";
 	}
-	
+
 	// Fallback to pwd if HOME is not set
 	struct passwd* pw = getpwuid(getuid());
 	assert(pw != nullptr && "Failed to get user home directory");
 	return std::string(pw->pw_dir) + "/.config";
+#endif
+}
+
+bool OvTools::Utils::SystemCalls::ExecuteCommand(const std::string_view p_command)
+{
+#if defined(_WIN32)
+	STARTUPINFO startupInfo;
+	PROCESS_INFORMATION processInfo;
+
+	ZeroMemory(&startupInfo, sizeof(startupInfo));
+	startupInfo.cb = sizeof(startupInfo);
+	ZeroMemory(&processInfo, sizeof(processInfo));
+
+	std::string command = std::format("cmd.exe /c {}", p_command);
+
+	bool success = (CreateProcess(
+		nullptr,							// Application name (nullptr uses command line)
+		command.data(),						// Command to execute
+		nullptr,							// Process security attributes
+		nullptr,							// Thread security attributes
+		FALSE,								// Do not inherit handles
+		CREATE_NO_WINDOW,					// Run the process without a window
+		nullptr,							// Environment variables
+		nullptr,							// Current directory
+		&startupInfo,						// STARTUPINFO structure
+		&processInfo						// PROCESS_INFORMATION structure
+	));
+
+	// Wait until child process exits.
+	WaitForSingleObject(processInfo.hProcess, INFINITE);
+
+	// Close the process and thread handles
+	CloseHandle(processInfo.hProcess);
+	CloseHandle(processInfo.hThread);
+
+	return success;
+#else
+	std::string command{ p_command };
+	command += " &"; // Ensures the command is run detached on UNIX
+	return std::system(command.c_str()) == 0;
 #endif
 }

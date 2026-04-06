@@ -55,5 +55,11 @@ namespace OvTools::Utils
 		* Return the path to APPDATA
  		*/
 		static std::string GetPathToAppdata();
+
+		/**
+		* Execute a custom command. Returns true if the command invocation succeeded
+		* @param p_command
+		*/
+		static bool ExecuteCommand(const std::string_view p_command);
 	};
 }

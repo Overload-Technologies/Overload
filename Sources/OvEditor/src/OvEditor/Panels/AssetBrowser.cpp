@@ -25,6 +25,7 @@
 #include <OvEditor/Panels/AssetProperties.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/MaterialEditor.h>
+#include <OvEditor/Settings/EditorSettings.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -56,6 +57,21 @@ namespace
 		auto resource = OvCore::Global::ServiceLocator::Get<ResourceManager>()[EDITOR_EXEC(GetResourcePath(p_path, p_isEngineResource))];
 		OVASSERT(resource, "Resource not found");
 		return *resource;
+	}
+
+	void OpenInCodeEditor(const std::filesystem::path& p_path)
+	{
+		std::string command = OvEditor::Settings::EditorSettings::CodeEditorCommand.Get();
+		if (!command.empty())
+		{
+			auto preferredPath = p_path;
+			preferredPath.make_preferred();
+			OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
+#ifndef _WIN32
+			command += " &"; // Ensures the command is ran detached on UNIX
+#endif
+			std::system(command.c_str());
+		}
 	}
 
 	void OpenInAssetView(auto& p_resource)
@@ -354,6 +370,12 @@ namespace
 				OvTools::Utils::SystemCalls::ShowInExplorer(filePath.string());
 			};
 
+			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
+			openInCodeEditor.ClickedEvent += [this]
+			{
+				OpenInCodeEditor(filePath);
+			};
+
 			if (!m_protected)
 			{
 				auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
@@ -563,6 +585,12 @@ namespace
 
 			editAction.ClickedEvent += [this] {
 				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
+			};
+
+			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
+			openInCodeEditor.ClickedEvent += [this]
+			{
+				OpenInCodeEditor(filePath);
 			};
 
 			if (!m_protected)
@@ -882,6 +910,11 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	auto& importButton = CreateWidget<Buttons::Button>("Import asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+	importButton.lineBreak = false;
+
+	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open in code editor");
+	codeEditorButton.ClickedEvent += [this] { OpenInCodeEditor(EDITOR_CONTEXT(projectFolder)); };
+	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 
 	m_assetList = &CreateWidget<Layout::Group>();
 

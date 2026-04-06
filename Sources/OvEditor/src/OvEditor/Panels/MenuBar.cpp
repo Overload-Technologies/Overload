@@ -22,6 +22,7 @@
 #include <OvUI/Widgets/Sliders/SliderInt.h>
 #include <OvUI/Widgets/Sliders/SliderFloat.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
@@ -189,6 +190,14 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	consoleMaxLogsSlider.ValueChangedEvent += [this](int p_value) { 
 		Settings::EditorSettings::ConsoleMaxLogs = p_value;
 		EDITOR_PANEL(Panels::Console, "Console").TruncateLogs();
+	};
+
+	auto& codeEditorMenu = m_settingsMenu->CreateWidget<MenuList>("Code Editor Command");
+	codeEditorMenu.CreateWidget<Texts::Text>("Use {path} to retrieve the file/folder path.");
+	auto& codeEditorInput = codeEditorMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>(Settings::EditorSettings::CodeEditorCommand.Get());
+	codeEditorInput.ContentChangedEvent += [](const std::string& p_value)
+	{
+		Settings::EditorSettings::CodeEditorCommand = p_value;
 	};
 
 }

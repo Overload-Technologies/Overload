@@ -46,6 +46,7 @@ void OvEditor::Settings::EditorSettings::Save()
 	iniFile.Add("color_theme", ColorTheme.Get());
 	iniFile.Add("console_max_logs", ConsoleMaxLogs.Get());
 	iniFile.Add("font_size", FontSize.Get());
+	iniFile.Add("code_editor_command", CodeEditorCommand.Get());
 	iniFile.Rewrite();
 }
 
@@ -65,4 +66,5 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<int>(iniFile, "color_theme", ColorTheme);
 	LoadIniEntry<int>(iniFile, "console_max_logs", ConsoleMaxLogs);
 	LoadIniEntry<int>(iniFile, "font_size", FontSize);
+	LoadIniEntry<std::string>(iniFile, "code_editor_command", CodeEditorCommand);
 }

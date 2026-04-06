@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <string>
+
 #include <OvEditor/Settings/EFontSize.h>
 #include <OvTools/Eventing/Event.h>
 #include <OvUI/Styling/EStyle.h>
@@ -98,5 +100,6 @@ namespace OvEditor::Settings
 		inline static Property<int> ColorTheme = { static_cast<int>(OvUI::Styling::EStyle::DEFAULT_DARK) };
 		inline static Property<int> ConsoleMaxLogs = { 500 };
 		inline static Property<int> FontSize = { static_cast<int>(EFontSize::DEFAULT) };
+		inline static Property<std::string> CodeEditorCommand = { "code {path}" };
 	};
 }

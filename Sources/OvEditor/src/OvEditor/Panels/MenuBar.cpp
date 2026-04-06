@@ -264,7 +264,17 @@ void OvEditor::Panels::MenuBar::CreateHelpMenu()
 	auto& helpMenu = CreateWidget<MenuList>("Help");
 	helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL); };
 	helpMenu.CreateWidget<MenuItem>("Wiki").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/wiki"); };
-	helpMenu.CreateWidget<MenuItem>("API Reference").ClickedEvent += [repoURL] { OvTools::Utils::SystemCalls::OpenURL(repoURL + std::format("/tree/v{}/API", OVERLOAD_VERSION)); };
+	helpMenu.CreateWidget<MenuItem>("API Reference").ClickedEvent += [repoURL] {
+		// FIXME: Workaround to be removed once the version following 1.8 is released.
+		// This ensures the first few commits before the next release still have the "API Reference"
+		// button point to a valid URL.
+		const std::string tag =
+			std::string(OVERLOAD_VERSION) == "1.8" ?
+			"main" :
+			"v" + std::string(OVERLOAD_VERSION);
+
+		OvTools::Utils::SystemCalls::OpenURL(repoURL + std::format("/tree/{}/API", tag));
+	};
 	helpMenu.CreateWidget<Visual::Separator>();
 	helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
 	helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };

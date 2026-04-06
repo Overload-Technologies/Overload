@@ -12,10 +12,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v2
+      uses: microsoft/setup-msbuild@v3
 
     - name: Make Release Build
       run: .\Scripts\Windows\MakeReleaseBuild.bat --no-open
@@ -27,7 +27,7 @@ jobs:
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
 
     - name: Upload Release Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Overload-${{ steps.version.outputs.VERSION }}-windows_x64
         path: Releases/Overload-${{ steps.version.outputs.VERSION }}-windows_x64.zip

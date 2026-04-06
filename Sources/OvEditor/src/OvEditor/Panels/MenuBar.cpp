@@ -263,8 +263,8 @@ void OvEditor::Panels::MenuBar::CreateHelpMenu()
 
 	auto& helpMenu = CreateWidget<MenuList>("Help");
 	helpMenu.CreateWidget<MenuItem>("GitHub").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL); };
-	helpMenu.CreateWidget<MenuItem>("Tutorials").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/wiki/Tutorials"); };
-	helpMenu.CreateWidget<MenuItem>("Documentation").ClickedEvent += [repoURL] { OvTools::Utils::SystemCalls::OpenURL(repoURL + std::format("/tree/v{}/Docs", OVERLOAD_VERSION)); };
+	helpMenu.CreateWidget<MenuItem>("Wiki").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/wiki"); };
+	helpMenu.CreateWidget<MenuItem>("API Reference").ClickedEvent += [repoURL] { OvTools::Utils::SystemCalls::OpenURL(repoURL + std::format("/tree/v{}/API", OVERLOAD_VERSION)); };
 	helpMenu.CreateWidget<Visual::Separator>();
 	helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
 	helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };

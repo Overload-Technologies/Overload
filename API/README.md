@@ -1,7 +1,7 @@
-# Overload Documentation
-Welcome to the official documentation for Overload.
+# Overload API Reference
+Welcome to the official API reference for Overload.
 
-This documentation focuses on the technical aspects of Overload, including its Lua API and custom shader system.
+This documentation provides detailed information about the various APIs available in Overload, including Lua scripting and shader development.
 
 ## Contents
 - [Lua](Lua) — Scripting API and usage
@@ -9,4 +9,3 @@ This documentation focuses on the technical aspects of Overload, including its L
 
 ## Tutorials
 If you're looking for step-by-step guides and beginner-friendly content, visit the [Overload Wiki](https://github.com/Overload-Technologies/Overload/wiki).
-

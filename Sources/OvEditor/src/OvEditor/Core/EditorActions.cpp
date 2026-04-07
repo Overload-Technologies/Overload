@@ -27,6 +27,7 @@
 #include <OvEditor/Panels/MaterialEditor.h>
 #include <OvEditor/Panels/ProjectSettings.h>
 #include <OvEditor/Panels/SceneView.h>
+#include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
 
 #include <OvTools/Utils/PathParser.h>
@@ -758,6 +759,29 @@ void OvEditor::Core::EditorActions::RegenerateScriptingProjectFiles()
 	{
 		OVLOG_ERROR("Failed to regenerate lua symbols (.luarc.json failed to create)");
 	}
+}
+
+bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path& p_path)
+{
+	std::string command = OvEditor::Settings::EditorSettings::CodeEditorCommand.Get();
+	if (!command.empty())
+	{
+		auto preferredPath = p_path;
+		preferredPath.make_preferred();
+		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
+		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
+		{
+			OVLOG_ERROR(std::format("Failed to open in code editor using command: {}", command));
+			return false;
+		}
+	}
+	else
+	{
+		OVLOG_ERROR("No command provided to open in code editor.");
+		return false;
+	}
+
+	return true;
 }
 
 bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDestinationDirectory)

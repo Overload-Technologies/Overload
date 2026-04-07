@@ -59,18 +59,6 @@ namespace
 		return *resource;
 	}
 
-	void OpenInCodeEditor(const std::filesystem::path& p_path)
-	{
-		std::string command = OvEditor::Settings::EditorSettings::CodeEditorCommand.Get();
-		if (!command.empty())
-		{
-			auto preferredPath = p_path;
-			preferredPath.make_preferred();
-			OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
-			OvTools::Utils::SystemCalls::ExecuteCommand(command);
-		}
-	}
-
 	void OpenInAssetView(auto& p_resource)
 	{
 		auto& assetView = EDITOR_PANEL(OvEditor::Panels::AssetView, "Asset View");
@@ -370,7 +358,7 @@ namespace
 			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
 			openInCodeEditor.ClickedEvent += [this]
 			{
-				OpenInCodeEditor(filePath);
+				EDITOR_EXEC(OpenInCodeEditor(filePath));
 			};
 
 			if (!m_protected)
@@ -587,7 +575,7 @@ namespace
 			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
 			openInCodeEditor.ClickedEvent += [this]
 			{
-				OpenInCodeEditor(filePath);
+				EDITOR_EXEC(OpenInCodeEditor(filePath));
 			};
 
 			if (!m_protected)
@@ -910,7 +898,7 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open in code editor");
-	codeEditorButton.ClickedEvent += [this] { OpenInCodeEditor(EDITOR_CONTEXT(projectFolder)); };
+	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
 	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 
 	m_assetList = &CreateWidget<Layout::Group>();

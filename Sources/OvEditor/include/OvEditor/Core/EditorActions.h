@@ -263,6 +263,13 @@ namespace OvEditor::Core
 		void RegenerateScriptingProjectFiles();
 		
 		/**
+		* Open the given path in the code editor.
+		* Returns true if the operation was successful
+		* @param p_path
+		*/
+		bool OpenInCodeEditor(const std::filesystem::path& p_path);
+
+		/**
 		* Import an asset
 		* @param p_initialDestinationDirectory
 		*/

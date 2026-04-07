@@ -120,7 +120,7 @@ std::vector<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValidExtensi
 template<>
 std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultScriptContent(const std::string& p_name)
 {
-	return "local " + p_name + " =\n{\n}\n\nfunction " + p_name + ":OnStart()\nend\n\nfunction " + p_name + ":OnUpdate(deltaTime)\nend\n\nreturn " + p_name;
+	return "---@class " + p_name + " : Behaviour\nlocal " + p_name + " =\n{\n}\n\nfunction " + p_name + ":OnStart()\nend\n\nfunction " + p_name + ":OnUpdate(deltaTime)\nend\n\nreturn " + p_name;
 }
 
 template<>

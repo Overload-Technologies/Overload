@@ -5,6 +5,8 @@
 */
 
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -66,93 +68,47 @@ void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
 		m_filename += *it;
 	std::reverse(m_filename.begin(), m_filename.end());
 #else
-	// Linux implementation using zenity
-	std::string command = "zenity --file-selection --title=\"" + m_dialogTitle + "\"";
-	
-	if (m_isSaveDialog)
-		command += " --save";
-	
-	if (!m_initialDirectory.empty())
-	{
-		// Add trailing slash to indicate directory for zenity
-		command += " --filename=\"" + m_initialDirectory;
-		if (m_initialDirectory.back() != '/')
-			command += "/";
-		command += "\"";
-	}
-	else
-	{
-		// Even without initial directory, --filename="" helps show the filename entry
-		command += " --filename=\"\"";
-	}
-	
-	// Add file filters if present
-	if (!m_filter.empty())
-	{
-		std::string filters = m_filter;
-		size_t pos = 0;
-		while (pos < filters.length())
-		{
-			// Skip label (terminated by null)
-			size_t labelEnd = filters.find('\0', pos);
-			if (labelEnd == std::string::npos) break;
-			
-			pos = labelEnd + 1;
-			if (pos >= filters.length()) break;
-			
-			// Get filter pattern
-			size_t patternEnd = filters.find('\0', pos);
-			if (patternEnd == std::string::npos) patternEnd = filters.length();
-			
-			std::string pattern = filters.substr(pos, patternEnd - pos);
-			if (!pattern.empty())
-			{
-				command += " --file-filter='" + pattern + "'";
-			}
-			
-			pos = patternEnd + 1;
-		}
-	}
-	
-	command += " 2>/dev/null"; // Suppress GTK warnings
-	
-	// Execute zenity and capture output
-	std::array<char, 2048> buffer;
-	std::string result;
-	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
-	
-	if (!pipe)
-	{
-		m_succeeded = false;
-		m_error = "Failed to open zenity";
-		return;
-	}
-	
-	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-	{
-		result += buffer.data();
-	}
-	
-	// Remove trailing newline
-	if (!result.empty() && result.back() == '\n')
-		result.pop_back();
-	
-	m_succeeded = !result.empty();
-	
-	if (m_succeeded)
-	{
-		m_filepath = result;
-		
-		/* Extract filename from filepath */
-		m_filename.clear();
-		for (auto it = m_filepath.rbegin(); it != m_filepath.rend() && *it != '\\' && *it != '/'; ++it)
-			m_filename += *it;
-		std::reverse(m_filename.begin(), m_filename.end());
-	}
-	else
-	{
-		m_error = "Dialog cancelled or zenity not available";
-	}
+    std::string tempFile = "/tmp/ov_file_dialog.txt";
+    std::string command = "zenity --file-selection --title=\"" + m_dialogTitle + "\"";
+    
+    if (m_isSaveDialog) command += " --save --confirm-overwrite";
+    if (!m_initialDirectory.empty()) command += " --filename=\"" + m_initialDirectory + "/\"";
+
+    if (!m_filter.empty()) {
+        command += " --file-filter=\"All Files | *.*\""; 
+    }
+
+    command += " > " + tempFile + " 2>/dev/null";
+
+    int exitCode = std::system(command.c_str());
+
+    if (exitCode == 0)
+    {
+        std::ifstream ifs(tempFile);
+        std::string result((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+        ifs.close();
+        std::filesystem::remove(tempFile);
+
+        result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+        result.erase(std::remove(result.begin(), result.end(), '\r'), result.end());
+
+        if (!result.empty())
+        {
+            m_filepath = result;
+            m_succeeded = true;
+
+            size_t lastSlash = m_filepath.find_last_of("/\\");
+            m_filename = (lastSlash == std::string::npos) ? m_filepath : m_filepath.substr(lastSlash + 1);
+
+            if (m_callback)
+                m_callback(nullptr);
+        }
+    }
+    else
+    {
+        m_succeeded = false;
+        std::filesystem::remove(tempFile);
+    }
 #endif
 }
 

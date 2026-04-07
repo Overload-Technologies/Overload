@@ -1,7 +1,7 @@
 ---@meta
 
 --- Some global physics functions
----@class PhysicsClass
+---@class Physics
 Physics = {}
 
 --- Casts a ray against all Physical Object in the Scene and returns information on what was hit

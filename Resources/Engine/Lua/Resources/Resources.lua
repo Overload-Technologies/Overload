@@ -1,7 +1,7 @@
 ---@meta
 
 --- Some global resources functions
----@class ResourcesClass
+---@class Resources
 Resources = {}
 
 --- Loads (If not already loaded) and returns the Model identified by the given path. Returns nil on failure

@@ -1,29 +1,5 @@
 ---@meta
 
---- Enumeration of refresh modes that can be used by reflection probes
----@enum ReflectionProbeRefreshMode
-ReflectionProbeRefreshMode = {
-    REALTIME = 0,
-    ONCE = 1,
-    ON_DEMAND = 2,
-}
-
---- Enumeration of available capture speeds for reflection probes
----@enum ReflectionProbeCaptureSpeed
-ReflectionProbeCaptureSpeed = {
-    ONE_FACE = 0,
-    TWO_FACES = 1,
-    THREE_FACES = 2,
-    SIX_FACES = 3,
-}
-
---- Enumeration of available influence policies for reflection probes
----@enum ReflectionProbeInfluencePolicy
-ReflectionProbeInfluencePolicy = {
-    GLOBAL = 0,
-    LOCAL = 1,
-}
-
 --- Component that captures the surrounding environment into a cubemap texture
 ---@class ReflectionProbe : Component
 ReflectionProbe = {}

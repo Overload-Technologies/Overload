@@ -1,12 +1,5 @@
 ---@meta
 
---- Projection modes, mostly used for cameras
----@enum ProjectionMode
-ProjectionMode = {
-    ORTHOGRAPHIC = 0,
-    PERSPECTIVE = 1,
-}
-
 --- Represents a camera entity. Its position will determine its view matrix
 ---@class Camera : Component
 Camera = {}

@@ -1,13 +1,5 @@
 ---@meta
 
---- Defines how the model renderer bounding sphere should be interpreted
----@enum FrustumBehaviour
-FrustumBehaviour = {
-    DISABLED = 0,
-    MESH_BOUNDS = 1,
-    CUSTOM_BOUNDS = 2,
-}
-
 --- A ModelRenderer is necessary in combination with a MaterialRenderer to render a model in the world
 ---@class ModelRenderer : Component
 ModelRenderer = {}

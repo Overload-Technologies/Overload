@@ -1,7 +1,7 @@
 ---@meta
 
 --- Some global maths functions
----@class MathClass
+---@class Math
 Math = {}
 
 --- Generate a random number between two given integers (Closed interval)

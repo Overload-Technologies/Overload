@@ -1,7 +1,7 @@
 ---@meta
 
 --- Some global scenes functions
----@class ScenesClass
+---@class Scenes
 Scenes = {}
 
 --- Returns the currently active scene

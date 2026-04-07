@@ -1,7 +1,7 @@
 ---@meta
 
 --- Some global debug functions
----@class DebugClass
+---@class Debug
 Debug = {}
 
 --- Log a message to the console with Default severity

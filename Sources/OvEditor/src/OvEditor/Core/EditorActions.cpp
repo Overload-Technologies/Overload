@@ -759,7 +759,7 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 	std::string soundFormats = "*.mp3;*.ogg;*.wav;";
 
 	OpenFileDialog selectAssetDialog("Select an asset to import");
-	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + soundFormats);
+	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + shaderPartFormats + soundFormats);
 	selectAssetDialog.AddFileType("Model (.fbx, .obj)", modelFormats);
 	selectAssetDialog.AddFileType("Texture (.png, .jpeg, .jpg, .tga, .hdr)", textureFormats);
 	selectAssetDialog.AddFileType("Shader (.ovfx)", shaderFormats);

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -30,8 +31,13 @@ namespace OvCore::Scripting
 	public:
 		/**
 		* Constructor of the generic script engine
+		* @param p_scriptsFolder
+		* @param p_engineResourcesFolder
 		*/
-		TScriptEngine();
+		TScriptEngine(
+			const std::filesystem::path& p_scriptsFolder,
+			const std::filesystem::path& p_engineResourcesFolder
+		);
 
 		/**
 		* Destructor of the generic script engine (virtual to allow polymorphism)
@@ -39,10 +45,10 @@ namespace OvCore::Scripting
 		virtual ~TScriptEngine();
 
 		/**
-		* Defines the root location of the script folder
-		* @param p_rootFolder
+		* Create necessary project files.
+		* @param p_force
 		*/
-		void SetScriptRootFolder(const std::filesystem::path& p_rootFolder);
+		bool CreateProjectFiles(bool p_force = false);
 
 		/**
 		* Returns a list of valid extensions for scripts.

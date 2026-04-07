@@ -128,8 +128,10 @@ OvGame::Core::Context::Context() :
 	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, projectSettings.Get<float>("gravity"), 0.0f } });
 
 	/* Scripting */
-	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>();
-	scriptEngine->SetScriptRootFolder(projectScriptsPath);
+	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(
+		projectScriptsPath,
+		engineAssetsPath
+	);
 
 	/* Service Locator providing */
 	ServiceLocator::Provide<OvPhysics::Core::PhysicsEngine>(*physicsEngine);

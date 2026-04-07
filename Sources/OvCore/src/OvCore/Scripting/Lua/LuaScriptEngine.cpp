@@ -4,8 +4,11 @@
 * @licence: MIT
 */
 
-#include <sol/sol.hpp>
+#include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
+#include <filesystem>
+#include <fstream>
+#include <sol/sol.hpp>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
@@ -20,89 +23,119 @@ void BindLuaGlobal(sol::state& p_state);
 void BindLuaMath(sol::state& p_state);
 void BindLuaProfiler(sol::state& p_state);
 
-constexpr auto luaBindings = std::array{
-	BindLuaActor,
-	BindLuaComponents,
-	BindLuaGlobal,
-	BindLuaMath,
-	BindLuaProfiler
-};
-
-template<typename... Args>
-void ExecuteLuaFunction(OvCore::ECS::Components::Behaviour& p_behaviour, const std::string& p_functionName, Args&& ...p_args)
+namespace
 {
-	auto context = p_behaviour.GetScript();
+	constexpr auto luaBindings = std::array{
+		BindLuaActor,
+		BindLuaComponents,
+		BindLuaGlobal,
+		BindLuaMath,
+		BindLuaProfiler
+	};
 
-	OVASSERT(context.has_value(), "The given context is null");
-	OVASSERT(context->IsValid(), "The given context is invalid");
-
-	const sol::table& table = *static_cast<OvCore::Scripting::LuaScript&>(context.value()).GetContext().table;
-
-	if (table[p_functionName].valid())
+	template<typename... Args>
+	void ExecuteLuaFunction(OvCore::ECS::Components::Behaviour& p_behaviour, const std::string& p_functionName, Args&& ...p_args)
 	{
-		sol::protected_function pfr = table[p_functionName];
-		auto pfrResult = pfr.call(table, std::forward<Args>(p_args)...);
-		if (!pfrResult.valid())
+		auto context = p_behaviour.GetScript();
+
+		OVASSERT(context.has_value(), "The given context is null");
+		OVASSERT(context->IsValid(), "The given context is invalid");
+
+		const sol::table& table = *static_cast<OvCore::Scripting::LuaScript&>(context.value()).GetContext().table;
+
+		if (table[p_functionName].valid())
 		{
-			sol::error err = pfrResult;
-			OVLOG_ERROR(err.what());
+			sol::protected_function pfr = table[p_functionName];
+			auto pfrResult = pfr.call(table, std::forward<Args>(p_args)...);
+			if (!pfrResult.valid())
+			{
+				sol::error err = pfrResult;
+				OVLOG_ERROR(err.what());
+			}
 		}
 	}
-}
 
-sol::table LoadScript(sol::state& p_luaState, const std::string& p_scriptName)
-{
-	using namespace OvCore::Scripting;
-
-	const auto result = p_luaState.safe_script_file(p_scriptName, &sol::script_pass_on_error);
-
-	if (!result.valid())
+	sol::table LoadScript(sol::state& p_luaState, const std::string& p_scriptName)
 	{
-		sol::error err = result;
-		OVLOG_ERROR(err.what());
-		return {};
-	}
-	else
-	{
-		if (result.return_count() == 1 && result[0].is<sol::table>())
+		using namespace OvCore::Scripting;
+
+		const auto result = p_luaState.safe_script_file(p_scriptName, &sol::script_pass_on_error);
+
+		if (!result.valid())
 		{
-			return result[0];
+			sol::error err = result;
+			OVLOG_ERROR(err.what());
+			return {};
 		}
 		else
 		{
-			OVLOG_ERROR("'" + p_scriptName + "' missing return expression");
-			return {};
+			if (result.return_count() == 1 && result[0].is<sol::table>())
+			{
+				return result[0];
+			}
+			else
+			{
+				OVLOG_ERROR("'" + p_scriptName + "' missing return expression");
+				return {};
+			}
 		}
 	}
-}
 
-bool RegisterBehaviour(sol::state& p_luaState, OvCore::ECS::Components::Behaviour& p_behaviour, const std::string& p_scriptName)
-{
-	auto table = LoadScript(p_luaState, p_scriptName);
-
-	p_behaviour.SetScript(std::make_unique<OvCore::Scripting::LuaScript>(table));
-
-	// Update the script context to add the owner reference
-	if (auto context = p_behaviour.GetScript(); context.has_value() && context->IsValid())
+	bool RegisterBehaviour(sol::state& p_luaState, OvCore::ECS::Components::Behaviour& p_behaviour, const std::string& p_scriptName)
 	{
-		auto& luaScript = static_cast<OvCore::Scripting::LuaScript&>(context.value());
-		luaScript.SetOwner(p_behaviour.owner);
-		return true;
+		auto table = LoadScript(p_luaState, p_scriptName);
+
+		p_behaviour.SetScript(std::make_unique<OvCore::Scripting::LuaScript>(table));
+
+		// Update the script context to add the owner reference
+		if (auto context = p_behaviour.GetScript(); context.has_value() && context->IsValid())
+		{
+			auto& luaScript = static_cast<OvCore::Scripting::LuaScript&>(context.value());
+			luaScript.SetOwner(p_behaviour.owner);
+			return true;
+		}
+
+		return false;
 	}
 
-	return false;
+	std::string GetLuarcFileContent(
+		const std::filesystem::path& p_engineResourcesFolder
+	)
+	{
+		const auto absolutePath = std::filesystem::absolute(p_engineResourcesFolder);
+		return "{\n\"workspace.library\":[\"" + absolutePath.string() + "\"]\n}\n";
+	}
 }
 
 template<>
-OvCore::Scripting::LuaScriptEngineBase::TScriptEngine() {}
+OvCore::Scripting::LuaScriptEngineBase::TScriptEngine(
+	const std::filesystem::path& p_scriptRootFolder,
+	const std::filesystem::path& p_engineResourcesFolder
+)
+{
+	m_context.scriptRootFolder = p_scriptRootFolder;
+	m_context.engineResourcesFolder = p_engineResourcesFolder;
+}
 
 template<>
 OvCore::Scripting::LuaScriptEngineBase::~TScriptEngine() {}
 
 template<>
-void OvCore::Scripting::LuaScriptEngineBase::SetScriptRootFolder(const std::filesystem::path& p_scriptRootFolder)
+bool OvCore::Scripting::LuaScriptEngineBase::CreateProjectFiles(bool p_force)
 {
-	m_context.scriptRootFolder = p_scriptRootFolder;
+	// Create a .luarc.json file inside the project's script folder.
+	// This file will allow Lua LSPs to properly discover Lua symbols exposed by Overload.
+	const std::filesystem::path luarcPath = m_context.scriptRootFolder / ".luarc.json";
+
+	// Prevent the .luarc.json from being overrided UNLESS p_force is used
+	if (!p_force && std::filesystem::exists(luarcPath))
+	{
+		return true;
+	}
+
+	std::ofstream luarc(luarcPath);
+	luarc << GetLuarcFileContent(m_context.engineResourcesFolder);
+	return true;
 }
 
 template<>
@@ -257,7 +290,13 @@ void OvCore::Scripting::LuaScriptEngineBase::OnTriggerExit(OvCore::ECS::Componen
 	ExecuteLuaFunction(p_target, "OnTriggerExit", p_otherObject);
 }
 
-OvCore::Scripting::LuaScriptEngine::LuaScriptEngine()
+OvCore::Scripting::LuaScriptEngine::LuaScriptEngine(
+	const std::filesystem::path& p_scriptsFolder,
+	const std::filesystem::path& p_engineResourcesFolder
+) : OvCore::Scripting::LuaScriptEngineBase(
+	p_scriptsFolder,
+	p_engineResourcesFolder
+)
 {
 	CreateContext();
 }

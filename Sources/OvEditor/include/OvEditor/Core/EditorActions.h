@@ -256,6 +256,11 @@ namespace OvEditor::Core
 		* Save every materials to their respective files
 		*/
 		void SaveMaterials();
+
+		/**
+		* Regenerate project files for the scripting backend
+		*/
+		void RegenerateScriptingProjectFiles();
 		
 		/**
 		* Import an asset

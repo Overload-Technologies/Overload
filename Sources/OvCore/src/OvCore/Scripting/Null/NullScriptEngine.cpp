@@ -9,13 +9,16 @@
 #include <OvCore/Scripting/Null/NullScriptEngine.h>
 
 template<>
-OvCore::Scripting::NullScriptEngineBase::TScriptEngine() {}
+OvCore::Scripting::NullScriptEngineBase::TScriptEngine(
+	const std::filesystem::path& p_scriptRootFolder,
+	const std::filesystem::path& p_engineResourcesFolder
+) {}
 
 template<>
 OvCore::Scripting::NullScriptEngineBase::~TScriptEngine() {}
 
 template<>
-void OvCore::Scripting::NullScriptEngineBase::SetScriptRootFolder(const std::filesystem::path& p_scriptRootFolder) {}
+bool OvCore::Scripting::NullScriptEngineBase::CreateProjectFiles(bool p_force) { return true; }
 
 template<>
 std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultExtension()

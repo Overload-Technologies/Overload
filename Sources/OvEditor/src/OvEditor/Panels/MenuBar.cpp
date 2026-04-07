@@ -185,6 +185,9 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	debuggingMenu.CreateWidget<MenuItem>("Editor Frustum Geometry Culling", "", true, Settings::EditorSettings::EditorFrustumGeometryCulling).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::EditorFrustumGeometryCulling = p_value; };
 	debuggingMenu.CreateWidget<MenuItem>("Editor Frustum Light Culling", "", true, Settings::EditorSettings::EditorFrustumLightCulling).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::EditorFrustumLightCulling = p_value; };
 	
+	auto& scriptingMenu = m_settingsMenu->CreateWidget<MenuList>("Scripting");
+	scriptingMenu.CreateWidget<MenuItem>("Regenerate Scripting Project Files On Startup", "", true, Settings::EditorSettings::RegenerateScriptingProjectFilesOnStartup).ValueChangedEvent += [this](bool p_value) { Settings::EditorSettings::RegenerateScriptingProjectFilesOnStartup = p_value; };
+
 	auto& consoleSettingsMenu = m_settingsMenu->CreateWidget<MenuList>("Console Settings");
 	auto& consoleMaxLogsSlider = consoleSettingsMenu.CreateWidget<OvUI::Widgets::Sliders::SliderInt>(1, 1000, Settings::EditorSettings::ConsoleMaxLogs.Get(), OvUI::Widgets::Sliders::ESliderOrientation::HORIZONTAL, "Max Logs");
 	consoleMaxLogsSlider.ValueChangedEvent += [this](int p_value) { 
@@ -242,6 +245,7 @@ void OvEditor::Panels::MenuBar::CreateResourcesMenu()
 	auto& resourcesMenu = CreateWidget<MenuList>("Resources");
 	resourcesMenu.CreateWidget<MenuItem>("Compile shaders").ClickedEvent += EDITOR_BIND(CompileShaders);
 	resourcesMenu.CreateWidget<MenuItem>("Save materials").ClickedEvent += EDITOR_BIND(SaveMaterials);
+	resourcesMenu.CreateWidget<MenuItem>("Regenerate Scripting Project Files").ClickedEvent += EDITOR_BIND(RegenerateScriptingProjectFiles);
 }
 
 void OvEditor::Panels::MenuBar::CreateToolsMenu()

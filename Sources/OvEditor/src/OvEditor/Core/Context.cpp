@@ -148,8 +148,17 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, -9.81f, 0.0f } });
 
 	/* Scripting */
-	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>();
-	scriptEngine->SetScriptRootFolder(projectScriptsPath.string());
+	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(
+		projectScriptsPath,
+		engineAssetsPath
+	);
+
+	// Ensures lua project files are up-to-date. This is necessary for Lua's LSP to function properly.
+	// If Overload's installation directory changes, references to engine symbols would be lost,
+	// hence this invocation.
+	scriptEngine->CreateProjectFiles(
+		Settings::EditorSettings::RegenerateScriptingProjectFilesOnStartup
+	);
 
 	/* Service Locator providing */
 	ServiceLocator::Provide<OvPhysics::Core::PhysicsEngine>(*physicsEngine);

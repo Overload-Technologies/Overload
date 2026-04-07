@@ -748,6 +748,18 @@ void OvEditor::Core::EditorActions::SaveMaterials()
 	}
 }
 
+void OvEditor::Core::EditorActions::RegenerateScriptingProjectFiles()
+{
+	if (m_context.scriptEngine->CreateProjectFiles(true))
+	{
+		OVLOG_INFO("Lua symbol regenerated (.luarc.json created)");
+	}
+	else
+	{
+		OVLOG_ERROR("Failed to regenerate lua symbols (.luarc.json failed to create)");
+	}
+}
+
 bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDestinationDirectory)
 {
 	using namespace OvWindowing::Dialogs;

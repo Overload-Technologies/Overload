@@ -101,5 +101,6 @@ namespace OvEditor::Settings
 		inline static Property<int> ConsoleMaxLogs = { 500 };
 		inline static Property<int> FontSize = { static_cast<int>(EFontSize::DEFAULT) };
 		inline static Property<std::string> CodeEditorCommand = { "code {path}" };
+		inline static Property<bool> RegenerateScriptingProjectFilesOnStartup = { true };
 	};
 }

@@ -74,9 +74,18 @@ void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
     if (m_isSaveDialog) command += " --save --confirm-overwrite";
     if (!m_initialDirectory.empty()) command += " --filename=\"" + m_initialDirectory + "/\"";
 
-    if (!m_filter.empty()) {
-        command += " --file-filter=\"All Files | *.*\""; 
-    }
+	if (!m_filter.empty())
+	{
+		std::istringstream stream(m_filter);
+		std::string label, pattern;
+		
+		while (std::getline(stream, label, '\0') && std::getline(stream, pattern, '\0'))
+		{
+			std::ranges::replace(pattern, ';', ' ');
+			if (pattern.ends_with(' ')) pattern.pop_back();
+			command += " --file-filter=\"" + label + " | " + pattern + "\"";
+		}
+	}
 
     command += " > " + tempFile + " 2>/dev/null";
 

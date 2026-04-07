@@ -7,6 +7,7 @@
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <sol/sol.hpp>
 #include <tracy/Tracy.hpp>
@@ -103,7 +104,26 @@ namespace
 	)
 	{
 		const auto absolutePath = std::filesystem::absolute(p_engineResourcesFolder);
-		return "{\n\"workspace.library\":[\"" + absolutePath.string() + "\"]\n}\n";
+
+		return std::format(
+			"{{\n"
+			"  \"workspace.library\": [\"{}\"],\n"
+			"  \"runtime.version\": \"Lua {}.{}\",\n"
+			"  \"runtime.builtin\": {{\n"
+			"    \"basic\": \"enable\",\n"
+			"    \"math\": \"enable\",\n"
+			"    \"string\": \"disable\",\n"
+			"    \"table\": \"disable\",\n"
+			"    \"io\": \"disable\",\n"
+			"    \"os\": \"disable\",\n"
+			"    \"package\": \"disable\",\n"
+			"    \"coroutine\": \"disable\"\n"
+			"  }}\n"
+			"}}\n",
+			absolutePath.string(),
+			LUA_VERSION_MAJOR,
+			LUA_VERSION_MINOR
+		);
 	}
 }
 

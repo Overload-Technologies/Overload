@@ -282,7 +282,7 @@ void OvEditor::Panels::MenuBar::CreateHelpMenu()
 		const std::filesystem::path luaDefinitions = EDITOR_CONTEXT(engineAssetsPath) / "Lua";
 		if (!EDITOR_EXEC(OpenInCodeEditor(luaDefinitions)))
 		{
-			OvTools::Utils::SystemCalls::ShowInExplorer(luaDefinitions);
+			OvTools::Utils::SystemCalls::ShowInExplorer(luaDefinitions.string());
 
 		}
 	};

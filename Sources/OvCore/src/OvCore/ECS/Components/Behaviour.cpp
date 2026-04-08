@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <utility>
+
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
@@ -14,9 +16,8 @@
 
 #include <OvDebug/Logger.h>
 
-#include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
-#include <OvUI/Widgets/Visual/Separator.h>
+#include <OvUI/Widgets/Texts/TextColored.h>
 
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
 	name(p_name), AComponent(p_owner)
@@ -50,19 +51,15 @@ void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Sc
 	}
 
 	// Collect fresh defaults from the script, then merge with any same-type user overrides.
-	auto defaults = m_script->GetDefaultProperties();
-	std::map<std::string, Scripting::ScriptPropertyValue> newProperties;
+	auto old = std::exchange(m_scriptProperties, {});
 
-	for (auto& [key, defaultVal] : defaults)
+	for (auto& [key, defaultVal] : m_script->GetDefaultProperties())
 	{
-		const auto it = m_scriptProperties.find(key);
-		if (it != m_scriptProperties.end() && it->second.index() == defaultVal.index())
-			newProperties[key] = it->second;
-		else
-			newProperties[key] = defaultVal;
+		auto it = old.find(key);
+		m_scriptProperties[key] = (it != old.end() && it->second.index() == defaultVal.index())
+			? std::move(it->second)
+			: std::move(defaultVal);
 	}
-
-	m_scriptProperties = std::move(newProperties);
 
 	// Push user overrides back into the live script.
 	for (const auto& [key, val] : m_scriptProperties)
@@ -165,23 +162,13 @@ void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_d
 	{
 		tinyxml2::XMLElement* elem = p_doc.NewElement(fieldKey.c_str());
 
-		std::visit([elem](auto&& v) {
-			using T = std::decay_t<decltype(v)>;
+		std::visit([elem]<typename T>(const T& v) {
 			if constexpr (std::is_same_v<T, bool>)
-			{
-				elem->SetAttribute("type", "bool");
-				elem->SetText(v);
-			}
+				{ elem->SetAttribute("type", "bool");   elem->SetText(v); }
 			else if constexpr (std::is_same_v<T, double>)
-			{
-				elem->SetAttribute("type", "number");
-				elem->SetText(v);
-			}
-			else if constexpr (std::is_same_v<T, std::string>)
-			{
-				elem->SetAttribute("type", "string");
-				elem->SetText(v.c_str());
-			}
+				{ elem->SetAttribute("type", "number"); elem->SetText(v); }
+			else
+				{ elem->SetAttribute("type", "string"); elem->SetText(v.c_str()); }
 		}, fieldValue);
 
 		propsNode->InsertEndChild(elem);
@@ -195,41 +182,35 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 
 	for (const tinyxml2::XMLElement* elem = propsNode->FirstChildElement(); elem; elem = elem->NextSiblingElement())
 	{
-		const char* name = elem->Name();
-		const char* type = elem->Attribute("type");
+		const char* const name = elem->Name();
+		const char* const type = elem->Attribute("type");
 		if (!name || !type) continue;
 
-		const std::string nameStr(name);
-		const std::string typeStr(type);
-
-		// Only apply the loaded value when the key exists in m_scriptProperties (populated by
-		// SetScript) AND the type matches, to guard against stale or type-changed fields.
-		auto it = m_scriptProperties.find(nameStr);
+		auto it = m_scriptProperties.find(name);
 		if (it == m_scriptProperties.end()) continue;
 
-		if (typeStr == "bool" && std::holds_alternative<bool>(it->second))
+		const std::string_view typeStr{type};
+		auto& val = it->second;
+
+		if (typeStr == "bool" && std::holds_alternative<bool>(val))
 		{
-			bool val = false;
-			elem->QueryBoolText(&val);
-			it->second = val;
+			bool v = false;
+			elem->QueryBoolText(&v);
+			val = v;
 		}
-		else if (typeStr == "number" && std::holds_alternative<double>(it->second))
+		else if (typeStr == "number" && std::holds_alternative<double>(val))
 		{
-			double val = 0.0;
-			elem->QueryDoubleText(&val);
-			it->second = val;
+			double v = 0.0;
+			elem->QueryDoubleText(&v);
+			val = v;
 		}
-		else if (typeStr == "string" && std::holds_alternative<std::string>(it->second))
-		{
-			it->second = std::string(elem->GetText() ? elem->GetText() : "");
-		}
+		else if (typeStr == "string" && std::holds_alternative<std::string>(val))
+			val = elem->GetText() ? elem->GetText() : "";
 		else
-		{
 			continue;
-		}
 
 		if (m_script)
-			m_script->SetProperty(nameStr, it->second);
+			m_script->SetProperty(name, val);
 	}
 }
 
@@ -240,6 +221,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 	if (!m_script)
 	{
 		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("No scripting context", OvUI::Types::Color::White);
+		p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>();
 	}
 	else if (m_script->IsValid())
 	{
@@ -248,60 +230,24 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 
 		for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 		{
-			std::visit([&, key = fieldKey](auto&& v) {
-				using T = std::decay_t<decltype(v)>;
-
+			std::visit([&, key = fieldKey]<typename T>(const T&) {
+				auto getter = [this, key]() -> T {
+					if (auto live = m_script->GetProperty(key))
+						if (auto* val = std::get_if<T>(&*live))
+							return *val;
+					auto it = m_scriptProperties.find(key);
+					return it != m_scriptProperties.end() ? std::get<T>(it->second) : T{};
+				};
+				auto setter = [this, key](T newVal) {
+					m_scriptProperties[key] = newVal;
+					if (m_script) m_script->SetProperty(key, std::move(newVal));
+				};
 				if constexpr (std::is_same_v<T, bool>)
-				{
-					GUIDrawer::DrawBoolean(p_root, key,
-						[this, key]() -> bool {
-							if (m_script)
-								if (auto liveVal = m_script->GetProperty(key))
-									if (auto* b = std::get_if<bool>(&*liveVal))
-										return *b;
-							auto it = m_scriptProperties.find(key);
-							return it != m_scriptProperties.end() ? std::get<bool>(it->second) : false;
-						},
-						[this, key](bool newVal) {
-							m_scriptProperties[key] = newVal;
-							if (m_script) m_script->SetProperty(key, newVal);
-						}
-					);
-				}
+					GUIDrawer::DrawBoolean(p_root, key, getter, setter);
 				else if constexpr (std::is_same_v<T, double>)
-				{
-					GUIDrawer::DrawScalar<double>(p_root, key,
-						[this, key]() -> double {
-							if (m_script)
-								if (auto liveVal = m_script->GetProperty(key))
-									if (auto* d = std::get_if<double>(&*liveVal))
-										return *d;
-							auto it = m_scriptProperties.find(key);
-							return it != m_scriptProperties.end() ? std::get<double>(it->second) : 0.0;
-						},
-						[this, key](double newVal) {
-							m_scriptProperties[key] = newVal;
-							if (m_script) m_script->SetProperty(key, newVal);
-						}
-					);
-				}
-				else if constexpr (std::is_same_v<T, std::string>)
-				{
-					GUIDrawer::DrawString(p_root, key,
-						[this, key]() -> std::string {
-							if (m_script)
-								if (auto liveVal = m_script->GetProperty(key))
-									if (auto* s = std::get_if<std::string>(&*liveVal))
-										return *s;
-							auto it = m_scriptProperties.find(key);
-							return it != m_scriptProperties.end() ? std::get<std::string>(it->second) : "";
-						},
-						[this, key](std::string newVal) {
-							m_scriptProperties[key] = newVal;
-							if (m_script) m_script->SetProperty(key, std::move(newVal));
-						}
-					);
-				}
+					GUIDrawer::DrawScalar<double>(p_root, key, getter, setter);
+				else
+					GUIDrawer::DrawString(p_root, key, getter, setter);
 			}, fieldValue);
 		}
 	}

@@ -76,7 +76,7 @@ void BindLuaActor(sol::state& p_luaState)
 			OvCore::ECS::Components::Behaviour* behaviour = nullptr;
 			for (auto& [key, b] : p_this.GetBehaviours())
 			{
-				if (b.GetScriptName() == p_name)
+				if (std::filesystem::path(b.name).stem().string() == p_name)
 				{
 					behaviour = &b;
 					break;

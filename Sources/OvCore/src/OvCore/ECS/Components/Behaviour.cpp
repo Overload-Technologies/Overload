@@ -36,20 +36,6 @@ std::string OvCore::ECS::Components::Behaviour::GetTypeName()
 	return std::string{ComponentTraits<Behaviour>::Name};
 }
 
-std::string OvCore::ECS::Components::Behaviour::GetScriptName() const
-{
-	if (m_script)
-	{
-		const auto tableName = m_script->GetScriptName();
-		if (!tableName.empty())
-		{
-			return tableName;
-		}
-	}
-
-	return std::filesystem::path(name).stem().string();
-}
-
 void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Script> &&p_scriptContext)
 {
 	m_script = std::move(p_scriptContext);

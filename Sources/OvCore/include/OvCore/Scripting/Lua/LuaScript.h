@@ -57,11 +57,5 @@ namespace OvCore::Scripting
 		* @param p_owner
 		*/
 		void SetOwner(OvCore::ECS::Actor& p_owner);
-
-		/**
-		* Returns the name defined in the script's returned table (table["name"]).
-		* Returns an empty string if the table has no "name" field.
-		*/
-		std::string GetScriptName() const override;
 	};
 }

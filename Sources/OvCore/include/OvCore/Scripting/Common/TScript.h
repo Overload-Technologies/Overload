@@ -38,12 +38,6 @@ namespace OvCore::Scripting
 		bool IsValid() const;
 
 		/**
-		* Returns the name of the script as defined in the script itself.
-		* Returns an empty string if the script doesn't define a name.
-		*/
-		virtual std::string GetScriptName() const { return ""; }
-
-		/**
 		* Return the context of the script
 		*/
 		inline const Context& GetContext() const { return m_context; }

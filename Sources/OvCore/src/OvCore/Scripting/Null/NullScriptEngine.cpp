@@ -12,7 +12,7 @@ template<>
 OvCore::Scripting::NullScriptEngineBase::TScriptEngine(
 	const std::filesystem::path& p_scriptRootFolder,
 	const std::filesystem::path& p_engineResourcesFolder,
-	const std::filesystem::path& p_luarcFolder
+	const std::filesystem::path& p_projectRootFolder
 ) {}
 
 template<>

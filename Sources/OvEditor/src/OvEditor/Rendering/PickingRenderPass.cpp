@@ -169,8 +169,9 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 			const auto& actor = drawable.template GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
 			const auto skinnedRenderer = actor.template GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
 			const bool hasSkinning = OvCore::Rendering::SkinningUtils::IsSkinningActive(skinnedRenderer);
-			const bool skinningEnabled = hasSkinning && drawable.material &&
-				drawable.material->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
+			const bool skinningEnabled = hasSkinning &&
+				drawable.mesh.HasSkinningData() &&
+				m_actorPickingFallbackMaterial.SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
 
 			if (skinningEnabled)
 			{

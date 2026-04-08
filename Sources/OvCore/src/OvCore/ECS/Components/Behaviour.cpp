@@ -15,6 +15,8 @@
 #include <OvDebug/Logger.h>
 
 #include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvUI/Widgets/Layout/Dummy.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
 	name(p_name), AComponent(p_owner)
@@ -242,6 +244,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 	else if (m_script->IsValid())
 	{
 		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Ready", OvUI::Types::Color::Green);
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Script properties will appear below", OvUI::Types::Color::White);
 
 		for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 		{

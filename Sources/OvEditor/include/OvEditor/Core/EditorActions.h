@@ -295,7 +295,7 @@ namespace OvEditor::Core
 		std::string GetResourcePath(const std::string& p_path, bool p_isFromEngine = false);
 
 		/**
-		* Returns the script path of a file (relative to projectAssetsPath, with extension)
+		* Returns the script path of a file (relative to projectAssetsPath, forward-slash separated)
 		* @param p_path
 		*/
 		std::string GetScriptPath(const std::string& p_path);
@@ -319,13 +319,6 @@ namespace OvEditor::Core
 		* @param p_folderPath
 		*/
 		void PropagateFolderDestruction(std::string p_folderPath);
-
-		/**
-		* Propagate the script rename in scenes and inspector
-		* @param p_previousName
-		* @param p_newName
-		*/
-		void PropagateScriptRename(std::string p_previousName, std::string p_newName);
 
 		/**
 		* Propagate the file rename everywhere it is used

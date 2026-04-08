@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-#include <filesystem>
-
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/Global/ServiceLocator.h>

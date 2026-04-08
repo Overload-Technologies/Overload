@@ -1179,18 +1179,14 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 					ddSource.data.first = (std::filesystem::path{ ddSource.data.first }.parent_path() / elementName).string();
 					ddSource.tooltip = ddSource.data.first;
 
+					EDITOR_EXEC(PropagateFileRename(p_prev.string(), p_newPath.string()));
+
 					if (fileType != OvTools::Utils::PathParser::EFileType::SCRIPT)
 					{
-						EDITOR_EXEC(PropagateFileRename(p_prev.string(), p_newPath.string()));
-
 						if (EDITOR_CONTEXT(sceneManager).GetCurrentSceneSourcePath() == p_prev) // Modify current scene source path if the renamed file is the current scene
 						{
 							EDITOR_CONTEXT(sceneManager).StoreCurrentSceneSourcePath(p_newPath.string());
 						}
-					}
-					else
-					{
-						EDITOR_EXEC(PropagateScriptRename(p_prev.string(), p_newPath.string()));
 					}
 
 					clickableText.content = elementName.string();

@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <string>
-
 #include <OvCore/Scripting/Common/EScriptingLanguage.h>
 
 namespace OvCore::Scripting

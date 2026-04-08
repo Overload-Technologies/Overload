@@ -927,17 +927,10 @@ void OvEditor::Core::EditorActions::PropagateFolderRename(std::string p_previous
 					previousFileName = p_previousName;
 			}
 
-			const auto windowsPrev = OvTools::Utils::PathParser::MakeWindowsStyle(previousFileName);
-			const auto windowsNew = OvTools::Utils::PathParser::MakeWindowsStyle(newFileName);
-
-			if (OvTools::Utils::PathParser::GetFileType(newFileName) == OvTools::Utils::PathParser::EFileType::SCRIPT)
-			{
-				PropagateScriptRename(windowsPrev, windowsNew);
-			}
-			else
-			{
-				PropagateFileRename(windowsPrev, windowsNew);
-			}
+			PropagateFileRename(
+				OvTools::Utils::PathParser::MakeWindowsStyle(previousFileName),
+				OvTools::Utils::PathParser::MakeWindowsStyle(newFileName)
+			);
 		}
 	}
 }
@@ -948,47 +941,9 @@ void OvEditor::Core::EditorActions::PropagateFolderDestruction(std::string p_fol
 	{
 		if (!p.is_directory())
 		{
-			const auto windowsPath = OvTools::Utils::PathParser::MakeWindowsStyle(p.path().string());
-
-			if (OvTools::Utils::PathParser::GetFileType(p.path().string()) == OvTools::Utils::PathParser::EFileType::SCRIPT)
-			{
-				PropagateScriptRename(windowsPath, "?");
-			}
-			else
-			{
-				PropagateFileRename(windowsPath, "?");
-			}
+			PropagateFileRename(OvTools::Utils::PathParser::MakeWindowsStyle(p.path().string()), "?");
 		}
 	}
-}
-
-void OvEditor::Core::EditorActions::PropagateScriptRename(std::string p_previousName, std::string p_newName)
-{
-	p_previousName = GetScriptPath(p_previousName);
-
-	const bool isDeletion = p_newName == "?";
-	if (!isDeletion)
-	{
-		p_newName = GetScriptPath(p_newName);
-	}
-
-	if (auto currentScene = m_context.sceneManager.GetCurrentScene())
-	{
-		for (auto actor : currentScene->GetActors())
-		{
-			if (actor->RemoveBehaviour(p_previousName) && !isDeletion)
-			{
-				actor->AddBehaviour(p_newName);
-			}
-		}
-	}
-
-	if (!isDeletion)
-	{
-		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
-	}
-
-	EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
 }
 
 void OvEditor::Core::EditorActions::MigrateScripts()
@@ -1039,13 +994,9 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 			if (OvTools::Utils::PathParser::GetFileType(entry.path().string()) == OvTools::Utils::PathParser::EFileType::SCRIPT)
 			{
 				const auto stem = entry.path().stem().string();
-				const auto newRelPath = (std::filesystem::path("Scripts") / entry.path().filename()).string();
+				const auto newRelPath = (std::filesystem::path("Scripts") / entry.path().filename()).generic_string();
 
-				// Normalize to forward slashes
-				std::string normalizedNewRelPath = newRelPath;
-				std::replace(normalizedNewRelPath.begin(), normalizedNewRelPath.end(), '\\', '/');
-
-				PropagateFileRenameThroughSavedFilesOfType(stem, normalizedNewRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
+				PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
 			}
 		}
 	}

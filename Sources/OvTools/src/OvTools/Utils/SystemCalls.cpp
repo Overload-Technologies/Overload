@@ -10,20 +10,26 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <ShlObj.h>
+#include <cstdio>
+#define popen  _popen
+#define pclose _pclose
 #else
 #include <cstdlib>
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #endif
 
 #include <cassert>
+#include <format>
+#include <memory>
 
 namespace
 {
 	bool CommandExists(const std::string_view p_cmd)
 	{
-		const std::string cmd{p_cmd};
+		const std::string cmd{ p_cmd };
 #ifdef _WIN32
 		std::string checkCmd = "where " + cmd + " > NUL 2>&1";
 #else
@@ -31,7 +37,11 @@ namespace
 #endif
 		FILE* pipe = popen(checkCmd.c_str(), "r");
 		if (!pipe) return false;
+#ifdef _WIN32
+		return pclose(pipe) == 0;
+#else
 		return WEXITSTATUS(pclose(pipe)) == 0;
+#endif
 	}
 }
 

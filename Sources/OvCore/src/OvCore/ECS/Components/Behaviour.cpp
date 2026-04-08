@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <limits>
 #include <utility>
 
 #include <tinyxml2.h>
@@ -16,7 +17,12 @@
 
 #include <OvDebug/Logger.h>
 
+#include <OvUI/Plugins/DataDispatcher.h>
+#include <OvUI/Widgets/Drags/DragSingleScalar.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
+#include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
 
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
@@ -47,18 +53,26 @@ void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Sc
 	if (!m_script || !m_script->IsValid())
 	{
 		m_scriptProperties.clear();
+		m_scriptDefaults.clear();
+		m_unlockedProperties.clear();
 		return;
 	}
 
-	// Collect fresh defaults from the script, then merge with any same-type user overrides.
-	auto old = std::exchange(m_scriptProperties, {});
+	m_scriptDefaults = m_script->GetDefaultProperties();
 
-	for (auto& [key, defaultVal] : m_script->GetDefaultProperties())
+	auto old = std::exchange(m_scriptProperties, {});
+	auto oldUnlocked = std::exchange(m_unlockedProperties, {});
+
+	for (const auto& [key, defaultVal] : m_scriptDefaults)
 	{
+		const bool wasUnlocked = oldUnlocked.contains(key);
 		auto it = old.find(key);
-		m_scriptProperties[key] = (it != old.end() && it->second.index() == defaultVal.index())
-			? std::move(it->second)
-			: std::move(defaultVal);
+		const bool canPreserve = wasUnlocked && it != old.end() && it->second.index() == defaultVal.index();
+
+		m_scriptProperties[key] = canPreserve ? std::move(it->second) : defaultVal;
+
+		if (wasUnlocked)
+			m_unlockedProperties.insert(key);
 	}
 
 	// Push user overrides back into the live script.
@@ -153,13 +167,15 @@ void OvCore::ECS::Components::Behaviour::OnTriggerExit(Components::CPhysicalObje
 
 void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
-	if (m_scriptProperties.empty()) return;
+	if (m_unlockedProperties.empty()) return;
 
 	tinyxml2::XMLNode* propsNode = p_doc.NewElement("script_properties");
 	p_node->InsertEndChild(propsNode);
 
 	for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 	{
+		if (!m_unlockedProperties.contains(fieldKey)) continue;
+
 		tinyxml2::XMLElement* elem = p_doc.NewElement(fieldKey.c_str());
 
 		std::visit([elem]<typename T>(const T& v) {
@@ -209,6 +225,8 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 		else
 			continue;
 
+		m_unlockedProperties.insert(name);
+
 		if (m_script)
 			m_script->SetProperty(name, val);
 	}
@@ -230,7 +248,9 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 
 		for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 		{
-			std::visit([&, key = fieldKey]<typename T>(const T&) {
+			const bool isUnlocked = m_unlockedProperties.contains(fieldKey);
+
+			std::visit([&, key = fieldKey, unlocked = isUnlocked]<typename T>(const T&) {
 				auto getter = [this, key]() -> T {
 					if (auto live = m_script->GetProperty(key))
 						if (auto* val = std::get_if<T>(&*live))
@@ -242,12 +262,63 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					m_scriptProperties[key] = newVal;
 					if (m_script) m_script->SetProperty(key, std::move(newVal));
 				};
+
+				// Label row: [unlock checkbox] [field title], grouped together
+				auto& labelGroup = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+				auto& unlockBox = labelGroup.CreateWidget<OvUI::Widgets::Selection::CheckBox>(unlocked);
+				unlockBox.lineBreak = false;
+				labelGroup.CreateWidget<OvUI::Widgets::Texts::TextColored>(key, GUIDrawer::TitleColor);
+
+				// Input widget on the row below
+				OvUI::Widgets::AWidget* inputPtr = nullptr;
 				if constexpr (std::is_same_v<T, bool>)
-					GUIDrawer::DrawBoolean(p_root, key, getter, setter);
+				{
+					auto& w = p_root.CreateWidget<OvUI::Widgets::Selection::CheckBox>();
+					auto& d = w.template AddPlugin<OvUI::Plugins::DataDispatcher<bool>>();
+					d.RegisterGatherer([getter]() { bool v = getter(); return reinterpret_cast<bool&>(v); });
+					d.RegisterProvider([setter](bool v) { setter(reinterpret_cast<bool&>(v)); });
+					inputPtr = &w;
+				}
 				else if constexpr (std::is_same_v<T, double>)
-					GUIDrawer::DrawScalar<double>(p_root, key, getter, setter);
+				{
+					auto& w = p_root.CreateWidget<OvUI::Widgets::Drags::DragSingleScalar<double>>(
+						GUIDrawer::GetDataType<double>(),
+						std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(),
+						static_cast<double>(0), 1.f, "", GUIDrawer::GetFormat<double>()
+					);
+					auto& d = w.template AddPlugin<OvUI::Plugins::DataDispatcher<double>>();
+					d.RegisterGatherer(getter);
+					d.RegisterProvider(setter);
+					inputPtr = &w;
+				}
 				else
-					GUIDrawer::DrawString(p_root, key, getter, setter);
+				{
+					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+					auto& d = w.template AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
+					d.RegisterGatherer(getter);
+					d.RegisterProvider(setter);
+					inputPtr = &w;
+				}
+
+				auto& inputWidget = *inputPtr;
+				inputWidget.disabled = !unlocked;
+
+				unlockBox.ValueChangedEvent += [this, key, &inputWidget](bool checked) {
+					if (checked)
+					{
+						m_unlockedProperties.insert(key);
+					}
+					else
+					{
+						m_unlockedProperties.erase(key);
+						if (auto it = m_scriptDefaults.find(key); it != m_scriptDefaults.end())
+						{
+							m_scriptProperties[key] = it->second;
+							if (m_script) m_script->SetProperty(key, it->second);
+						}
+					}
+					inputWidget.disabled = !checked;
+				};
 			}, fieldValue);
 		}
 	}

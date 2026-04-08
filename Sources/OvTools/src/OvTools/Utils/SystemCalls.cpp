@@ -32,7 +32,7 @@ namespace
 		const std::string query{ "where /q " + cmd + " 2>NUL" };
 		return std::system(query.c_str()) == 0;
 #else
-		std::string checkCmd = "command -v " + std::string(p_cmd) + " > /dev/null 2>&1";
+		std::string checkCmd = std::format("command -v {} > /dev/null 2>&1", p_cmd);
 		FILE* pipe = popen(checkCmd.c_str(), "r");
 		if (!pipe) return false;
 		return WEXITSTATUS(pclose(pipe)) == 0;

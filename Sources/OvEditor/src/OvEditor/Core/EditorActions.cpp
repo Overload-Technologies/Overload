@@ -1180,6 +1180,33 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 
 	switch (OvTools::Utils::PathParser::GetFileType(p_previousName))
 	{
+	case OvTools::Utils::PathParser::EFileType::SCRIPT:
+	{
+		// Normalize to forward slashes (Behaviour::name uses forward slashes as path separator)
+		std::string prev = p_previousName;
+		std::string next = p_newName;
+		std::replace(prev.begin(), prev.end(), '\\', '/');
+		if (next != "?") std::replace(next.begin(), next.end(), '\\', '/');
+
+		if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+		{
+			for (auto actor : currentScene->GetActors())
+			{
+				if (actor->RemoveBehaviour(prev) && next != "?")
+				{
+					actor->AddBehaviour(next);
+				}
+			}
+		}
+
+		if (next != "?")
+		{
+			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::SCENE);
+		}
+
+		EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
+		break;
+	}
 	case OvTools::Utils::PathParser::EFileType::MATERIAL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
 		break;

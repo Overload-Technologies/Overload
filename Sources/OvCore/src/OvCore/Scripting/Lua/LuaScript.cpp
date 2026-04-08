@@ -44,6 +44,7 @@ std::map<std::string, OvCore::Scripting::ScriptPropertyValue> OvCore::Scripting:
 	m_context.table->for_each([&](const sol::object& key, const sol::object& value) {
 		if (!key.is<std::string>()) return;
 		const std::string keyStr = key.as<std::string>();
+		if (keyStr.starts_with('_')) return;
 
 		switch (value.get_type())
 		{

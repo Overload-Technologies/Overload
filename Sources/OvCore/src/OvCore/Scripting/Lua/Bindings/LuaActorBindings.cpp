@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <filesystem>
+
 #include <sol/sol.hpp>
 
 #include <OvCore/ECS/Actor.h>  
@@ -70,7 +72,29 @@ void BindLuaActor(sol::state& p_luaState)
 
 		/* Behaviours relatives */
 		"GetBehaviour", [](Actor& p_this, const std::string& p_name) -> sol::table {
-			if (auto behaviour = p_this.GetBehaviour(p_name))
+			// First try matching by script name (stem without path or extension)
+			OvCore::ECS::Components::Behaviour* behaviour = nullptr;
+			for (auto& [key, b] : p_this.GetBehaviours())
+			{
+				if (b.GetScriptName() == p_name)
+				{
+					behaviour = &b;
+					break;
+				}
+			}
+
+			// Fall back to path-based match: try as-is, then with .lua appended if no extension given
+			if (!behaviour)
+			{
+				behaviour = p_this.GetBehaviour(p_name);
+			}
+
+			if (!behaviour && std::filesystem::path(p_name).extension().empty())
+			{
+				behaviour = p_this.GetBehaviour(p_name + ".lua");
+			}
+
+			if (behaviour)
 			{
 				if (auto script = behaviour->GetScript())
 				{

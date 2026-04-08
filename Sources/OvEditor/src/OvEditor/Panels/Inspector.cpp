@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <filesystem>
 #include <map>
 #include <ranges>
 
@@ -325,7 +326,7 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
 
 void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 {
-	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_behaviour.GetScriptName());
+	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(std::filesystem::path(p_behaviour.name).replace_extension().string());
 	header.closable = true;
 	header.CloseEvent += [&p_behaviour] {
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);

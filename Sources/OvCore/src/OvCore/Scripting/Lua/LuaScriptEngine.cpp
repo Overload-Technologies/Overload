@@ -179,7 +179,6 @@ std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultScriptContent(cons
 		"---@class " + p_name + " : Behaviour\n"
 		"local " + p_name + " =\n"
 		"{\n"
-		"    name = \"" + p_name + "\"\n"
 		"}\n"
 		"\n"
 		"function " + p_name + ":OnStart()\n"

@@ -462,6 +462,7 @@ namespace
 			auto* existingMaterial = p_materialRenderer.GetMaterialAtIndex(materialIndex);
 			if (p_preserveExistingAssignments &&
 				existingMaterial &&
+				existingMaterial->IsValid() &&
 				(!p_defaultMaterial || existingMaterial != p_defaultMaterial))
 			{
 				materialAssigned = true;
@@ -669,6 +670,51 @@ namespace
 		}
 
 		return materialAssigned;
+	}
+
+	void EnsureMaterialsForSceneActorsUsingModel(
+		OvEditor::Core::Context& p_context,
+		OvRendering::Resources::Model* p_model,
+		const std::string& p_modelPath,
+		OvCore::Resources::Material* p_defaultMaterial,
+		bool& p_shouldRescanAssets
+	)
+	{
+		if (!p_model)
+		{
+			return;
+		}
+
+		auto* currentScene = p_context.sceneManager.GetCurrentScene();
+		if (!currentScene)
+		{
+			return;
+		}
+
+		for (auto* actor : currentScene->GetActors())
+		{
+			if (!actor)
+			{
+				continue;
+			}
+
+			auto* modelRenderer = actor->GetComponent<OvCore::ECS::Components::CModelRenderer>();
+			auto* materialRenderer = actor->GetComponent<OvCore::ECS::Components::CMaterialRenderer>();
+
+			if (!modelRenderer || !materialRenderer || modelRenderer->GetModel() != p_model)
+			{
+				continue;
+			}
+
+			EnsureModelMaterials(
+				p_context,
+				*materialRenderer,
+				p_modelPath,
+				p_defaultMaterial,
+				true,
+				p_shouldRescanAssets
+			);
+		}
 	}
 
 	void RefreshAssetBrowserIfNeeded(OvEditor::Core::PanelsManager& p_panelsManager, bool p_shouldRescanAssets)
@@ -1325,6 +1371,13 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateActorWithModel(const s
 		p_path,
 		defaultMaterial,
 		false,
+		shouldRescanAssets
+	);
+	EnsureMaterialsForSceneActorsUsingModel(
+		m_context,
+		model,
+		p_path,
+		defaultMaterial,
 		shouldRescanAssets
 	);
 

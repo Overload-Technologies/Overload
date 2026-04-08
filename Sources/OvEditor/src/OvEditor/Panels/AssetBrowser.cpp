@@ -887,18 +887,18 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 		);
 	}
 
-	auto& refreshButton = CreateWidget<Buttons::Button>("Rescan assets");
+	auto& refreshButton = CreateWidget<Buttons::Button>("Refresh");
 	refreshButton.ClickedEvent += std::bind(&AssetBrowser::Refresh, this);
 	refreshButton.lineBreak = false;
 	refreshButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
 
-	auto& importButton = CreateWidget<Buttons::Button>("Import asset");
+	auto& importButton = CreateWidget<Buttons::Button>("Import Asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 	importButton.lineBreak = false;
 
-	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open in code editor");
-	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
+	auto& codeEditorButton = CreateWidget<Buttons::Button>("Edit Scripts");
+	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectScriptsPath))); };
 	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 
 	m_assetList = &CreateWidget<Layout::Group>();

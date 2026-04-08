@@ -17,9 +17,23 @@
 #include <sys/types.h>
 #endif
 
-#include <assert.h>
-#include <format>
-#include <memory>
+#include <cassert>
+
+namespace
+{
+	bool CommandExists(const std::string_view p_cmd)
+	{
+		const std::string cmd{p_cmd};
+#ifdef _WIN32
+		std::string checkCmd = "where " + cmd + " > NUL 2>&1";
+#else
+		std::string checkCmd = "command -v " + cmd + " > /dev/null 2>&1";
+#endif
+		FILE* pipe = popen(checkCmd.c_str(), "r");
+		if (!pipe) return false;
+		return WEXITSTATUS(pclose(pipe)) == 0;
+	}
+}
 
 void OvTools::Utils::SystemCalls::ShowInExplorer(const std::string & p_path)
 {
@@ -119,6 +133,11 @@ std::string OvTools::Utils::SystemCalls::GetPathToAppdata()
 
 bool OvTools::Utils::SystemCalls::ExecuteCommand(const std::string_view p_command)
 {
+	if (!CommandExists(p_command))
+	{
+		return false;
+	}
+
 #if defined(_WIN32)
 	STARTUPINFO startupInfo;
 	PROCESS_INFORMATION processInfo;

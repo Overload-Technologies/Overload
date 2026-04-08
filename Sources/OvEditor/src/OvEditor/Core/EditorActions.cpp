@@ -771,7 +771,7 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{
-			OVLOG_ERROR(std::format("Failed to open in code editor using command: {}", command));
+			OVLOG_ERROR(std::format("Failed to open in code editor using command: \"{}\"", command));
 			return false;
 		}
 	}

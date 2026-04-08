@@ -734,7 +734,7 @@ void OvEditor::Core::EditorActions::SaveMaterials()
 
 void OvEditor::Core::EditorActions::RegenerateScriptingProjectFiles()
 {
-	if (m_context.scriptEngine->CreateProjectFiles(true))
+	if (m_context.scriptEngine->CreateProjectFiles(m_context.projectFolder, true))
 	{
 		OVLOG_INFO("Lua symbol regenerated (.luarc.json created)");
 	}

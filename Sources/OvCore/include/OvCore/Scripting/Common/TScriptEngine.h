@@ -31,14 +31,12 @@ namespace OvCore::Scripting
 	public:
 		/**
 		* Constructor of the generic script engine
-		* @param p_scriptsFolder
-		* @param p_engineResourcesFolder
-		* @param p_projectRootFolder Root folder of the user's project
+		* @param p_projectAssetsPath
+		* @param p_engineAssetsPath
 		*/
 		TScriptEngine(
-			const std::filesystem::path& p_scriptsFolder,
-			const std::filesystem::path& p_engineResourcesFolder,
-			const std::filesystem::path& p_projectRootFolder = {}
+			const std::filesystem::path& p_projectAssetsPath,
+			const std::filesystem::path& p_engineAssetsPath
 		);
 
 		/**
@@ -48,9 +46,10 @@ namespace OvCore::Scripting
 
 		/**
 		* Create necessary project files.
+		* @param p_projectFolder Root folder of the user's project
 		* @param p_force
 		*/
-		bool CreateProjectFiles(bool p_force = false);
+		bool CreateProjectFiles(const std::filesystem::path& p_projectFolder, bool p_force = false);
 
 		/**
 		* Returns a list of valid extensions for scripts.

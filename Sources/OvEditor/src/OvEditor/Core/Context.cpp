@@ -149,14 +149,14 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(
 		projectAssetsPath,
-		engineAssetsPath,
-		projectFolder
+		engineAssetsPath
 	);
 
 	// Ensures lua project files are up-to-date. This is necessary for Lua's LSP to function properly.
 	// If Overload's installation directory changes, references to engine symbols would be lost,
 	// hence this invocation.
 	scriptEngine->CreateProjectFiles(
+		projectFolder,
 		Settings::EditorSettings::RegenerateScriptingProjectFilesOnStartup
 	);
 

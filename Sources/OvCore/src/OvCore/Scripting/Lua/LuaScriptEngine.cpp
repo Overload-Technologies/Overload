@@ -129,25 +129,23 @@ namespace
 
 template<>
 OvCore::Scripting::LuaScriptEngineBase::TScriptEngine(
-	const std::filesystem::path& p_scriptRootFolder,
-	const std::filesystem::path& p_engineResourcesFolder,
-	const std::filesystem::path& p_projectRootFolder
+	const std::filesystem::path& p_projectAssetsPath,
+	const std::filesystem::path& p_engineAssetsPath
 )
 {
-	m_context.scriptRootFolder = p_scriptRootFolder;
-	m_context.engineResourcesFolder = p_engineResourcesFolder;
-	m_context.projectRootFolder = p_projectRootFolder.empty() ? p_scriptRootFolder : p_projectRootFolder;
+	m_context.projectAssetsPath = p_projectAssetsPath;
+	m_context.engineAssetsPath = p_engineAssetsPath;
 }
 
 template<>
 OvCore::Scripting::LuaScriptEngineBase::~TScriptEngine() {}
 
 template<>
-bool OvCore::Scripting::LuaScriptEngineBase::CreateProjectFiles(bool p_force)
+bool OvCore::Scripting::LuaScriptEngineBase::CreateProjectFiles(const std::filesystem::path& p_projectFolder, bool p_force)
 {
 	// Create a .luarc.json file at the root of the user's project.
 	// This file will allow Lua LSPs to properly discover Lua symbols exposed by Overload.
-	const std::filesystem::path luarcPath = m_context.projectRootFolder / ".luarc.json";
+	const std::filesystem::path luarcPath = p_projectFolder / ".luarc.json";
 
 	// Prevent the .luarc.json from being overrided UNLESS p_force is used
 	if (!p_force && std::filesystem::exists(luarcPath))
@@ -156,7 +154,7 @@ bool OvCore::Scripting::LuaScriptEngineBase::CreateProjectFiles(bool p_force)
 	}
 
 	std::ofstream luarc(luarcPath);
-	luarc << GetLuarcFileContent(m_context.engineResourcesFolder);
+	luarc << GetLuarcFileContent(m_context.engineAssetsPath);
 	return true;
 }
 
@@ -197,7 +195,7 @@ void OvCore::Scripting::LuaScriptEngineBase::AddBehaviour(OvCore::ECS::Component
 
 	m_context.behaviours.push_back(std::ref(p_toAdd));
 
-	const auto scriptPath = m_context.scriptRootFolder / p_toAdd.name;
+	const auto scriptPath = m_context.projectAssetsPath / p_toAdd.name;
 
 	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, scriptPath.string()))
 	{
@@ -324,13 +322,11 @@ void OvCore::Scripting::LuaScriptEngineBase::OnTriggerExit(OvCore::ECS::Componen
 }
 
 OvCore::Scripting::LuaScriptEngine::LuaScriptEngine(
-	const std::filesystem::path& p_scriptsFolder,
-	const std::filesystem::path& p_engineResourcesFolder,
-	const std::filesystem::path& p_projectRootFolder
+	const std::filesystem::path& p_projectAssetsPath,
+	const std::filesystem::path& p_engineAssetsPath
 ) : OvCore::Scripting::LuaScriptEngineBase(
-	p_scriptsFolder,
-	p_engineResourcesFolder,
-	p_projectRootFolder
+	p_projectAssetsPath,
+	p_engineAssetsPath
 )
 {
 	CreateContext();
@@ -357,7 +353,7 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 
 	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
 		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
-			const auto scriptPath = m_context.scriptRootFolder / behaviour.get().name;
+			const auto scriptPath = m_context.projectAssetsPath / behaviour.get().name;
 			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), scriptPath.string()))
 			{
 				++m_context.errorCount;

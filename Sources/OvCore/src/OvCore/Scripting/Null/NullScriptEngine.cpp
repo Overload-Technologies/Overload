@@ -10,16 +10,15 @@
 
 template<>
 OvCore::Scripting::NullScriptEngineBase::TScriptEngine(
-	const std::filesystem::path& p_scriptRootFolder,
-	const std::filesystem::path& p_engineResourcesFolder,
-	const std::filesystem::path& p_projectRootFolder
+	const std::filesystem::path& p_projectAssetsPath,
+	const std::filesystem::path& p_engineAssetsPath
 ) {}
 
 template<>
 OvCore::Scripting::NullScriptEngineBase::~TScriptEngine() {}
 
 template<>
-bool OvCore::Scripting::NullScriptEngineBase::CreateProjectFiles(bool p_force) { return true; }
+bool OvCore::Scripting::NullScriptEngineBase::CreateProjectFiles(const std::filesystem::path& p_projectFolder, bool p_force) { return true; }
 
 template<>
 std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultExtension()

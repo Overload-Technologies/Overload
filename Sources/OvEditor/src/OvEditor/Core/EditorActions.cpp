@@ -4,10 +4,24 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cmath>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <ranges>
+#include <span>
+#include <sstream>
+#include <string_view>
+#include <unordered_map>
+
+#include <assimp/Importer.hpp>
+#include <assimp/material.h>
+#include <assimp/scene.h>
 #include <tinyxml2.h>
 
 #include <OvDebug/Logger.h>
@@ -18,9 +32,12 @@
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/Resources/Loaders/MaterialLoader.h>
+#include <OvCore/Resources/Material.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
+#include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/GameView.h>
 #include <OvEditor/Panels/Inspector.h>
@@ -37,6 +54,633 @@
 #include <OvWindowing/Dialogs/OpenFileDialog.h>
 #include <OvWindowing/Dialogs/MessageBox.h>
 #include <OvWindowing/Dialogs/SaveFileDialog.h>
+
+namespace
+{
+	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+	constexpr std::string_view kStandardShaderPath = ":Shaders\\Standard.ovfx";
+	constexpr std::string_view kMaterialsFolderName = "Materials";
+	constexpr std::string_view kTexturesFolderName = "Textures";
+	constexpr float kGammaExponent = 2.2f;
+	constexpr float kDefaultRoughness = 0.5f;
+	constexpr float kDefaultMetallic = 0.0f;
+
+	constexpr std::array<aiTextureType, 2> kAlbedoTextureTypes{
+		aiTextureType_BASE_COLOR,
+		aiTextureType_DIFFUSE
+	};
+
+	constexpr std::array<aiTextureType, 2> kNormalTextureTypes{
+		aiTextureType_NORMAL_CAMERA,
+		aiTextureType_NORMALS
+	};
+
+	constexpr std::array<aiTextureType, 1> kMetallicTextureTypes{
+		aiTextureType_METALNESS
+	};
+
+	constexpr std::array<aiTextureType, 1> kRoughnessTextureTypes{
+		aiTextureType_DIFFUSE_ROUGHNESS
+	};
+
+	constexpr std::array<aiTextureType, 2> kAmbientOcclusionTextureTypes{
+		aiTextureType_AMBIENT_OCCLUSION,
+		aiTextureType_LIGHTMAP
+	};
+
+	constexpr std::array<aiTextureType, 2> kEmissiveTextureTypes{
+		aiTextureType_EMISSION_COLOR,
+		aiTextureType_EMISSIVE
+	};
+
+	constexpr std::array<aiTextureType, 2> kHeightTextureTypes{
+		aiTextureType_DISPLACEMENT,
+		aiTextureType_HEIGHT
+	};
+
+	constexpr std::array<aiTextureType, 1> kOpacityTextureTypes{
+		aiTextureType_OPACITY
+	};
+
+	struct MaterialImportContext
+	{
+		const std::filesystem::path& projectAssetsPath;
+		const std::filesystem::path& texturesOutputFolder;
+		std::string modelStem;
+		std::string materialStem;
+		uint32_t materialIndex = 0;
+		std::unordered_map<std::string, std::string>& importedTextures;
+	};
+
+	float ToPerceptualColor(float p_linear)
+	{
+		return std::pow(std::clamp(p_linear, 0.0f, 1.0f), 1.0f / kGammaExponent);
+	}
+
+	std::string SanitizeFileName(std::string p_value)
+	{
+		for (char& c : p_value)
+		{
+			const bool alphaNum = std::isalnum(static_cast<unsigned char>(c)) != 0;
+			const bool validPunctuation = c == '_' || c == '-' || c == '.';
+
+			if (!alphaNum && !validPunctuation)
+			{
+				c = '_';
+			}
+		}
+
+		std::erase_if(p_value, [](char p_char) {
+			return p_char == '\0';
+		});
+
+		return p_value;
+	}
+
+	bool IsPathInside(const std::filesystem::path& p_child, const std::filesystem::path& p_parent)
+	{
+		const auto child = p_child.lexically_normal();
+		const auto parent = p_parent.lexically_normal();
+
+		const auto [parentMismatch, childMismatch] = std::mismatch(parent.begin(), parent.end(), child.begin(), child.end());
+		(void)childMismatch;
+
+		return parentMismatch == parent.end();
+	}
+
+	std::string ToProjectResourcePath(const std::filesystem::path& p_absolutePath, const std::filesystem::path& p_projectAssetsPath)
+	{
+		std::error_code errorCode;
+		auto relativePath = std::filesystem::relative(p_absolutePath, p_projectAssetsPath, errorCode);
+		if (errorCode || relativePath.empty())
+		{
+			relativePath = p_absolutePath.lexically_normal();
+		}
+
+		return OvTools::Utils::PathParser::MakeWindowsStyle(relativePath.string());
+	}
+
+	std::optional<std::filesystem::path> ResolveExternalTexturePath(
+		const aiString& p_texturePath,
+		const std::filesystem::path& p_modelDirectory
+	)
+	{
+		const std::string rawPath = p_texturePath.C_Str();
+		if (rawPath.empty() || rawPath.starts_with('*'))
+		{
+			return std::nullopt;
+		}
+
+		const auto normalized = OvTools::Utils::PathParser::MakeNonWindowsStyle(rawPath);
+		auto resolvedPath = std::filesystem::path{ normalized };
+
+		if (resolvedPath.is_relative())
+		{
+			resolvedPath = p_modelDirectory / resolvedPath;
+		}
+
+		resolvedPath = resolvedPath.lexically_normal();
+
+		if (std::filesystem::exists(resolvedPath) && std::filesystem::is_regular_file(resolvedPath))
+		{
+			return resolvedPath;
+		}
+
+		return std::nullopt;
+	}
+
+	bool WriteEmbeddedCompressedTexture(const aiTexture& p_texture, const std::filesystem::path& p_outputPath)
+	{
+		std::ofstream outputFile(p_outputPath, std::ios::binary | std::ios::trunc);
+		if (!outputFile)
+		{
+			return false;
+		}
+
+		const auto byteCount = static_cast<std::streamsize>(p_texture.mWidth);
+		outputFile.write(reinterpret_cast<const char*>(p_texture.pcData), byteCount);
+
+		return outputFile.good();
+	}
+
+	bool WriteEmbeddedRawTextureAsTga(const aiTexture& p_texture, const std::filesystem::path& p_outputPath)
+	{
+		std::ofstream outputFile(p_outputPath, std::ios::binary | std::ios::trunc);
+		if (!outputFile)
+		{
+			return false;
+		}
+
+		std::array<uint8_t, 18> header{};
+		header[2] = 2; // Uncompressed true-color image.
+
+		header[12] = static_cast<uint8_t>(p_texture.mWidth & 0xFF);
+		header[13] = static_cast<uint8_t>((p_texture.mWidth >> 8) & 0xFF);
+		header[14] = static_cast<uint8_t>(p_texture.mHeight & 0xFF);
+		header[15] = static_cast<uint8_t>((p_texture.mHeight >> 8) & 0xFF);
+		header[16] = 32; // 32-bit BGRA.
+		header[17] = 0x20; // Top-left origin.
+
+		outputFile.write(reinterpret_cast<const char*>(header.data()), static_cast<std::streamsize>(header.size()));
+
+		const auto texelCount = static_cast<uint64_t>(p_texture.mWidth) * static_cast<uint64_t>(p_texture.mHeight);
+		const auto byteCount = static_cast<std::streamsize>(texelCount * sizeof(aiTexel));
+		outputFile.write(reinterpret_cast<const char*>(p_texture.pcData), byteCount);
+
+		return outputFile.good();
+	}
+
+	std::string GenerateTextureFileName(
+		const MaterialImportContext& p_context,
+		const std::string_view p_semantic,
+		const std::string_view p_extension
+	)
+	{
+		return std::format(
+			"{}_{}_{}_{}.{}",
+			p_context.modelStem,
+			p_context.materialStem,
+			p_context.materialIndex,
+			p_semantic,
+			p_extension
+		);
+	}
+
+	std::optional<std::string> ImportTextureToProjectAssets(
+		const aiScene& p_scene,
+		const aiString& p_texturePath,
+		const std::filesystem::path& p_modelDirectory,
+		const std::string_view p_semantic,
+		MaterialImportContext& p_context
+	)
+	{
+		if (p_texturePath.length == 0)
+		{
+			return std::nullopt;
+		}
+
+		if (const auto embeddedTexture = p_scene.GetEmbeddedTexture(p_texturePath.C_Str()))
+		{
+			const std::string cacheKey = std::string{ "embedded:" } + p_texturePath.C_Str();
+			if (const auto cached = p_context.importedTextures.find(cacheKey); cached != p_context.importedTextures.end())
+			{
+				return cached->second;
+			}
+
+			std::string extension;
+			if (embeddedTexture->mHeight == 0)
+			{
+				std::string formatHint{ std::begin(embeddedTexture->achFormatHint), std::end(embeddedTexture->achFormatHint) };
+				if (const auto nullPos = formatHint.find('\0'); nullPos != std::string::npos)
+				{
+					formatHint.resize(nullPos);
+				}
+
+				extension = SanitizeFileName(formatHint);
+				std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char p_char) {
+					return static_cast<char>(std::tolower(p_char));
+				});
+				if (extension.empty())
+				{
+					extension = "bin";
+				}
+			}
+			else
+			{
+				extension = "tga";
+			}
+
+			auto outputPath = p_context.texturesOutputFolder / GenerateTextureFileName(p_context, p_semantic, extension);
+			if (std::filesystem::exists(outputPath))
+			{
+				const auto resourcePath = ToProjectResourcePath(outputPath, p_context.projectAssetsPath);
+				p_context.importedTextures.emplace(cacheKey, resourcePath);
+				return resourcePath;
+			}
+
+			const bool writeSuccess =
+				embeddedTexture->mHeight == 0 ?
+				WriteEmbeddedCompressedTexture(*embeddedTexture, outputPath) :
+				WriteEmbeddedRawTextureAsTga(*embeddedTexture, outputPath);
+
+			if (!writeSuccess)
+			{
+				OVLOG_WARNING("Failed to extract embedded texture from model: " + outputPath.string());
+				return std::nullopt;
+			}
+
+			const auto resourcePath = ToProjectResourcePath(outputPath, p_context.projectAssetsPath);
+			p_context.importedTextures.emplace(cacheKey, resourcePath);
+			return resourcePath;
+		}
+
+		if (const auto sourcePath = ResolveExternalTexturePath(p_texturePath, p_modelDirectory))
+		{
+			const auto normalizedSource = sourcePath->lexically_normal();
+			const std::string cacheKey = std::string{ "file:" } + normalizedSource.string();
+			if (const auto cached = p_context.importedTextures.find(cacheKey); cached != p_context.importedTextures.end())
+			{
+				return cached->second;
+			}
+
+			if (IsPathInside(normalizedSource, p_context.projectAssetsPath))
+			{
+				const auto resourcePath = ToProjectResourcePath(normalizedSource, p_context.projectAssetsPath);
+				p_context.importedTextures.emplace(cacheKey, resourcePath);
+				return resourcePath;
+			}
+
+			auto extension = normalizedSource.extension().string();
+			if (!extension.empty() && extension.front() == '.')
+			{
+				extension = extension.substr(1);
+			}
+			extension = SanitizeFileName(extension);
+			if (extension.empty())
+			{
+				extension = "bin";
+			}
+
+			auto outputPath = p_context.texturesOutputFolder / GenerateTextureFileName(p_context, p_semantic, extension);
+			if (std::filesystem::exists(outputPath))
+			{
+				const auto resourcePath = ToProjectResourcePath(outputPath, p_context.projectAssetsPath);
+				p_context.importedTextures.emplace(cacheKey, resourcePath);
+				return resourcePath;
+			}
+
+			std::error_code errorCode;
+			std::filesystem::copy_file(normalizedSource, outputPath, std::filesystem::copy_options::none, errorCode);
+			if (errorCode)
+			{
+				OVLOG_WARNING("Failed to import texture from model: " + normalizedSource.string());
+				return std::nullopt;
+			}
+
+			const auto resourcePath = ToProjectResourcePath(outputPath, p_context.projectAssetsPath);
+			p_context.importedTextures.emplace(cacheKey, resourcePath);
+			return resourcePath;
+		}
+
+		return std::nullopt;
+	}
+
+	std::optional<std::string> TryImportMaterialTexture(
+		const aiScene& p_scene,
+		aiMaterial& p_material,
+		std::span<const aiTextureType> p_textureTypes,
+		const std::filesystem::path& p_modelDirectory,
+		const std::string_view p_semantic,
+		MaterialImportContext& p_context
+	)
+	{
+		for (const auto textureType : p_textureTypes)
+		{
+			if (p_material.GetTextureCount(textureType) == 0)
+			{
+				continue;
+			}
+
+			aiString texturePath;
+			if (p_material.GetTexture(textureType, 0, &texturePath) == AI_SUCCESS)
+			{
+				if (auto resourcePath = ImportTextureToProjectAssets(p_scene, texturePath, p_modelDirectory, p_semantic, p_context))
+				{
+					return resourcePath;
+				}
+			}
+		}
+
+		return std::nullopt;
+	}
+
+	std::filesystem::path ResolveRealPath(
+		const std::string& p_resourcePath,
+		const std::filesystem::path& p_projectAssetsPath,
+		const std::filesystem::path& p_engineAssetsPath
+	)
+	{
+		const auto normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_resourcePath);
+		if (!normalizedPath.empty() && normalizedPath.front() == ':')
+		{
+			return (p_engineAssetsPath / normalizedPath.substr(1)).lexically_normal();
+		}
+
+		return (p_projectAssetsPath / normalizedPath).lexically_normal();
+	}
+
+	bool EnsureModelMaterials(
+		OvEditor::Core::Context& p_context,
+		OvCore::ECS::Components::CMaterialRenderer& p_materialRenderer,
+		const std::string& p_modelPath,
+		OvCore::Resources::Material* p_defaultMaterial,
+		bool p_preserveExistingAssignments,
+		bool& p_shouldRescanAssets
+	)
+	{
+		const bool isEngineModel = !p_modelPath.empty() && p_modelPath.front() == ':';
+		auto* model = p_context.modelManager[p_modelPath];
+		if (!model || model->GetMaterialNames().empty() || isEngineModel)
+		{
+			return false;
+		}
+
+		const auto modelRealPath = ResolveRealPath(p_modelPath, p_context.projectAssetsPath, p_context.engineAssetsPath);
+		const auto modelDirectory = modelRealPath.parent_path();
+		auto modelStem = SanitizeFileName(modelRealPath.stem().string());
+		if (modelStem.empty())
+		{
+			modelStem = "Model";
+		}
+
+		const auto materialsOutputFolder = p_context.projectAssetsPath / kMaterialsFolderName / modelStem;
+		const auto texturesOutputFolder = p_context.projectAssetsPath / kTexturesFolderName / modelStem;
+		const auto ensureDirectory = [&p_shouldRescanAssets](const std::filesystem::path& p_directory)
+		{
+			std::error_code errorCode;
+			p_shouldRescanAssets |= std::filesystem::create_directories(p_directory, errorCode);
+			if (errorCode)
+			{
+				OVLOG_WARNING("Failed to create directory: " + p_directory.string());
+			}
+		};
+		ensureDirectory(materialsOutputFolder);
+		ensureDirectory(texturesOutputFolder);
+
+		auto* standardShader = p_context.shaderManager[std::string{ kStandardShaderPath }];
+		std::unordered_map<std::string, std::string> importedTextures;
+		Assimp::Importer importer;
+		const aiScene* importedScene = nullptr;
+		bool hasTriedSceneImport = false;
+
+		bool materialAssigned = false;
+		const size_t materialCount = std::min(model->GetMaterialNames().size(), static_cast<size_t>(kMaxMaterialCount));
+
+		for (size_t i = 0; i < materialCount; ++i)
+		{
+			const auto materialIndex = static_cast<uint8_t>(i);
+			auto* existingMaterial = p_materialRenderer.GetMaterialAtIndex(materialIndex);
+			if (p_preserveExistingAssignments &&
+				existingMaterial &&
+				(!p_defaultMaterial || existingMaterial != p_defaultMaterial))
+			{
+				materialAssigned = true;
+				continue;
+			}
+
+			const auto materialName = model->GetMaterialNames().at(i).empty() ?
+				std::format("Material_{}", i) :
+				model->GetMaterialNames().at(i);
+
+			auto materialStem = SanitizeFileName(materialName);
+			if (materialStem.empty())
+			{
+				materialStem = std::format("Material_{}", i);
+			}
+			const auto materialFileName = std::format("{}_{}.ovmat", materialStem, i);
+			const auto materialAbsolutePath = materialsOutputFolder / materialFileName;
+			const auto materialResourcePath = ToProjectResourcePath(materialAbsolutePath, p_context.projectAssetsPath);
+			const bool materialAlreadyExists = std::filesystem::exists(materialAbsolutePath);
+
+			if (!materialAlreadyExists && standardShader)
+			{
+				if (!hasTriedSceneImport)
+				{
+					importedScene = importer.ReadFile(modelRealPath.string(), 0);
+					if (!importedScene || importedScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !importedScene->mRootNode)
+					{
+						importedScene = nullptr;
+					}
+
+					hasTriedSceneImport = true;
+				}
+
+				if (importedScene && i < importedScene->mNumMaterials && importedScene->mMaterials[i])
+				{
+					OvCore::Resources::Material generatedMaterial;
+					generatedMaterial.SetShader(standardShader);
+
+					MaterialImportContext importContext{
+						p_context.projectAssetsPath,
+						texturesOutputFolder,
+						modelStem,
+						materialStem,
+						static_cast<uint32_t>(i),
+						importedTextures
+					};
+
+					auto& importedMaterial = *importedScene->mMaterials[i];
+
+					auto bindTexture = [&p_context, &generatedMaterial, &importedMaterial, &importContext, &modelDirectory, &importedScene]
+					(
+						const std::string_view p_uniformName,
+						const std::string_view p_semantic,
+						std::span<const aiTextureType> p_textureTypes,
+						const std::optional<std::string_view> p_feature = std::nullopt
+					) -> bool
+					{
+						if (const auto textureResourcePath = TryImportMaterialTexture(
+							*importedScene,
+							importedMaterial,
+							p_textureTypes,
+							modelDirectory,
+							p_semantic,
+							importContext
+						))
+						{
+							if (auto* texture = p_context.textureManager.GetResource(textureResourcePath.value()))
+							{
+								if (generatedMaterial.TrySetProperty(std::string{ p_uniformName }, texture))
+								{
+									if (p_feature.has_value())
+									{
+										generatedMaterial.AddFeature(std::string{ p_feature.value() });
+									}
+
+									return true;
+								}
+							}
+						}
+
+						return false;
+					};
+
+					const bool hasAlbedoTexture = bindTexture("u_AlbedoMap", "albedo", kAlbedoTextureTypes);
+					const bool hasMetallicTexture = bindTexture("u_MetallicMap", "metallic", kMetallicTextureTypes);
+					const bool hasRoughnessTexture = bindTexture("u_RoughnessMap", "roughness", kRoughnessTextureTypes);
+					bindTexture("u_AmbientOcclusionMap", "ao", kAmbientOcclusionTextureTypes);
+					bindTexture("u_NormalMap", "normal", kNormalTextureTypes, "NORMAL_MAPPING");
+					bindTexture("u_HeightMap", "height", kHeightTextureTypes, "PARALLAX_MAPPING");
+
+					if (bindTexture("u_EmissiveMap", "emissive", kEmissiveTextureTypes))
+					{
+						generatedMaterial.TrySetProperty("u_EmissiveIntensity", 1.0f);
+					}
+
+					bindTexture("u_MaskMap", "opacity", kOpacityTextureTypes);
+
+					aiColor4D albedoColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+					bool hasAlbedoColor = false;
+
+#ifdef AI_MATKEY_BASE_COLOR
+					hasAlbedoColor = importedMaterial.Get(AI_MATKEY_BASE_COLOR, albedoColor) == AI_SUCCESS;
+#endif
+
+					if (!hasAlbedoColor)
+					{
+						aiColor3D diffuseColor{ 1.0f, 1.0f, 1.0f };
+						if (importedMaterial.Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+						{
+							albedoColor = aiColor4D{ diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f };
+							hasAlbedoColor = true;
+						}
+					}
+
+					float opacity = 1.0f;
+					if (importedMaterial.Get(AI_MATKEY_OPACITY, opacity) != AI_SUCCESS)
+					{
+						opacity = 1.0f;
+					}
+
+					const auto finalAlpha = std::clamp(albedoColor.a * opacity, 0.0f, 1.0f);
+
+					if (!hasAlbedoTexture)
+					{
+						if (hasAlbedoColor || finalAlpha < 1.0f)
+						{
+							generatedMaterial.TrySetProperty(
+								"u_Albedo",
+								OvMaths::FVector4{
+									ToPerceptualColor(albedoColor.r),
+									ToPerceptualColor(albedoColor.g),
+									ToPerceptualColor(albedoColor.b),
+									finalAlpha
+								}
+							);
+						}
+					}
+					else if (finalAlpha < 1.0f)
+					{
+						generatedMaterial.TrySetProperty("u_Albedo", OvMaths::FVector4{ 1.0f, 1.0f, 1.0f, finalAlpha });
+					}
+
+					float metallicValue = hasMetallicTexture ? 1.0f : kDefaultMetallic;
+					generatedMaterial.TrySetProperty("u_Metallic", metallicValue);
+
+					float roughnessValue = hasRoughnessTexture ? 1.0f : kDefaultRoughness;
+
+#ifdef AI_MATKEY_METALLIC_FACTOR
+					float metallicFactor = metallicValue;
+					if (importedMaterial.Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS)
+					{
+						metallicValue = std::clamp(metallicFactor, 0.0f, 1.0f);
+						generatedMaterial.TrySetProperty("u_Metallic", metallicValue);
+					}
+#endif
+
+#ifdef AI_MATKEY_ROUGHNESS_FACTOR
+					float roughnessFactor = roughnessValue;
+					if (importedMaterial.Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == AI_SUCCESS)
+					{
+						roughnessValue = std::clamp(roughnessFactor, 0.0f, 1.0f);
+					}
+#endif
+
+					if (!hasRoughnessTexture && roughnessValue >= 0.99f)
+					{
+						roughnessValue = kDefaultRoughness;
+					}
+
+					generatedMaterial.TrySetProperty("u_Roughness", roughnessValue);
+
+					aiColor3D emissiveColor{ 0.0f, 0.0f, 0.0f };
+					if (importedMaterial.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+					{
+						generatedMaterial.TrySetProperty(
+							"u_EmissiveColor",
+							OvMaths::FVector3{
+								std::max(0.0f, emissiveColor.r),
+								std::max(0.0f, emissiveColor.g),
+								std::max(0.0f, emissiveColor.b)
+							}
+						);
+
+						if (emissiveColor.r > 0.0f || emissiveColor.g > 0.0f || emissiveColor.b > 0.0f)
+						{
+							generatedMaterial.TrySetProperty("u_EmissiveIntensity", 1.0f);
+						}
+					}
+
+					OvCore::Resources::Loaders::MaterialLoader::Save(generatedMaterial, materialAbsolutePath.string());
+					p_shouldRescanAssets |= std::filesystem::exists(materialAbsolutePath);
+				}
+			}
+
+			if (auto* generatedOrExistingMaterial = p_context.materialManager.GetResource(materialResourcePath))
+			{
+				p_materialRenderer.SetMaterialAtIndex(materialIndex, *generatedOrExistingMaterial);
+				materialAssigned = true;
+			}
+		}
+
+		if (!materialAssigned && p_defaultMaterial)
+		{
+			p_materialRenderer.FillWithMaterial(*p_defaultMaterial);
+		}
+
+		return materialAssigned;
+	}
+
+	void RefreshAssetBrowserIfNeeded(OvEditor::Core::PanelsManager& p_panelsManager, bool p_shouldRescanAssets)
+	{
+		if (!p_shouldRescanAssets)
+		{
+			return;
+		}
+
+		p_panelsManager.GetPanelAs<OvEditor::Panels::AssetBrowser>("Asset Browser").Refresh();
+	}
+}
 
 OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& p_panelsManager) :
 	m_context(p_context), 
@@ -80,7 +724,43 @@ void OvEditor::Core::EditorActions::LoadSceneFromDisk(const std::string& p_path,
 	if (GetCurrentEditorMode() != EEditorMode::EDIT)
 		StopPlaying();
 
-	m_context.sceneManager.LoadScene(p_path, p_absolute);
+	if (!m_context.sceneManager.LoadScene(p_path, p_absolute))
+	{
+		return;
+	}
+
+	bool shouldRescanAssets = false;
+	const auto defaultMaterial = m_context.materialManager[std::string{ kDefaultMaterialPath }];
+
+	if (auto* currentScene = m_context.sceneManager.GetCurrentScene())
+	{
+		for (auto* actor : currentScene->GetActors())
+		{
+			if (!actor)
+			{
+				continue;
+			}
+
+			auto* modelRenderer = actor->GetComponent<OvCore::ECS::Components::CModelRenderer>();
+			auto* materialRenderer = actor->GetComponent<OvCore::ECS::Components::CMaterialRenderer>();
+			if (!modelRenderer || !materialRenderer || !modelRenderer->GetModel())
+			{
+				continue;
+			}
+
+			EnsureModelMaterials(
+				m_context,
+				*materialRenderer,
+				modelRenderer->GetModel()->path,
+				defaultMaterial,
+				true,
+				shouldRescanAssets
+			);
+		}
+	}
+
+	RefreshAssetBrowserIfNeeded(m_panelsManager, shouldRescanAssets);
+
 	OVLOG_INFO("Scene loaded from disk: " + m_context.sceneManager.GetCurrentSceneSourcePath());
 	m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View").Focus();
 }
@@ -620,15 +1300,35 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateActorWithModel(const s
 	auto& instance = CreateEmptyActor(false, p_parent, p_name);
 
 	auto& modelRenderer = instance.AddComponent<OvCore::ECS::Components::CModelRenderer>();
+	auto& materialRenderer = instance.AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
 
 	const auto model = m_context.modelManager[p_path];
 	if (model)
+	{
 		modelRenderer.SetModel(model);
+	}
 
-	auto& materialRenderer = instance.AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
-    const auto material = m_context.materialManager[":Materials\\Default.ovmat"];
-	if (material)
-		materialRenderer.FillWithMaterial(*material);
+	const auto defaultMaterial = m_context.materialManager[std::string{ kDefaultMaterialPath }];
+	if (defaultMaterial)
+	{
+		materialRenderer.FillWithMaterial(*defaultMaterial);
+	}
+	else
+	{
+		materialRenderer.RemoveAllMaterials();
+	}
+
+	bool shouldRescanAssets = false;
+	EnsureModelMaterials(
+		m_context,
+		materialRenderer,
+		p_path,
+		defaultMaterial,
+		false,
+		shouldRescanAssets
+	);
+
+	RefreshAssetBrowserIfNeeded(m_panelsManager, shouldRescanAssets);
 
 	if (p_focusOnCreation)
 		SelectActor(instance);

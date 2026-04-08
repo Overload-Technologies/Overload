@@ -70,7 +70,6 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	projectFile(Utils::ProjectManagement::GetProjectFile(p_projectFolder)),
 	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
 	projectAssetsPath(projectFolder / "Assets"),
-	projectScriptsPath(projectFolder / "Scripts"),
 	editorAssetsPath(std::filesystem::current_path() / "Data" / "Editor"),
 	sceneManager(projectAssetsPath.string()),
 	projectSettings(projectFile.string())
@@ -149,8 +148,9 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(
-		projectScriptsPath,
-		engineAssetsPath
+		projectAssetsPath,
+		engineAssetsPath,
+		projectFolder
 	);
 
 	// Ensures lua project files are up-to-date. This is necessary for Lua's LSP to function properly.

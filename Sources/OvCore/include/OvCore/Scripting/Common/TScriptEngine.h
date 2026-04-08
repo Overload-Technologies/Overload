@@ -33,10 +33,12 @@ namespace OvCore::Scripting
 		* Constructor of the generic script engine
 		* @param p_scriptsFolder
 		* @param p_engineResourcesFolder
+		* @param p_luarcFolder Folder where the .luarc.json will be written (defaults to p_scriptsFolder)
 		*/
 		TScriptEngine(
 			const std::filesystem::path& p_scriptsFolder,
-			const std::filesystem::path& p_engineResourcesFolder
+			const std::filesystem::path& p_engineResourcesFolder,
+			const std::filesystem::path& p_luarcFolder = {}
 		);
 
 		/**

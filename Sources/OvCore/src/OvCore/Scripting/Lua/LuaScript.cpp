@@ -33,3 +33,19 @@ void OvCore::Scripting::LuaScript::SetOwner(OvCore::ECS::Actor& p_owner)
 {
 	(*m_context.table)["owner"] = &p_owner;
 }
+
+std::string OvCore::Scripting::LuaScript::GetScriptName() const
+{
+	if (!m_context.table || !m_context.table->valid())
+	{
+		return {};
+	}
+
+	const auto nameField = (*m_context.table)["name"];
+	if (nameField.valid() && nameField.is<std::string>())
+	{
+		return nameField.get<std::string>();
+	}
+
+	return {};
+}

@@ -130,11 +130,13 @@ namespace
 template<>
 OvCore::Scripting::LuaScriptEngineBase::TScriptEngine(
 	const std::filesystem::path& p_scriptRootFolder,
-	const std::filesystem::path& p_engineResourcesFolder
+	const std::filesystem::path& p_engineResourcesFolder,
+	const std::filesystem::path& p_luarcFolder
 )
 {
 	m_context.scriptRootFolder = p_scriptRootFolder;
 	m_context.engineResourcesFolder = p_engineResourcesFolder;
+	m_context.luarcFolder = p_luarcFolder.empty() ? p_scriptRootFolder : p_luarcFolder;
 }
 
 template<>
@@ -143,9 +145,9 @@ OvCore::Scripting::LuaScriptEngineBase::~TScriptEngine() {}
 template<>
 bool OvCore::Scripting::LuaScriptEngineBase::CreateProjectFiles(bool p_force)
 {
-	// Create a .luarc.json file inside the project's script folder.
+	// Create a .luarc.json file at the root of the user's project.
 	// This file will allow Lua LSPs to properly discover Lua symbols exposed by Overload.
-	const std::filesystem::path luarcPath = m_context.scriptRootFolder / ".luarc.json";
+	const std::filesystem::path luarcPath = m_context.luarcFolder / ".luarc.json";
 
 	// Prevent the .luarc.json from being overrided UNLESS p_force is used
 	if (!p_force && std::filesystem::exists(luarcPath))
@@ -173,7 +175,20 @@ std::vector<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValidExtensi
 template<>
 std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultScriptContent(const std::string& p_name)
 {
-	return "---@class " + p_name + " : Behaviour\nlocal " + p_name + " =\n{\n}\n\nfunction " + p_name + ":OnStart()\nend\n\nfunction " + p_name + ":OnUpdate(deltaTime)\nend\n\nreturn " + p_name;
+	return
+		"---@class " + p_name + " : Behaviour\n"
+		"local " + p_name + " =\n"
+		"{\n"
+		"    name = \"" + p_name + "\"\n"
+		"}\n"
+		"\n"
+		"function " + p_name + ":OnStart()\n"
+		"end\n"
+		"\n"
+		"function " + p_name + ":OnUpdate(deltaTime)\n"
+		"end\n"
+		"\n"
+		"return " + p_name;
 }
 
 template<>
@@ -183,8 +198,7 @@ void OvCore::Scripting::LuaScriptEngineBase::AddBehaviour(OvCore::ECS::Component
 
 	m_context.behaviours.push_back(std::ref(p_toAdd));
 
-	const auto scriptFileName = p_toAdd.name + GetDefaultExtension();
-	const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
+	const auto scriptPath = m_context.scriptRootFolder / p_toAdd.name;
 
 	if (!RegisterBehaviour(*m_context.luaState, p_toAdd, scriptPath.string()))
 	{
@@ -312,10 +326,12 @@ void OvCore::Scripting::LuaScriptEngineBase::OnTriggerExit(OvCore::ECS::Componen
 
 OvCore::Scripting::LuaScriptEngine::LuaScriptEngine(
 	const std::filesystem::path& p_scriptsFolder,
-	const std::filesystem::path& p_engineResourcesFolder
+	const std::filesystem::path& p_engineResourcesFolder,
+	const std::filesystem::path& p_luarcFolder
 ) : OvCore::Scripting::LuaScriptEngineBase(
 	p_scriptsFolder,
-	p_engineResourcesFolder
+	p_engineResourcesFolder,
+	p_luarcFolder
 )
 {
 	CreateContext();
@@ -342,8 +358,7 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 
 	std::for_each(m_context.behaviours.begin(), m_context.behaviours.end(),
 		[this](std::reference_wrapper<OvCore::ECS::Components::Behaviour> behaviour) {
-			const auto scriptFileName = behaviour.get().name + GetDefaultExtension();
-			const auto scriptPath = m_context.scriptRootFolder / scriptFileName;
+			const auto scriptPath = m_context.scriptRootFolder / behaviour.get().name;
 			if (!RegisterBehaviour(*m_context.luaState, behaviour.get(), scriptPath.string()))
 			{
 				++m_context.errorCount;

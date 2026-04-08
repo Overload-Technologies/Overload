@@ -50,7 +50,6 @@ namespace OvGame::Core
 	public:
 		const std::filesystem::path engineAssetsPath;
 		const std::filesystem::path projectAssetsPath;
-		const std::filesystem::path projectScriptsPath;
 
 		std::unique_ptr<OvWindowing::Context::Device> device;
 		std::unique_ptr<OvWindowing::Window> window;

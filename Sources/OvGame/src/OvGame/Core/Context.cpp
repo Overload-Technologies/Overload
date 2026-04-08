@@ -49,7 +49,6 @@ std::array<int, 4> CalculateOptimalWindowSizeAndPosition(
 OvGame::Core::Context::Context() :
 	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
 	projectAssetsPath(std::filesystem::current_path() / "Data" / "User" / "Assets"),
-	projectScriptsPath(std::filesystem::current_path() / "Data" / "User" / "Scripts"),
 	projectSettings((std::filesystem::current_path() / "Data" / "User" / "Game.ini").string()),
 	sceneManager(projectAssetsPath.string())
 {
@@ -129,7 +128,7 @@ OvGame::Core::Context::Context() :
 
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(
-		projectScriptsPath,
+		projectAssetsPath,
 		engineAssetsPath
 	);
 

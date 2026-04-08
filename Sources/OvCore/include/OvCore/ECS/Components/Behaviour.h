@@ -43,6 +43,12 @@ namespace OvCore::ECS::Components
 		virtual std::string GetTypeName() override;
 
 		/**
+		* Returns the script's display name, derived from the lua table's "name" field.
+		* Falls back to the filename stem of the script path if the table name is unavailable.
+		*/
+		std::string GetScriptName() const;
+
+		/**
 		* Sets the script associated with this behaviour
 		* @param p_script
 		*/

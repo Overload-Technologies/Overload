@@ -32,6 +32,7 @@ namespace OvCore::Scripting
 		std::unique_ptr<sol::state> luaState;
 		std::filesystem::path scriptRootFolder;
 		std::filesystem::path engineResourcesFolder;
+		std::filesystem::path luarcFolder;
 		std::vector<std::reference_wrapper<OvCore::ECS::Components::Behaviour>> behaviours;
 		uint32_t errorCount;
 	};
@@ -48,10 +49,12 @@ namespace OvCore::Scripting
 		* Constructor of the lua script engine
 		* @param p_scriptsFolder
 		* @param p_engineResourcesFolder
+		* @param p_luarcFolder Folder where the .luarc.json will be written (defaults to p_scriptsFolder)
 		*/
 		LuaScriptEngine(
 			const std::filesystem::path& p_scriptsFolder,
-			const std::filesystem::path& p_engineResourcesFolder
+			const std::filesystem::path& p_engineResourcesFolder,
+			const std::filesystem::path& p_luarcFolder = {}
 		);
 
 		/**

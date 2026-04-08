@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <string>
+
 #include <OvCore/Scripting/Common/EScriptingLanguage.h>
 
 namespace OvCore::Scripting
@@ -34,6 +36,12 @@ namespace OvCore::Scripting
 		* @return True if the context is valid, false otherwise.
 		*/
 		bool IsValid() const;
+
+		/**
+		* Returns the name of the script as defined in the script itself.
+		* Returns an empty string if the script doesn't define a name.
+		*/
+		virtual std::string GetScriptName() const { return ""; }
 
 		/**
 		* Return the context of the script

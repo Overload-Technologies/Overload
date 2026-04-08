@@ -295,11 +295,7 @@ void OvEditor::Panels::Inspector::_DrawAddScriptSection()
 	_UpdateAddScriptButton();
 
 	m_addScriptButton->ClickedEvent += [this] {
-		const std::string defaultScriptExtension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
-
-		const auto realScriptPath =
-			EDITOR_CONTEXT(projectScriptsPath) /
-			std::format("{}{}", m_selectedScript, defaultScriptExtension);
+		const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
 
 		// Ensure that the script is a valid one
 		if (std::filesystem::exists(realScriptPath))
@@ -329,7 +325,7 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
 
 void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 {
-	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_behaviour.name);
+	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_behaviour.GetScriptName());
 	header.closable = true;
 	header.CloseEvent += [&p_behaviour] {
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);
@@ -358,11 +354,7 @@ void OvEditor::Panels::Inspector::_UpdateAddScriptButton()
 {
 	OVASSERT(m_addScriptButton.has_value(), "Add script button not set");
 
-	const std::string defaultScriptExtension = OVSERVICE(OvCore::Scripting::ScriptEngine).GetDefaultExtension();
-
-	const auto realScriptPath =
-		EDITOR_CONTEXT(projectScriptsPath) /
-		std::format("{}{}", m_selectedScript, defaultScriptExtension);
+	const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
 
 	const bool canAdd =
 		std::filesystem::exists(realScriptPath) &&

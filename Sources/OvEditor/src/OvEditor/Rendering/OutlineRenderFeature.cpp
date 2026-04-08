@@ -242,15 +242,19 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 
 	for (auto mesh : p_model.GetMeshes())
 	{
+		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
 			m_stencilFillMaterial
 		);
+		const bool originalMaterialSupportsSkinning =
+			!originalMaterial || originalMaterial->SupportsFeature(kSkinningFeatureName);
 		const bool skinningEnabled =
 			hasSkinning &&
 			mesh->HasSkinningData() &&
+			originalMaterialSupportsSkinning &&
 			targetMaterial.SupportsFeature(kSkinningFeatureName);
 
 		auto stateMask = targetMaterial.GenerateStateMask();
@@ -289,15 +293,19 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 
 	for (auto mesh : p_model.GetMeshes())
 	{
+		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
 			m_outlineMaterial
 		);
+		const bool originalMaterialSupportsSkinning =
+			!originalMaterial || originalMaterial->SupportsFeature(kSkinningFeatureName);
 		const bool skinningEnabled =
 			hasSkinning &&
 			mesh->HasSkinningData() &&
+			originalMaterialSupportsSkinning &&
 			targetMaterial.SupportsFeature(kSkinningFeatureName);
 
 		// Set the outline color property if it exists

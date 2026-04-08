@@ -874,7 +874,7 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Edit Scripts");
-	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectScriptsPath))); };
+	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
 	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 
 	m_assetList = &CreateWidget<Layout::Group>();

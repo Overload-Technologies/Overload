@@ -11,6 +11,7 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
+#include <OvCore/Rendering/SkinningDrawableDescriptor.h>
 #include <OvCore/Rendering/SkinningUtils.h>
 
 #include <OvEditor/Core/EditorActions.h>
@@ -24,6 +25,7 @@
 namespace
 {
 	const std::string kPickingPassName = "PICKING_PASS";
+	const std::string kSkinningFeatureName = std::string{ OvCore::Rendering::SkinningUtils::kFeatureName };
 
 	void PreparePickingMaterial(
 		const OvCore::ECS::Actor& p_actor,
@@ -168,9 +170,10 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableModels(
 		{
 			const auto& actor = drawable.template GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDrawableDescriptor>().actor;
 			const auto skinnedRenderer = actor.template GetComponent<OvCore::ECS::Components::CSkinnedMeshRenderer>();
-			const bool hasSkinning = OvCore::Rendering::SkinningUtils::IsSkinningActive(skinnedRenderer);
-			const bool skinningEnabled = hasSkinning && drawable.material &&
-				drawable.material->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
+			const bool hasSkinningDescriptor = drawable.template HasDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>();
+			const bool skinningEnabled = hasSkinningDescriptor &&
+				skinnedRenderer &&
+				m_actorPickingFallbackMaterial.SupportsFeature(kSkinningFeatureName);
 
 			if (skinningEnabled)
 			{

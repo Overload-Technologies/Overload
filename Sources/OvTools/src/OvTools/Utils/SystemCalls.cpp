@@ -10,9 +10,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <ShlObj.h>
-#include <cstdio>
-#define popen  _popen
-#define pclose _pclose
 #else
 #include <cstdlib>
 #include <unistd.h>
@@ -29,17 +26,15 @@ namespace
 {
 	bool CommandExists(const std::string_view p_cmd)
 	{
-		const std::string cmd{ p_cmd };
 #ifdef _WIN32
-		std::string checkCmd = "where " + cmd + " > NUL 2>&1";
+
+		const std::string cmd{ p_cmd.substr(0, p_cmd.find(' ')) };
+		const std::string query{ "where /q " + cmd + " 2>NUL" };
+		return std::system(query.c_str()) == 0;
 #else
-		std::string checkCmd = "command -v " + cmd + " > /dev/null 2>&1";
-#endif
+		std::string checkCmd = "command -v " + std::string(p_cmd) + " > /dev/null 2>&1";
 		FILE* pipe = popen(checkCmd.c_str(), "r");
 		if (!pipe) return false;
-#ifdef _WIN32
-		return pclose(pipe) == 0;
-#else
 		return WEXITSTATUS(pclose(pipe)) == 0;
 #endif
 	}
@@ -143,11 +138,6 @@ std::string OvTools::Utils::SystemCalls::GetPathToAppdata()
 
 bool OvTools::Utils::SystemCalls::ExecuteCommand(const std::string_view p_command)
 {
-	if (!CommandExists(p_command))
-	{
-		return false;
-	}
-
 #if defined(_WIN32)
 	STARTUPINFO startupInfo;
 	PROCESS_INFORMATION processInfo;
@@ -158,28 +148,42 @@ bool OvTools::Utils::SystemCalls::ExecuteCommand(const std::string_view p_comman
 
 	std::string command = std::format("cmd.exe /c {}", p_command);
 
-	bool success = (CreateProcess(
-		nullptr,							// Application name (nullptr uses command line)
-		command.data(),						// Command to execute
-		nullptr,							// Process security attributes
-		nullptr,							// Thread security attributes
-		FALSE,								// Do not inherit handles
-		CREATE_NO_WINDOW,					// Run the process without a window
-		nullptr,							// Environment variables
-		nullptr,							// Current directory
-		&startupInfo,						// STARTUPINFO structure
-		&processInfo						// PROCESS_INFORMATION structure
-	));
+	bool success = CreateProcess(
+		nullptr,			// Application name (nullptr uses command line)
+		command.data(),			// Command to execute
+		nullptr,			// Process security attributes
+		nullptr,			// Thread security attributes
+		FALSE,				// Do not inherit handles
+		CREATE_NO_WINDOW,		// Run the process without a window
+		nullptr,			// Environment variables
+		nullptr,			// Current directory
+		&startupInfo,			// STARTUPINFO structure
+		&processInfo			// PROCESS_INFORMATION structure
+	);
 
-	// Wait until child process exits.
+	if (!success)
+		return false;
+
+	// Wait until child process exits
 	WaitForSingleObject(processInfo.hProcess, INFINITE);
+
+	// Check the exit code of the child process
+	DWORD exitCode = 0;
+	GetExitCodeProcess(processInfo.hProcess, &exitCode);
 
 	// Close the process and thread handles
 	CloseHandle(processInfo.hProcess);
 	CloseHandle(processInfo.hThread);
 
-	return success;
+	return exitCode == 0;
 #else
+	// Best way I found to reliably check if the command is going to succeed on UNIX.
+	// Running the command detached doesn't give us enough information on the exit code.
+	if (!CommandExists(p_command))
+	{
+		return false;
+	}
+
 	std::string command{ p_command };
 	command += " &"; // Ensures the command is run detached on UNIX
 	return std::system(command.c_str()) == 0;

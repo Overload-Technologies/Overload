@@ -751,10 +751,17 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 	{
 		auto preferredPath = p_path;
 		preferredPath.make_preferred();
+
+		if (command.find("{path}") == std::string::npos)
+		{
+			OVLOG_ERROR("Failed to open in code editor, missing {path} in custom command.");
+			return false;
+		}
+
 		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{
-			OVLOG_ERROR(std::format("Failed to open in code editor using command: {}", command));
+			OVLOG_ERROR(std::format("Failed to open in code editor using command: \"{}\"", command));
 			return false;
 		}
 	}

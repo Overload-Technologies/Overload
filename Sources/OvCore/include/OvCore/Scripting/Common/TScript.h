@@ -6,7 +6,12 @@
 
 #pragma once
 
+#include <map>
+#include <optional>
+#include <string>
+
 #include <OvCore/Scripting/Common/EScriptingLanguage.h>
+#include <OvCore/Scripting/Common/ScriptPropertyValue.h>
 
 namespace OvCore::Scripting
 {
@@ -39,6 +44,23 @@ namespace OvCore::Scripting
 		* Return the context of the script
 		*/
 		inline const Context& GetContext() const { return m_context; }
+		inline Context& GetContext() { return m_context; }
+
+		/**
+		* Returns all primitive properties and their default values as defined by the script.
+		*/
+		std::map<std::string, ScriptPropertyValue> GetDefaultProperties() const;
+
+		/**
+		* Returns the live value of a named property from the script's runtime state.
+		* Returns std::nullopt if the property does not exist or cannot be read.
+		*/
+		std::optional<ScriptPropertyValue> GetProperty(const std::string& p_key) const;
+
+		/**
+		* Sets the value of a named property in the script's runtime state.
+		*/
+		void SetProperty(const std::string& p_key, const ScriptPropertyValue& p_value);
 
 	protected:
 		Context m_context;

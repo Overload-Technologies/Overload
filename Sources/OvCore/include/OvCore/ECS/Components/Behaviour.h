@@ -6,7 +6,11 @@
 
 #pragma once
 
+#include <map>
+#include <string>
+
 #include <OvCore/ECS/Components/CPhysicalObject.h>
+#include <OvCore/Scripting/Common/ScriptPropertyValue.h>
 #include <OvTools/Utils/OptRef.h>
 #include <OvCore/Scripting/ScriptEngine.h>
 
@@ -164,6 +168,7 @@ namespace OvCore::ECS::Components
 
 	private:
 		std::unique_ptr<Scripting::Script> m_script;
+		std::map<std::string, Scripting::ScriptPropertyValue> m_scriptProperties;
 	};
 
 	template<>

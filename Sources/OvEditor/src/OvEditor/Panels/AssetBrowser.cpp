@@ -675,43 +675,6 @@ namespace
 	public:
 		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
 
-		void CreateMaterialFiles(const std::string_view shaderType)
-		{
-			auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
-			const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected));
-
-			if (auto model = modelManager.GetResource(resourcePath))
-			{
-				for (const std::string& materialName : model->GetMaterialNames())
-				{
-					const auto finalPath = FindAvailableFilePath(filePath.parent_path() / (materialName + ".ovmat"));
-
-					const std::string fileContent = std::format(
-						"<root><shader>:Shaders\\{}.ovfx</shader></root>",
-						shaderType
-					);
-
-					// Create the material file
-					{
-						std::ofstream outfile(finalPath);
-						outfile << fileContent << std::endl;
-					}
-
-					DuplicateEvent.Invoke(finalPath);
-				}
-			}
-		}
-
-		void CreateMaterialCreationOption(OvUI::Internal::WidgetContainer& p_root, const std::string_view p_materialName)
-		{
-			const std::string materialName{ p_materialName };
-
-			p_root.CreateWidget<OvUI::Widgets::Menu::MenuItem>(materialName).ClickedEvent += [this, p_materialName]
-			{
-				CreateMaterialFiles(p_materialName);
-			};
-		}
-
 		virtual void CreateList() override
 		{
 			auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
@@ -725,16 +688,6 @@ namespace
 					modelManager.AResourceManager::ReloadResource(resourcePath);
 				}
 			};
-
-			if (!m_protected)
-			{
-				auto& generateMaterialsMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>(
-					"Generate materials..."
-				);
-
-				CreateMaterialCreationOption(generateMaterialsMenu, "Standard");
-				CreateMaterialCreationOption(generateMaterialsMenu, "Unlit");
-			}
 
 			PreviewableContextualMenu::CreateList();
 		}

@@ -16,7 +16,6 @@ project "OvEditor"
 
 	includedirs {
 		-- Dependencies
-		dependdir .. "assimp/include",
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "tinyxml2/include",

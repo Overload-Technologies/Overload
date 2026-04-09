@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include <OvMaths/FVector2.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvUI/Panels/PanelWindow.h>
 
@@ -39,10 +40,17 @@ namespace OvEditor::Panels
 
 		/**
 		* Open the picker filtered by the given file type.
-		* @param p_fileType  Asset type to show (UNKNOWN = all known types)
-		* @param p_callback  Called with the selected resource path when the user picks an asset
+		* @param p_fileType    Asset type to show (UNKNOWN = all known types)
+		* @param p_buttonMin   Screen-space top-left of the button that triggered the picker
+		* @param p_buttonMax   Screen-space bottom-right of the button that triggered the picker
+		* @param p_callback    Called with the selected resource path when the user picks an asset
 		*/
-		void Open(OvTools::Utils::PathParser::EFileType p_fileType, std::function<void(std::string)> p_callback);
+		void Open(
+			OvTools::Utils::PathParser::EFileType p_fileType,
+			OvMaths::FVector2 p_buttonMin,
+			OvMaths::FVector2 p_buttonMax,
+			std::function<void(std::string)> p_callback
+		);
 
 	private:
 		void Populate();

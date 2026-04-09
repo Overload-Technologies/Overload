@@ -6,6 +6,8 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <imgui.h>
+
 #include <OvCore/Helpers/GUIDrawer.h>
 
 #include <OvEditor/Core/Editor.h>
@@ -91,7 +93,9 @@ void OvEditor::Core::Editor::SetupUI()
 	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
 		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback)
 		{
-			m_assetPicker->Open(p_type, std::move(p_callback));
+			const ImVec2 min = ImGui::GetItemRectMin();
+			const ImVec2 max = ImGui::GetItemRectMax();
+			m_assetPicker->Open(p_type, { min.x, min.y }, { max.x, max.y }, std::move(p_callback));
 		}
 	);
 }

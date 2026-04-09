@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include <memory>
+
 #include <OvEditor/Core/Context.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/PanelsManager.h>
 #include <OvEditor/Panels/AView.h>
+#include <OvEditor/Panels/AssetPicker.h>
 #include <OvRendering/Entities/Camera.h>
 #include <OvUI/Modules/Canvas.h>
 
@@ -103,5 +106,6 @@ namespace OvEditor::Core
 		OvEditor::Core::PanelsManager m_panelsManager;
 		OvEditor::Core::EditorActions m_editorActions;
 		OvTools::Utils::OptRef<Panels::AView> m_lastFocusedView;
+		std::unique_ptr<OvEditor::Panels::AssetPicker> m_assetPicker;
 	};
 }

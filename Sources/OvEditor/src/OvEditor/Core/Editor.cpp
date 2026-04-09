@@ -6,8 +6,11 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <OvCore/Helpers/GUIDrawer.h>
+
 #include <OvEditor/Core/Editor.h>
 #include <OvEditor/Panels/AssetBrowser.h>
+#include <OvEditor/Panels/AssetPicker.h>
 #include <OvEditor/Panels/AssetProperties.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/Console.h>
@@ -74,6 +77,23 @@ void OvEditor::Core::Editor::SetupUI()
 
 	m_canvas.MakeDockspace(true);
 	m_context.uiManager->SetCanvas(m_canvas);
+
+	OvUI::Settings::PanelWindowSettings pickerSettings;
+	pickerSettings.closable = true;
+	pickerSettings.resizable = true;
+	pickerSettings.movable = true;
+	pickerSettings.dockable = false;
+	pickerSettings.scrollable = true;
+
+	m_assetPicker = std::make_unique<OvEditor::Panels::AssetPicker>("Asset Picker", false, pickerSettings);
+	m_canvas.AddPanel(*m_assetPicker);
+
+	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
+		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback)
+		{
+			m_assetPicker->Open(p_type, std::move(p_callback));
+		}
+	);
 }
 
 void OvEditor::Core::Editor::PreUpdate()

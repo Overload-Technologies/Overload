@@ -6,10 +6,15 @@
 
 #pragma once
 
+#include <functional>
+#include <string>
+
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FVector4.h>
 #include <OvMaths/FQuaternion.h>
+
+#include <OvTools/Utils/PathParser.h>
 
 #include <OvUI/Internal/WidgetContainer.h>
 #include <OvUI/Widgets/Texts/Text.h>
@@ -57,6 +62,16 @@ namespace OvCore::Helpers
 		static void ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture);
 
 		/**
+		* Register the function that opens the asset picker window.
+		* The provider receives the desired file type and a callback to invoke with the chosen path.
+		* Call this once during editor startup.
+		* @param p_provider
+		*/
+		static void SetAssetPickerProvider(
+			std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> p_provider
+		);
+
+		/**
 		* Draw a title with the title color
 		* @param p_root
 		* @param p_name
@@ -98,6 +113,7 @@ namespace OvCore::Helpers
 
 	private:
 		static OvRendering::Resources::Texture* __EMPTY_TEXTURE;
+		static std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> s_assetPickerProvider;
 	};
 }
 

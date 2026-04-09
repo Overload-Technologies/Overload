@@ -34,10 +34,17 @@ const OvUI::Types::Color OvCore::Helpers::GUIDrawer::ClearButtonColor = { 0.5f, 
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
 const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
 OvRendering::Resources::Texture* OvCore::Helpers::GUIDrawer::__EMPTY_TEXTURE = nullptr;
+std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> OvCore::Helpers::GUIDrawer::s_assetPickerProvider;
 
 void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture)
 {
 	__EMPTY_TEXTURE = &p_emptyTexture;
+}
+
+void OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
+	std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> p_provider)
+{
+	s_assetPickerProvider = std::move(p_provider);
 }
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
@@ -126,6 +133,23 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal:
 
 	widget.lineBreak = false;
 
+	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+	selectButton.lineBreak = false;
+	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+	{
+		if (GUIDrawer::s_assetPickerProvider)
+			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MODEL, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+			{
+				if (auto resource = OVSERVICE(OvCore::ResourceManagement::ModelManager).GetResource(p_path); resource)
+				{
+					p_data = resource;
+					widget.content = p_path;
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
+			});
+	};
+
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
 	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
@@ -163,6 +187,23 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 	};
 
 	widget.lineBreak = false;
+
+	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+	selectButton.lineBreak = false;
+	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+	{
+		if (GUIDrawer::s_assetPickerProvider)
+			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+			{
+				if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
+				{
+					p_data = resource;
+					widget.textureID.id = resource->GetTexture().GetID();
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
+			});
+	};
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -202,6 +243,23 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Interna
 
 	widget.lineBreak = false;
 
+	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+	selectButton.lineBreak = false;
+	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+	{
+		if (GUIDrawer::s_assetPickerProvider)
+			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SHADER, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+			{
+				if (auto resource = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(p_path); resource)
+				{
+					p_data = resource;
+					widget.content = p_path;
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
+			});
+	};
+
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
 	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
@@ -239,6 +297,23 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Inter
 	};
 
 	widget.lineBreak = false;
+
+	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+	selectButton.lineBreak = false;
+	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+	{
+		if (GUIDrawer::s_assetPickerProvider)
+			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MATERIAL, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+			{
+				if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_path); resource)
+				{
+					p_data = resource;
+					widget.content = p_path;
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
+			});
+	};
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -278,6 +353,23 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawSound(OvUI::Internal
 
 	widget.lineBreak = false;
 
+	auto& selectButtonSound = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+	selectButtonSound.lineBreak = false;
+	selectButtonSound.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+	{
+		if (GUIDrawer::s_assetPickerProvider)
+			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SOUND, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+			{
+				if (auto resource = OVSERVICE(OvCore::ResourceManagement::SoundManager).GetResource(p_path); resource)
+				{
+					p_data = resource;
+					widget.content = p_path;
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
+			});
+	};
+
 	auto & resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
 	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
@@ -309,6 +401,20 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
     };
 
     widget.lineBreak = false;
+
+    auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+    selectButton.lineBreak = false;
+    selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+    {
+        if (GUIDrawer::s_assetPickerProvider)
+            GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+            {
+                p_data = p_path;
+                widget.content = p_path;
+                if (p_updateNotifier)
+                    p_updateNotifier->Invoke();
+            });
+    };
 
     auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
     resetButton.idleBackgroundColor = ClearButtonColor;

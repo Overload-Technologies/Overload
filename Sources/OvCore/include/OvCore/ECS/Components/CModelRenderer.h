@@ -82,17 +82,6 @@ namespace OvCore::ECS::Components
 		void SetCustomBoundingSphere(const OvRendering::Geometry::BoundingSphere& p_boundingSphere);
 
 		/**
-		* Returns the scale applied to skinned mesh bounds for frustum culling
-		*/
-		float GetSkinningBoundsScale() const;
-
-		/**
-		* Sets the scale applied to skinned mesh bounds for frustum culling
-		* @param p_scale
-		*/
-		void SetSkinningBoundsScale(float p_scale);
-
-		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -117,7 +106,6 @@ namespace OvCore::ECS::Components
 		OvTools::Eventing::Event<> m_modelChangedEvent;
 		OvRendering::Geometry::BoundingSphere m_customBoundingSphere = { {}, 1.0f };
 		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::MESH_BOUNDS;
-		float m_skinningBoundsScale = 1.5f;
 	};
 
 	template<>

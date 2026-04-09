@@ -20,5 +20,6 @@ namespace OvCore::Rendering
 		const OvMaths::FMatrix4* matrices = nullptr;
 		uint32_t count = 0;
 		uint64_t poseVersion = 0;
+		float boundsScale = 1.0f;
 	};
 }

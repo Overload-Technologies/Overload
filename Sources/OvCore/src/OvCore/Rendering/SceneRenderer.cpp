@@ -280,14 +280,9 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 		if (!materialRenderer) continue;
 		const auto* skinnedRenderer = owner.GetComponent<CSkinnedMeshRenderer>();
 		const bool hasSkinning = SkinningUtils::IsSkinningActive(skinnedRenderer);
-		const auto frustumBehaviour = modelRenderer->GetFrustumBehaviour();
-		const bool useComputedBounds =
-			frustumBehaviour == CModelRenderer::EFrustumBehaviour::MESH_BOUNDS ||
-			frustumBehaviour == CModelRenderer::EFrustumBehaviour::DEPRECATED_MODEL_BOUNDS;
 
 		const auto& transform = owner.transform.GetFTransform();
 		const auto& materials = materialRenderer->GetMaterials();
-		const float skinningBoundsScale = hasSkinning && useComputedBounds ? modelRenderer->GetSkinningBoundsScale() : 1.0f;
 
 		for (auto& mesh : model->GetMeshes())
 		{
@@ -306,7 +301,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 
 			auto bounds = [&]() -> std::optional<OvRendering::Geometry::BoundingSphere> {
 				using enum CModelRenderer::EFrustumBehaviour;
-				switch (frustumBehaviour)
+				switch (modelRenderer->GetFrustumBehaviour())
 				{
 				case MESH_BOUNDS: return mesh->GetBoundingSphere();
 				case DEPRECATED_MODEL_BOUNDS: return model->GetBoundingSphere();
@@ -319,8 +314,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 			drawable.AddDescriptor<SceneDrawableDescriptor>({
 				.actor = modelRenderer->owner,
 				.visibilityFlags = materialRenderer->GetVisibilityFlags(),
-				.bounds = bounds,
-				.skinningBoundsScale = skinningBoundsScale
+				.bounds = bounds
 			});
 			
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
@@ -365,7 +359,8 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 	for (const auto& drawable : p_drawables.drawables)
 	{
 		const auto& desc = drawable.GetDescriptor<SceneDrawableDescriptor>();
-		const bool hasSkinningDescriptor = drawable.HasDescriptor<SkinningDrawableDescriptor>();
+		OvTools::Utils::OptRef<const SkinningDrawableDescriptor> skinningDescriptor;
+		const bool hasSkinningDescriptor = drawable.TryGetDescriptor<SkinningDrawableDescriptor>(skinningDescriptor);
 
 		// Skip drawables that do not satisfy the required visibility flags
 		if (!SatisfiesVisibility(desc.visibilityFlags, p_filteringInput.requiredVisibilityFlags))
@@ -399,7 +394,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 			auto cullingBounds = desc.bounds.value();
 			if (hasSkinningDescriptor)
 			{
-				cullingBounds.radius *= desc.skinningBoundsScale;
+				cullingBounds.radius *= skinningDescriptor->boundsScale;
 			}
 
 			if (!frustum->BoundingSphereInFrustum(cullingBounds, desc.actor.transform.GetFTransform()))

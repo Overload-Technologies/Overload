@@ -101,7 +101,6 @@ namespace OvCore::Rendering
 			OvCore::ECS::Actor& actor;
 			EVisibilityFlags visibilityFlags = EVisibilityFlags::NONE;
 			std::optional<OvRendering::Geometry::BoundingSphere> bounds;
-			float skinningBoundsScale = 1.0f;
 		};
 
 		/**

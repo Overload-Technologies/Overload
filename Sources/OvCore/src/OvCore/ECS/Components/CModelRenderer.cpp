@@ -4,8 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
-
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
@@ -76,23 +74,12 @@ void OvCore::ECS::Components::CModelRenderer::SetCustomBoundingSphere(const OvRe
 	m_customBoundingSphere = p_boundingSphere;
 }
 
-float OvCore::ECS::Components::CModelRenderer::GetSkinningBoundsScale() const
-{
-	return m_skinningBoundsScale;
-}
-
-void OvCore::ECS::Components::CModelRenderer::SetSkinningBoundsScale(float p_scale)
-{
-	m_skinningBoundsScale = std::max(1.0f, p_scale);
-}
-
 void OvCore::ECS::Components::CModelRenderer::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
 	OvCore::Helpers::Serializer::SerializeModel(p_doc, p_node, "model", m_model);
 	OvCore::Helpers::Serializer::SerializeInt(p_doc, p_node, "frustum_behaviour", reinterpret_cast<int&>(m_frustumBehaviour));
 	OvCore::Helpers::Serializer::SerializeVec3(p_doc, p_node, "custom_bounding_sphere_position", m_customBoundingSphere.position);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "custom_bounding_sphere_radius", m_customBoundingSphere.radius);
-	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "skinning_bounds_scale", m_skinningBoundsScale);
 }
 
 void OvCore::ECS::Components::CModelRenderer::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode* p_node)
@@ -103,8 +90,6 @@ void OvCore::ECS::Components::CModelRenderer::OnDeserialize(tinyxml2::XMLDocumen
 	OvCore::Helpers::Serializer::DeserializeInt(p_doc, p_node, "frustum_behaviour", reinterpret_cast<int&>(m_frustumBehaviour));
 	OvCore::Helpers::Serializer::DeserializeVec3(p_doc, p_node, "custom_bounding_sphere_position", m_customBoundingSphere.position);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "custom_bounding_sphere_radius", m_customBoundingSphere.radius);
-	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "skinning_bounds_scale", m_skinningBoundsScale);
-	SetSkinningBoundsScale(m_skinningBoundsScale);
 }
 
 void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::WidgetContainer& p_root)
@@ -121,9 +106,6 @@ void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::Widget
 	boundingMode.choices.emplace(3, "Custom Bounds");
 	auto& boundingModeDispatcher = boundingMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
 	boundingModeDispatcher.RegisterReference(reinterpret_cast<int&>(m_frustumBehaviour));
-
-	GUIDrawer::DrawScalar<float>(p_root, "Skinned Bounds Scale", m_skinningBoundsScale, 0.05f, 1.0f, 10.0f);
-	SetSkinningBoundsScale(m_skinningBoundsScale);
 
 	auto& centerLabel = p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Bounding Sphere Center", GUIDrawer::TitleColor);
 	auto& centerWidget = p_root.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(GUIDrawer::GetDataType<float>(), GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT, 0.f, 0.05f, "", GUIDrawer::GetFormat<float>());

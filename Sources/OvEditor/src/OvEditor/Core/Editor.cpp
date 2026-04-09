@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvUI/Settings/PanelWindowSettings.h"
 #include <tracy/Tracy.hpp>
 
 #include <imgui.h>
@@ -80,15 +81,16 @@ void OvEditor::Core::Editor::SetupUI()
 	m_canvas.MakeDockspace(true);
 	m_context.uiManager->SetCanvas(m_canvas);
 
-	OvUI::Settings::PanelWindowSettings pickerSettings;
-	pickerSettings.closable = true;
+	m_assetPicker = std::make_unique<OvEditor::Panels::AssetPicker>(
+		"Asset Picker",
+		false,
+		OvUI::Settings::PanelWindowSettings{ .closable = true }
+	);
 
-	m_assetPicker = std::make_unique<OvEditor::Panels::AssetPicker>("Asset Picker", false, pickerSettings);
 	m_canvas.AddPanel(*m_assetPicker);
 
 	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
-		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback)
-		{
+		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback) {
 			const ImVec2 min = ImGui::GetItemRectMin();
 			const ImVec2 max = ImGui::GetItemRectMax();
 			m_assetPicker->Open(p_type, { min.x, min.y }, { max.x, max.y }, std::move(p_callback));

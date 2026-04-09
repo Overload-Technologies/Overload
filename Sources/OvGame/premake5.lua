@@ -19,7 +19,8 @@ project "OvGame"
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "tracy",
-
+		dependdir .. "json/include",
+		
 		-- Overload SDK
 		"%{wks.location}/Sources/OvAudio/include",
 		"%{wks.location}/Sources/OvCore/include",

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <any>
+#include <json.hpp>
 #include <map>
 
 #include <OvRendering/Data/Material.h>
@@ -35,6 +36,22 @@ namespace OvCore::Resources
 		*/
 		virtual void OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node) override;
 
-		const std::string path;
+		std::string path;
+
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+			Material,
+			path,
+			m_features,
+			m_userInterface,
+			m_blendable,
+			m_backfaceCulling,
+			m_frontfaceCulling,
+			m_depthTest,
+			m_depthWriting,
+			m_colorWriting,
+			m_castShadows,
+			m_receiveShadows,
+			m_gpuInstances
+		);
 	};
 }

@@ -27,6 +27,7 @@ project "OvCore"
 		dependdir .. "sol/include",
 		dependdir .. "tinyxml2/include",
 		dependdir .. "tracy",
+		dependdir .. "json/include",
 
 		-- Overload SDK
 		"%{wks.location}/Sources/OvAudio/include",

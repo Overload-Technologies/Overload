@@ -20,7 +20,8 @@ project "OvEditor"
 		dependdir .. "ImGui/include",
 		dependdir .. "tinyxml2/include",
 		dependdir .. "tracy",
-
+		dependdir .. "json/include",
+		
 		-- Overload SDK
 		"%{wks.location}/Sources/OvAudio/include",
 		"%{wks.location}/Sources/OvCore/include",

@@ -4,7 +4,9 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <format>
+#include <string_view>
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
@@ -12,6 +14,7 @@
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvTools/Utils/PathParser.h>
 
@@ -23,6 +26,11 @@
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Visual/Separator.h>
+
+namespace
+{
+	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+}
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
@@ -142,6 +150,7 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 	}
 
 	UpdateMaterialList();
+	ApplyEmbeddedMaterialFallback();
 
 	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
@@ -245,6 +254,49 @@ void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 			m_materialFields[i][2]->enabled = enabled;
 			const auto formattedName = std::format("Material [{}]: <{}>", i, m_materialNames[i]);
 			reinterpret_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0]) ->content = formattedName;
+		}
+	}
+}
+
+void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
+{
+	auto* modelRenderer = owner.GetComponent<CModelRenderer>();
+	if (!modelRenderer)
+	{
+		return;
+	}
+
+	const auto* model = modelRenderer->GetModel();
+	if (!model)
+	{
+		return;
+	}
+
+	auto& materialManager = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>();
+	auto* defaultMaterial = materialManager.GetResource(std::string{ kDefaultMaterialPath });
+
+	const uint8_t materialCount = static_cast<uint8_t>(std::min(
+		model->GetMaterialNames().size(),
+		static_cast<size_t>(kMaxMaterialCount)
+	));
+
+	for (uint8_t i = 0; i < materialCount; ++i)
+	{
+		auto* currentMaterial = GetMaterialAtIndex(i);
+		const bool shouldOverride = !currentMaterial || (defaultMaterial && currentMaterial == defaultMaterial);
+		if (!shouldOverride)
+		{
+			continue;
+		}
+
+		const auto embeddedMaterialPath = OvRendering::Resources::Parsers::MakeEmbeddedMaterialPath(model->path, i);
+		if (auto* embeddedMaterial = materialManager.GetResource(embeddedMaterialPath))
+		{
+			SetMaterialAtIndex(i, *embeddedMaterial);
+		}
+		else if (defaultMaterial)
+		{
+			SetMaterialAtIndex(i, *defaultMaterial);
 		}
 	}
 }

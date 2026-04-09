@@ -11,17 +11,11 @@
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 
-#include <OvTools/Utils/PathParser.h>
-
-#include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Buttons/ButtonSmall.h>
-#include <OvUI/Plugins/DDTarget.h>
-#include <OvUI/Widgets/InputFields/InputInt.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
-#include <OvUI/Widgets/Layout/Group.h>
-#include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
@@ -146,46 +140,13 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
 
-std::array<OvUI::Widgets::AWidget*, 3> CustomMaterialDrawer(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data)
+std::array<OvUI::Widgets::AWidget*, 2> CustomMaterialDrawer(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data)
 {
-	using namespace OvCore::Helpers;
-
-	std::array<OvUI::Widgets::AWidget*, 3> widgets;
-
-	widgets[0] = &p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, GUIDrawer::TitleColor);
-
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-	auto & rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
-
-	widgets[1] = &widget;
-
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data](auto p_receivedData)
-	{
-		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::MATERIAL)
-		{
-			if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_receivedData.first); resource)
-			{
-				p_data = resource;
-				widget.content = p_receivedData.first;
-			}
-		}
-	};
-
-	widget.lineBreak = false;
-
-	auto & resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = GUIDrawer::ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data]
-	{
-		p_data = nullptr;
-		widget.content = "Empty";
-	};
-
-	widgets[2] = &resetButton;
-
-	return widgets;
+	const size_t before = p_root.GetWidgets().size();
+	OvCore::Helpers::GUIDrawer::DrawMaterial(p_root, p_name, p_data, nullptr);
+	auto& widgets = p_root.GetWidgets();
+	// DrawMaterial adds exactly 2 widgets: [before]=TextColored title, [before+1]=Group rightSide
+	return { widgets[before].first, widgets[before + 1].first };
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::WidgetContainer & p_root)
@@ -239,12 +200,11 @@ void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 	{
 		if (m_materialFields[i][0])
 		{
-			bool enabled = !m_materialNames[i].empty();
+			const bool enabled = !m_materialNames[i].empty();
 			m_materialFields[i][0]->enabled = enabled;
 			m_materialFields[i][1]->enabled = enabled;
-			m_materialFields[i][2]->enabled = enabled;
-			const auto formattedName = std::format("Material [{}]: <{}>", i, m_materialNames[i]);
-			reinterpret_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0]) ->content = formattedName;
+			static_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0])->content =
+				std::format("Material [{}]: <{}>", i, m_materialNames[i]);
 		}
 	}
 }

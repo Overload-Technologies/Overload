@@ -82,10 +82,6 @@ void OvEditor::Core::Editor::SetupUI()
 
 	OvUI::Settings::PanelWindowSettings pickerSettings;
 	pickerSettings.closable = true;
-	pickerSettings.resizable = true;
-	pickerSettings.movable = true;
-	pickerSettings.dockable = false;
-	pickerSettings.scrollable = true;
 
 	m_assetPicker = std::make_unique<OvEditor::Panels::AssetPicker>("Asset Picker", false, pickerSettings);
 	m_canvas.AddPanel(*m_assetPicker);

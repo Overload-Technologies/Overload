@@ -7,7 +7,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <array>
-#include <format>
+#include <limits>
 #include <memory>
 #include <stb_image/stb_image.h>
 
@@ -45,9 +45,41 @@ namespace
 		operator bool() const { return IsValid(); }
 	};
 
+	/**
+	* Wrapper for stb_image when loading encoded image bytes from memory.
+	*/
+	struct EncodedImage
+	{
+		int width = 0;
+		int height = 0;
+		int bpp = 0;
+		bool isHDR = false;
+		void* data = nullptr;
+
+		EncodedImage(const uint8_t* p_data, const size_t p_size)
+		{
+			if (!p_data || p_size == 0 || p_size > static_cast<size_t>(std::numeric_limits<int>::max()))
+			{
+				return;
+			}
+
+			const int encodedSize = static_cast<int>(p_size);
+			stbi_set_flip_vertically_on_load(true);
+			isHDR = stbi_is_hdr_from_memory(p_data, encodedSize) != 0;
+
+			data = isHDR ?
+				static_cast<void*>(stbi_loadf_from_memory(p_data, encodedSize, &width, &height, &bpp, 4)) :
+				static_cast<void*>(stbi_load_from_memory(p_data, encodedSize, &width, &height, &bpp, 4));
+		}
+
+		virtual ~EncodedImage() { stbi_image_free(data); }
+		bool IsValid() const { return data; }
+		operator bool() const { return IsValid(); }
+	};
+
 	void PrepareTexture(
 		OvRendering::HAL::Texture& p_texture,
-		void* p_data,
+		const void* p_data,
 		OvRendering::Settings::ETextureFilteringMode p_minFilter,
 		OvRendering::Settings::ETextureFilteringMode p_magFilter,
 		OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
@@ -71,7 +103,7 @@ namespace
 			.useMipMaps = p_generateMipmap
 		});
 
-		p_texture.Upload(p_data, EFormat::RGBA, p_hdr ? EPixelDataType::FLOAT : EPixelDataType::UNSIGNED_BYTE);
+		p_texture.Upload(const_cast<void*>(p_data), EFormat::RGBA, p_hdr ? EPixelDataType::FLOAT : EPixelDataType::UNSIGNED_BYTE);
 
 		if (p_generateMipmap)
 		{
@@ -135,7 +167,7 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 }
 
 OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromMemory(
-	uint8_t* p_data,
+	const uint8_t* p_data,
 	uint32_t p_width,
 	uint32_t p_height,
 	OvRendering::Settings::ETextureFilteringMode p_minFilter,
@@ -163,6 +195,39 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	return new Texture("", std::move(texture));
 }
 
+OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromEncodedMemory(
+	const uint8_t* p_data,
+	size_t p_size,
+	OvRendering::Settings::ETextureFilteringMode p_minFilter,
+	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	bool p_generateMipmap
+)
+{
+	if (EncodedImage image{ p_data, p_size })
+	{
+		auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromEncodedMemory");
+
+		PrepareTexture(
+			*texture,
+			image.data,
+			p_minFilter,
+			p_magFilter,
+			p_horizontalWrapMode,
+			p_verticalWrapMode,
+			image.width,
+			image.height,
+			p_generateMipmap,
+			image.isHDR
+		);
+
+		return new Texture("", std::move(texture));
+	}
+
+	return nullptr;
+}
+
 void OvRendering::Resources::Loaders::TextureLoader::Reload(
 	Texture& p_texture,
 	const std::string& p_filePath,
@@ -179,6 +244,68 @@ void OvRendering::Resources::Loaders::TextureLoader::Reload(
 			Settings::ETextureType::TEXTURE_2D,
 			OvTools::Utils::PathParser::GetElementName(p_filePath)
 		);
+
+		PrepareTexture(
+			*texture,
+			image.data,
+			p_minFilter,
+			p_magFilter,
+			p_horizontalWrapMode,
+			p_verticalWrapMode,
+			image.width,
+			image.height,
+			p_generateMipmap,
+			image.isHDR
+		);
+
+		p_texture.SetTexture(std::move(texture));
+	}
+}
+
+void OvRendering::Resources::Loaders::TextureLoader::ReloadFromMemory(
+	Texture& p_texture,
+	const uint8_t* p_data,
+	uint32_t p_width,
+	uint32_t p_height,
+	OvRendering::Settings::ETextureFilteringMode p_minFilter,
+	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	bool p_generateMipmap
+)
+{
+	auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromMemory");
+
+	PrepareTexture(
+		*texture,
+		p_data,
+		p_minFilter,
+		p_magFilter,
+		p_horizontalWrapMode,
+		p_verticalWrapMode,
+		p_width,
+		p_height,
+		p_generateMipmap,
+		false
+	);
+
+	p_texture.SetTexture(std::move(texture));
+}
+
+void OvRendering::Resources::Loaders::TextureLoader::ReloadFromEncodedMemory(
+	Texture& p_texture,
+	const uint8_t* p_data,
+	size_t p_size,
+	OvRendering::Settings::ETextureFilteringMode p_minFilter,
+	OvRendering::Settings::ETextureFilteringMode p_magFilter,
+	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	bool p_generateMipmap
+)
+{
+	if (EncodedImage image{ p_data, p_size })
+	{
+		auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromEncodedMemory");
 
 		PrepareTexture(
 			*texture,

@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 
+#include <OvRendering/Resources/EmbeddedAssets.h>
 #include <OvRendering/Animation/SkeletalData.h>
 #include <OvRendering/Resources/Mesh.h>
 #include <OvRendering/Resources/Parsers/EModelParserFlags.h>
@@ -38,7 +39,10 @@ namespace OvRendering::Resources::Parsers
 			std::vector<std::string>& p_materials,
 			std::optional<Animation::Skeleton>& p_skeleton,
 			std::vector<Animation::SkeletalAnimation>& p_animations,
-			EModelParserFlags p_parserFlags
+			std::vector<Resources::EmbeddedMaterialData>& p_embeddedMaterials,
+			std::vector<Resources::EmbeddedTextureData>& p_embeddedTextures,
+			EModelParserFlags p_parserFlags,
+			bool p_generateEmbeddedAssets
 		) = 0;
 	};
 }

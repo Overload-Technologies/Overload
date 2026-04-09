@@ -34,8 +34,12 @@ const OvUI::Types::Color OvCore::Helpers::GUIDrawer::TitleColor = { 0.85f, 0.65f
 const OvUI::Types::Color OvCore::Helpers::GUIDrawer::ClearButtonColor = { 0.5f, 0.0f, 0.0f };
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
 const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
-OvRendering::Resources::Texture* OvCore::Helpers::GUIDrawer::__EMPTY_TEXTURE = nullptr;
-std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> OvCore::Helpers::GUIDrawer::s_assetPickerProvider;
+
+namespace
+{
+	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
+	OvCore::Helpers::GUIDrawer::AssetPickerProviderCallback __ASSET_PICKER_PROVIDER;
+}
 
 void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture)
 {
@@ -43,9 +47,10 @@ void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Tex
 }
 
 void OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
-	std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> p_provider)
+	AssetPickerProviderCallback p_provider
+)
 {
-	s_assetPickerProvider = std::move(p_provider);
+	__ASSET_PICKER_PROVIDER = std::move(p_provider);
 }
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
@@ -109,67 +114,81 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 	dispatcher.RegisterReference(p_color);
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvRendering::Resources::Model *& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+namespace
 {
-	CreateTitle(p_root, p_name);
-
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
-
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
+	template<typename TResource, typename TResourceManager>
+	OvUI::Widgets::Texts::Text& DrawResourceWidget(
+		OvUI::Internal::WidgetContainer& p_root,
+		const std::string& p_name,
+		TResource*& p_data,
+		OvTools::Utils::PathParser::EFileType p_fileType,
+		OvTools::Eventing::Event<>* p_updateNotifier)
 	{
-		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::MODEL)
-		{
-			if (auto resource = OVSERVICE(OvCore::ResourceManagement::ModelManager).GetResource(p_receivedData.first); resource)
-			{
-				p_data = resource;
-				widget.content = p_receivedData.first;
-				if (p_updateNotifier)
-					p_updateNotifier->Invoke();
-			}
-		}
-	};
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
-	widget.lineBreak = false;
+		std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
+		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
 
-	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButton.lineBreak = false;
-	{
-		auto token = std::make_shared<bool>(true);
-		std::weak_ptr<bool> weakToken = token;
-		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
+
+		widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
+			[&widget, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)
 		{
-			if (GUIDrawer::s_assetPickerProvider)
+			if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == p_fileType)
 			{
-				std::weak_ptr<bool> weak = token;
-				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MODEL, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
+				if (auto resource = OVSERVICE(TResourceManager).GetResource(p_receivedData.first); resource)
 				{
-					if (weak.expired()) return;
-					if (auto resource = OVSERVICE(OvCore::ResourceManagement::ModelManager).GetResource(p_path); resource)
-					{
-						p_data = resource;
-						widget.content = p_path;
-						if (p_updateNotifier)
-							p_updateNotifier->Invoke();
-					}
-				});
+					p_data = resource;
+					widget.content = p_receivedData.first;
+					if (p_updateNotifier)
+						p_updateNotifier->Invoke();
+				}
 			}
 		};
+
+		widget.lineBreak = false;
+
+		auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
+		selectButton.lineBreak = false;
+		{
+			auto token = std::make_shared<bool>(true);
+			selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, p_fileType, token = std::move(token)]
+			{
+				if (__ASSET_PICKER_PROVIDER)
+				{
+					std::weak_ptr<bool> weak = token;
+					__ASSET_PICKER_PROVIDER(p_fileType, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
+					{
+						if (weak.expired()) return;
+						if (auto resource = OVSERVICE(TResourceManager).GetResource(p_path); resource)
+						{
+							p_data = resource;
+							widget.content = p_path;
+							if (p_updateNotifier)
+								p_updateNotifier->Invoke();
+						}
+					});
+				}
+			};
+		}
+
+		auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
+		resetButton.idleBackgroundColor = OvCore::Helpers::GUIDrawer::ClearButtonColor;
+		resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
+		{
+			p_data = nullptr;
+			widget.content = "Empty";
+			if (p_updateNotifier)
+				p_updateNotifier->Invoke();
+		};
+
+		return widget;
 	}
+}
 
-	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = nullptr;
-		widget.content = "Empty";
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
-
-	return widget;
+OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+{
+	return DrawResourceWidget<OvRendering::Resources::Model, OvCore::ResourceManagement::ModelManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::MODEL, p_updateNotifier);
 }
 
 OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvRendering::Resources::Texture *& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
@@ -203,10 +222,10 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 		auto token = std::make_shared<bool>(true);
 		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
 		{
-			if (GUIDrawer::s_assetPickerProvider)
+			if (__ASSET_PICKER_PROVIDER)
 			{
 				std::weak_ptr<bool> weak = token;
-				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
+				__ASSET_PICKER_PROVIDER(OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
 					if (weak.expired()) return;
 					if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
@@ -234,190 +253,19 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 	return widget;
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvRendering::Resources::Shader *& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
-	CreateTitle(p_root, p_name);
-
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
-
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
-	{
-		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::SHADER)
-		{
-			if (auto resource = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(p_receivedData.first); resource)
-			{
-				p_data = resource;
-				widget.content = p_receivedData.first;
-				if (p_updateNotifier)
-					p_updateNotifier->Invoke();
-			}
-		}
-	};
-
-	widget.lineBreak = false;
-
-	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButton.lineBreak = false;
-	{
-		auto token = std::make_shared<bool>(true);
-		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
-		{
-			if (GUIDrawer::s_assetPickerProvider)
-			{
-				std::weak_ptr<bool> weak = token;
-				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SHADER, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
-				{
-					if (weak.expired()) return;
-					if (auto resource = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(p_path); resource)
-					{
-						p_data = resource;
-						widget.content = p_path;
-						if (p_updateNotifier)
-							p_updateNotifier->Invoke();
-					}
-				});
-			}
-		};
-	}
-
-	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = nullptr;
-		widget.content = "Empty";
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
-
-	return widget;
+	return DrawResourceWidget<OvRendering::Resources::Shader, OvCore::ResourceManagement::ShaderManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::SHADER, p_updateNotifier);
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvCore::Resources::Material *& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
-	CreateTitle(p_root, p_name);
-
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
-
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
-	{
-		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::MATERIAL)
-		{
-			if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_receivedData.first); resource)
-			{
-				p_data = resource;
-				widget.content = p_receivedData.first;
-				if (p_updateNotifier)
-					p_updateNotifier->Invoke();
-			}
-		}
-	};
-
-	widget.lineBreak = false;
-
-	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButton.lineBreak = false;
-	{
-		auto token = std::make_shared<bool>(true);
-		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
-		{
-			if (GUIDrawer::s_assetPickerProvider)
-			{
-				std::weak_ptr<bool> weak = token;
-				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MATERIAL, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
-				{
-					if (weak.expired()) return;
-					if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_path); resource)
-					{
-						p_data = resource;
-						widget.content = p_path;
-						if (p_updateNotifier)
-							p_updateNotifier->Invoke();
-					}
-				});
-			}
-		};
-	}
-
-	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = nullptr;
-		widget.content = "Empty";
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
-
-	return widget;
+	return DrawResourceWidget<OvCore::Resources::Material, OvCore::ResourceManagement::MaterialManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::MATERIAL, p_updateNotifier);
 }
 
 OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
-	CreateTitle(p_root, p_name);
-
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-	auto & rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto & widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
-
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
-	{
-		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::SOUND)
-		{
-			if (auto resource = OVSERVICE(OvCore::ResourceManagement::SoundManager).GetResource(p_receivedData.first); resource)
-			{
-				p_data = resource;
-				widget.content = p_receivedData.first;
-				if (p_updateNotifier)
-					p_updateNotifier->Invoke();
-			}
-		}
-	};
-
-	widget.lineBreak = false;
-
-	auto& selectButtonSound = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButtonSound.lineBreak = false;
-	{
-		auto token = std::make_shared<bool>(true);
-		selectButtonSound.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
-		{
-			if (GUIDrawer::s_assetPickerProvider)
-			{
-				std::weak_ptr<bool> weak = token;
-				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SOUND, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
-				{
-					if (weak.expired()) return;
-					if (auto resource = OVSERVICE(OvCore::ResourceManagement::SoundManager).GetResource(p_path); resource)
-					{
-						p_data = resource;
-						widget.content = p_path;
-						if (p_updateNotifier)
-							p_updateNotifier->Invoke();
-					}
-				});
-			}
-		};
-	}
-
-	auto & resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = nullptr;
-		widget.content = "Empty";
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
-
-	return widget;
+	return DrawResourceWidget<OvAudio::Resources::Sound, OvCore::ResourceManagement::SoundManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::SOUND, p_updateNotifier);
 }
 
 OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
@@ -445,10 +293,10 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
         auto token = std::make_shared<bool>(true);
         selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
         {
-            if (GUIDrawer::s_assetPickerProvider)
+            if (__ASSET_PICKER_PROVIDER)
             {
                 std::weak_ptr<bool> weak = token;
-                GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
+                __ASSET_PICKER_PROVIDER(OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
                 {
                     if (weak.expired()) return;
                     p_data = p_path;

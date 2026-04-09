@@ -49,6 +49,8 @@ namespace OvCore::Helpers
 	class GUIDrawer
 	{
 	public:
+		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)>;
+
 		static const OvUI::Types::Color TitleColor;
 		static const OvUI::Types::Color ClearButtonColor;
 
@@ -68,7 +70,7 @@ namespace OvCore::Helpers
 		* @param p_provider
 		*/
 		static void SetAssetPickerProvider(
-			std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> p_provider
+			AssetPickerProviderCallback p_provider
 		);
 
 		/**
@@ -110,10 +112,6 @@ namespace OvCore::Helpers
 
 		template <typename T>
 		static std::string GetFormat();
-
-	private:
-		static OvRendering::Resources::Texture* __EMPTY_TEXTURE;
-		static std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)> s_assetPickerProvider;
 	};
 }
 

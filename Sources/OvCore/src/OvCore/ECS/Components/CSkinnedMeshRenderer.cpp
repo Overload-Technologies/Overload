@@ -174,14 +174,14 @@ float OvCore::ECS::Components::CSkinnedMeshRenderer::GetPlaybackSpeed() const
 	return m_playbackSpeed;
 }
 
-float OvCore::ECS::Components::CSkinnedMeshRenderer::GetSkinningBoundsScale() const
+float OvCore::ECS::Components::CSkinnedMeshRenderer::GetMeshBoundsScale() const
 {
-	return m_skinningBoundsScale;
+	return m_meshBoundsScale;
 }
 
-void OvCore::ECS::Components::CSkinnedMeshRenderer::SetSkinningBoundsScale(float p_scale)
+void OvCore::ECS::Components::CSkinnedMeshRenderer::SetMeshBoundsScale(float p_scale)
 {
-	m_skinningBoundsScale = std::max(1.0f, p_scale);
+	m_meshBoundsScale = std::max(1.0f, p_scale);
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::SetTime(float p_timeSeconds)
@@ -357,7 +357,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnSerialize(tinyxml2::XMLDoc
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "playing", m_playing);
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "looping", m_looping);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
-	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "skinning_bounds_scale", m_skinningBoundsScale);
+	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "mesh_bounds_scale", m_meshBoundsScale);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "pose_eval_rate", m_poseEvaluationRate);
 	OvCore::Helpers::Serializer::SerializeFloat(p_doc, p_node, "time_ticks", m_currentTimeTicks);
 	OvCore::Helpers::Serializer::SerializeString(p_doc, p_node, "animation", GetActiveAnimationName().value_or(std::string{}));
@@ -368,11 +368,13 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnDeserialize(tinyxml2::XMLD
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "playing", m_playing);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "looping", m_looping);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
-	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "skinning_bounds_scale", m_skinningBoundsScale);
+	// Keep reading legacy field name for backward compatibility.
+	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "skinning_bounds_scale", m_meshBoundsScale);
+	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "mesh_bounds_scale", m_meshBoundsScale);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "pose_eval_rate", m_poseEvaluationRate);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "time_ticks", m_currentTimeTicks);
 	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_node, "animation", m_deserializedAnimationName);
-	SetSkinningBoundsScale(m_skinningBoundsScale);
+	SetMeshBoundsScale(m_meshBoundsScale);
 	m_poseEvaluationRate = std::max(0.0f, m_poseEvaluationRate);
 	m_poseEvaluationAccumulator = 0.0f;
 
@@ -388,8 +390,8 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	GUIDrawer::DrawBoolean(p_root, "Playing", m_playing);
 	GUIDrawer::DrawBoolean(p_root, "Looping", m_looping);
 	GUIDrawer::DrawScalar<float>(p_root, "Playback Speed", m_playbackSpeed, 0.01f, -10.0f, 10.0f);
-	GUIDrawer::DrawScalar<float>(p_root, "Skinned Bounds Scale", m_skinningBoundsScale, 0.05f, 1.0f, 10.0f);
-	SetSkinningBoundsScale(m_skinningBoundsScale);
+	GUIDrawer::DrawScalar<float>(p_root, "Mesh Bounds Scale", m_meshBoundsScale, 0.05f, 1.0f, 10.0f);
+	SetMeshBoundsScale(m_meshBoundsScale);
 	GUIDrawer::DrawScalar<float>(p_root, "Pose Eval Rate", m_poseEvaluationRate, 1.0f, 0.0f, 240.0f);
 	m_poseEvaluationRate = std::max(0.0f, m_poseEvaluationRate);
 	GUIDrawer::DrawScalar<float>(

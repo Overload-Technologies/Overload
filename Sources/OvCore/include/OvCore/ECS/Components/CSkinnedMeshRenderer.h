@@ -94,15 +94,15 @@ namespace OvCore::ECS::Components
 		float GetPlaybackSpeed() const;
 
 		/**
-		* Returns the scale applied to skinned bounds during frustum culling
+		* Returns the scale applied to mesh bounds during frustum culling
 		*/
-		float GetSkinningBoundsScale() const;
+		float GetMeshBoundsScale() const;
 
 		/**
-		* Sets the scale applied to skinned bounds during frustum culling
+		* Sets the scale applied to mesh bounds during frustum culling
 		* @param p_scale
 		*/
-		void SetSkinningBoundsScale(float p_scale);
+		void SetMeshBoundsScale(float p_scale);
 
 		/**
 		* Sets the current playback time in seconds
@@ -198,7 +198,7 @@ namespace OvCore::ECS::Components
 		bool m_playing = true;
 		bool m_looping = true;
 		float m_playbackSpeed = 1.0f;
-		float m_skinningBoundsScale = 1.5f;
+		float m_meshBoundsScale = 1.5f;
 		float m_poseEvaluationRate = 60.0f;
 		float m_poseEvaluationAccumulator = 0.0f;
 

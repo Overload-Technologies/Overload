@@ -98,6 +98,8 @@ void BindLuaComponents(sol::state& p_luaState)
 		"IsLooping", &CSkinnedMeshRenderer::IsLooping,
 		"SetPlaybackSpeed", &CSkinnedMeshRenderer::SetPlaybackSpeed,
 		"GetPlaybackSpeed", &CSkinnedMeshRenderer::GetPlaybackSpeed,
+		"SetSkinningBoundsScale", &CSkinnedMeshRenderer::SetSkinningBoundsScale,
+		"GetSkinningBoundsScale", &CSkinnedMeshRenderer::GetSkinningBoundsScale,
 		"SetTime", &CSkinnedMeshRenderer::SetTime,
 		"GetTime", &CSkinnedMeshRenderer::GetTime,
 		"GetAnimationCount", &CSkinnedMeshRenderer::GetAnimationCount,

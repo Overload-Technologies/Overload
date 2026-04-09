@@ -6,6 +6,10 @@
 
 #include "OvCore/ResourceManagement/ModelManager.h"
 
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 #include <OvTools/Filesystem/IniFile.h>
 
 OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::string& p_path)
@@ -49,10 +53,60 @@ OvRendering::Resources::Parsers::EModelParserFlags GetAssetMetadata(const std::s
 	return flags;
 }
 
+bool ShouldGenerateEmbeddedAssets(const std::string& p_path)
+{
+	auto metaFile = OvTools::Filesystem::IniFile(p_path + ".meta");
+	return metaFile.GetOrDefault("GENERATE_EMBEDDED_ASSETS", true);
+}
+
+template<typename TResourceManager, typename TIndexParser>
+void ReloadEmbeddedResourcesForModelByType(
+	TResourceManager& p_resourceManager,
+	const std::string& p_modelPath,
+	TIndexParser p_parseIndex
+)
+{
+	for (auto& [resourcePath, resource] : p_resourceManager.GetResources())
+	{
+		(void)resource;
+		const auto embeddedAssetPath = OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(resourcePath.string());
+		if (!embeddedAssetPath || embeddedAssetPath->modelPath != p_modelPath)
+		{
+			continue;
+		}
+
+		if (!p_parseIndex(embeddedAssetPath->assetName))
+		{
+			continue;
+		}
+
+		p_resourceManager.AResourceManager::ReloadResource(resourcePath);
+	}
+}
+
+void ReloadEmbeddedModelResources(const std::string& p_modelPath)
+{
+	ReloadEmbeddedResourcesForModelByType(
+		OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>(),
+		p_modelPath,
+		[](const std::string& p_assetName) { return OvRendering::Resources::Parsers::ParseEmbeddedMaterialIndex(p_assetName).has_value(); }
+	);
+
+	ReloadEmbeddedResourcesForModelByType(
+		OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>(),
+		p_modelPath,
+		[](const std::string& p_assetName) { return OvRendering::Resources::Parsers::ParseEmbeddedTextureIndex(p_assetName).has_value(); }
+	);
+}
+
 OvRendering::Resources::Model* OvCore::ResourceManagement::ModelManager::CreateResource(const std::filesystem::path& p_path)
 {
 	std::string realPath = GetRealPath(p_path).string();
-	auto model = OvRendering::Resources::Loaders::ModelLoader::Create(realPath, GetAssetMetadata(realPath));
+	auto model = OvRendering::Resources::Loaders::ModelLoader::Create(
+		realPath,
+		GetAssetMetadata(realPath),
+		ShouldGenerateEmbeddedAssets(realPath)
+	);
 	if (model)
 	{
 		const_cast<std::string&>(model->path) = p_path.string(); // Force the resource path to fit the given path
@@ -69,5 +123,12 @@ void OvCore::ResourceManagement::ModelManager::DestroyResource(OvRendering::Reso
 void OvCore::ResourceManagement::ModelManager::ReloadResource(OvRendering::Resources::Model* p_resource, const std::filesystem::path& p_path)
 {
 	std::string realPath = GetRealPath(p_path).string();
-	OvRendering::Resources::Loaders::ModelLoader::Reload(*p_resource, realPath, GetAssetMetadata(realPath));
+	OvRendering::Resources::Loaders::ModelLoader::Reload(
+		*p_resource,
+		realPath,
+		GetAssetMetadata(realPath),
+		ShouldGenerateEmbeddedAssets(realPath)
+	);
+
+	ReloadEmbeddedModelResources(p_path.string());
 }

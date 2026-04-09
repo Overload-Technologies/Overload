@@ -61,6 +61,7 @@ void AssetPicker::Open(PathParser::EFileType p_fileType, OvMaths::FVector2 p_but
 	m_callback = std::move(p_callback);
 	m_searchField->content = "";
 	Populate();
+	ScrollToTop();
 
 	const ImVec2 display = ImGui::GetIO().DisplaySize;
 	const float winW = minSize.x;

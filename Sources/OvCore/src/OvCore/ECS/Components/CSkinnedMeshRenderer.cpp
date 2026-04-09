@@ -368,8 +368,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnDeserialize(tinyxml2::XMLD
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "playing", m_playing);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "looping", m_looping);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "playback_speed", m_playbackSpeed);
-	// Keep reading legacy field name for backward compatibility.
-	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "skinning_bounds_scale", m_meshBoundsScale);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "mesh_bounds_scale", m_meshBoundsScale);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "pose_eval_rate", m_poseEvaluationRate);
 	OvCore::Helpers::Serializer::DeserializeFloat(p_doc, p_node, "time_ticks", m_currentTimeTicks);
@@ -391,7 +389,6 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	GUIDrawer::DrawBoolean(p_root, "Looping", m_looping);
 	GUIDrawer::DrawScalar<float>(p_root, "Playback Speed", m_playbackSpeed, 0.01f, -10.0f, 10.0f);
 	GUIDrawer::DrawScalar<float>(p_root, "Mesh Bounds Scale", m_meshBoundsScale, 0.05f, 1.0f, 10.0f);
-	SetMeshBoundsScale(m_meshBoundsScale);
 	GUIDrawer::DrawScalar<float>(p_root, "Pose Eval Rate", m_poseEvaluationRate, 1.0f, 0.0f, 240.0f);
 	m_poseEvaluationRate = std::max(0.0f, m_poseEvaluationRate);
 	GUIDrawer::DrawScalar<float>(

@@ -95,11 +95,13 @@ namespace OvCore::ECS::Components
 
 		/**
 		* Returns the scale applied to mesh bounds during frustum culling
+		* Returned value is always >= 1.0f
 		*/
 		float GetMeshBoundsScale() const;
 
 		/**
 		* Sets the scale applied to mesh bounds during frustum culling
+		* Any value below 1.0f will be clamped to 1.0f
 		* @param p_scale
 		*/
 		void SetMeshBoundsScale(float p_scale);

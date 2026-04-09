@@ -5,6 +5,7 @@
 */
 
 #include <array>
+#include <memory>
 
 #include <OvTools/Utils/PathParser.h>
 
@@ -135,20 +136,28 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal:
 
 	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButton.lineBreak = false;
-	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
 	{
-		if (GUIDrawer::s_assetPickerProvider)
-			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MODEL, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		auto token = std::make_shared<bool>(true);
+		std::weak_ptr<bool> weakToken = token;
+		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		{
+			if (GUIDrawer::s_assetPickerProvider)
 			{
-				if (auto resource = OVSERVICE(OvCore::ResourceManagement::ModelManager).GetResource(p_path); resource)
+				std::weak_ptr<bool> weak = token;
+				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MODEL, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
-					p_data = resource;
-					widget.content = p_path;
-					if (p_updateNotifier)
-						p_updateNotifier->Invoke();
-				}
-			});
-	};
+					if (weak.expired()) return;
+					if (auto resource = OVSERVICE(OvCore::ResourceManagement::ModelManager).GetResource(p_path); resource)
+					{
+						p_data = resource;
+						widget.content = p_path;
+						if (p_updateNotifier)
+							p_updateNotifier->Invoke();
+					}
+				});
+			}
+		};
+	}
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -190,20 +199,27 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 
 	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButton.lineBreak = false;
-	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
 	{
-		if (GUIDrawer::s_assetPickerProvider)
-			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		auto token = std::make_shared<bool>(true);
+		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		{
+			if (GUIDrawer::s_assetPickerProvider)
 			{
-				if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
+				std::weak_ptr<bool> weak = token;
+				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
-					p_data = resource;
-					widget.textureID.id = resource->GetTexture().GetID();
-					if (p_updateNotifier)
-						p_updateNotifier->Invoke();
-				}
-			});
-	};
+					if (weak.expired()) return;
+					if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
+					{
+						p_data = resource;
+						widget.textureID.id = resource->GetTexture().GetID();
+						if (p_updateNotifier)
+							p_updateNotifier->Invoke();
+					}
+				});
+			}
+		};
+	}
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -245,20 +261,27 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Interna
 
 	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButton.lineBreak = false;
-	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
 	{
-		if (GUIDrawer::s_assetPickerProvider)
-			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SHADER, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		auto token = std::make_shared<bool>(true);
+		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		{
+			if (GUIDrawer::s_assetPickerProvider)
 			{
-				if (auto resource = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(p_path); resource)
+				std::weak_ptr<bool> weak = token;
+				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SHADER, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
-					p_data = resource;
-					widget.content = p_path;
-					if (p_updateNotifier)
-						p_updateNotifier->Invoke();
-				}
-			});
-	};
+					if (weak.expired()) return;
+					if (auto resource = OVSERVICE(OvCore::ResourceManagement::ShaderManager).GetResource(p_path); resource)
+					{
+						p_data = resource;
+						widget.content = p_path;
+						if (p_updateNotifier)
+							p_updateNotifier->Invoke();
+					}
+				});
+			}
+		};
+	}
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -300,20 +323,27 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Inter
 
 	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButton.lineBreak = false;
-	selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
 	{
-		if (GUIDrawer::s_assetPickerProvider)
-			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MATERIAL, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		auto token = std::make_shared<bool>(true);
+		selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		{
+			if (GUIDrawer::s_assetPickerProvider)
 			{
-				if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_path); resource)
+				std::weak_ptr<bool> weak = token;
+				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::MATERIAL, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
-					p_data = resource;
-					widget.content = p_path;
-					if (p_updateNotifier)
-						p_updateNotifier->Invoke();
-				}
-			});
-	};
+					if (weak.expired()) return;
+					if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(p_path); resource)
+					{
+						p_data = resource;
+						widget.content = p_path;
+						if (p_updateNotifier)
+							p_updateNotifier->Invoke();
+					}
+				});
+			}
+		};
+	}
 
 	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -355,20 +385,27 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawSound(OvUI::Internal
 
 	auto& selectButtonSound = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButtonSound.lineBreak = false;
-	selectButtonSound.ClickedEvent += [&widget, &p_data, p_updateNotifier]
 	{
-		if (GUIDrawer::s_assetPickerProvider)
-			GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SOUND, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		auto token = std::make_shared<bool>(true);
+		selectButtonSound.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+		{
+			if (GUIDrawer::s_assetPickerProvider)
 			{
-				if (auto resource = OVSERVICE(OvCore::ResourceManagement::SoundManager).GetResource(p_path); resource)
+				std::weak_ptr<bool> weak = token;
+				GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::SOUND, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
 				{
-					p_data = resource;
-					widget.content = p_path;
-					if (p_updateNotifier)
-						p_updateNotifier->Invoke();
-				}
-			});
-	};
+					if (weak.expired()) return;
+					if (auto resource = OVSERVICE(OvCore::ResourceManagement::SoundManager).GetResource(p_path); resource)
+					{
+						p_data = resource;
+						widget.content = p_path;
+						if (p_updateNotifier)
+							p_updateNotifier->Invoke();
+					}
+				});
+			}
+		};
+	}
 
 	auto & resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
 	resetButton.idleBackgroundColor = ClearButtonColor;
@@ -404,17 +441,24 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
 
     auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
     selectButton.lineBreak = false;
-    selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
     {
-        if (GUIDrawer::s_assetPickerProvider)
-            GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+        auto token = std::make_shared<bool>(true);
+        selectButton.ClickedEvent += [&widget, &p_data, p_updateNotifier, token = std::move(token)]
+        {
+            if (GUIDrawer::s_assetPickerProvider)
             {
-                p_data = p_path;
-                widget.content = p_path;
-                if (p_updateNotifier)
-                    p_updateNotifier->Invoke();
-            });
-    };
+                std::weak_ptr<bool> weak = token;
+                GUIDrawer::s_assetPickerProvider(OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier, weak](const std::string& p_path)
+                {
+                    if (weak.expired()) return;
+                    p_data = p_path;
+                    widget.content = p_path;
+                    if (p_updateNotifier)
+                        p_updateNotifier->Invoke();
+                });
+            }
+        };
+    }
 
     auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
     resetButton.idleBackgroundColor = ClearButtonColor;

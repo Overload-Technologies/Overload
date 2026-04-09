@@ -280,9 +280,14 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 		if (!materialRenderer) continue;
 		const auto* skinnedRenderer = owner.GetComponent<CSkinnedMeshRenderer>();
 		const bool hasSkinning = SkinningUtils::IsSkinningActive(skinnedRenderer);
-				
+		const auto frustumBehaviour = modelRenderer->GetFrustumBehaviour();
+		const bool useComputedBounds =
+			frustumBehaviour == CModelRenderer::EFrustumBehaviour::MESH_BOUNDS ||
+			frustumBehaviour == CModelRenderer::EFrustumBehaviour::DEPRECATED_MODEL_BOUNDS;
+
 		const auto& transform = owner.transform.GetFTransform();
 		const auto& materials = materialRenderer->GetMaterials();
+		const float skinningBoundsScale = hasSkinning && useComputedBounds ? modelRenderer->GetSkinningBoundsScale() : 1.0f;
 
 		for (auto& mesh : model->GetMeshes())
 		{
@@ -301,7 +306,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 
 			auto bounds = [&]() -> std::optional<OvRendering::Geometry::BoundingSphere> {
 				using enum CModelRenderer::EFrustumBehaviour;
-				switch (modelRenderer->GetFrustumBehaviour())
+				switch (frustumBehaviour)
 				{
 				case MESH_BOUNDS: return mesh->GetBoundingSphere();
 				case DEPRECATED_MODEL_BOUNDS: return model->GetBoundingSphere();
@@ -315,6 +320,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				.actor = modelRenderer->owner,
 				.visibilityFlags = materialRenderer->GetVisibilityFlags(),
 				.bounds = bounds,
+				.skinningBoundsScale = skinningBoundsScale
 			});
 			
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
@@ -386,11 +392,17 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		}
 
 		// Perform frustum culling if enabled
-		if (frustum && desc.bounds.has_value() && !hasSkinningDescriptor)
+		if (frustum && desc.bounds.has_value())
 		{
 			ZoneScopedN("Frustum Culling");
 
-			if (!frustum->BoundingSphereInFrustum(desc.bounds.value(), desc.actor.transform.GetFTransform()))
+			auto cullingBounds = desc.bounds.value();
+			if (hasSkinningDescriptor)
+			{
+				cullingBounds.radius *= desc.skinningBoundsScale;
+			}
+
+			if (!frustum->BoundingSphereInFrustum(cullingBounds, desc.actor.transform.GetFTransform()))
 			{
 				continue; // Skip this drawable as it's outside the frustum
 			}

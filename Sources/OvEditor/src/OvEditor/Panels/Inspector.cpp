@@ -27,6 +27,7 @@
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/EditorResources.h>
+#include <OvEditor/Helpers/PickerHelpers.h>
 #include <OvEditor/Panels/Inspector.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvUI/Widgets/Buttons/Button.h>
@@ -242,10 +243,9 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 		if (!m_targetActor.has_value())
 			return;
 
-		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Shader_Part")->GetTexture().GetID();
-		const uint32_t scriptIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Script")->GetTexture().GetID();
+		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
 
-		std::vector<OvCore::Helpers::GUIDrawer::PickerItem> items;
+		OvCore::Helpers::GUIDrawer::PickerItemList items;
 
 		for (const auto& info : componentRegistry)
 		{
@@ -253,7 +253,8 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 				continue;
 
 			const std::string name = std::string(info->GetName());
-			items.push_back({
+			items.Add({
+				name,
 				name,
 				name,
 				componentIconID,
@@ -277,51 +278,33 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			});
 		}
 
-		const std::filesystem::path projectAssets = EDITOR_CONTEXT(projectAssetsPath);
-		if (std::filesystem::exists(projectAssets))
-		{
-			std::error_code ec;
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(
-				projectAssets, std::filesystem::directory_options::skip_permission_denied, ec))
-			{
-				if (!entry.is_regular_file())
-					continue;
+		OvEditor::Helpers::PickerHelpers::AddFileItems(
+			items,
+			OvTools::Utils::PathParser::EFileType::SCRIPT,
+			[this](const std::string& p_resourcePath) {
+				if (!m_targetActor.has_value())
+					return;
 
-				if (OvTools::Utils::PathParser::GetFileType(entry.path().string()) != OvTools::Utils::PathParser::EFileType::SCRIPT)
-					continue;
-
-				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(EDITOR_EXEC(GetResourcePath(entry.path().string(), false))));
+				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(p_resourcePath));
+				const std::string displayName = OvTools::Utils::PathParser::GetElementName(scriptPath);
 
 				if (m_targetActor->GetBehaviour(scriptPath))
-					continue;
+				{
+					OvWindowing::Dialogs::MessageBox(
+						"Script already attached",
+						"The script \"" + displayName + "\" is already attached to this actor.",
+						OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+						OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+					);
+					return;
+				}
 
-				const std::string displayName = entry.path().stem().string();
-				items.push_back({
-					displayName,
-					scriptPath,
-					scriptIconID,
-					[this, scriptPath, displayName] {
-						if (!m_targetActor.has_value())
-							return;
+				m_targetActor->AddBehaviour(scriptPath);
+			},
+			true, false
+		);
 
-						if (m_targetActor->GetBehaviour(scriptPath))
-						{
-							OvWindowing::Dialogs::MessageBox(
-								"Script already attached",
-								"The script \"" + displayName + "\" is already attached to this actor.",
-								OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
-								OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
-							);
-							return;
-						}
-
-						m_targetActor->AddBehaviour(scriptPath);
-					}
-				});
-			}
-		}
-
-		OvCore::Helpers::GUIDrawer::OpenUnifiedPicker(std::move(items));
+		OvCore::Helpers::GUIDrawer::OpenPicker(std::move(items), "Add Component");
 	};
 }
 

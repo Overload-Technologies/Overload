@@ -119,6 +119,7 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 		{"Model", CreateTexture<LINEAR>(texturesFolder / "Model.png")},
 		{"Shader", CreateTexture<LINEAR>(texturesFolder / "Shader.png")},
 		{"Shader_Part", CreateTexture<LINEAR>(texturesFolder / "Shader_Part.png")},
+		{"Component", CreateTexture<LINEAR>(texturesFolder / "Component.png")},
 		{"Material", CreateTexture<LINEAR>(texturesFolder / "Material.png")},
 		{"Scene", CreateTexture<LINEAR>(texturesFolder / "Scene.png")},
 		{"Sound", CreateTexture<LINEAR>(texturesFolder / "Sound.png")},

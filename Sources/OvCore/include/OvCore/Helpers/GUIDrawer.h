@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <OvMaths/FVector2.h>
@@ -53,17 +54,47 @@ namespace OvCore::Helpers
 		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
 
 		/**
-		* Represents a single item in the unified picker.
+		* Represents a single item in the picker.
+		* The key uniquely identifies the item for deduplication when combining lists.
 		*/
 		struct PickerItem
 		{
+			std::string key;         // unique identifier used for deduplication
 			std::string displayName;
 			std::string tooltip;
 			uint32_t iconID = 0;
 			std::function<void()> onSelected;
 		};
 
-		using UnifiedPickerProviderCallback = std::function<void(std::vector<PickerItem>)>;
+		/**
+		* An ordered, deduplication-aware collection of picker items.
+		* Items with the same key are silently dropped when added.
+		*/
+		class PickerItemList
+		{
+		public:
+			/**
+			* Add an item to the list.
+			* @returns true if added, false if an item with the same key was already present.
+			*/
+			bool Add(PickerItem p_item)
+			{
+				if (!m_keys.insert(p_item.key).second)
+					return false;
+				m_items.push_back(std::move(p_item));
+				return true;
+			}
+
+			const std::vector<PickerItem>& Items() const { return m_items; }
+			bool empty() const { return m_items.empty(); }
+			size_t size() const { return m_items.size(); }
+
+		private:
+			std::vector<PickerItem> m_items;
+			std::unordered_set<std::string> m_keys;
+		};
+
+		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
 		static const OvUI::Types::Color TitleColor;
 		static const OvUI::Types::Color ClearButtonColor;
@@ -104,18 +135,19 @@ namespace OvCore::Helpers
 		);
 
 		/**
-		* Register the function that opens the unified picker (components + scripts).
+		* Register the function that opens the picker window.
 		* Call this once during editor startup.
 		* @param p_provider
 		*/
-		static void SetUnifiedPickerProvider(UnifiedPickerProviderCallback p_provider);
+		static void SetPickerProvider(PickerProviderCallback p_provider);
 
 		/**
-		* Open the unified picker with a pre-built list of items.
+		* Open the picker with the given list of items.
 		* Has no effect if no provider has been registered.
 		* @param p_items
+		* @param p_title  Title displayed in the window's title bar
 		*/
-		static void OpenUnifiedPicker(std::vector<PickerItem> p_items);
+		static void OpenPicker(PickerItemList p_items, std::string p_title);
 
 		/**
 		* Draw a title with the title color

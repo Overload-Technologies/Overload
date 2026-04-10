@@ -29,8 +29,10 @@
 #include <OvEditor/Panels/Inspector.h>
 #include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 
 using namespace OvCore::ECS;
 using namespace OvCore::ECS::Components;
@@ -282,6 +284,15 @@ void OvEditor::Panels::Inspector::_DrawAddScriptSection()
 	auto& scriptSelector = m_content->CreateWidget<InputFields::InputText>(m_selectedScript);
 	scriptSelector.lineBreak = false;
 	auto& ddTarget = scriptSelector.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("File");
+
+	auto& pickerButton = m_content->CreateWidget<Buttons::ButtonSmall>("...");
+	pickerButton.lineBreak = false;
+	pickerButton.ClickedEvent += [this, &scriptSelector] {
+		OvCore::Helpers::GUIDrawer::OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCRIPT, [this, &scriptSelector](const std::string& p_path) {
+			scriptSelector.content = EDITOR_EXEC(GetScriptPath(p_path));
+			scriptSelector.ContentChangedEvent.Invoke(scriptSelector.content);
+		}, true, false);
+	};
 
 	m_addScriptButton = m_content->CreateWidget<Buttons::Button>("Add Script", OvMaths::FVector2{ 100.f, 0 });
 	m_addScriptButton->idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };

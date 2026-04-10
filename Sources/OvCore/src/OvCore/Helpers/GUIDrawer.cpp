@@ -54,6 +54,19 @@ void OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
 	__ASSET_PICKER_PROVIDER = std::move(p_provider);
 }
 
+void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
+	OvTools::Utils::PathParser::EFileType p_fileType,
+	std::function<void(std::string)> p_onSelect,
+	bool p_searchProjectFiles,
+	bool p_searchEngineFiles
+)
+{
+	if (__ASSET_PICKER_PROVIDER)
+	{
+		__ASSET_PICKER_PROVIDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+	}
+}
+
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
 {
 	p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, TitleColor);
@@ -131,7 +144,7 @@ namespace
 				__ASSET_PICKER_PROVIDER(p_fileType, [p_onSelect, weak](const std::string& p_path)
 				{
 					if (!weak.expired()) p_onSelect(p_path);
-				});
+				}, true, true);
 			}
 		};
 	}

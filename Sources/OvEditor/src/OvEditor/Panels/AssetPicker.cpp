@@ -55,9 +55,11 @@ AssetPicker::AssetPicker(
 	m_assetListGroup = &CreateWidget<OvUI::Widgets::Layout::Group>();
 }
 
-void AssetPicker::Open(PathParser::EFileType p_fileType, std::function<void(std::string)> p_callback)
+void AssetPicker::Open(PathParser::EFileType p_fileType, std::function<void(std::string)> p_callback, bool p_searchProjectFiles, bool p_searchEngineFiles)
 {
 	m_fileType = p_fileType;
+	m_searchProjectFiles = p_searchProjectFiles;
+	m_searchEngineFiles = p_searchEngineFiles;
 	m_callback = std::move(p_callback);
 	m_searchField->content = "";
 	Populate();
@@ -134,8 +136,11 @@ void AssetPicker::Populate()
 		}
 	};
 
-	collectFromDirectory(EDITOR_CONTEXT(engineAssetsPath), true);
-	collectFromDirectory(EDITOR_CONTEXT(projectAssetsPath), false);
+	if (m_searchProjectFiles)
+		collectFromDirectory(EDITOR_CONTEXT(projectAssetsPath), false);
+
+	if (m_searchEngineFiles)
+		collectFromDirectory(EDITOR_CONTEXT(engineAssetsPath), true);
 }
 
 void AssetPicker::FilterList(const std::string& p_search)

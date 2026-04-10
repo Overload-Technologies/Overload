@@ -88,8 +88,8 @@ void OvEditor::Core::Editor::SetupUI()
 	m_canvas.AddPanel(*m_assetPicker);
 
 	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
-		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback) {
-			m_assetPicker->Open(p_type, std::move(p_callback));
+		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback, bool p_searchProjectFiles, bool p_searchEngineFiles) {
+			m_assetPicker->Open(p_type, std::move(p_callback), p_searchProjectFiles, p_searchEngineFiles);
 		}
 	);
 }

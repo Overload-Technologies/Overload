@@ -49,7 +49,7 @@ namespace OvCore::Helpers
 	class GUIDrawer
 	{
 	public:
-		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>)>;
+		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
 
 		static const OvUI::Types::Color TitleColor;
 		static const OvUI::Types::Color ClearButtonColor;
@@ -71,6 +71,22 @@ namespace OvCore::Helpers
 		*/
 		static void SetAssetPickerProvider(
 			AssetPickerProviderCallback p_provider
+		);
+
+		/**
+		* Open the asset picker window for the given file type.
+		* Invokes p_onSelect with the chosen path when the user picks an asset.
+		* Has no effect if no provider has been registered.
+		* @param p_fileType
+		* @param p_onSelect
+		* @param p_searchProjectFiles  Include project assets in the results
+		* @param p_searchEngineFiles   Include engine assets in the results
+		*/
+		static void OpenAssetPicker(
+			OvTools::Utils::PathParser::EFileType p_fileType,
+			std::function<void(std::string)> p_onSelect,
+			bool p_searchProjectFiles = true,
+			bool p_searchEngineFiles = true
 		);
 
 		/**

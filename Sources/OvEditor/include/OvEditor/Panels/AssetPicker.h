@@ -39,14 +39,16 @@ namespace OvEditor::Panels
 
 		/**
 		* Open the picker filtered by the given file type.
-		* @param p_fileType    Asset type to show (UNKNOWN = all known types)
-		* @param p_buttonMin   Screen-space top-left of the button that triggered the picker
-		* @param p_buttonMax   Screen-space bottom-right of the button that triggered the picker
-		* @param p_callback    Called with the selected resource path when the user picks an asset
+		* @param p_fileType           Asset type to show (UNKNOWN = all known types)
+		* @param p_callback           Called with the selected resource path when the user picks an asset
+		* @param p_searchProjectFiles Include project assets in the results
+		* @param p_searchEngineFiles  Include engine assets in the results
 		*/
 		void Open(
 			OvTools::Utils::PathParser::EFileType p_fileType,
-			std::function<void(std::string)> p_callback
+			std::function<void(std::string)> p_callback,
+			bool p_searchProjectFiles = true,
+			bool p_searchEngineFiles = true
 		);
 
 	private:
@@ -55,6 +57,8 @@ namespace OvEditor::Panels
 
 	private:
 		OvTools::Utils::PathParser::EFileType m_fileType = OvTools::Utils::PathParser::EFileType::UNKNOWN;
+		bool m_searchProjectFiles = true;
+		bool m_searchEngineFiles = true;
 		std::function<void(std::string)> m_callback;
 
 		OvUI::Widgets::InputFields::InputText* m_searchField = nullptr;

@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
-#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <cstdint>
@@ -200,26 +199,6 @@ namespace
 		return SanitizeTextureExtension(hint);
 	}
 
-	std::optional<uint32_t> ParseEmbeddedTextureReference(const std::string& p_texturePath)
-	{
-		if (p_texturePath.size() <= 1 || p_texturePath.front() != '*')
-		{
-			return std::nullopt;
-		}
-
-		uint32_t index = 0;
-		const auto begin = p_texturePath.data() + 1;
-		const auto end = p_texturePath.data() + p_texturePath.size();
-		const auto parseResult = std::from_chars(begin, end, index);
-
-		if (parseResult.ec != std::errc{} || parseResult.ptr != end)
-		{
-			return std::nullopt;
-		}
-
-		return index;
-	}
-
 	std::string ResolveExternalTexturePath(
 		const std::string& p_texturePath,
 		const std::filesystem::path& p_modelDirectory
@@ -251,10 +230,14 @@ namespace
 	)
 	{
 		const std::string normalizedTexturePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_texturePath);
+		const aiTexture* embeddedTexture = p_scene.GetEmbeddedTexture(p_texturePath.c_str());
 		std::string cacheKey = normalizedTexturePath;
-		std::optional<uint32_t> embeddedReference = ParseEmbeddedTextureReference(p_texturePath);
 
-		if (!embeddedReference)
+		if (embeddedTexture)
+		{
+			cacheKey = "embedded:" + normalizedTexturePath;
+		}
+		else
 		{
 			cacheKey = ResolveExternalTexturePath(normalizedTexturePath, p_modelDirectory);
 		}
@@ -266,42 +249,35 @@ namespace
 
 		OvRendering::Resources::EmbeddedTextureData textureData;
 
-		if (embeddedReference)
+		if (embeddedTexture)
 		{
-			if (const auto* embeddedTexture = p_scene.GetEmbeddedTexture(p_texturePath.c_str()))
+			if (embeddedTexture->mHeight == 0)
 			{
-				if (embeddedTexture->mHeight == 0)
-				{
-					textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_COMPRESSED;
-					textureData.extension = GetTextureExtensionFromFormatHint(*embeddedTexture);
+				textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_COMPRESSED;
+				textureData.extension = GetTextureExtensionFromFormatHint(*embeddedTexture);
 
-					const auto byteCount = static_cast<size_t>(embeddedTexture->mWidth);
-					textureData.compressedData.resize(byteCount);
-					std::memcpy(textureData.compressedData.data(), embeddedTexture->pcData, byteCount);
-				}
-				else
-				{
-					textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_RAW_RGBA8;
-					textureData.extension = "tga";
-					textureData.width = embeddedTexture->mWidth;
-					textureData.height = embeddedTexture->mHeight;
-
-					const auto texelCount = static_cast<size_t>(textureData.width) * static_cast<size_t>(textureData.height);
-					textureData.rawRGBAData.resize(texelCount * 4);
-
-					for (size_t i = 0; i < texelCount; ++i)
-					{
-						const aiTexel texel = embeddedTexture->pcData[i];
-						textureData.rawRGBAData[i * 4 + 0] = texel.r;
-						textureData.rawRGBAData[i * 4 + 1] = texel.g;
-						textureData.rawRGBAData[i * 4 + 2] = texel.b;
-						textureData.rawRGBAData[i * 4 + 3] = texel.a;
-					}
-				}
+				const auto byteCount = static_cast<size_t>(embeddedTexture->mWidth);
+				textureData.compressedData.resize(byteCount);
+				std::memcpy(textureData.compressedData.data(), embeddedTexture->pcData, byteCount);
 			}
 			else
 			{
-				return std::nullopt;
+				textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_RAW_RGBA8;
+				textureData.extension = "tga";
+				textureData.width = embeddedTexture->mWidth;
+				textureData.height = embeddedTexture->mHeight;
+
+				const auto texelCount = static_cast<size_t>(textureData.width) * static_cast<size_t>(textureData.height);
+				textureData.rawRGBAData.resize(texelCount * 4);
+
+				for (size_t i = 0; i < texelCount; ++i)
+				{
+					const aiTexel texel = embeddedTexture->pcData[i];
+					textureData.rawRGBAData[i * 4 + 0] = texel.r;
+					textureData.rawRGBAData[i * 4 + 1] = texel.g;
+					textureData.rawRGBAData[i * 4 + 2] = texel.b;
+					textureData.rawRGBAData[i * 4 + 3] = texel.a;
+				}
 			}
 		}
 		else

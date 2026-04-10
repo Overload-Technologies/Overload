@@ -10,6 +10,7 @@
 #include <imgui.h>
 
 #include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Panels/AssetPicker.h>
 
 #include <OvTools/Utils/PathParser.h>
@@ -17,6 +18,7 @@
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/TextClickable.h>
+#include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 using namespace OvEditor::Panels;
@@ -57,10 +59,24 @@ AssetPicker::AssetPicker(
 
 void AssetPicker::Open(PathParser::EFileType p_fileType, std::function<void(std::string)> p_callback, bool p_searchProjectFiles, bool p_searchEngineFiles)
 {
+	m_mode = EMode::FileBased;
 	m_fileType = p_fileType;
 	m_searchProjectFiles = p_searchProjectFiles;
 	m_searchEngineFiles = p_searchEngineFiles;
 	m_callback = std::move(p_callback);
+	m_prebuiltItems.clear();
+	OpenInternal();
+}
+
+void AssetPicker::Open(std::vector<OvCore::Helpers::GUIDrawer::PickerItem> p_items)
+{
+	m_mode = EMode::PreBuilt;
+	m_prebuiltItems = std::move(p_items);
+	OpenInternal();
+}
+
+void AssetPicker::OpenInternal()
+{
 	m_searchField->content = "";
 	Populate();
 	ScrollToTop();
@@ -72,19 +88,15 @@ void AssetPicker::Open(PathParser::EFileType p_fileType, std::function<void(std:
 	const ImVec2 buttonMin = ImGui::GetItemRectMin();
 	const ImVec2 buttonMax = ImGui::GetItemRectMax();
 
-	// Default: top-left corner of the window aligned with the bottom-left of the button
 	float x = buttonMin.x;
 	float y = buttonMax.y;
 
-	// Not enough room below → open above the button instead
 	if (y + winH > display.y)
 		y = buttonMin.y - winH;
 
-	// Not enough room to the right → right-align to button's right edge
 	if (x + winW > display.x)
 		x = buttonMax.x - winW;
 
-	// Keep fully on-screen
 	x = std::max(0.f, x);
 	y = std::max(0.f, y);
 
@@ -99,52 +111,84 @@ void AssetPicker::Populate()
 	m_assetListGroup->RemoveAllWidgets();
 	m_items.clear();
 
-	const auto collectFromDirectory = [&](const std::filesystem::path& p_directory, bool p_isEngine)
+	const auto addItem = [&](
+		const std::string& p_searchKey,
+		const std::string& p_displayName,
+		const std::string& p_tooltip,
+		uint32_t p_iconID,
+		std::function<void()> p_onSelected)
 	{
-		if (!std::filesystem::exists(p_directory))
-			return;
+		auto& row = m_assetListGroup->CreateWidget<OvUI::Widgets::Layout::Group>();
 
-		std::error_code ec;
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(
-			p_directory, std::filesystem::directory_options::skip_permission_denied, ec))
+		if (p_iconID != 0)
 		{
-			if (!entry.is_regular_file())
-				continue;
-
-			const std::string path = entry.path().string();
-			const PathParser::EFileType fileType = PathParser::GetFileType(path);
-
-			if (fileType == PathParser::EFileType::UNKNOWN)
-				continue;
-
-			if (m_fileType != PathParser::EFileType::UNKNOWN && fileType != m_fileType)
-				continue;
-
-			const std::string resourcePath = EDITOR_EXEC(GetResourcePath(path, p_isEngine));
-			const std::string filename = PathParser::GetElementName(resourcePath);
-
-			auto& item = m_assetListGroup->CreateWidget<OvUI::Widgets::Texts::TextClickable>(filename);
-			item.tooltip = resourcePath;
-			item.ClickedEvent += [this, resourcePath]
-			{
-				if (m_callback)
-					m_callback(resourcePath);
-				Close();
-			};
-
-			m_items.emplace_back(resourcePath, &item);
+			auto& icon = row.CreateWidget<OvUI::Widgets::Visual::Image>(p_iconID, OvMaths::FVector2{ 16.f, 16.f });
+			icon.lineBreak = false;
 		}
+
+		auto& text = row.CreateWidget<OvUI::Widgets::Texts::TextClickable>(p_displayName);
+		text.tooltip = p_tooltip;
+		text.ClickedEvent += [this, onSelected = std::move(p_onSelected)]
+		{
+			onSelected();
+			Close();
+		};
+
+		m_items.emplace_back(p_searchKey, &row);
 	};
 
-	if (m_searchProjectFiles)
-		collectFromDirectory(EDITOR_CONTEXT(projectAssetsPath), false);
+	if (m_mode == EMode::PreBuilt)
+	{
+		for (auto& item : m_prebuiltItems)
+		{
+			addItem(item.displayName, item.displayName, item.tooltip, item.iconID, item.onSelected);
+		}
+	}
+	else
+	{
+		const auto collectFromDirectory = [&](const std::filesystem::path& p_directory, bool p_isEngine)
+		{
+			if (!std::filesystem::exists(p_directory))
+				return;
 
-	if (m_searchEngineFiles)
-		collectFromDirectory(EDITOR_CONTEXT(engineAssetsPath), true);
+			std::error_code ec;
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(
+				p_directory, std::filesystem::directory_options::skip_permission_denied, ec))
+			{
+				if (!entry.is_regular_file())
+					continue;
+
+				const std::string path = entry.path().string();
+				const PathParser::EFileType fileType = PathParser::GetFileType(path);
+
+				if (fileType == PathParser::EFileType::UNKNOWN)
+					continue;
+
+				if (m_fileType != PathParser::EFileType::UNKNOWN && fileType != m_fileType)
+					continue;
+
+				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(path, p_isEngine));
+				const std::string filename = PathParser::GetElementName(resourcePath);
+				const uint32_t iconID = EDITOR_CONTEXT(editorResources)->GetFileIcon(path)->GetTexture().GetID();
+
+				addItem(resourcePath, filename, resourcePath, iconID, [this, resourcePath]
+				{
+					if (m_callback)
+						m_callback(resourcePath);
+				});
+			}
+		};
+
+		if (m_searchProjectFiles)
+			collectFromDirectory(EDITOR_CONTEXT(projectAssetsPath), false);
+
+		if (m_searchEngineFiles)
+			collectFromDirectory(EDITOR_CONTEXT(engineAssetsPath), true);
+	}
 }
 
 void AssetPicker::FilterList(const std::string& p_search)
 {
-	for (auto& [path, widget] : m_items)
-		widget->enabled = ContainsCaseInsensitive(path, p_search);
+	for (auto& [key, row] : m_items)
+		row->enabled = ContainsCaseInsensitive(key, p_search);
 }

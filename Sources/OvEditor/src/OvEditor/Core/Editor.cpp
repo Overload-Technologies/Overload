@@ -92,6 +92,12 @@ void OvEditor::Core::Editor::SetupUI()
 			m_assetPicker->Open(p_type, std::move(p_callback), p_searchProjectFiles, p_searchEngineFiles);
 		}
 	);
+
+	OvCore::Helpers::GUIDrawer::SetUnifiedPickerProvider(
+		[this](std::vector<OvCore::Helpers::GUIDrawer::PickerItem> p_items) {
+			m_assetPicker->Open(std::move(p_items));
+		}
+	);
 }
 
 void OvEditor::Core::Editor::PreUpdate()

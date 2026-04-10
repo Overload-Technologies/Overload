@@ -40,6 +40,7 @@ namespace
 {
 	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
 	OvCore::Helpers::GUIDrawer::AssetPickerProviderCallback __ASSET_PICKER_PROVIDER;
+	OvCore::Helpers::GUIDrawer::UnifiedPickerProviderCallback __UNIFIED_PICKER_PROVIDER;
 }
 
 void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture)
@@ -64,6 +65,19 @@ void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
 	if (__ASSET_PICKER_PROVIDER)
 	{
 		__ASSET_PICKER_PROVIDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+	}
+}
+
+void OvCore::Helpers::GUIDrawer::SetUnifiedPickerProvider(UnifiedPickerProviderCallback p_provider)
+{
+	__UNIFIED_PICKER_PROVIDER = std::move(p_provider);
+}
+
+void OvCore::Helpers::GUIDrawer::OpenUnifiedPicker(std::vector<PickerItem> p_items)
+{
+	if (__UNIFIED_PICKER_PROVIDER)
+	{
+		__UNIFIED_PICKER_PROVIDER(std::move(p_items));
 	}
 }
 

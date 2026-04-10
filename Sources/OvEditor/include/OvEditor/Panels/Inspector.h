@@ -14,7 +14,6 @@
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Selection/ComboBox.h>
 
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Panels/AssetBrowser.h"
@@ -68,21 +67,13 @@ namespace OvEditor::Panels
 		void _PopulateActorInfo();
 		void _PopulateActorComponents();
 		void _PopulateActorBehaviours();
-		void _DrawAddComponentSection();
-		void _DrawAddScriptSection();
+		void _DrawAddSection();
 		void _DrawComponent(OvCore::ECS::Components::AComponent& p_component);
 		void _DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour);
-		void _UpdateAddComponentButton();
 
 	private:
 		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_targetActor = std::nullopt;
 		OvUI::Widgets::Layout::Group* m_content;
-
-		OvTools::Utils::OptRef<OvUI::Widgets::Buttons::Button> m_addComponentButton;
-
-		// We store this here so that re-creating the inspector doesn't
-		// reset the selected component.
-		int m_selectedComponent = 0;
 
 		uint64_t m_componentAddedListener	= 0;
 		uint64_t m_componentRemovedListener = 0;

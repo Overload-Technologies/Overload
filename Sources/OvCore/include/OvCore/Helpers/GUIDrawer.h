@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
@@ -51,6 +52,19 @@ namespace OvCore::Helpers
 	public:
 		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
 
+		/**
+		* Represents a single item in the unified picker.
+		*/
+		struct PickerItem
+		{
+			std::string displayName;
+			std::string tooltip;
+			uint32_t iconID = 0;
+			std::function<void()> onSelected;
+		};
+
+		using UnifiedPickerProviderCallback = std::function<void(std::vector<PickerItem>)>;
+
 		static const OvUI::Types::Color TitleColor;
 		static const OvUI::Types::Color ClearButtonColor;
 
@@ -88,6 +102,20 @@ namespace OvCore::Helpers
 			bool p_searchProjectFiles = true,
 			bool p_searchEngineFiles = true
 		);
+
+		/**
+		* Register the function that opens the unified picker (components + scripts).
+		* Call this once during editor startup.
+		* @param p_provider
+		*/
+		static void SetUnifiedPickerProvider(UnifiedPickerProviderCallback p_provider);
+
+		/**
+		* Open the unified picker with a pre-built list of items.
+		* Has no effect if no provider has been registered.
+		* @param p_items
+		*/
+		static void OpenUnifiedPicker(std::vector<PickerItem> p_items);
 
 		/**
 		* Draw a title with the title color

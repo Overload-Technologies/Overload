@@ -333,7 +333,7 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 	};
 
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
-	p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>(); // Necessary to fill the "value" column
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Reflection Probe Debugging");
 

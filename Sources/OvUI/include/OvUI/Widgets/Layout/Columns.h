@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <cfloat>
 #include <imgui.h>
 
 #include <OvUI/Internal/WidgetContainer.h>
@@ -31,33 +32,47 @@ namespace OvUI::Widgets::Layout
 	protected:
 		virtual void _Draw_Impl() override
 		{
-			ImGui::Columns(static_cast<int>(_Size), ("##" + m_widgetID).c_str(), false);
-
-			int counter = 0;
-
 			CollectGarbages();
 
-			for (auto it = m_widgets.begin(); it != m_widgets.end();)
+			constexpr auto tableFlags =
+				ImGuiTableFlags_Resizable |
+				ImGuiTableFlags_NoSavedSettings |
+				ImGuiTableFlags_NoBordersInBodyUntilResize;
+
+			if (ImGui::BeginTable(("table" + m_widgetID).c_str(), static_cast<int>(_Size), tableFlags))
 			{
-				it->first->Draw();
-
-				++it;
-
-				if (it != m_widgets.end())
+				for (size_t i = 0; i < _Size; ++i)
 				{
-					if (widths[counter] != -1.f)
-						ImGui::SetColumnWidth(counter, widths[counter]);
+					const auto columnFlags = widths[i] != -1.f ?
+						ImGuiTableColumnFlags_WidthFixed :
+						ImGuiTableColumnFlags_WidthStretch;
 
-					ImGui::NextColumn();
+					ImGui::TableSetupColumn(("##col_" + std::to_string(i)).c_str(), columnFlags, widths[i] != -1.f ? widths[i] : 0.0f);
 				}
 
-				++counter;
+				size_t counter = 0;
 
-				if (counter == _Size)
-					counter = 0;
+				for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it)
+				{
+					if (counter == 0)
+					{
+						ImGui::TableNextRow();
+					}
+
+					ImGui::TableSetColumnIndex(static_cast<int>(counter));
+
+					if (widths[counter] == -1.f)
+					{
+						ImGui::SetNextItemWidth(-FLT_MIN);
+					}
+
+					it->first->Draw();
+
+					counter = (counter + 1) % _Size;
+				}
+
+				ImGui::EndTable();
 			}
-
-			ImGui::Columns(1); // Necessary to not break the layout for following widget
 		}
 
 	public:

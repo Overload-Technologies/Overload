@@ -184,6 +184,8 @@ namespace
 
 		std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
 		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+		rightSide.horizontal = true;
+		rightSide.stretchWidget = 0;
 
 		auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
 
@@ -242,6 +244,8 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 
 	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
 	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	rightSide.horizontal = true;
+	rightSide.stretchWidget = 0;
 
 	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Visual::Image>(p_data ? p_data->GetTexture().GetID() : (__EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0), OvMaths::FVector2{75, 75});
 
@@ -308,6 +312,8 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
 
 	const std::string displayedText = (p_data.empty() ? std::string("Empty") : p_data);
 	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	rightSide.horizontal = true;
+	rightSide.stretchWidget = 0;
 
 	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
 

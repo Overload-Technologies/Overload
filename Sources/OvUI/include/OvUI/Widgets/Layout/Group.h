@@ -17,6 +17,10 @@ namespace OvUI::Widgets::Layout
 	*/
 	class Group : public AWidget, public Internal::WidgetContainer
 	{
+	public:
+		bool horizontal = false;
+		int stretchWidget = -1;
+
 	protected:
 		virtual void _Draw_Impl() override;
 	};

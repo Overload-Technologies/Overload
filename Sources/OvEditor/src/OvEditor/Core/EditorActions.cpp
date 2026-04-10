@@ -65,8 +65,7 @@ namespace
 			OvCore::Resources::Material* currentMaterial = p_materialRenderer.GetMaterialAtIndex(i);
 			const bool shouldOverride =
 				p_overwriteExisting ||
-				!currentMaterial ||
-				(p_defaultMaterial && currentMaterial == p_defaultMaterial);
+				!currentMaterial;
 
 			if (!shouldOverride)
 			{

@@ -283,7 +283,7 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 	for (uint8_t i = 0; i < materialCount; ++i)
 	{
 		auto* currentMaterial = GetMaterialAtIndex(i);
-		const bool shouldOverride = !currentMaterial || (defaultMaterial && currentMaterial == defaultMaterial);
+		const bool shouldOverride = !currentMaterial;
 		if (!shouldOverride)
 		{
 			continue;

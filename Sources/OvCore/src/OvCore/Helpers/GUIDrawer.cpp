@@ -90,9 +90,7 @@ void OvCore::Helpers::GUIDrawer::SetPickerProvider(PickerProviderCallback p_prov
 void OvCore::Helpers::GUIDrawer::OpenPicker(PickerItemList p_items, std::string p_title)
 {
 	if (__PICKER_PROVIDER)
-	{
 		__PICKER_PROVIDER(std::move(p_items), std::move(p_title));
-	}
 }
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)

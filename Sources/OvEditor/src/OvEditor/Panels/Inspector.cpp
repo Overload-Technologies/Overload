@@ -5,7 +5,6 @@
 */
 
 #include <filesystem>
-#include <map>
 #include <ranges>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
@@ -25,6 +24,7 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Helpers/PickerHelpers.h>
@@ -34,7 +34,6 @@
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
 #include <OvWindowing/Dialogs/MessageBox.h>
-#include <OvCore/Helpers/GUIDrawer.h>
 
 using namespace OvCore::ECS;
 using namespace OvCore::ECS::Components;

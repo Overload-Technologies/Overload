@@ -10,10 +10,8 @@
 
 #include <OvUI/Panels/PanelWindow.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
-#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
-#include <OvUI/Widgets/Buttons/Button.h>
 
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Panels/AssetBrowser.h"

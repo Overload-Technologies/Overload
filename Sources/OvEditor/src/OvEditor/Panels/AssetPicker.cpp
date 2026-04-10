@@ -55,7 +55,7 @@ AssetPicker::AssetPicker(
 	m_assetListGroup = &CreateWidget<OvUI::Widgets::Layout::Group>();
 }
 
-void AssetPicker::Open(PathParser::EFileType p_fileType, OvMaths::FVector2 p_buttonMin, OvMaths::FVector2 p_buttonMax, std::function<void(std::string)> p_callback)
+void AssetPicker::Open(PathParser::EFileType p_fileType, std::function<void(std::string)> p_callback)
 {
 	m_fileType = p_fileType;
 	m_callback = std::move(p_callback);
@@ -67,17 +67,20 @@ void AssetPicker::Open(PathParser::EFileType p_fileType, OvMaths::FVector2 p_but
 	const float winW = minSize.x;
 	const float winH = minSize.y;
 
+	const ImVec2 buttonMin = ImGui::GetItemRectMin();
+	const ImVec2 buttonMax = ImGui::GetItemRectMax();
+
 	// Default: top-left corner of the window aligned with the bottom-left of the button
-	float x = p_buttonMin.x;
-	float y = p_buttonMax.y;
+	float x = buttonMin.x;
+	float y = buttonMax.y;
 
 	// Not enough room below → open above the button instead
 	if (y + winH > display.y)
-		y = p_buttonMin.y - winH;
+		y = buttonMin.y - winH;
 
 	// Not enough room to the right → right-align to button's right edge
 	if (x + winW > display.x)
-		x = p_buttonMax.x - winW;
+		x = buttonMax.x - winW;
 
 	// Keep fully on-screen
 	x = std::max(0.f, x);

@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include <OvMaths/FVector2.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvUI/Panels/PanelWindow.h>
 
@@ -47,8 +46,6 @@ namespace OvEditor::Panels
 		*/
 		void Open(
 			OvTools::Utils::PathParser::EFileType p_fileType,
-			OvMaths::FVector2 p_buttonMin,
-			OvMaths::FVector2 p_buttonMax,
 			std::function<void(std::string)> p_callback
 		);
 

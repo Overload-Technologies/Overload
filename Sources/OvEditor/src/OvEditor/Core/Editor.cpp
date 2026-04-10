@@ -4,10 +4,7 @@
 * @licence: MIT
 */
 
-#include "OvUI/Settings/PanelWindowSettings.h"
 #include <tracy/Tracy.hpp>
-
-#include <imgui.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
 
@@ -30,13 +27,14 @@
 #include <OvEditor/Panels/Toolbar.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvPhysics/Core/PhysicsEngine.h>
+#include <OvUI/Settings/PanelWindowSettings.h>
 
 using namespace OvCore::ResourceManagement;
 using namespace OvEditor::Panels;
 using namespace OvRendering::Resources::Loaders;
 using namespace OvRendering::Resources::Parsers;
 
-OvEditor::Core::Editor::Editor(Context& p_context) : 
+OvEditor::Core::Editor::Editor(Context& p_context) :
 	m_context(p_context),
 	m_panelsManager(m_canvas),
 	m_editorActions(m_context, m_panelsManager)
@@ -91,9 +89,7 @@ void OvEditor::Core::Editor::SetupUI()
 
 	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
 		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback) {
-			const ImVec2 min = ImGui::GetItemRectMin();
-			const ImVec2 max = ImGui::GetItemRectMax();
-			m_assetPicker->Open(p_type, { min.x, min.y }, { max.x, max.y }, std::move(p_callback));
+			m_assetPicker->Open(p_type, std::move(p_callback));
 		}
 	);
 }
@@ -106,16 +102,9 @@ void OvEditor::Core::Editor::PreUpdate()
 
 void OvEditor::Core::Editor::Update(float p_deltaTime)
 {
-	// Disable ImGui mouse update if the mouse cursor is disabled.
-	// i.e. when locked during gameplay, or when a view is being interacted
-	if (m_context.window->GetCursorMode() == OvWindowing::Cursor::ECursorMode::DISABLED)
-	{
-		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
-	}
-	else
-	{
-		ImGui::GetIO().ConfigFlags &= ~(ImGuiConfigFlags_NoMouse);
-	}
+	// Disable mouse input when the cursor is locked during gameplay or view interaction.
+	const bool mouseEnabled = m_context.window->GetCursorMode() != OvWindowing::Cursor::ECursorMode::DISABLED;
+	m_context.uiManager->EnableMouse(mouseEnabled);
 
 	HandleGlobalShortcuts();
 	UpdateCurrentEditorMode(p_deltaTime);

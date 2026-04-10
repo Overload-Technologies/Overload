@@ -9,7 +9,6 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 
 #include <OvEditor/Core/Editor.h>
-#include <OvEditor/Helpers/PickerHelpers.h>
 #include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/ItemPicker.h>
 #include <OvEditor/Panels/AssetProperties.h>
@@ -86,26 +85,6 @@ void OvEditor::Core::Editor::SetupUI()
 	);
 
 	m_canvas.AddPanel(*m_itemPicker);
-
-	OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
-		[this](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback, bool p_searchProjectFiles, bool p_searchEngineFiles) {
-			using EFileType = OvTools::Utils::PathParser::EFileType;
-			static const std::unordered_map<EFileType, std::string> kTitles = {
-				{ EFileType::MODEL,    "Pick Model"    },
-				{ EFileType::TEXTURE,  "Pick Texture"  },
-				{ EFileType::SHADER,   "Pick Shader"   },
-				{ EFileType::MATERIAL, "Pick Material" },
-				{ EFileType::SOUND,    "Pick Sound"    },
-				{ EFileType::SCRIPT,   "Pick Script"   },
-			};
-			const auto it = kTitles.find(p_type);
-			const std::string title = (it != kTitles.end()) ? it->second : "Pick Asset";
-
-			OvCore::Helpers::GUIDrawer::PickerItemList items;
-			OvEditor::Helpers::PickerHelpers::AddFileItems(items, p_type, std::move(p_callback), p_searchProjectFiles, p_searchEngineFiles);
-			m_itemPicker->Open(std::move(items), title);
-		}
-	);
 
 	OvCore::Helpers::GUIDrawer::SetPickerProvider(
 		[this](OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title) {

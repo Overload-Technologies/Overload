@@ -19,8 +19,11 @@
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
 
+#include <OvCore/Helpers/GUIDrawer.h>
+
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
+#include <OvEditor/Helpers/PickerHelpers.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/GameView.h>
 #include <OvEditor/Panels/Inspector.h>
@@ -43,6 +46,14 @@ OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& 
 	m_panelsManager(p_panelsManager)
 {
 	OvCore::Global::ServiceLocator::Provide<OvEditor::Core::EditorActions>(*this);
+
+	OvCore::Helpers::GUIDrawer::SetFileItemBuilder(
+		[](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback, bool p_searchProject, bool p_searchEngine) {
+			OvCore::Helpers::GUIDrawer::PickerItemList items;
+			OvEditor::Helpers::PickerHelpers::AddFileItems(items, p_type, std::move(p_callback), p_searchProject, p_searchEngine);
+			return items;
+		}
+	);
 
 	m_context.sceneManager.CurrentSceneSourcePathChangedEvent += [this](const std::string& p_newPath)
 	{

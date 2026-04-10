@@ -51,8 +51,6 @@ namespace OvCore::Helpers
 	class GUIDrawer
 	{
 	public:
-		using AssetPickerProviderCallback = std::function<void(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
-
 		/**
 		* Represents a single item in the picker.
 		* The key uniquely identifies the item for deduplication when combining lists.
@@ -94,6 +92,12 @@ namespace OvCore::Helpers
 			std::unordered_set<std::string> m_keys;
 		};
 
+		/**
+		* A callback that builds a PickerItemList for a given file type.
+		* Called internally by OpenAssetPicker — register once via SetFileItemBuilder.
+		*/
+		using FileItemBuilderCallback = std::function<PickerItemList(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
+
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
 		static const OvUI::Types::Color TitleColor;
@@ -109,19 +113,18 @@ namespace OvCore::Helpers
 		static void ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture);
 
 		/**
-		* Register the function that opens the asset picker window.
-		* The provider receives the desired file type and a callback to invoke with the chosen path.
+		* Register the function that builds a PickerItemList for a given file type.
+		* This is called internally by OpenAssetPicker.
 		* Call this once during editor startup.
-		* @param p_provider
+		* @param p_builder
 		*/
-		static void SetAssetPickerProvider(
-			AssetPickerProviderCallback p_provider
-		);
+		static void SetFileItemBuilder(FileItemBuilderCallback p_builder);
 
 		/**
-		* Open the asset picker window for the given file type.
-		* Invokes p_onSelect with the chosen path when the user picks an asset.
-		* Has no effect if no provider has been registered.
+		* Open the asset picker for the given file type.
+		* Builds the item list via the registered file item builder, derives the window title
+		* from the file type, and forwards everything to the registered picker provider.
+		* Has no effect if either callback has not been registered.
 		* @param p_fileType
 		* @param p_onSelect
 		* @param p_searchProjectFiles  Include project assets in the results
@@ -136,7 +139,7 @@ namespace OvCore::Helpers
 
 		/**
 		* Register the function that opens the picker window.
-		* Call this once during editor startup.
+		* Call this once during editor startup (typically in Editor::SetupUI).
 		* @param p_provider
 		*/
 		static void SetPickerProvider(PickerProviderCallback p_provider);

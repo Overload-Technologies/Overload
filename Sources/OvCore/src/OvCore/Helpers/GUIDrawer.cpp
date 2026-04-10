@@ -39,8 +39,23 @@ const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
 namespace
 {
 	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
-	OvCore::Helpers::GUIDrawer::AssetPickerProviderCallback __ASSET_PICKER_PROVIDER;
+	OvCore::Helpers::GUIDrawer::FileItemBuilderCallback __FILE_ITEM_BUILDER;
 	OvCore::Helpers::GUIDrawer::PickerProviderCallback __PICKER_PROVIDER;
+
+	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
+	{
+		using EFileType = OvTools::Utils::PathParser::EFileType;
+		switch (p_type)
+		{
+		case EFileType::MODEL:    return "Pick Model";
+		case EFileType::TEXTURE:  return "Pick Texture";
+		case EFileType::SHADER:   return "Pick Shader";
+		case EFileType::MATERIAL: return "Pick Material";
+		case EFileType::SOUND:    return "Pick Sound";
+		case EFileType::SCRIPT:   return "Pick Script";
+		default:                  return "Pick Asset";
+		}
+	}
 }
 
 void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture)
@@ -48,11 +63,9 @@ void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Tex
 	__EMPTY_TEXTURE = &p_emptyTexture;
 }
 
-void OvCore::Helpers::GUIDrawer::SetAssetPickerProvider(
-	AssetPickerProviderCallback p_provider
-)
+void OvCore::Helpers::GUIDrawer::SetFileItemBuilder(FileItemBuilderCallback p_builder)
 {
-	__ASSET_PICKER_PROVIDER = std::move(p_provider);
+	__FILE_ITEM_BUILDER = std::move(p_builder);
 }
 
 void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
@@ -62,10 +75,11 @@ void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
 	bool p_searchEngineFiles
 )
 {
-	if (__ASSET_PICKER_PROVIDER)
-	{
-		__ASSET_PICKER_PROVIDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
-	}
+	if (!__FILE_ITEM_BUILDER || !__PICKER_PROVIDER)
+		return;
+
+	auto items = __FILE_ITEM_BUILDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+	__PICKER_PROVIDER(std::move(items), TitleFromFileType(p_fileType));
 }
 
 void OvCore::Helpers::GUIDrawer::SetPickerProvider(PickerProviderCallback p_provider)
@@ -152,14 +166,11 @@ namespace
 		auto token = std::make_shared<bool>(true);
 		p_button.ClickedEvent += [p_fileType, p_onSelect = std::move(p_onSelect), token = std::move(token)]
 		{
-			if (__ASSET_PICKER_PROVIDER)
+			std::weak_ptr<bool> weak = token;
+			OvCore::Helpers::GUIDrawer::OpenAssetPicker(p_fileType, [p_onSelect, weak](const std::string& p_path)
 			{
-				std::weak_ptr<bool> weak = token;
-				__ASSET_PICKER_PROVIDER(p_fileType, [p_onSelect, weak](const std::string& p_path)
-				{
-					if (!weak.expired()) p_onSelect(p_path);
-				}, true, true);
-			}
+				if (!weak.expired()) p_onSelect(p_path);
+			}, true, true);
 		};
 	}
 

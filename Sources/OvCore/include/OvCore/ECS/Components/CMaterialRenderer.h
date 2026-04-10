@@ -27,7 +27,7 @@ namespace OvCore::ECS::Components
 	{
 	public:
 		using MaterialList = std::array<OvCore::Resources::Material*, kMaxMaterialCount>;
-		using MaterialField = std::array<std::array<OvUI::Widgets::AWidget*, 3>, kMaxMaterialCount>;
+		using MaterialField = std::array<std::array<OvUI::Widgets::AWidget*, 2>, kMaxMaterialCount>;
 
 		/**
 		* Constructor

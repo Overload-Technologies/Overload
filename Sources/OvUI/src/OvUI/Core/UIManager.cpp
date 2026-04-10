@@ -129,6 +129,14 @@ float OvUI::Core::UIManager::GetEditorLayoutAutosaveFrequency(float p_frequeny)
 	return ImGui::GetIO().IniSavingRate;
 }
 
+void OvUI::Core::UIManager::EnableMouse(bool p_value)
+{
+	if (p_value)
+		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+	else
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+}
+
 void OvUI::Core::UIManager::EnableDocking(bool p_value)
 {
 	m_dockingState = p_value;

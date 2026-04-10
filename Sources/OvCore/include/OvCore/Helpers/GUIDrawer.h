@@ -6,10 +6,17 @@
 
 #pragma once
 
+#include <functional>
+#include <string>
+#include <unordered_set>
+#include <vector>
+
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FVector4.h>
 #include <OvMaths/FQuaternion.h>
+
+#include <OvTools/Utils/PathParser.h>
 
 #include <OvUI/Internal/WidgetContainer.h>
 #include <OvUI/Widgets/Texts/Text.h>
@@ -44,6 +51,55 @@ namespace OvCore::Helpers
 	class GUIDrawer
 	{
 	public:
+		/**
+		* Represents a single item in the picker.
+		* The key uniquely identifies the item for deduplication when combining lists.
+		*/
+		struct PickerItem
+		{
+			std::string key;         // unique identifier used for deduplication
+			std::string displayName;
+			std::string tooltip;
+			uint32_t iconID = 0;
+			std::function<void()> onSelected;
+		};
+
+		/**
+		* An ordered, deduplication-aware collection of picker items.
+		* Items with the same key are silently dropped when added.
+		*/
+		class PickerItemList
+		{
+		public:
+			/**
+			* Add an item to the list.
+			* @returns true if added, false if an item with the same key was already present.
+			*/
+			bool Add(PickerItem p_item)
+			{
+				if (!m_keys.insert(p_item.key).second)
+					return false;
+				m_items.push_back(std::move(p_item));
+				return true;
+			}
+
+			const std::vector<PickerItem>& Items() const { return m_items; }
+			bool empty() const { return m_items.empty(); }
+			size_t size() const { return m_items.size(); }
+
+		private:
+			std::vector<PickerItem> m_items;
+			std::unordered_set<std::string> m_keys;
+		};
+
+		/**
+		* A callback that builds a PickerItemList for a given file type.
+		* Called internally by OpenAssetPicker — register once via SetFileItemBuilder.
+		*/
+		using FileItemBuilderCallback = std::function<PickerItemList(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
+
+		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
+
 		static const OvUI::Types::Color TitleColor;
 		static const OvUI::Types::Color ClearButtonColor;
 
@@ -55,6 +111,46 @@ namespace OvCore::Helpers
 		* @param p_emptyTexture
 		*/
 		static void ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture);
+
+		/**
+		* Register the function that builds a PickerItemList for a given file type.
+		* This is called internally by OpenAssetPicker.
+		* Call this once during editor startup.
+		* @param p_builder
+		*/
+		static void SetFileItemBuilder(FileItemBuilderCallback p_builder);
+
+		/**
+		* Open the asset picker for the given file type.
+		* Builds the item list via the registered file item builder, derives the window title
+		* from the file type, and forwards everything to the registered picker provider.
+		* Has no effect if either callback has not been registered.
+		* @param p_fileType
+		* @param p_onSelect
+		* @param p_searchProjectFiles  Include project assets in the results
+		* @param p_searchEngineFiles   Include engine assets in the results
+		*/
+		static void OpenAssetPicker(
+			OvTools::Utils::PathParser::EFileType p_fileType,
+			std::function<void(std::string)> p_onSelect,
+			bool p_searchProjectFiles = true,
+			bool p_searchEngineFiles = true
+		);
+
+		/**
+		* Register the function that opens the picker window.
+		* Call this once during editor startup (typically in Editor::SetupUI).
+		* @param p_provider
+		*/
+		static void SetPickerProvider(PickerProviderCallback p_provider);
+
+		/**
+		* Open the picker with the given list of items.
+		* Has no effect if no provider has been registered.
+		* @param p_items
+		* @param p_title  Title displayed in the window's title bar
+		*/
+		static void OpenPicker(PickerItemList p_items, std::string p_title);
 
 		/**
 		* Draw a title with the title color
@@ -95,9 +191,6 @@ namespace OvCore::Helpers
 
 		template <typename T>
 		static std::string GetFormat();
-
-	private:
-		static OvRendering::Resources::Texture* __EMPTY_TEXTURE;
 	};
 }
 

@@ -17,6 +17,12 @@ void OvUI::Widgets::InputFields::InputText::_Draw_Impl()
 {
 	std::string previousContent = content;
 
+	if (focusOnNextDraw)
+	{
+		ImGui::SetKeyboardFocusHere();
+		focusOnNextDraw = false;
+	}
+
 	content.resize(256, '\0');
 	bool enterPressed = ImGui::InputText((label + m_widgetID).c_str(), &content[0], 256, ImGuiInputTextFlags_EnterReturnsTrue | (selectAllOnClick ? ImGuiInputTextFlags_AutoSelectAll : 0));
 	content = content.c_str();

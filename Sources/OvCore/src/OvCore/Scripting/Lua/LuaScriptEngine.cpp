@@ -165,7 +165,7 @@ std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultExtension()
 }
 
 template<>
-std::vector<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValidExtensions()
+std::unordered_set<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValidExtensions()
 {
 	return { GetDefaultExtension() };
 }

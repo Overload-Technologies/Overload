@@ -5,7 +5,6 @@
 */
 
 #include <filesystem>
-#include <map>
 #include <ranges>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
@@ -25,12 +24,16 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 #include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Core/EditorResources.h>
+#include <OvEditor/Helpers/PickerHelpers.h>
 #include <OvEditor/Panels/Inspector.h>
-#include <OvUI/Plugins/DDTarget.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
+#include <OvWindowing/Dialogs/MessageBox.h>
 
 using namespace OvCore::ECS;
 using namespace OvCore::ECS::Components;
@@ -100,25 +103,6 @@ namespace
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
 	});
 
-	OvTools::Utils::OptRef<IComponentInfo> GetComponentInfo(size_t p_index)
-	{
-		if (p_index >= componentRegistry.size())
-		{
-			return std::nullopt;
-		}
-
-		return *componentRegistry.at(p_index);
-	}
-
-	std::map<int, std::string> GetComponentMap()
-	{
-		std::map<int, std::string> choices;
-		for (size_t i = 0; i < componentRegistry.size(); ++i)
-		{
-			choices[static_cast<int>(i)] = componentRegistry.at(i)->GetName();
-		}
-		return choices;
-	}
 }
 
 OvEditor::Panels::Inspector::Inspector(
@@ -193,6 +177,8 @@ void OvEditor::Panels::Inspector::_Populate()
 	m_content->CreateWidget<Visual::Separator>();
 	_PopulateActorComponents();
 	_PopulateActorBehaviours();
+	m_content->CreateWidget<Visual::Separator>();
+	_DrawAddSection();
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorInfo()
@@ -220,8 +206,7 @@ void OvEditor::Panels::Inspector::_PopulateActorInfo()
 		[this](bool p_active) { m_targetActor->SetActive(p_active); }
 	);
 
-	_DrawAddComponentSection();
-	_DrawAddScriptSection();
+	_DrawAddSection();
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorComponents()
@@ -249,66 +234,78 @@ void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 	}
 }
 
-void OvEditor::Panels::Inspector::_DrawAddComponentSection()
+void OvEditor::Panels::Inspector::_DrawAddSection()
 {
-	// Component selection
-	auto& componentSelector = m_content->CreateWidget<Selection::ComboBox>(m_selectedComponent);
-	componentSelector.lineBreak = false;
-	componentSelector.choices = GetComponentMap();
+	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
+	addButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
+	addButton.textColor = OvUI::Types::Color::White;
 
-	m_addComponentButton = m_content->CreateWidget<Buttons::Button>("Add Component", OvMaths::FVector2{ 100.f, 0 });
-	m_addComponentButton->idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	m_addComponentButton->textColor = OvUI::Types::Color::White;
-	m_addComponentButton->ClickedEvent += [this, &componentSelector] {
-		if (auto compInfo = GetComponentInfo(componentSelector.currentChoice))
+	addButton.ClickedEvent += [this] {
+		if (!m_targetActor.has_value())
+			return;
+
+		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
+
+		OvCore::Helpers::GUIDrawer::PickerItemList items;
+
+		for (const auto& info : componentRegistry)
 		{
-			compInfo->AddComponent(m_targetActor.value());
+			if (!info->IsAddable(m_targetActor.value()))
+				continue;
+
+			const std::string name = std::string(info->GetName());
+			items.Add({
+				name,
+				name,
+				name,
+				componentIconID,
+				[this, name, &info = *info] {
+					if (!m_targetActor.has_value())
+						return;
+
+					if (!info.IsAddable(m_targetActor.value()))
+					{
+						OvWindowing::Dialogs::MessageBox(
+							"Component already attached",
+							"The component \"" + name + "\" is already attached to this actor.",
+							OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+							OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+						);
+						return;
+					}
+
+					info.AddComponent(m_targetActor.value());
+				}
+			});
 		}
-	};
 
-	componentSelector.ValueChangedEvent += [this](int p_value) {
-		// We keep track of the selected component so that if the inspector is refreshed,
-		// the selected component will be the same as before.
-		m_selectedComponent = p_value;
-		_UpdateAddComponentButton();
-	};
+		OvEditor::Helpers::PickerHelpers::AddFileItems(
+			items,
+			OvTools::Utils::PathParser::EFileType::SCRIPT,
+			[this](const std::string& p_resourcePath) {
+				if (!m_targetActor.has_value())
+					return;
 
-	_UpdateAddComponentButton();
-}
+				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(p_resourcePath));
+				const std::string displayName = OvTools::Utils::PathParser::GetElementName(scriptPath);
 
-void OvEditor::Panels::Inspector::_DrawAddScriptSection()
-{
-	// Script selelection
-	auto& scriptSelector = m_content->CreateWidget<InputFields::InputText>(m_selectedScript);
-	scriptSelector.lineBreak = false;
-	auto& ddTarget = scriptSelector.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("File");
+				if (m_targetActor->GetBehaviour(scriptPath))
+				{
+					OvWindowing::Dialogs::MessageBox(
+						"Script already attached",
+						"The script \"" + displayName + "\" is already attached to this actor.",
+						OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+						OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+					);
+					return;
+				}
 
-	m_addScriptButton = m_content->CreateWidget<Buttons::Button>("Add Script", OvMaths::FVector2{ 100.f, 0 });
-	m_addScriptButton->idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	m_addScriptButton->textColor = OvUI::Types::Color::White;
-	m_addScriptButton->disabled = true;
+				m_targetActor->AddBehaviour(scriptPath);
+			},
+			true, false
+		);
 
-	scriptSelector.ContentChangedEvent += [this](const std::string& p_content) {
-		m_selectedScript = p_content;
-		_UpdateAddScriptButton();
-	};
-
-	_UpdateAddScriptButton();
-
-	m_addScriptButton->ClickedEvent += [this] {
-		const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
-
-		// Ensure that the script is a valid one
-		if (std::filesystem::exists(realScriptPath))
-		{
-			m_targetActor->AddBehaviour(m_selectedScript);
-			_UpdateAddScriptButton();
-		}
-	};
-
-	ddTarget.DataReceivedEvent += [&scriptSelector](std::pair<std::string, Layout::Group*> p_data) {
-		scriptSelector.content = EDITOR_EXEC(GetScriptPath(p_data.first));
-		scriptSelector.ContentChangedEvent.Invoke(scriptSelector.content);
+		OvCore::Helpers::GUIDrawer::OpenPicker(std::move(items), "Add Component");
 	};
 }
 
@@ -335,33 +332,6 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
 	columns.widths[0] = 200;
 	p_behaviour.OnInspector(columns);
-}
-
-void OvEditor::Panels::Inspector::_UpdateAddComponentButton()
-{
-	OVASSERT(m_addComponentButton.has_value(), "Add component button not set");
-
-	m_addComponentButton->disabled = ![this] {
-		if (auto compInfo = GetComponentInfo(m_selectedComponent))
-		{
-			return compInfo->IsAddable(m_targetActor.value());
-		}
-
-		return false;
-	}();
-}
-
-void OvEditor::Panels::Inspector::_UpdateAddScriptButton()
-{
-	OVASSERT(m_addScriptButton.has_value(), "Add script button not set");
-
-	const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
-
-	const bool canAdd =
-		std::filesystem::exists(realScriptPath) &&
-		!m_targetActor->GetBehaviour(m_selectedScript);
-
-	m_addScriptButton->disabled = !canAdd;
 }
 
 void OvEditor::Panels::Inspector::Refresh()

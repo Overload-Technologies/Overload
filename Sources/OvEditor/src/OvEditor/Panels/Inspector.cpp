@@ -177,6 +177,8 @@ void OvEditor::Panels::Inspector::_Populate()
 	m_content->CreateWidget<Visual::Separator>();
 	_PopulateActorComponents();
 	_PopulateActorBehaviours();
+	m_content->CreateWidget<Visual::Separator>();
+	_DrawAddSection();
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorInfo()
@@ -234,7 +236,7 @@ void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 
 void OvEditor::Panels::Inspector::_DrawAddSection()
 {
-	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component", OvMaths::FVector2{ 150.f, 0 });
+	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
 	addButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
 	addButton.textColor = OvUI::Types::Color::White;
 

@@ -48,8 +48,16 @@ namespace OvEditor::Panels
 		void Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title);
 
 	private:
+		void _Draw_Impl() override;
 		void Populate();
 		void FilterList(const std::string& p_search);
+
+	private:
+		/* When true, _Draw_Impl will inject SetNextWindowPos with a pivot
+		   (bottom-anchor) before calling the parent, then clear the flag. */
+		bool m_usePivotAnchor = false;
+		float m_anchorX = 0.f;
+		float m_anchorY = 0.f;  // bottom-left Y when m_usePivotAnchor is true
 
 	private:
 		OvCore::Helpers::GUIDrawer::PickerItemList m_items;

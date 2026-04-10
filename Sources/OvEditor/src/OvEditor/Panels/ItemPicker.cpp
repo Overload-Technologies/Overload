@@ -54,6 +54,18 @@ ItemPicker::ItemPicker(
 	m_listGroup = &CreateWidget<OvUI::Widgets::Layout::Group>();
 }
 
+void ItemPicker::_Draw_Impl()
+{
+	if (m_usePivotAnchor)
+	{
+		// Anchor the bottom-left of the window to (m_anchorX, m_anchorY)
+		// so the picker grows upward toward the button.
+		ImGui::SetNextWindowPos({ m_anchorX, m_anchorY }, ImGuiCond_Always, { 0.f, 1.f });
+		m_usePivotAnchor = false;
+	}
+	PanelWindow::_Draw_Impl();
+}
+
 void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title)
 {
 	name = std::move(p_title);
@@ -63,25 +75,34 @@ void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::s
 	ScrollToTop();
 
 	const ImVec2 display = ImGui::GetIO().DisplaySize;
-	const float winW = minSize.x;
-	const float winH = minSize.y;
-
 	const ImVec2 buttonMin = ImGui::GetItemRectMin();
 	const ImVec2 buttonMax = ImGui::GetItemRectMax();
 
+	const float spaceBelow = display.y - buttonMax.y;
+	const float spaceAbove = buttonMin.y;
+	const bool placeBelow = spaceBelow >= spaceAbove;
+
+	// Constrain the picker height so it never clips off-screen.
+	// Use a large but positive x value so the height-only constraint is respected.
+	maxSize = { 10000.f, placeBelow ? spaceBelow : spaceAbove };
+
 	float x = buttonMin.x;
-	float y = buttonMax.y;
-
-	if (y + winH > display.y)
-		y = buttonMin.y - winH;
-
-	if (x + winW > display.x)
-		x = buttonMax.x - winW;
-
+	if (x + minSize.x > display.x)
+		x = buttonMax.x - minSize.x;
 	x = std::max(0.f, x);
-	y = std::max(0.f, y);
 
-	SetPosition({ x, y });
+	if (placeBelow)
+	{
+		SetPosition({ x, buttonMax.y });
+	}
+	else
+	{
+		// Use SetNextWindowPos with a bottom-left pivot so the window grows upward.
+		// Don't call SetPosition() — that uses SetWindowPos (no pivot support).
+		m_anchorX = x;
+		m_anchorY = buttonMin.y;
+		m_usePivotAnchor = true;
+	}
 	PanelWindow::Open();
 	Focus();
 }

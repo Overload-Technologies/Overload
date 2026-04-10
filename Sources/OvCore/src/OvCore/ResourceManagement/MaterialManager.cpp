@@ -6,6 +6,7 @@
 
 #include "OvCore/ResourceManagement/MaterialManager.h"
 
+#include <filesystem>
 #include <optional>
 #include <string_view>
 
@@ -14,9 +15,11 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
+#include <OvTools/Utils/PathParser.h>
 
 namespace
 {
+	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 	constexpr std::string_view kStandardShaderPath = ":Shaders\\Standard.ovfx";
 
 	struct EmbeddedMaterialContext
@@ -61,6 +64,30 @@ namespace
 		};
 	}
 
+	std::optional<std::string> ResolveLinkedTextureResourcePath(const std::string& p_modelPath, const std::string& p_sourcePath)
+	{
+		const std::string normalizedSourcePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_sourcePath);
+		if (normalizedSourcePath.empty())
+		{
+			return std::nullopt;
+		}
+
+		if (normalizedSourcePath.starts_with(':'))
+		{
+			return OvTools::Utils::PathParser::MakeWindowsStyle(normalizedSourcePath);
+		}
+
+		auto sourcePath = std::filesystem::path{ normalizedSourcePath };
+		if (sourcePath.is_absolute())
+		{
+			return std::nullopt;
+		}
+
+		const auto modelPath = std::filesystem::path{ OvTools::Utils::PathParser::MakeNonWindowsStyle(p_modelPath) };
+		const auto linkedTexturePath = (modelPath.parent_path() / sourcePath).lexically_normal();
+		return OvTools::Utils::PathParser::MakeWindowsStyle(linkedTexturePath.string());
+	}
+
 	bool BindEmbeddedTextureProperty(
 		OvCore::Resources::Material& p_material,
 		const EmbeddedMaterialContext& p_context,
@@ -73,9 +100,25 @@ namespace
 			return false;
 		}
 
+		auto& textureManager = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>();
 		const auto* embeddedTexture = p_context.model->GetEmbeddedTexture(p_textureIndex.value());
 		if (!embeddedTexture)
 		{
+			return false;
+		}
+
+		using SourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType;
+		if (embeddedTexture->sourceType == SourceType::EXTERNAL_FILE)
+		{
+			if (const auto linkedTexturePath = ResolveLinkedTextureResourcePath(p_context.modelPath, embeddedTexture->sourcePath))
+			{
+				if (auto* linkedTexture = textureManager.GetResource(linkedTexturePath.value()))
+				{
+					p_material.TrySetProperty(std::string{ p_uniformName }, linkedTexture);
+					return true;
+				}
+			}
+
 			return false;
 		}
 
@@ -86,7 +129,7 @@ namespace
 			extension
 		);
 
-		if (auto* texture = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().GetResource(texturePath))
+		if (auto* texture = textureManager.GetResource(texturePath))
 		{
 			p_material.TrySetProperty(std::string{ p_uniformName }, texture);
 			return true;
@@ -127,12 +170,12 @@ namespace
 		BindEmbeddedTextureProperty(p_material, p_context, materialData.emissiveTexture, "u_EmissiveMap");
 		BindEmbeddedTextureProperty(p_material, p_context, materialData.opacityTexture, "u_MaskMap");
 
-		if (materialData.normalMapping || normalTextureBound)
+		if (normalTextureBound)
 		{
 			p_material.AddFeature("NORMAL_MAPPING");
 		}
 
-		if (materialData.parallaxMapping || heightTextureBound)
+		if (heightTextureBound)
 		{
 			p_material.AddFeature("PARALLAX_MAPPING");
 		}
@@ -174,9 +217,20 @@ void OvCore::ResourceManagement::MaterialManager::DestroyResource(OvCore::Resour
 
 void OvCore::ResourceManagement::MaterialManager::ReloadResource(OvCore::Resources::Material* p_resource, const std::filesystem::path& p_path)
 {
+	const auto embeddedAssetPath = OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(p_path.string());
+	const bool isEmbeddedMaterialPath = embeddedAssetPath &&
+		OvRendering::Resources::Parsers::ParseEmbeddedMaterialIndex(embeddedAssetPath->assetName).has_value();
+
 	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
 	{
 		ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value());
+		return;
+	}
+
+	if (isEmbeddedMaterialPath)
+	{
+		const auto defaultMaterialRealPath = GetRealPath(std::filesystem::path{ std::string{ kDefaultMaterialPath } }).string();
+		OvCore::Resources::Loaders::MaterialLoader::Reload(*p_resource, defaultMaterialRealPath);
 		return;
 	}
 

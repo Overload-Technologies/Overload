@@ -73,6 +73,7 @@ void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::s
 	name = std::move(p_title);
 	m_items = std::move(p_items);
 	m_searchField->content = "";
+	m_searchField->focusOnNextDraw = true;
 	Populate();
 	ScrollToTop();
 

@@ -27,9 +27,7 @@
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/Inspector.h>
-#include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -280,46 +278,23 @@ void OvEditor::Panels::Inspector::_DrawAddComponentSection()
 
 void OvEditor::Panels::Inspector::_DrawAddScriptSection()
 {
-	// Script selelection
-	auto& scriptSelector = m_content->CreateWidget<InputFields::InputText>(m_selectedScript);
-	scriptSelector.lineBreak = false;
-	auto& ddTarget = scriptSelector.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, Layout::Group*>>>("File");
+	auto& addScriptButton = m_content->CreateWidget<Buttons::Button>("Add Script", OvMaths::FVector2{ 100.f, 0 });
+	addScriptButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
+	addScriptButton.textColor = OvUI::Types::Color::White;
 
-	auto& pickerButton = m_content->CreateWidget<Buttons::ButtonSmall>("...");
-	pickerButton.lineBreak = false;
-	pickerButton.ClickedEvent += [this, &scriptSelector] {
-		OvCore::Helpers::GUIDrawer::OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCRIPT, [this, &scriptSelector](const std::string& p_path) {
-			scriptSelector.content = EDITOR_EXEC(GetScriptPath(p_path));
-			scriptSelector.ContentChangedEvent.Invoke(scriptSelector.content);
-		}, true, false);
-	};
+	addScriptButton.ClickedEvent += [this] {
+		OvCore::Helpers::GUIDrawer::OpenAssetPicker(
+			OvTools::Utils::PathParser::EFileType::SCRIPT,
+			[this](const std::string& p_path) {
+				if (!m_targetActor.has_value())
+					return;
 
-	m_addScriptButton = m_content->CreateWidget<Buttons::Button>("Add Script", OvMaths::FVector2{ 100.f, 0 });
-	m_addScriptButton->idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	m_addScriptButton->textColor = OvUI::Types::Color::White;
-	m_addScriptButton->disabled = true;
-
-	scriptSelector.ContentChangedEvent += [this](const std::string& p_content) {
-		m_selectedScript = p_content;
-		_UpdateAddScriptButton();
-	};
-
-	_UpdateAddScriptButton();
-
-	m_addScriptButton->ClickedEvent += [this] {
-		const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
-
-		// Ensure that the script is a valid one
-		if (std::filesystem::exists(realScriptPath))
-		{
-			m_targetActor->AddBehaviour(m_selectedScript);
-			_UpdateAddScriptButton();
-		}
-	};
-
-	ddTarget.DataReceivedEvent += [&scriptSelector](std::pair<std::string, Layout::Group*> p_data) {
-		scriptSelector.content = EDITOR_EXEC(GetScriptPath(p_data.first));
-		scriptSelector.ContentChangedEvent.Invoke(scriptSelector.content);
+				const auto scriptPath = EDITOR_EXEC(GetScriptPath(p_path));
+				if (!m_targetActor->GetBehaviour(scriptPath))
+					m_targetActor->AddBehaviour(scriptPath);
+			},
+			true, false
+		);
 	};
 }
 
@@ -360,23 +335,6 @@ void OvEditor::Panels::Inspector::_UpdateAddComponentButton()
 
 		return false;
 	}();
-}
-
-void OvEditor::Panels::Inspector::_UpdateAddScriptButton()
-{
-	OVASSERT(m_addScriptButton.has_value(), "Add script button not set");
-
-	const auto realScriptPath = EDITOR_CONTEXT(projectAssetsPath) / m_selectedScript;
-
-	const bool canAdd =
-		OVSERVICE(OvCore::Scripting::ScriptEngine).GetValidExtensions().contains(
-			realScriptPath.extension().string()
-		) &&
-		std::filesystem::exists(realScriptPath) &&
-		std::filesystem::is_regular_file(realScriptPath) &&
-		!m_targetActor->GetBehaviour(m_selectedScript);
-
-	m_addScriptButton->disabled = !canAdd;
 }
 
 void OvEditor::Panels::Inspector::Refresh()

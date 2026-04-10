@@ -59,6 +59,7 @@ namespace
 			p_model.GetMaterialNames().size(),
 			static_cast<size_t>(kMaxMaterialCount)
 		));
+		const size_t embeddedMaterialCount = p_model.GetEmbeddedMaterials().size();
 
 		for (uint8_t i = 0; i < materialCount; ++i)
 		{
@@ -69,6 +70,20 @@ namespace
 
 			if (!shouldOverride)
 			{
+				continue;
+			}
+
+			if (i >= embeddedMaterialCount)
+			{
+				if (p_defaultMaterial)
+				{
+					p_materialRenderer.SetMaterialAtIndex(i, *p_defaultMaterial);
+				}
+				else
+				{
+					p_materialRenderer.RemoveMaterialAtIndex(i);
+				}
+
 				continue;
 			}
 

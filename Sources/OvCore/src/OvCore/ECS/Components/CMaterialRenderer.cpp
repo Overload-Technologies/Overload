@@ -279,6 +279,7 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 		model->GetMaterialNames().size(),
 		static_cast<size_t>(kMaxMaterialCount)
 	));
+	const size_t embeddedMaterialCount = model->GetEmbeddedMaterials().size();
 
 	for (uint8_t i = 0; i < materialCount; ++i)
 	{
@@ -286,6 +287,16 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 		const bool shouldOverride = !currentMaterial;
 		if (!shouldOverride)
 		{
+			continue;
+		}
+
+		if (i >= embeddedMaterialCount)
+		{
+			if (defaultMaterial)
+			{
+				SetMaterialAtIndex(i, *defaultMaterial);
+			}
+
 			continue;
 		}
 

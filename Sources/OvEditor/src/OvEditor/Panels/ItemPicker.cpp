@@ -64,6 +64,8 @@ void ItemPicker::_Draw_Impl()
 		m_usePivotAnchor = false;
 	}
 	PanelWindow::_Draw_Impl();
+	if (IsOpened() && IsFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape))
+		Close();
 }
 
 void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title)

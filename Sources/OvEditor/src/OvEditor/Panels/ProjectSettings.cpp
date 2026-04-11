@@ -39,7 +39,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		EDITOR_CONTEXT(ResetProjectSettings());
 	};
 
-	AddSeparator();
+	CreateWidget<Visual::Separator>();
 
 	{
 		/* Physics settings */

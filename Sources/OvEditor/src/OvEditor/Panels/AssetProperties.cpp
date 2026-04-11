@@ -37,7 +37,7 @@ OvEditor::Panels::AssetProperties::AssetProperties
 
 	CreateHeaderButtons();
 
-	m_headerSeparator = &AddSeparator();
+	m_headerSeparator = &CreateWidget<OvUI::Widgets::Visual::Separator>();
 	m_headerSeparator->enabled = false;
 
 	CreateAssetSelector();

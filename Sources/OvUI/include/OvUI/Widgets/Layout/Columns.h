@@ -103,10 +103,10 @@ namespace OvUI::Widgets::Layout
 
 			for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it)
 			{
-				if (const auto separator = dynamic_cast<Visual::Separator*>(it->first); separator && separator->fullWidthInColumns)
+				if (dynamic_cast<Visual::Separator*>(it->first))
 				{
 					drawTableSegment(segmentBegin, it, segmentIndex++);
-					separator->Draw();
+					it->first->Draw();
 					segmentBegin = std::next(it);
 				}
 			}

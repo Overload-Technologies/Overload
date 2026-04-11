@@ -113,7 +113,7 @@ namespace OvEditor::Core
 			pathField.lineBreak = false;
 
 			CreateWidget<OvUI::Widgets::Layout::Spacing>();
-			AddSeparator();
+			CreateWidget<OvUI::Widgets::Visual::Separator>();
 			CreateWidget<OvUI::Widgets::Layout::Spacing>();
 
 			auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();

@@ -15,9 +15,6 @@ namespace OvUI::Widgets::Visual
 	*/
 	class Separator : public AWidget
 	{
-	public:
-		bool fullWidthInColumns = false;
-
 	protected:
 		void _Draw_Impl() override;
 	};

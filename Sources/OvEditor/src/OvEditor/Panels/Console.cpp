@@ -82,7 +82,7 @@ OvEditor::Panels::Console::Console
 	enableWarning.ValueChangedEvent += std::bind(&Console::SetShowWarningLogs, this, std::placeholders::_1);
 	enableError.ValueChangedEvent += std::bind(&Console::SetShowErrorLogs, this, std::placeholders::_1);
 
-	AddSeparator();
+	CreateWidget<Visual::Separator>();
 
 	m_logGroup = &CreateWidget<Layout::Group>();
     m_logGroup->ReverseDrawOrder();

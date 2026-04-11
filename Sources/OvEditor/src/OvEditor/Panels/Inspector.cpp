@@ -174,10 +174,10 @@ void OvEditor::Panels::Inspector::_Populate()
 {
 	OVASSERT(m_targetActor.has_value(), "Cannot populate inspector without a target actor");
 	_PopulateActorInfo();
-	m_content->AddSeparator();
+	m_content->CreateWidget<Visual::Separator>();
 	_PopulateActorComponents();
 	_PopulateActorBehaviours();
-	m_content->AddSeparator();
+	m_content->CreateWidget<Visual::Separator>();
 	_DrawAddSection();
 }
 

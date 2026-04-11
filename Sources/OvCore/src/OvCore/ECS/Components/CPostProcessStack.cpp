@@ -95,13 +95,13 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Speed Up", autoExposureSettings.speedUp);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Auto Exposure Speed Down", autoExposureSettings.speedDown);
 
-	p_root.AddSeparator();
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Bloom Enabled", bloomSettings.enabled);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Bloom Intensity", bloomSettings.intensity, 0.1f, 0.0f, Rendering::PostProcess::BloomConstants::kMaxBloomIntensity);
 	OvCore::Helpers::GUIDrawer::DrawScalar<int>(p_root, "Bloom Passes", bloomSettings.passes, 1, Rendering::PostProcess::BloomConstants::kMinPassCount, Rendering::PostProcess::BloomConstants::kMaxPassCount);
 
-	p_root.AddSeparator();
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Tonemapping Enabled", tonemappingSettings.enabled);
 	OvCore::Helpers::GUIDrawer::DrawScalar<float>(p_root, "Tonemapping Exposure", tonemappingSettings.exposure, 0.05f, 0.0f);
@@ -121,7 +121,7 @@ void OvCore::ECS::Components::CPostProcessStack::OnInspector(OvUI::Internal::Wid
 	};
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "Tonemapping Gamma Correction", tonemappingSettings.gammaCorrection);
 
-	p_root.AddSeparator();
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
 	OvCore::Helpers::GUIDrawer::DrawBoolean(p_root, "FXAA Enabled", fxaaSettings.enabled);
 }

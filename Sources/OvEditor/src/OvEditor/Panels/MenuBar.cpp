@@ -220,7 +220,7 @@ void OvEditor::Panels::MenuBar::CreateBuildMenu()
 	auto& buildMenu = CreateWidget<MenuList>("Build");
 	buildMenu.CreateWidget<MenuItem>("Build game").ClickedEvent					+=	EDITOR_BIND(Build, false, false);
 	buildMenu.CreateWidget<MenuItem>("Build game and run").ClickedEvent			+=	EDITOR_BIND(Build, true, false);
-	buildMenu.AddSeparator();
+	buildMenu.CreateWidget<Visual::Separator>();
 	buildMenu.CreateWidget<MenuItem>("Temporary build").ClickedEvent			+=	EDITOR_BIND(Build, true, true);
 }
 
@@ -229,7 +229,7 @@ void OvEditor::Panels::MenuBar::CreateWindowMenu()
 	m_windowMenu = &CreateWidget<MenuList>("Window");
 	m_windowMenu->CreateWidget<MenuItem>("Close all").ClickedEvent	+= std::bind(&MenuBar::OpenEveryWindows, this, false);
 	m_windowMenu->CreateWidget<MenuItem>("Open all").ClickedEvent		+= std::bind(&MenuBar::OpenEveryWindows, this, true);
-	m_windowMenu->AddSeparator();
+	m_windowMenu->CreateWidget<Visual::Separator>();
 
 	/* When the menu is opened, we update which window is marked as "Opened" or "Closed" */
 	m_windowMenu->ClickedEvent += std::bind(&MenuBar::UpdateToggleableItems, this);
@@ -286,10 +286,10 @@ void OvEditor::Panels::MenuBar::CreateHelpMenu()
 
 		}
 	};
-	helpMenu.AddSeparator();
+	helpMenu.CreateWidget<Visual::Separator>();
 	helpMenu.CreateWidget<MenuItem>("Bug Report").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Bug&template=bug_report.md&title="); };
 	helpMenu.CreateWidget<MenuItem>("Feature Request").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/issues/new?assignees=&labels=Feature&template=feature_request.md&title="); };
-	helpMenu.AddSeparator();
+	helpMenu.CreateWidget<Visual::Separator>();
 	helpMenu.CreateWidget<Texts::Text>("Version: " + std::string(OVERLOAD_VERSION));
 }
 

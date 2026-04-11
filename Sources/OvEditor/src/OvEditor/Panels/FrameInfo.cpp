@@ -33,7 +33,7 @@ OvEditor::Panels::FrameInfo::FrameInfo
 	m_fpsText(CreateWidget<Texts::Text>(std::format(kFramerateText, 0))),
 	m_viewNameText(CreateWidget<Texts::Text>()),
 
-	m_separator(AddSeparator()),
+	m_separator(CreateWidget<Visual::Separator>()),
 
 	m_batchCountText(CreateWidget<Texts::Text>("")),
 	m_instanceCountText(CreateWidget<Texts::Text>("")),

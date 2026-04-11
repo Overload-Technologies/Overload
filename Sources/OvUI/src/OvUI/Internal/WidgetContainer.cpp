@@ -8,7 +8,6 @@
 #include <ranges>
 
 #include "OvUI/Internal/WidgetContainer.h"
-#include "OvUI/Widgets/Visual/Separator.h"
 
 OvUI::Internal::WidgetContainer::~WidgetContainer()
 {
@@ -102,13 +101,6 @@ void OvUI::Internal::WidgetContainer::DrawWidgets()
 			widget->Draw();
 		}
 	}
-}
-
-OvUI::Widgets::Visual::Separator& OvUI::Internal::WidgetContainer::AddSeparator()
-{
-	auto& separator = CreateWidget<Widgets::Visual::Separator>();
-	separator.fullWidthInColumns = true;
-	return separator;
 }
 
 void OvUI::Internal::WidgetContainer::ReverseDrawOrder(const bool reversed)

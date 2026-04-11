@@ -175,7 +175,7 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 	drawVisibilityToggle("Reflection", REFLECTION);
 	drawVisibilityToggle("Shadow", SHADOW);
 
-	p_root.AddSeparator();
+	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
 	uint8_t materialCount = 0;
 

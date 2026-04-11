@@ -4,10 +4,13 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <ranges>
+#include <string_view>
+#include <vector>
 #include <tinyxml2.h>
 
 #include <OvDebug/Logger.h>
@@ -18,6 +21,7 @@
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/Resources/Loaders/MaterialLoader.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
 
@@ -36,10 +40,180 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
+#include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvWindowing/Dialogs/OpenFileDialog.h>
 #include <OvWindowing/Dialogs/MessageBox.h>
 #include <OvWindowing/Dialogs/SaveFileDialog.h>
+
+namespace
+{
+	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+
+	void ApplyEmbeddedModelMaterials(
+		OvEditor::Core::Context& p_context,
+		OvCore::ECS::Components::CMaterialRenderer& p_materialRenderer,
+		const OvRendering::Resources::Model& p_model,
+		OvCore::Resources::Material* p_defaultMaterial,
+		bool p_overwriteExisting
+	)
+	{
+		const uint8_t materialCount = static_cast<uint8_t>(std::min(
+			p_model.GetMaterialNames().size(),
+			static_cast<size_t>(kMaxMaterialCount)
+		));
+		const size_t embeddedMaterialCount = p_model.GetEmbeddedMaterials().size();
+
+		for (uint8_t i = 0; i < materialCount; ++i)
+		{
+			OvCore::Resources::Material* currentMaterial = p_materialRenderer.GetMaterialAtIndex(i);
+			const bool shouldOverride =
+				p_overwriteExisting ||
+				!currentMaterial;
+
+			if (!shouldOverride)
+			{
+				continue;
+			}
+
+			if (i >= embeddedMaterialCount)
+			{
+				if (p_defaultMaterial)
+				{
+					p_materialRenderer.SetMaterialAtIndex(i, *p_defaultMaterial);
+				}
+				else
+				{
+					p_materialRenderer.RemoveMaterialAtIndex(i);
+				}
+
+				continue;
+			}
+
+			const auto embeddedMaterialPath = OvRendering::Resources::Parsers::MakeEmbeddedMaterialPath(p_model.path, i);
+			if (auto* embeddedMaterial = p_context.materialManager.GetResource(embeddedMaterialPath))
+			{
+				p_materialRenderer.SetMaterialAtIndex(i, *embeddedMaterial);
+			}
+			else if (p_defaultMaterial)
+			{
+				p_materialRenderer.SetMaterialAtIndex(i, *p_defaultMaterial);
+			}
+			else
+			{
+				p_materialRenderer.RemoveMaterialAtIndex(i);
+			}
+		}
+
+		if (p_overwriteExisting)
+		{
+			for (uint8_t i = materialCount; i < kMaxMaterialCount; ++i)
+			{
+				p_materialRenderer.RemoveMaterialAtIndex(i);
+			}
+		}
+	}
+
+	void ApplyEmbeddedModelMaterialsToCurrentScene(OvEditor::Core::Context& p_context)
+	{
+		auto* currentScene = p_context.sceneManager.GetCurrentScene();
+		if (!currentScene)
+		{
+			return;
+		}
+
+		auto* defaultMaterial = p_context.materialManager[std::string{ kDefaultMaterialPath }];
+
+		for (auto* actor : currentScene->GetActors())
+		{
+			auto* modelRenderer = actor->GetComponent<OvCore::ECS::Components::CModelRenderer>();
+			auto* materialRenderer = actor->GetComponent<OvCore::ECS::Components::CMaterialRenderer>();
+			if (!modelRenderer || !materialRenderer)
+			{
+				continue;
+			}
+
+			auto* model = modelRenderer->GetModel();
+			if (!model)
+			{
+				continue;
+			}
+
+			ApplyEmbeddedModelMaterials(
+				p_context,
+				*materialRenderer,
+				*model,
+				defaultMaterial,
+				false
+			);
+		}
+	}
+
+	template<typename TResourceManager, typename TAssetNameValidator>
+	void MoveEmbeddedResourcesForRenamedModel(
+		TResourceManager& p_resourceManager,
+		const std::string& p_previousModelPath,
+		const std::string& p_newModelPath,
+		TAssetNameValidator p_validateAssetName
+	)
+	{
+		std::vector<std::pair<std::string, std::string>> moves;
+
+		for (const auto& [resourcePath, resource] : p_resourceManager.GetResources())
+		{
+			(void)resource;
+
+			const auto embeddedPath = OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(resourcePath.string());
+			if (!embeddedPath || embeddedPath->modelPath != p_previousModelPath)
+			{
+				continue;
+			}
+
+			if (!p_validateAssetName(embeddedPath->assetName))
+			{
+				continue;
+			}
+
+			moves.emplace_back(resourcePath.string(), p_newModelPath + ":" + embeddedPath->assetName);
+		}
+
+		for (const auto& [oldPath, newPath] : moves)
+		{
+			if (!p_resourceManager.MoveResource(oldPath, newPath))
+			{
+				continue;
+			}
+
+			if (auto* resource = p_resourceManager.GetResource(newPath, false))
+			{
+				const_cast<std::string&>(resource->path) = newPath;
+			}
+		}
+	}
+
+	void MoveAllEmbeddedResourcesForRenamedModel(const std::string& p_previousModelPath, const std::string& p_newModelPath)
+	{
+		MoveEmbeddedResourcesForRenamedModel(
+			OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>(),
+			p_previousModelPath,
+			p_newModelPath,
+			[](const std::string& p_assetName)
+			{
+				return OvRendering::Resources::Parsers::ParseEmbeddedMaterialIndex(p_assetName).has_value();
+			}
+		);
+
+		MoveEmbeddedResourcesForRenamedModel(
+			OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>(),
+			p_previousModelPath,
+			p_newModelPath,
+			[](const std::string& p_assetName)
+			{
+				return OvRendering::Resources::Parsers::ParseEmbeddedTextureIndex(p_assetName).has_value();
+			}
+		);
+	}
+}
 
 OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& p_panelsManager) :
 	m_context(p_context), 
@@ -89,9 +263,16 @@ void OvEditor::Core::EditorActions::SaveSceneToDisk(OvCore::SceneSystem::Scene& 
 void OvEditor::Core::EditorActions::LoadSceneFromDisk(const std::string& p_path, bool p_absolute)
 {
 	if (GetCurrentEditorMode() != EEditorMode::EDIT)
+	{
 		StopPlaying();
+	}
 
-	m_context.sceneManager.LoadScene(p_path, p_absolute);
+	if (!m_context.sceneManager.LoadScene(p_path, p_absolute))
+	{
+		return;
+	}
+
+	ApplyEmbeddedModelMaterialsToCurrentScene(m_context);
 	OVLOG_INFO("Scene loaded from disk: " + m_context.sceneManager.GetCurrentSceneSourcePath());
 	m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View").Focus();
 }
@@ -617,12 +798,27 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateActorWithModel(const s
 
 	const auto model = m_context.modelManager[p_path];
 	if (model)
+	{
 		modelRenderer.SetModel(model);
+	}
 
 	auto& materialRenderer = instance.AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
-    const auto material = m_context.materialManager[":Materials\\Default.ovmat"];
-	if (material)
-		materialRenderer.FillWithMaterial(*material);
+	const auto defaultMaterial = m_context.materialManager[std::string{ kDefaultMaterialPath }];
+	if (defaultMaterial)
+	{
+		materialRenderer.FillWithMaterial(*defaultMaterial);
+	}
+
+	if (model)
+	{
+		ApplyEmbeddedModelMaterials(
+			m_context,
+			materialRenderer,
+			*model,
+			defaultMaterial,
+			true
+		);
+	}
 
 	if (p_focusOnCreation)
 		SelectActor(instance);
@@ -739,6 +935,16 @@ void OvEditor::Core::EditorActions::SaveMaterials()
 {
 	for (const auto material : m_context.materialManager.GetResources() | std::views::values)
 	{
+		if (!material)
+		{
+			continue;
+		}
+
+		if (OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(material->path))
+		{
+			continue;
+		}
+
 		OvCore::Resources::Loaders::MaterialLoader::Save(*material, GetRealPath(material->path));
 	}
 }
@@ -1060,6 +1266,11 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 			OvAudio::Resources::Sound* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[p_newName];
 			const_cast<std::string&>(resource->path) = p_newName;
 		}
+
+		if (OvTools::Utils::PathParser::GetFileType(p_previousName) == OvTools::Utils::PathParser::EFileType::MODEL)
+		{
+			MoveAllEmbeddedResourcesForRenamedModel(p_previousName, p_newName);
+		}
 	}
 	else
 	{
@@ -1181,6 +1392,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::MODEL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SHADER:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
@@ -1254,8 +1466,14 @@ void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(
 	OvTools::Utils::PathParser::EFileType p_fileType
 )
 {
+	const bool renameEmbeddedAssets =
+		p_newName != "?" &&
+		OvTools::Utils::PathParser::GetFileType(p_previousName) == OvTools::Utils::PathParser::EFileType::MODEL;
+
 	const auto replaceFrom = std::string{ ">" + p_previousName + "<" };
 	const auto replaceTo = std::string{ ">" + p_newName + "<" };
+	const auto embeddedReplaceFrom = std::string{ ">" + p_previousName + ":" };
+	const auto embeddedReplaceTo = std::string{ ">" + p_newName + ":" };
 
 	for (const auto& entry : std::filesystem::recursive_directory_iterator(m_context.projectAssetsPath))
 	{
@@ -1265,7 +1483,12 @@ void OvEditor::Core::EditorActions::PropagateFileRenameThroughSavedFilesOfType(
 		{
 			try
 			{
-				const uint64_t occurences = ReplaceStringInFile(entryPath, replaceFrom, replaceTo);
+				uint64_t occurences = ReplaceStringInFile(entryPath, replaceFrom, replaceTo);
+
+				if (renameEmbeddedAssets)
+				{
+					occurences += ReplaceStringInFile(entryPath, embeddedReplaceFrom, embeddedReplaceTo);
+				}
 
 				if (occurences > 0)
 				{

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -64,9 +65,29 @@ namespace OvRendering::Resources::Loaders
 		* @param p_generateMipmap
 		*/
 		static Texture* CreateFromMemory(
-			uint8_t* p_data,
+			const uint8_t* p_data,
 			uint32_t p_width,
 			uint32_t p_height,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			bool p_generateMipmap
+		);
+
+		/**
+		* Create a texture from encoded image memory (png, jpg, hdr, etc.)
+		* @param p_data
+		* @param p_size
+		* @param p_minFilter
+		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
+		* @param p_generateMipmap
+		*/
+		static Texture* CreateFromEncodedMemory(
+			const uint8_t* p_data,
+			size_t p_size,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
 			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
@@ -87,6 +108,52 @@ namespace OvRendering::Resources::Loaders
 		static void Reload(
 			Texture& p_texture,
 			const std::string& p_filePath,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			bool p_generateMipmap
+		);
+
+		/**
+		* Reload a texture from raw rgba8 memory
+		* @param p_texture
+		* @param p_data
+		* @param p_width
+		* @param p_height
+		* @param p_minFilter
+		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
+		* @param p_generateMipmap
+		*/
+		static void ReloadFromMemory(
+			Texture& p_texture,
+			const uint8_t* p_data,
+			uint32_t p_width,
+			uint32_t p_height,
+			OvRendering::Settings::ETextureFilteringMode p_minFilter,
+			OvRendering::Settings::ETextureFilteringMode p_magFilter,
+			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
+			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			bool p_generateMipmap
+		);
+
+		/**
+		* Reload a texture from encoded image memory (png, jpg, hdr, etc.)
+		* @param p_texture
+		* @param p_data
+		* @param p_size
+		* @param p_minFilter
+		* @param p_magFilter
+		* @param p_horizontalWrapMode
+		* @param p_verticalWrapMode
+		* @param p_generateMipmap
+		*/
+		static void ReloadFromEncodedMemory(
+			Texture& p_texture,
+			const uint8_t* p_data,
+			size_t p_size,
 			OvRendering::Settings::ETextureFilteringMode p_minFilter,
 			OvRendering::Settings::ETextureFilteringMode p_magFilter,
 			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,

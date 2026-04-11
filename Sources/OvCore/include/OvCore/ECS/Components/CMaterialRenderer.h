@@ -87,6 +87,11 @@ namespace OvCore::ECS::Components
 		void UpdateMaterialList();
 
 		/**
+		* Apply embedded model materials for empty/default slots
+		*/
+		void ApplyEmbeddedMaterialFallback();
+
+		/**
 		* Defines an element of the user matrix
 		* @param p_row
 		* @param p_column

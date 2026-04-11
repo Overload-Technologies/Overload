@@ -4,21 +4,70 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
+#include <cstring>
+#include <cstdint>
+#include <filesystem>
+#include <optional>
+#include <span>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <assimp/Importer.hpp>
+#include <assimp/material.h>
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
 #include <OvDebug/Logger.h>
 #include <OvRendering/Resources/Parsers/AssimpParser.h>
+#include <OvTools/Utils/PathParser.h>
 
 namespace
 {
+	constexpr std::array kAlbedoTextureTypes{
+		aiTextureType_BASE_COLOR,
+		aiTextureType_DIFFUSE
+	};
+
+	constexpr std::array kNormalTextureTypes{
+		aiTextureType_NORMAL_CAMERA,
+		aiTextureType_NORMALS
+	};
+
+	constexpr std::array kMetallicTextureTypes{
+		aiTextureType_METALNESS
+	};
+
+	constexpr std::array kRoughnessTextureTypes{
+		aiTextureType_DIFFUSE_ROUGHNESS
+	};
+
+	constexpr std::array kAmbientOcclusionTextureTypes{
+		aiTextureType_AMBIENT_OCCLUSION,
+		aiTextureType_LIGHTMAP
+	};
+
+	constexpr std::array kEmissiveTextureTypes{
+		aiTextureType_EMISSION_COLOR,
+		aiTextureType_EMISSIVE
+	};
+
+	constexpr std::array kHeightTextureTypes{
+		aiTextureType_DISPLACEMENT,
+		aiTextureType_HEIGHT
+	};
+
+	constexpr std::array kOpacityTextureTypes{
+		aiTextureType_OPACITY
+	};
+
 	OvRendering::Resources::Parsers::EModelParserFlags FixFlags(OvRendering::Resources::Parsers::EModelParserFlags p_flags)
 	{
 		using enum OvRendering::Resources::Parsers::EModelParserFlags;
@@ -46,6 +95,12 @@ namespace
 			p_matrix.c1, p_matrix.c2, p_matrix.c3, p_matrix.c4,
 			p_matrix.d1, p_matrix.d2, p_matrix.d3, p_matrix.d4
 		};
+	}
+
+	float ToPerceptualColor(const float p_linear)
+	{
+		constexpr float gamma = 2.2f;
+		return std::pow(std::clamp(p_linear, 0.0f, 1.0f), 1.0f / gamma);
 	}
 
 	bool AddBoneData(OvRendering::Geometry::SkinnedVertex& p_vertex, uint32_t p_boneIndex, float p_weight)
@@ -95,17 +150,470 @@ namespace
 		}
 	}
 
-	void ProcessMaterials(const aiScene* p_scene, std::vector<std::string>& p_materials)
+	std::string SanitizeTextureExtension(std::string p_extension)
 	{
+		if (!p_extension.empty() && p_extension.front() == '.')
+		{
+			p_extension.erase(p_extension.begin());
+		}
+
+		std::transform(
+			p_extension.begin(),
+			p_extension.end(),
+			p_extension.begin(),
+			[](unsigned char p_char)
+			{
+				return static_cast<char>(std::tolower(p_char));
+			}
+		);
+
+		std::erase_if(p_extension, [](unsigned char p_char)
+		{
+			return !std::isalnum(p_char);
+		});
+
+		return p_extension.empty() ? "bin" : p_extension;
+	}
+
+	std::string GetTextureExtensionFromPath(const std::string& p_path)
+	{
+		const auto extension = std::filesystem::path{ OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path) }.extension().string();
+		return SanitizeTextureExtension(extension);
+	}
+
+	std::string GetTextureExtensionFromFormatHint(const aiTexture& p_texture)
+	{
+		std::string hint;
+		hint.reserve(sizeof(p_texture.achFormatHint));
+
+		for (char c : p_texture.achFormatHint)
+		{
+			if (c == '\0')
+			{
+				break;
+			}
+
+			hint.push_back(c);
+		}
+
+		return SanitizeTextureExtension(hint);
+	}
+
+	std::string ResolveExternalTexturePath(
+		const std::string& p_texturePath,
+		const std::filesystem::path& p_modelDirectory
+	)
+	{
+		auto resolvedPath = std::filesystem::path{ OvTools::Utils::PathParser::MakeNonWindowsStyle(p_texturePath) };
+
+		if (resolvedPath.is_relative())
+		{
+			resolvedPath = p_modelDirectory / resolvedPath;
+		}
+
+		std::error_code errorCode;
+		resolvedPath = std::filesystem::weakly_canonical(resolvedPath, errorCode);
+		if (errorCode)
+		{
+			resolvedPath = resolvedPath.lexically_normal();
+		}
+
+		return resolvedPath.string();
+	}
+
+	std::optional<uint32_t> RegisterEmbeddedTexture(
+		const aiScene& p_scene,
+		const std::string& p_texturePath,
+		const std::filesystem::path& p_modelDirectory,
+		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+	)
+	{
+		const std::string normalizedTexturePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_texturePath);
+		const aiTexture* embeddedTexture = p_scene.GetEmbeddedTexture(p_texturePath.c_str());
+		std::string cacheKey = normalizedTexturePath;
+
+		if (embeddedTexture)
+		{
+			cacheKey = "embedded:" + normalizedTexturePath;
+		}
+		else
+		{
+			cacheKey = ResolveExternalTexturePath(normalizedTexturePath, p_modelDirectory);
+		}
+
+		if (const auto found = p_textureIndexByKey.find(cacheKey); found != p_textureIndexByKey.end())
+		{
+			return found->second;
+		}
+
+		OvRendering::Resources::EmbeddedTextureData textureData;
+
+		if (embeddedTexture)
+		{
+			if (embeddedTexture->mHeight == 0)
+			{
+				textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_COMPRESSED;
+				textureData.extension = GetTextureExtensionFromFormatHint(*embeddedTexture);
+
+				const auto byteCount = static_cast<size_t>(embeddedTexture->mWidth);
+				textureData.compressedData.resize(byteCount);
+				std::memcpy(textureData.compressedData.data(), embeddedTexture->pcData, byteCount);
+			}
+			else
+			{
+				textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EMBEDDED_RAW_RGBA8;
+				textureData.extension = "tga";
+				textureData.width = embeddedTexture->mWidth;
+				textureData.height = embeddedTexture->mHeight;
+
+				const auto texelCount = static_cast<size_t>(textureData.width) * static_cast<size_t>(textureData.height);
+				textureData.rawRGBAData.resize(texelCount * 4);
+
+				for (size_t i = 0; i < texelCount; ++i)
+				{
+					const aiTexel texel = embeddedTexture->pcData[i];
+					textureData.rawRGBAData[i * 4 + 0] = texel.r;
+					textureData.rawRGBAData[i * 4 + 1] = texel.g;
+					textureData.rawRGBAData[i * 4 + 2] = texel.b;
+					textureData.rawRGBAData[i * 4 + 3] = texel.a;
+				}
+			}
+		}
+		else
+		{
+			textureData.sourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType::EXTERNAL_FILE;
+			textureData.sourcePath = normalizedTexturePath;
+			textureData.extension = GetTextureExtensionFromPath(normalizedTexturePath);
+		}
+
+		const auto newIndex = static_cast<uint32_t>(p_embeddedTextures.size());
+		p_embeddedTextures.push_back(std::move(textureData));
+		p_textureIndexByKey.emplace(cacheKey, newIndex);
+
+		return newIndex;
+	}
+
+	struct TextureSearchResult
+	{
+		uint32_t index;
+		aiTextureType type;
+	};
+
+	std::optional<TextureSearchResult> FindFirstTexture(
+		const aiScene& p_scene,
+		aiMaterial& p_material,
+		std::span<const aiTextureType> p_textureTypes,
+		const std::filesystem::path& p_modelDirectory,
+		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+	)
+	{
+		aiString texturePath;
+
+		for (const auto textureType : p_textureTypes)
+		{
+			const auto textureCount = p_material.GetTextureCount(textureType);
+			for (uint32_t textureIndex = 0; textureIndex < textureCount; ++textureIndex)
+			{
+				if (p_material.GetTexture(textureType, textureIndex, &texturePath) != AI_SUCCESS)
+				{
+					continue;
+				}
+
+				if (texturePath.length == 0)
+				{
+					continue;
+				}
+
+				if (auto result = RegisterEmbeddedTexture(
+					p_scene,
+					texturePath.C_Str(),
+					p_modelDirectory,
+					p_textureIndexByKey,
+					p_embeddedTextures
+				))
+				{
+					return TextureSearchResult{
+						.index = result.value(),
+						.type = textureType
+					};
+				}
+			}
+		}
+
+		return std::nullopt;
+	}
+
+	std::optional<uint32_t> FindFirstTextureIndex(
+		const aiScene& p_scene,
+		aiMaterial& p_material,
+		std::span<const aiTextureType> p_textureTypes,
+		const std::filesystem::path& p_modelDirectory,
+		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+	)
+	{
+		if (const auto foundTexture = FindFirstTexture(
+			p_scene,
+			p_material,
+			p_textureTypes,
+			p_modelDirectory,
+			p_textureIndexByKey,
+			p_embeddedTextures
+		))
+		{
+			return foundTexture->index;
+		}
+
+		return std::nullopt;
+	}
+
+	void ProcessMaterials(
+		const aiScene* p_scene,
+		const std::filesystem::path& p_modelDirectory,
+		std::vector<std::string>& p_materials,
+		std::vector<OvRendering::Resources::EmbeddedMaterialData>& p_embeddedMaterials,
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures,
+		const bool p_generateEmbeddedAssets
+	)
+	{
+		if (!p_scene)
+		{
+			return;
+		}
+
+		std::unordered_map<std::string, uint32_t> textureIndexByKey;
+		textureIndexByKey.reserve(p_scene->mNumMaterials * 2);
+
+		p_materials.reserve(p_scene->mNumMaterials);
+		if (p_generateEmbeddedAssets)
+		{
+			p_embeddedMaterials.reserve(p_scene->mNumMaterials);
+		}
+
 		for (uint32_t i = 0; i < p_scene->mNumMaterials; ++i)
 		{
 			aiMaterial* material = p_scene->mMaterials[i];
-			if (material)
+			if (!material)
 			{
-				aiString name;
-				aiGetMaterialString(material, AI_MATKEY_NAME, &name);
-				p_materials.push_back(name.C_Str());
+				const std::string fallbackName = "Material_" + std::to_string(i);
+				p_materials.push_back(fallbackName);
+
+				if (p_generateEmbeddedAssets)
+				{
+					OvRendering::Resources::EmbeddedMaterialData fallbackMaterial;
+					fallbackMaterial.name = fallbackName;
+					p_embeddedMaterials.push_back(std::move(fallbackMaterial));
+				}
+
+				continue;
 			}
+
+			aiString materialName;
+			aiGetMaterialString(material, AI_MATKEY_NAME, &materialName);
+
+			std::string safeMaterialName = materialName.C_Str();
+			if (safeMaterialName.empty())
+			{
+				safeMaterialName = "Material_" + std::to_string(i);
+			}
+
+			p_materials.push_back(safeMaterialName);
+
+			if (!p_generateEmbeddedAssets)
+			{
+				continue;
+			}
+
+			OvRendering::Resources::EmbeddedMaterialData embeddedMaterial;
+			embeddedMaterial.name = safeMaterialName;
+
+			embeddedMaterial.albedoTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kAlbedoTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			const auto normalTexture = FindFirstTexture(
+				*p_scene,
+				*material,
+				std::span{ kNormalTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+			embeddedMaterial.normalTexture = normalTexture ? std::optional<uint32_t>{ normalTexture->index } : std::nullopt;
+
+			embeddedMaterial.metallicTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kMetallicTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			embeddedMaterial.roughnessTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kRoughnessTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			embeddedMaterial.ambientOcclusionTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kAmbientOcclusionTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			embeddedMaterial.emissiveTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kEmissiveTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			const auto heightTexture = FindFirstTexture(
+				*p_scene,
+				*material,
+				std::span{ kHeightTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+			embeddedMaterial.heightTexture = heightTexture ? std::optional<uint32_t>{ heightTexture->index } : std::nullopt;
+
+			embeddedMaterial.opacityTexture = FindFirstTextureIndex(
+				*p_scene,
+				*material,
+				std::span{ kOpacityTextureTypes },
+				p_modelDirectory,
+				textureIndexByKey,
+				p_embeddedTextures
+			);
+
+			const bool useHeightAsNormal =
+				heightTexture.has_value() &&
+				heightTexture->type == aiTextureType_HEIGHT &&
+				(
+					!normalTexture.has_value() ||
+					heightTexture->index == normalTexture->index
+				);
+
+			if (useHeightAsNormal)
+			{
+				embeddedMaterial.normalTexture = heightTexture->index;
+				embeddedMaterial.heightTexture.reset();
+			}
+
+			embeddedMaterial.normalMapping = embeddedMaterial.normalTexture.has_value();
+			embeddedMaterial.parallaxMapping = embeddedMaterial.heightTexture.has_value();
+
+			aiColor4D albedoColor{};
+			bool hasBaseColor = false;
+#if defined(AI_MATKEY_BASE_COLOR)
+			hasBaseColor = material->Get(AI_MATKEY_BASE_COLOR, albedoColor) == AI_SUCCESS;
+#endif
+
+			if (hasBaseColor)
+			{
+				embeddedMaterial.albedo.x = ToPerceptualColor(albedoColor.r);
+				embeddedMaterial.albedo.y = ToPerceptualColor(albedoColor.g);
+				embeddedMaterial.albedo.z = ToPerceptualColor(albedoColor.b);
+				embeddedMaterial.albedo.w = std::clamp(albedoColor.a, 0.0f, 1.0f);
+			}
+			else
+			{
+				aiColor3D diffuseColor{};
+				if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+				{
+					embeddedMaterial.albedo.x = ToPerceptualColor(diffuseColor.r);
+					embeddedMaterial.albedo.y = ToPerceptualColor(diffuseColor.g);
+					embeddedMaterial.albedo.z = ToPerceptualColor(diffuseColor.b);
+				}
+			}
+
+			float opacity = 1.0f;
+			if (material->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+			{
+				embeddedMaterial.albedo.w = std::clamp(embeddedMaterial.albedo.w * opacity, 0.0f, 1.0f);
+			}
+
+#if defined(AI_MATKEY_METALLIC_FACTOR)
+			float metallicFactor = 0.0f;
+			if (material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS)
+			{
+				embeddedMaterial.metallic = std::clamp(metallicFactor, 0.0f, 1.0f);
+			}
+			else if (embeddedMaterial.metallicTexture.has_value())
+			{
+				embeddedMaterial.metallic = 1.0f;
+			}
+#else
+			if (embeddedMaterial.metallicTexture.has_value())
+			{
+				embeddedMaterial.metallic = 1.0f;
+			}
+#endif
+
+#if defined(AI_MATKEY_ROUGHNESS_FACTOR)
+			float roughnessFactor = 0.0f;
+			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == AI_SUCCESS)
+			{
+				embeddedMaterial.roughness = std::clamp(roughnessFactor, 0.0f, 1.0f);
+			}
+			else if (embeddedMaterial.roughnessTexture.has_value())
+			{
+				embeddedMaterial.roughness = 1.0f;
+			}
+#else
+			if (embeddedMaterial.roughnessTexture.has_value())
+			{
+				embeddedMaterial.roughness = 1.0f;
+			}
+#endif
+
+			aiColor3D emissiveColor{};
+			if (material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+			{
+				embeddedMaterial.emissiveColor = {
+					ToPerceptualColor(emissiveColor.r),
+					ToPerceptualColor(emissiveColor.g),
+					ToPerceptualColor(emissiveColor.b)
+				};
+			}
+
+			float emissiveIntensity = 0.0f;
+#if defined(AI_MATKEY_EMISSIVE_INTENSITY)
+			if (material->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity) == AI_SUCCESS)
+			{
+				embeddedMaterial.emissiveIntensity = std::max(emissiveIntensity, 0.0f);
+			}
+			else
+#endif
+			{
+				const bool hasEmissiveColor = embeddedMaterial.emissiveColor.x > 0.0f
+					|| embeddedMaterial.emissiveColor.y > 0.0f
+					|| embeddedMaterial.emissiveColor.z > 0.0f;
+
+				if (hasEmissiveColor || embeddedMaterial.emissiveTexture.has_value())
+				{
+					embeddedMaterial.emissiveIntensity = 1.0f;
+				}
+			}
+
+			p_embeddedMaterials.push_back(std::move(embeddedMaterial));
 		}
 	}
 
@@ -295,16 +803,14 @@ namespace
 
 			return new OvRendering::Resources::Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
 		}
-		else
-		{
-			std::vector<OvRendering::Geometry::Vertex> vertices(p_mesh->mNumVertices);
-			for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
-			{
-				fillGeometry(vertices[i], i);
-			}
 
-			return new OvRendering::Resources::Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
+		std::vector<OvRendering::Geometry::Vertex> vertices(p_mesh->mNumVertices);
+		for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
+		{
+			fillGeometry(vertices[i], i);
 		}
+
+		return new OvRendering::Resources::Mesh(std::span(vertices), std::span(indices), p_mesh->mMaterialIndex);
 	}
 
 	void ProcessNode(
@@ -338,7 +844,10 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 	std::vector<std::string>& p_materials,
 	std::optional<Animation::Skeleton>& p_skeleton,
 	std::vector<Animation::SkeletalAnimation>& p_animations,
-	EModelParserFlags p_parserFlags
+	std::vector<Resources::EmbeddedMaterialData>& p_embeddedMaterials,
+	std::vector<Resources::EmbeddedTextureData>& p_embeddedTextures,
+	EModelParserFlags p_parserFlags,
+	bool p_generateEmbeddedAssets
 )
 {
 	Assimp::Importer import;
@@ -354,7 +863,19 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 		return false;
 	}
 
-	ProcessMaterials(scene, p_materials);
+	p_materials.clear();
+	p_embeddedMaterials.clear();
+	p_embeddedTextures.clear();
+
+	const auto modelDirectory = std::filesystem::path{ p_fileName }.parent_path();
+	ProcessMaterials(
+		scene,
+		modelDirectory,
+		p_materials,
+		p_embeddedMaterials,
+		p_embeddedTextures,
+		p_generateEmbeddedAssets
+	);
 
 	bool hasBones = false;
 	for (uint32_t i = 0; i < scene->mNumMeshes && !hasBones; ++i)
@@ -382,4 +903,3 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 
 	return true;
 }
-

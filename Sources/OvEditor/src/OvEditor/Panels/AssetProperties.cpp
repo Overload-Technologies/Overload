@@ -211,6 +211,7 @@ void OvEditor::Panels::AssetProperties::CreateInfo()
 
 void OvEditor::Panels::AssetProperties::CreateModelSettings()
 {
+	m_metadata->Add("GENERATE_EMBEDDED_ASSETS", true);
 	m_metadata->Add("CALC_TANGENT_SPACE", true);
 	m_metadata->Add("JOIN_IDENTICAL_VERTICES", true);
 	m_metadata->Add("MAKE_LEFT_HANDED", false);
@@ -243,6 +244,7 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 	m_metadata->Add("DROP_NORMALS", false);
 	m_metadata->Add("GEN_BOUNDING_BOXES", false);
 
+	MODEL_FLAG_ENTRY("GENERATE_EMBEDDED_ASSETS");
 	MODEL_FLAG_ENTRY("CALC_TANGENT_SPACE");
 	MODEL_FLAG_ENTRY("JOIN_IDENTICAL_VERTICES");
 	MODEL_FLAG_ENTRY("MAKE_LEFT_HANDED");

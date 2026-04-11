@@ -28,16 +28,27 @@ namespace OvRendering::Resources::Loaders
 		* Create a model
 		* @param p_filepath
 		* @param p_parserFlags
+		* @param p_generateEmbeddedAssets
 		*/
-		static Model* Create(const std::string& p_filepath, Parsers::EModelParserFlags p_parserFlags = Parsers::EModelParserFlags::NONE);
+		static Model* Create(
+			const std::string& p_filepath,
+			Parsers::EModelParserFlags p_parserFlags = Parsers::EModelParserFlags::NONE,
+			bool p_generateEmbeddedAssets = true
+		);
 
 		/**
 		* Reload a model from file
 		* @param p_model
 		* @param p_filePath
 		* @param p_parserFlags
+		* @param p_generateEmbeddedAssets
 		*/
-		static void Reload(Model& p_model, const std::string& p_filePath, Parsers::EModelParserFlags p_parserFlags = Parsers::EModelParserFlags::NONE);
+		static void Reload(
+			Model& p_model,
+			const std::string& p_filePath,
+			Parsers::EModelParserFlags p_parserFlags = Parsers::EModelParserFlags::NONE,
+			bool p_generateEmbeddedAssets = true
+		);
 
 		/**
 		* Disabled constructor

@@ -6,8 +6,206 @@
 
 #include "OvCore/ResourceManagement/MaterialManager.h"
 
+#include <filesystem>
+#include <optional>
+#include <string_view>
+
+#include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/ShaderManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
+#include <OvTools/Utils/PathParser.h>
+
+namespace
+{
+	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+	constexpr std::string_view kStandardShaderPath = ":Shaders\\Standard.ovfx";
+
+	struct EmbeddedMaterialContext
+	{
+		std::string modelPath;
+		const OvRendering::Resources::Model* model = nullptr;
+		const OvRendering::Resources::EmbeddedMaterialData* materialData = nullptr;
+	};
+
+	std::optional<EmbeddedMaterialContext> ResolveEmbeddedMaterialContext(const std::filesystem::path& p_path)
+	{
+		using namespace OvRendering::Resources::Parsers;
+
+		const auto embeddedAssetPath = ParseEmbeddedAssetPath(p_path.string());
+		if (!embeddedAssetPath)
+		{
+			return std::nullopt;
+		}
+
+		const auto materialIndex = ParseEmbeddedMaterialIndex(embeddedAssetPath->assetName);
+		if (!materialIndex)
+		{
+			return std::nullopt;
+		}
+
+		auto* model = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>().GetResource(embeddedAssetPath->modelPath);
+		if (!model)
+		{
+			return std::nullopt;
+		}
+
+		const auto* embeddedMaterial = model->GetEmbeddedMaterial(materialIndex.value());
+		if (!embeddedMaterial)
+		{
+			return std::nullopt;
+		}
+
+		return EmbeddedMaterialContext{
+			.modelPath = embeddedAssetPath->modelPath,
+			.model = model,
+			.materialData = embeddedMaterial
+		};
+	}
+
+	std::optional<std::string> ResolveLinkedTextureResourcePath(const std::string& p_modelPath, const std::string& p_sourcePath)
+	{
+		const std::string normalizedSourcePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_sourcePath);
+		if (normalizedSourcePath.empty())
+		{
+			return std::nullopt;
+		}
+
+		if (normalizedSourcePath.starts_with(':'))
+		{
+			return OvTools::Utils::PathParser::MakeWindowsStyle(normalizedSourcePath);
+		}
+
+		auto sourcePath = std::filesystem::path{ normalizedSourcePath };
+		if (sourcePath.is_absolute())
+		{
+			return std::nullopt;
+		}
+
+		const auto modelPath = std::filesystem::path{ OvTools::Utils::PathParser::MakeNonWindowsStyle(p_modelPath) };
+		const auto linkedTexturePath = (modelPath.parent_path() / sourcePath).lexically_normal();
+		return OvTools::Utils::PathParser::MakeWindowsStyle(linkedTexturePath.string());
+	}
+
+	bool BindEmbeddedTextureProperty(
+		OvCore::Resources::Material& p_material,
+		const EmbeddedMaterialContext& p_context,
+		const std::optional<uint32_t>& p_textureIndex,
+		const std::string_view p_uniformName
+	)
+	{
+		if (!p_textureIndex.has_value())
+		{
+			return false;
+		}
+
+		auto& textureManager = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>();
+		const auto* embeddedTexture = p_context.model->GetEmbeddedTexture(p_textureIndex.value());
+		if (!embeddedTexture)
+		{
+			return false;
+		}
+
+		using SourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType;
+		if (embeddedTexture->sourceType == SourceType::EXTERNAL_FILE)
+		{
+			if (const auto linkedTexturePath = ResolveLinkedTextureResourcePath(p_context.modelPath, embeddedTexture->sourcePath))
+			{
+				if (auto* linkedTexture = textureManager.GetResource(linkedTexturePath.value()))
+				{
+					p_material.TrySetProperty(std::string{ p_uniformName }, linkedTexture);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		const std::string extension = embeddedTexture->extension.empty() ? "bin" : embeddedTexture->extension;
+		const std::string texturePath = OvRendering::Resources::Parsers::MakeEmbeddedTexturePath(
+			p_context.modelPath,
+			p_textureIndex.value(),
+			extension
+		);
+
+		if (auto* texture = textureManager.GetResource(texturePath))
+		{
+			p_material.TrySetProperty(std::string{ p_uniformName }, texture);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool ConfigureEmbeddedMaterial(
+		OvCore::Resources::Material& p_material,
+		const EmbeddedMaterialContext& p_context
+	)
+	{
+		auto* shader = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[std::string{ kStandardShaderPath }];
+		if (!shader)
+		{
+			return false;
+		}
+
+		const auto& materialData = *p_context.materialData;
+
+		p_material.SetShader(shader);
+		p_material.SetFeatures(OvRendering::Data::FeatureSet{});
+
+		p_material.TrySetProperty("u_Albedo", materialData.albedo);
+		p_material.TrySetProperty("u_Metallic", materialData.metallic);
+		p_material.TrySetProperty("u_Roughness", materialData.roughness);
+		p_material.TrySetProperty("u_EmissiveColor", materialData.emissiveColor);
+		p_material.TrySetProperty("u_EmissiveIntensity", materialData.emissiveIntensity);
+
+		const bool normalTextureBound = BindEmbeddedTextureProperty(p_material, p_context, materialData.normalTexture, "u_NormalMap");
+		const bool hasDistinctHeightTexture =
+			materialData.heightTexture.has_value() &&
+			(
+				!materialData.normalTexture.has_value() ||
+				materialData.heightTexture.value() != materialData.normalTexture.value()
+			);
+		const bool heightTextureBound = hasDistinctHeightTexture &&
+			BindEmbeddedTextureProperty(p_material, p_context, materialData.heightTexture, "u_HeightMap");
+
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.albedoTexture, "u_AlbedoMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.metallicTexture, "u_MetallicMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.roughnessTexture, "u_RoughnessMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.ambientOcclusionTexture, "u_AmbientOcclusionMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.emissiveTexture, "u_EmissiveMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.opacityTexture, "u_MaskMap");
+
+		if (normalTextureBound)
+		{
+			p_material.AddFeature("NORMAL_MAPPING");
+		}
+
+		if (heightTextureBound)
+		{
+			p_material.AddFeature("PARALLAX_MAPPING");
+		}
+
+		return true;
+	}
+}
+
 OvCore::Resources::Material * OvCore::ResourceManagement::MaterialManager::CreateResource(const std::filesystem::path & p_path)
 {
+	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
+	{
+		auto* material = new OvCore::Resources::Material{};
+		if (ConfigureEmbeddedMaterial(*material, embeddedMaterialContext.value()))
+		{
+			const_cast<std::string&>(material->path) = p_path.string(); // Force the resource path to fit the given path
+			return material;
+		}
+
+		delete material;
+		return nullptr;
+	}
+
 	std::string realPath = GetRealPath(p_path).string();
 
 	Resources::Material* material = OvCore::Resources::Loaders::MaterialLoader::Create(realPath);
@@ -26,6 +224,23 @@ void OvCore::ResourceManagement::MaterialManager::DestroyResource(OvCore::Resour
 
 void OvCore::ResourceManagement::MaterialManager::ReloadResource(OvCore::Resources::Material* p_resource, const std::filesystem::path& p_path)
 {
+	const auto embeddedAssetPath = OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(p_path.string());
+	const bool isEmbeddedMaterialPath = embeddedAssetPath &&
+		OvRendering::Resources::Parsers::ParseEmbeddedMaterialIndex(embeddedAssetPath->assetName).has_value();
+
+	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
+	{
+		ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value());
+		return;
+	}
+
+	if (isEmbeddedMaterialPath)
+	{
+		const auto defaultMaterialRealPath = GetRealPath(std::filesystem::path{ std::string{ kDefaultMaterialPath } }).string();
+		OvCore::Resources::Loaders::MaterialLoader::Reload(*p_resource, defaultMaterialRealPath);
+		return;
+	}
+
 	std::string realPath = GetRealPath(p_path).string();
 	OvCore::Resources::Loaders::MaterialLoader::Reload(*p_resource, realPath);
 }

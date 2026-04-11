@@ -43,7 +43,7 @@ namespace OvUI::Widgets::Layout
 				ImGuiTableFlags_NoBordersInBodyUntilResize;
 
 			auto drawTableSegment =
-				[this, tableFlags](auto p_begin, auto p_end, size_t p_segmentIndex)
+				[this](auto p_begin, auto p_end, size_t p_segmentIndex)
 			{
 				if (p_begin == p_end)
 				{

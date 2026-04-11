@@ -64,8 +64,26 @@ void ItemPicker::_Draw_Impl()
 		m_usePivotAnchor = false;
 	}
 	PanelWindow::_Draw_Impl();
-	if (IsOpened() && IsFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape))
-		Close();
+	if (IsOpened() && IsFocused())
+	{
+		if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+		{
+			Close();
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter))
+		{
+			const auto& items = m_items.Items();
+			for (size_t i = 0; i < m_rows.size() && i < items.size(); ++i)
+			{
+				if (m_rows[i].second->enabled)
+				{
+					items[i].onSelected();
+					Close();
+					break;
+				}
+			}
+		}
+	}
 }
 
 void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title)

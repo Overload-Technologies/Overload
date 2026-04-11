@@ -101,7 +101,6 @@ namespace OvCore::Helpers
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
 		static const OvUI::Types::Color TitleColor;
-		static const OvUI::Types::Color ClearButtonColor;
 
 		static const float _MIN_FLOAT;
 		static const float _MAX_FLOAT;

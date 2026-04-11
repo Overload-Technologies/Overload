@@ -32,7 +32,6 @@
 #include "OvUI/Widgets/Buttons/AButton.h"
 
 const OvUI::Types::Color OvCore::Helpers::GUIDrawer::TitleColor = { 0.85f, 0.65f, 0.0f };
-const OvUI::Types::Color OvCore::Helpers::GUIDrawer::ClearButtonColor = { 0.5f, 0.0f, 0.0f };
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
 const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
 
@@ -78,7 +77,16 @@ void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
 	if (!__FILE_ITEM_BUILDER || !__PICKER_PROVIDER)
 		return;
 
-	auto items = __FILE_ITEM_BUILDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+	// Keep a copy so we can attach it to the None item before moving.
+	auto onSelectCopy = p_onSelect;
+	auto assetItems = __FILE_ITEM_BUILDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+
+	// Build the final list with "None" at the top.
+	PickerItemList items;
+	items.Add({ "__none__", "None", "Clear the current selection", 0, [onSelectCopy] { onSelectCopy(""); } });
+	for (const auto& item : assetItems.Items())
+		items.Add(item);
+
 	__PICKER_PROVIDER(std::move(items), TitleFromFileType(p_fileType));
 }
 
@@ -210,6 +218,14 @@ namespace
 		selectButton.lineBreak = false;
 		AddSelectButton(selectButton, p_fileType, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 		{
+			if (p_path.empty())
+			{
+				p_data = nullptr;
+				widget.content = "Empty";
+				if (p_updateNotifier)
+					p_updateNotifier->Invoke();
+				return;
+			}
 			if (auto resource = OVSERVICE(TResourceManager).GetResource(p_path); resource)
 			{
 				p_data = resource;
@@ -218,16 +234,6 @@ namespace
 					p_updateNotifier->Invoke();
 			}
 		});
-
-		auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-		resetButton.idleBackgroundColor = OvCore::Helpers::GUIDrawer::ClearButtonColor;
-		resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-		{
-			p_data = nullptr;
-			widget.content = "Empty";
-			if (p_updateNotifier)
-				p_updateNotifier->Invoke();
-		};
 
 		return widget;
 	}
@@ -269,6 +275,14 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 	selectButton.lineBreak = false;
 	AddSelectButton(selectButton, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 	{
+		if (p_path.empty())
+		{
+			p_data = nullptr;
+			widget.textureID.id = (__EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0);
+			if (p_updateNotifier)
+				p_updateNotifier->Invoke();
+			return;
+		}
 		if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
 		{
 			p_data = resource;
@@ -277,16 +291,6 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 				p_updateNotifier->Invoke();
 		}
 	});
-
-	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = nullptr;
-		widget.textureID.id = (__EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0);
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
 
 	return widget;
 }
@@ -332,20 +336,10 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
 	AddSelectButton(selectButton, OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 	{
 		p_data = p_path;
-		widget.content = p_path;
+		widget.content = p_path.empty() ? "Empty" : p_path;
 		if (p_updateNotifier)
 			p_updateNotifier->Invoke();
 	});
-
-	auto& resetButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("Clear");
-	resetButton.idleBackgroundColor = ClearButtonColor;
-	resetButton.ClickedEvent += [&widget, &p_data, p_updateNotifier]
-	{
-		p_data = "";
-		widget.content = "Empty";
-		if (p_updateNotifier)
-			p_updateNotifier->Invoke();
-	};
 
 	return widget;
 }

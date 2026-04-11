@@ -146,7 +146,7 @@ OvEditor::Panels::MaterialEditor::MaterialEditor(
 	PanelWindow(p_title, p_opened, p_windowSettings)
 {
 	CreateHeaderButtons();
-	CreateWidget<OvUI::Widgets::Visual::Separator>();
+	AddSeparator();
 	CreateMaterialSelector();
 	m_settings = &CreateWidget<Layout::Group>();
 	CreateShaderSelector();

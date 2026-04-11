@@ -884,9 +884,9 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 
 void OvEditor::Panels::AssetBrowser::Fill()
 {
-	m_assetList->CreateWidget<OvUI::Widgets::Visual::Separator>();
+	m_assetList->AddSeparator();
 	ConsiderItem(nullptr, std::filesystem::directory_entry(EDITOR_CONTEXT(engineAssetsPath)), true);
-	m_assetList->CreateWidget<OvUI::Widgets::Visual::Separator>();
+	m_assetList->AddSeparator();
 	ConsiderItem(nullptr, std::filesystem::directory_entry(EDITOR_CONTEXT(projectAssetsPath)), false);
 }
 

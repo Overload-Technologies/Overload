@@ -332,8 +332,7 @@ void OvCore::ECS::Components::CReflectionProbe::OnInspector(OvUI::Internal::Widg
 		updateInfluenceWidgets(boxProjection, value);
 	};
 
-	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
-	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
+	p_root.AddSeparator();
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Reflection Probe Debugging");
 

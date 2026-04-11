@@ -11,6 +11,8 @@
 #include "OvUI/Widgets/AWidget.h"
 #include "OvUI/Internal/EMemoryMode.h"
 
+namespace OvUI::Widgets::Visual { class Separator; }
+
 namespace OvUI::Internal
 {
 	/**
@@ -79,6 +81,11 @@ namespace OvUI::Internal
 			instance.SetParent(this);
 			return instance;
 		}
+
+		/**
+		* Add a separator to the container
+		*/
+		Widgets::Visual::Separator& AddSeparator();
 
 		/**
 		* Returns the widgets and their memory management mode

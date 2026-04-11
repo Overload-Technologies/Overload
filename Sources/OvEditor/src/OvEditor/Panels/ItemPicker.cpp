@@ -50,7 +50,7 @@ ItemPicker::ItemPicker(
 		FilterList(p_text);
 	};
 
-	CreateWidget<OvUI::Widgets::Visual::Separator>();
+	AddSeparator();
 	m_listGroup = &CreateWidget<OvUI::Widgets::Layout::Group>();
 }
 

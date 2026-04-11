@@ -161,7 +161,14 @@ namespace
 		p_material.TrySetProperty("u_EmissiveIntensity", materialData.emissiveIntensity);
 
 		const bool normalTextureBound = BindEmbeddedTextureProperty(p_material, p_context, materialData.normalTexture, "u_NormalMap");
-		const bool heightTextureBound = BindEmbeddedTextureProperty(p_material, p_context, materialData.heightTexture, "u_HeightMap");
+		const bool hasDistinctHeightTexture =
+			materialData.heightTexture.has_value() &&
+			(
+				!materialData.normalTexture.has_value() ||
+				materialData.heightTexture.value() != materialData.normalTexture.value()
+			);
+		const bool heightTextureBound = hasDistinctHeightTexture &&
+			BindEmbeddedTextureProperty(p_material, p_context, materialData.heightTexture, "u_HeightMap");
 
 		BindEmbeddedTextureProperty(p_material, p_context, materialData.albedoTexture, "u_AlbedoMap");
 		BindEmbeddedTextureProperty(p_material, p_context, materialData.metallicTexture, "u_MetallicMap");

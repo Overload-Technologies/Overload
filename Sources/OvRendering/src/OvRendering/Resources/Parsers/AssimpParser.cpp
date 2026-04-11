@@ -294,7 +294,13 @@ namespace
 		return newIndex;
 	}
 
-	std::optional<uint32_t> FindFirstTextureIndex(
+	struct TextureSearchResult
+	{
+		uint32_t index;
+		aiTextureType type;
+	};
+
+	std::optional<TextureSearchResult> FindFirstTexture(
 		const aiScene& p_scene,
 		aiMaterial& p_material,
 		std::span<const aiTextureType> p_textureTypes,
@@ -328,9 +334,36 @@ namespace
 					p_embeddedTextures
 				))
 				{
-					return result;
+					return TextureSearchResult{
+						.index = result.value(),
+						.type = textureType
+					};
 				}
 			}
+		}
+
+		return std::nullopt;
+	}
+
+	std::optional<uint32_t> FindFirstTextureIndex(
+		const aiScene& p_scene,
+		aiMaterial& p_material,
+		std::span<const aiTextureType> p_textureTypes,
+		const std::filesystem::path& p_modelDirectory,
+		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+	)
+	{
+		if (const auto foundTexture = FindFirstTexture(
+			p_scene,
+			p_material,
+			p_textureTypes,
+			p_modelDirectory,
+			p_textureIndexByKey,
+			p_embeddedTextures
+		))
+		{
+			return foundTexture->index;
 		}
 
 		return std::nullopt;
@@ -405,7 +438,7 @@ namespace
 				p_embeddedTextures
 			);
 
-			embeddedMaterial.normalTexture = FindFirstTextureIndex(
+			const auto normalTexture = FindFirstTexture(
 				*p_scene,
 				*material,
 				std::span{ kNormalTextureTypes },
@@ -413,6 +446,7 @@ namespace
 				textureIndexByKey,
 				p_embeddedTextures
 			);
+			embeddedMaterial.normalTexture = normalTexture ? std::optional<uint32_t>{ normalTexture->index } : std::nullopt;
 
 			embeddedMaterial.metallicTexture = FindFirstTextureIndex(
 				*p_scene,
@@ -450,7 +484,7 @@ namespace
 				p_embeddedTextures
 			);
 
-			embeddedMaterial.heightTexture = FindFirstTextureIndex(
+			const auto heightTexture = FindFirstTexture(
 				*p_scene,
 				*material,
 				std::span{ kHeightTextureTypes },
@@ -458,6 +492,7 @@ namespace
 				textureIndexByKey,
 				p_embeddedTextures
 			);
+			embeddedMaterial.heightTexture = heightTexture ? std::optional<uint32_t>{ heightTexture->index } : std::nullopt;
 
 			embeddedMaterial.opacityTexture = FindFirstTextureIndex(
 				*p_scene,
@@ -467,6 +502,20 @@ namespace
 				textureIndexByKey,
 				p_embeddedTextures
 			);
+
+			const bool useHeightAsNormal =
+				heightTexture.has_value() &&
+				heightTexture->type == aiTextureType_HEIGHT &&
+				(
+					!normalTexture.has_value() ||
+					heightTexture->index == normalTexture->index
+				);
+
+			if (useHeightAsNormal)
+			{
+				embeddedMaterial.normalTexture = heightTexture->index;
+				embeddedMaterial.heightTexture.reset();
+			}
 
 			embeddedMaterial.normalMapping = embeddedMaterial.normalTexture.has_value();
 			embeddedMaterial.parallaxMapping = embeddedMaterial.heightTexture.has_value();

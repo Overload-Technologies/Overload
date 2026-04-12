@@ -237,8 +237,6 @@ void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 void OvEditor::Panels::Inspector::_DrawAddSection()
 {
 	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
-	addButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	addButton.textColor = OvUI::Types::Color::White;
 
 	addButton.ClickedEvent += [this] {
 		if (!m_targetActor.has_value())

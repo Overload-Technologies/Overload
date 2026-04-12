@@ -14,6 +14,7 @@
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Panels/PanelWindow.h>
 #include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 
@@ -78,7 +79,7 @@ namespace OvEditor::Panels
         OvUI::Widgets::AWidget* m_headerLineBreak = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_settingsColumns = nullptr;
 		OvUI::Widgets::Layout::Columns<2>* m_infoColumns = nullptr;
-        OvUI::Widgets::Texts::Text* m_assetSelector = nullptr;
+        OvUI::Widgets::InputFields::AssetField* m_assetSelector = nullptr;
 		std::unique_ptr<OvTools::Filesystem::IniFile> m_metadata;
 	};
 }

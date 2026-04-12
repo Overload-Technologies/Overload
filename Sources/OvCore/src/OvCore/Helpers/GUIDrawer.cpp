@@ -13,6 +13,7 @@
 #include <OvUI/Widgets/Drags/DragSingleScalar.h>
 #include <OvUI/Widgets/Drags/DragMultipleScalars.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
+#include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/Columns.h>
@@ -29,7 +30,6 @@
 #include <OvCore/ResourceManagement/SoundManager.h>
 
 #include "OvCore/Helpers/GUIDrawer.h"
-#include "OvUI/Widgets/Buttons/AButton.h"
 
 const OvUI::Types::Color OvCore::Helpers::GUIDrawer::TitleColor = { 0.85f, 0.65f, 0.0f };
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
@@ -165,12 +165,12 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 namespace
 {
 	void AddSelectButton(
-		OvUI::Widgets::Buttons::AButton& p_button,
+		OvTools::Eventing::Event<>& p_clickedEvent,
 		OvTools::Utils::PathParser::EFileType p_fileType,
 		std::function<void(const std::string&)> p_onSelect)
 	{
 		auto token = std::make_shared<bool>(true);
-		p_button.ClickedEvent += [p_fileType, p_onSelect = std::move(p_onSelect), token = std::move(token)]
+		p_clickedEvent += [p_fileType, p_onSelect = std::move(p_onSelect), token = std::move(token)]
 		{
 			std::weak_ptr<bool> weak = token;
 			OvCore::Helpers::GUIDrawer::OpenAssetPicker(p_fileType, [p_onSelect, weak](const std::string& p_path)
@@ -181,7 +181,7 @@ namespace
 	}
 
 	template<typename TResource, typename TResourceManager>
-	OvUI::Widgets::Texts::Text& DrawResourceWidget(
+	OvUI::Widgets::InputFields::AssetField& DrawResourceWidget(
 		OvUI::Internal::WidgetContainer& p_root,
 		const std::string& p_name,
 		TResource*& p_data,
@@ -191,11 +191,7 @@ namespace
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
 		std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
-		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-		rightSide.horizontal = true;
-		rightSide.stretchWidget = 0;
-
-		auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
+		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 
 		widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
 			[&widget, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)
@@ -212,11 +208,7 @@ namespace
 			}
 		};
 
-		widget.lineBreak = false;
-
-		auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-		selectButton.lineBreak = false;
-		AddSelectButton(selectButton, p_fileType, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		AddSelectButton(widget.ClickedEvent, p_fileType, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 		{
 			if (p_path.empty())
 			{
@@ -239,7 +231,7 @@ namespace
 	}
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	return DrawResourceWidget<OvRendering::Resources::Model, OvCore::ResourceManagement::ModelManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::MODEL, p_updateNotifier);
 }
@@ -248,7 +240,6 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 {
 	CreateTitle(p_root, p_name);
 
-	std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
 	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
 	rightSide.horizontal = true;
 	rightSide.stretchWidget = 0;
@@ -273,7 +264,7 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 
 	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
 	selectButton.lineBreak = false;
-	AddSelectButton(selectButton, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+	AddSelectButton(selectButton.ClickedEvent, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 	{
 		if (p_path.empty())
 		{
@@ -295,31 +286,27 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 	return widget;
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	return DrawResourceWidget<OvRendering::Resources::Shader, OvCore::ResourceManagement::ShaderManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::SHADER, p_updateNotifier);
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	return DrawResourceWidget<OvCore::Resources::Material, OvCore::ResourceManagement::MaterialManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::MATERIAL, p_updateNotifier);
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	return DrawResourceWidget<OvAudio::Resources::Sound, OvCore::ResourceManagement::SoundManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::SOUND, p_updateNotifier);
 }
 
-OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	CreateTitle(p_root, p_name);
 
 	const std::string displayedText = (p_data.empty() ? std::string("Empty") : p_data);
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-	rightSide.horizontal = true;
-	rightSide.stretchWidget = 0;
-
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Texts::Text>(displayedText);
+	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
 	{
@@ -329,11 +316,7 @@ OvUI::Widgets::Texts::Text& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal
 			p_updateNotifier->Invoke();
 	};
 
-	widget.lineBreak = false;
-
-	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButton.lineBreak = false;
-	AddSelectButton(selectButton, OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 	{
 		p_data = p_path;
 		widget.content = p_path.empty() ? "Empty" : p_path;

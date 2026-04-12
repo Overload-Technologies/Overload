@@ -31,6 +31,7 @@ namespace OvUI::Widgets::InputFields
 
 	public:
 		std::string content;
+		uint32_t iconTextureID = 0;
 		OvTools::Eventing::Event<> ClickedEvent;
 	};
 }

@@ -40,6 +40,7 @@ namespace
 	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
 	OvCore::Helpers::GUIDrawer::FileItemBuilderCallback __FILE_ITEM_BUILDER;
 	OvCore::Helpers::GUIDrawer::PickerProviderCallback __PICKER_PROVIDER;
+	OvCore::Helpers::GUIDrawer::IconProviderCallback __ICON_PROVIDER;
 
 	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
 	{
@@ -93,6 +94,11 @@ void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
 void OvCore::Helpers::GUIDrawer::SetPickerProvider(PickerProviderCallback p_provider)
 {
 	__PICKER_PROVIDER = std::move(p_provider);
+}
+
+void OvCore::Helpers::GUIDrawer::SetIconProvider(IconProviderCallback p_provider)
+{
+	__ICON_PROVIDER = std::move(p_provider);
 }
 
 void OvCore::Helpers::GUIDrawer::OpenPicker(PickerItemList p_items, std::string p_title)
@@ -192,6 +198,8 @@ namespace
 
 		std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
 		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
+		if (__ICON_PROVIDER)
+			widget.iconTextureID = __ICON_PROVIDER(p_fileType);
 
 		widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
 			[&widget, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)

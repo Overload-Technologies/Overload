@@ -16,6 +16,7 @@ OvUI::Widgets::InputFields::AssetField::AssetField(const std::string& p_content)
 void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 {
 	const float buttonSize = ImGui::GetFrameHeight();
+	const float innerSize = buttonSize - 2.0f * ImGui::GetStyle().FramePadding.x;
 
 	ImGui::BeginGroup();
 
@@ -29,7 +30,21 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 
 	ImGui::SameLine(0, 0);
 
-	if (ImGui::Button(("..." + m_widgetID).c_str(), ImVec2(buttonSize, buttonSize)))
+	bool clicked;
+	if (iconTextureID != 0)
+	{
+		clicked = ImGui::ImageButton(
+			("icon" + m_widgetID).c_str(),
+			(ImTextureID)(uintptr_t)iconTextureID,
+			ImVec2(innerSize, innerSize)
+		);
+	}
+	else
+	{
+		clicked = ImGui::Button(("..." + m_widgetID).c_str(), ImVec2(buttonSize, buttonSize));
+	}
+
+	if (clicked)
 		ClickedEvent.Invoke();
 
 	ImGui::EndGroup();

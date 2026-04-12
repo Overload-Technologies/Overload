@@ -101,6 +101,8 @@ namespace OvCore::Helpers
 
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
+		using IconProviderCallback = std::function<uint32_t(OvTools::Utils::PathParser::EFileType)>;
+
 		static const OvUI::Types::Color TitleColor;
 
 		static const float _MIN_FLOAT;
@@ -136,6 +138,14 @@ namespace OvCore::Helpers
 			bool p_searchProjectFiles = true,
 			bool p_searchEngineFiles = true
 		);
+
+		/**
+		* Register the function that returns a texture ID for a given file type.
+		* Used to show asset type icons in asset fields.
+		* Call this once during editor startup.
+		* @param p_provider
+		*/
+		static void SetIconProvider(IconProviderCallback p_provider);
 
 		/**
 		* Register the function that opens the picker window.

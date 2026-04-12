@@ -182,7 +182,7 @@ OvCore::Resources::Material * OvEditor::Panels::MaterialEditor::GetTarget() cons
 void OvEditor::Panels::MaterialEditor::RemoveTarget()
 {
 	m_target = nullptr;
-	m_targetMaterialText->content = "Empty";
+	m_targetMaterialText->content.clear();
 	OnMaterialDropped();
 }
 
@@ -214,7 +214,8 @@ void OvEditor::Panels::MaterialEditor::OnMaterialDropped()
 	if (m_settings->enabled)
 	{
 		GenerateMaterialSettingsContent();
-		m_shaderText->content = m_target->GetShader() ? m_target->GetShader()->path : "Empty";
+		const auto shader = m_target->GetShader();
+		m_shaderText->content = shader ? shader->path : std::string{};
 		m_shader = m_target->GetShader();
 	}
 	else

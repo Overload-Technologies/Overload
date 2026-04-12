@@ -196,7 +196,7 @@ namespace
 	{
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
-		std::string displayedText = (p_data ? p_data->path : std::string("Empty"));
+		const std::string displayedText = p_data ? p_data->path : std::string{};
 		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 		if (__ICON_PROVIDER)
 			widget.iconTextureID = __ICON_PROVIDER(p_fileType);
@@ -221,7 +221,7 @@ namespace
 			if (p_path.empty())
 			{
 				p_data = nullptr;
-				widget.content = "Empty";
+				widget.content.clear();
 				if (p_updateNotifier)
 					p_updateNotifier->Invoke();
 				return;
@@ -313,7 +313,7 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 {
 	CreateTitle(p_root, p_name);
 
-	const std::string displayedText = (p_data.empty() ? std::string("Empty") : p_data);
+	const std::string displayedText = p_data;
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
@@ -327,10 +327,43 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
 	{
 		p_data = p_path;
-		widget.content = p_path.empty() ? "Empty" : p_path;
+		widget.content = p_path;
 		if (p_updateNotifier)
 			p_updateNotifier->Invoke();
 	});
+
+	return widget;
+}
+
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider)
+{
+	CreateTitle(p_root, p_name);
+
+	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
+	if (__ICON_PROVIDER)
+		widget.iconTextureID = __ICON_PROVIDER(OvTools::Utils::PathParser::EFileType::SCENE);
+
+	auto& dispatcher = widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
+	dispatcher.RegisterGatherer(p_gatherer);
+
+	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
+		[&widget, &dispatcher, p_provider](auto p_receivedData)
+	{
+		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::SCENE)
+		{
+			widget.content = p_receivedData.first;
+			p_provider(p_receivedData.first);
+		}
+	};
+
+	widget.ClickedEvent += [&widget, p_provider]()
+	{
+		OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider](const std::string& p_path)
+		{
+			widget.content = p_path;
+			p_provider(p_path);
+		}, true, false);
+	};
 
 	return widget;
 }

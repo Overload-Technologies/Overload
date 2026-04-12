@@ -5,10 +5,12 @@
 */
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 
 #include <imgui.h>
 
+#include <OvTools/Utils/PathParser.h>
 #include <OvUI/Widgets/InputFields/AssetField.h>
 
 OvUI::Widgets::InputFields::AssetField::AssetField(const std::string& p_content)
@@ -21,25 +23,16 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 	const float buttonSize = ImGui::GetFrameHeight();
 	const float innerSize = buttonSize - 2.0f * ImGui::GetStyle().FramePadding.x;
 
-	// Normalize to forward slashes
-	std::string normalized = content;
-	std::replace(normalized.begin(), normalized.end(), '\\', '/');
+	std::filesystem::path assetPath{
+		OvTools::Utils::PathParser::MakeNonWindowsStyle(content)
+	};
 
-	// Extract filename for display
-	std::string displayName = normalized;
-	const auto lastSlash = normalized.rfind('/');
-	if (lastSlash != std::string::npos)
-		displayName = normalized.substr(lastSlash + 1);
+	std::string displayName = assetPath.empty() ? "None" : assetPath.stem();
 
-	// Build tooltip: replace leading ':' with {engine}/ or prepend {project}/
-	std::string tooltip;
-	if (!content.empty() && content != "Empty")
-	{
-		if (content[0] == ':')
-			tooltip = "{engine}/" + normalized.substr(1);
-		else
-			tooltip = "{project}/" + normalized;
-	}
+	std::string tooltip =
+		content.starts_with(':') ?
+		"{ENGINE}/" + assetPath.string().substr(1) :
+		assetPath.string();
 
 	ImGui::BeginGroup();
 

@@ -88,6 +88,6 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		auto& columns = gameRoot.CreateWidget<Layout::Columns<2>>();
 		columns.widths[0] = 125;
 
-		GUIDrawer::DrawDDString(columns, "Start scene", GenerateGatherer<std::string>("start_scene"), GenerateProvider<std::string>("start_scene"), "File");
+		GUIDrawer::DrawScene(columns, "Start scene", GenerateGatherer<std::string>("start_scene"), GenerateProvider<std::string>("start_scene"));
 	}
 }

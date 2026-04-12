@@ -57,6 +57,19 @@ void OvEditor::Core::Editor::SetupUI()
 	settings.collapsable = true;
 	settings.dockable = true;
 
+	OvCore::Helpers::GUIDrawer::SetPickerProvider(
+		[this](OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title) {
+			m_itemPicker->Open(std::move(p_items), std::move(p_title));
+		}
+	);
+
+	OvCore::Helpers::GUIDrawer::SetIconProvider(
+		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
+			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
+			return texture ? texture->GetTexture().GetID() : 0;
+		}
+	);
+
 	m_panelsManager.CreatePanel<Panels::MenuBar>("Menu Bar");
 	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings);
 	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings);
@@ -85,19 +98,6 @@ void OvEditor::Core::Editor::SetupUI()
 	);
 
 	m_canvas.AddPanel(*m_itemPicker);
-
-	OvCore::Helpers::GUIDrawer::SetPickerProvider(
-		[this](OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title) {
-			m_itemPicker->Open(std::move(p_items), std::move(p_title));
-		}
-	);
-
-	OvCore::Helpers::GUIDrawer::SetIconProvider(
-		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
-			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
-			return texture ? texture->GetTexture().GetID() : 0;
-		}
-	);
 }
 
 void OvEditor::Core::Editor::PreUpdate()

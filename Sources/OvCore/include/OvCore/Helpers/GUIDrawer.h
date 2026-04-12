@@ -23,6 +23,7 @@
 #include <OvUI/Widgets/Drags/DragSingleScalar.h>
 #include <OvUI/Widgets/Drags/DragMultipleScalars.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
+#include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Types/Color.h>
 
@@ -100,6 +101,8 @@ namespace OvCore::Helpers
 
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
+		using IconProviderCallback = std::function<uint32_t(OvTools::Utils::PathParser::EFileType)>;
+
 		static const OvUI::Types::Color TitleColor;
 
 		static const float _MIN_FLOAT;
@@ -137,6 +140,14 @@ namespace OvCore::Helpers
 		);
 
 		/**
+		* Register the function that returns a texture ID for a given file type.
+		* Used to show asset type icons in asset fields.
+		* Call this once during editor startup.
+		* @param p_provider
+		*/
+		static void SetIconProvider(IconProviderCallback p_provider);
+
+		/**
 		* Register the function that opens the picker window.
 		* Call this once during editor startup (typically in Editor::SetupUI).
 		* @param p_provider
@@ -167,12 +178,12 @@ namespace OvCore::Helpers
 		static void DrawQuat(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FQuaternion& p_data, float p_step = 1.f, float p_min = _MIN_FLOAT, float p_max = _MAX_FLOAT);
 		static void DrawString(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data);
 		static void DrawColor(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvUI::Types::Color& p_color, bool p_hasAlpha = false);
-		static OvUI::Widgets::Texts::Text& DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::Visual::Image& DrawTexture(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Texture*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
-		static OvUI::Widgets::Texts::Text& DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
-		static OvUI::Widgets::Texts::Text& DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
-		static OvUI::Widgets::Texts::Text& DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
-		static OvUI::Widgets::Texts::Text& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 
 		template <typename T>
 		static void DrawScalar(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<T(void)> p_gatherer, std::function<void(T)> p_provider, float p_step = 1.f, T p_min = std::numeric_limits<T>::min(), T p_max = std::numeric_limits<T>::max());

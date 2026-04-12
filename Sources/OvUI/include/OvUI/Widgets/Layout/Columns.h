@@ -69,6 +69,25 @@ namespace OvUI::Widgets::Layout
 					{
 						if (counter == 0)
 						{
+							// Skip the row entirely if all its widgets are disabled
+							bool allDisabled = true;
+							auto lookahead = it;
+							for (size_t k = 0; k < _Size && lookahead != p_end; ++k, ++lookahead)
+							{
+								if (lookahead->first->enabled)
+								{
+									allDisabled = false;
+									break;
+								}
+							}
+
+							if (allDisabled)
+							{
+								for (size_t k = 1; k < _Size && std::next(it) != p_end; ++k)
+									++it;
+								continue;
+							}
+
 							ImGui::TableNextRow();
 						}
 

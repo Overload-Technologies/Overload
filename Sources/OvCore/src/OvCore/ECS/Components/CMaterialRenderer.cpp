@@ -145,7 +145,7 @@ std::array<OvUI::Widgets::AWidget*, 2> CustomMaterialDrawer(OvUI::Internal::Widg
 	const size_t before = p_root.GetWidgets().size();
 	OvCore::Helpers::GUIDrawer::DrawMaterial(p_root, p_name, p_data, nullptr);
 	auto& widgets = p_root.GetWidgets();
-	// DrawMaterial adds exactly 2 widgets: [before]=TextColored title, [before+1]=Group rightSide
+	// DrawMaterial adds exactly 2 widgets: [before]=TextColored title, [before+1]=AssetField
 	return { widgets[before].first, widgets[before + 1].first };
 }
 

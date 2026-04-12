@@ -237,8 +237,6 @@ void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 void OvEditor::Panels::Inspector::_DrawAddSection()
 {
 	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
-	addButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	addButton.textColor = OvUI::Types::Color::White;
 
 	addButton.ClickedEvent += [this] {
 		if (!m_targetActor.has_value())
@@ -317,6 +315,7 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
 		p_component.owner.RemoveComponent(p_component);
 	};
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("comp_" + p_component.GetName());
 	columns.widths[0] = 200;
 	p_component.OnInspector(columns);
 }
@@ -330,6 +329,7 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 	};
 
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("bhv_" + p_behaviour.name);
 	columns.widths[0] = 200;
 	p_behaviour.OnInspector(columns);
 }

@@ -91,6 +91,13 @@ void OvEditor::Core::Editor::SetupUI()
 			m_itemPicker->Open(std::move(p_items), std::move(p_title));
 		}
 	);
+
+	OvCore::Helpers::GUIDrawer::SetIconProvider(
+		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
+			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
+			return texture ? texture->GetTexture().GetID() : 0;
+		}
+	);
 }
 
 void OvEditor::Core::Editor::PreUpdate()

@@ -23,7 +23,7 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - buttonSize);
 
 	char buf[512] = {};
-	strncpy(buf, content.c_str(), sizeof(buf) - 1);
+	content.copy(buf, sizeof(buf) - 1);
 	ImGui::BeginDisabled();
 	ImGui::InputText((m_widgetID + "i").c_str(), buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly);
 	ImGui::EndDisabled();

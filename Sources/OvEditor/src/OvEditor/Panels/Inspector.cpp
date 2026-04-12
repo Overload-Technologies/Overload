@@ -317,6 +317,7 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
 		p_component.owner.RemoveComponent(p_component);
 	};
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("comp_" + p_component.GetName());
 	columns.widths[0] = 200;
 	p_component.OnInspector(columns);
 }
@@ -330,6 +331,7 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 	};
 
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("bhv_" + p_behaviour.name);
 	columns.widths[0] = 200;
 	p_behaviour.OnInspector(columns);
 }

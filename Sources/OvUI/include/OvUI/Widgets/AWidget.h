@@ -42,6 +42,14 @@ namespace OvUI::Widgets
 		void LinkTo(const AWidget& p_widget);
 
 		/**
+		* Override the auto-generated widget ID with a custom stable identifier.
+		* Useful to preserve ImGui state (e.g. table column widths) across widget
+		* rebuilds that would otherwise receive a new monotonic ID.
+		* @param p_id  Arbitrary unique string (will be prefixed with "##")
+		*/
+		void SetID(const std::string& p_id) { m_widgetID = "##" + p_id; }
+
+		/**
 		* Mark the widget as destroyed. It will be removed from the owner panel
 		* by the garbage collector
 		*/

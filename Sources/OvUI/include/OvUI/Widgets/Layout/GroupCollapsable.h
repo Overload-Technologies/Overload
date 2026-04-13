@@ -33,7 +33,6 @@ namespace OvUI::Widgets::Layout
 		std::string name;
 		bool closable = false;
 		bool opened = true;
-		bool collapsed = false;
 		bool reorderable = false;
 		bool canMoveUp = true;
 		bool canMoveDown = true;

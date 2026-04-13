@@ -18,9 +18,7 @@ void OvUI::Widgets::Layout::GroupCollapsable::_Draw_Impl()
 {
 	bool previouslyOpened = opened;
 
-	ImGui::SetNextItemOpen(!collapsed);
-
-	bool isOpen = ImGui::CollapsingHeader(name.c_str(), closable ? &opened : nullptr);
+	bool isOpen = ImGui::CollapsingHeader(name.c_str(), closable ? &opened : nullptr, ImGuiTreeNodeFlags_DefaultOpen);
 
 	if (reorderable)
 	{
@@ -56,8 +54,6 @@ void OvUI::Widgets::Layout::GroupCollapsable::_Draw_Impl()
 
 	if (isOpen)
 		Group::_Draw_Impl();
-
-	collapsed = !ImGui::TreeNodeUpdateNextOpen(ImGui::GetID(name.c_str()), ImGuiTreeNodeFlags_None);
 
 	if (opened != previouslyOpened)
 	{

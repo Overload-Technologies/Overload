@@ -31,6 +31,7 @@
 
 #include <OvUI/Plugins/ContextualMenu.h>
 
+#include "OvEditor/Core/EditorResources.h"
 #include "OvEditor/Utils/ActorCreationMenu.h"
 
 class ActorContextualMenu : public OvUI::Plugins::ContextualMenu
@@ -334,6 +335,10 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 {
 	auto& textSelectable = m_actors.CreateWidget<OvUI::Widgets::Layout::TreeNode>(p_actor.GetName(), true);
 	textSelectable.leaf = true;
+
+	if (auto* actorTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Actor"))
+		textSelectable.iconTextureID = actorTexture->GetTexture().GetID();
+
 	textSelectable.AddPlugin<ActorContextualMenu>(&p_actor, &textSelectable);
 	textSelectable.AddPlugin<OvUI::Plugins::DDSource<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor", "Attach to...", std::make_pair(&p_actor, &textSelectable));
 	textSelectable.AddPlugin<OvUI::Plugins::DDTarget<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor").DataReceivedEvent += [&p_actor, &textSelectable](std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*> p_element)
@@ -349,7 +354,15 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	auto& dispatcher = textSelectable.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
 
 	OvCore::ECS::Actor* targetPtr = &p_actor;
-	dispatcher.RegisterGatherer([targetPtr] { return targetPtr->GetName(); });
+	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
+	{
+		const bool isActive = targetPtr->IsSelfActive();
+		textSelectable.overrideLabelColor = !isActive;
+		if (!isActive)
+			textSelectable.labelColor = {0.5f, 0.5f, 0.5f, 1.0f};
+
+		return targetPtr->GetName();
+	});
 
 	m_widgetActorLink[targetPtr] = &textSelectable;
 

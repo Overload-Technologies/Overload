@@ -8,6 +8,13 @@
 
 #include <OvCore/Helpers/GUIDrawer.h>
 
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvCore/ResourceManagement/MaterialManager.h>
+
+#include <OvTools/Utils/SystemCalls.h>
+#include <OvTools/Utils/PathParser.h>
+
 #include <OvEditor/Core/Editor.h>
 #include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/ItemPicker.h>
@@ -67,6 +74,50 @@ void OvEditor::Core::Editor::SetupUI()
 		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
 			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
 			return texture ? texture->GetTexture().GetID() : 0;
+		}
+	);
+
+	OvCore::Helpers::GUIDrawer::SetOpenProvider(
+		[this](const std::string& p_path)
+		{
+			using EFileType = OvTools::Utils::PathParser::EFileType;
+			const auto fileType = OvTools::Utils::PathParser::GetFileType(p_path);
+
+			auto openInAssetView = [&](auto* p_resource)
+			{
+				if (!p_resource) return;
+				auto& assetView = EDITOR_PANEL(AssetView, "Asset View");
+				assetView.SetResource(AssetView::ViewableResource{ p_resource });
+				assetView.Open();
+				assetView.Focus();
+			};
+
+			if (fileType == EFileType::TEXTURE)
+			{
+				openInAssetView(OVSERVICE(TextureManager).GetResource(p_path, false));
+			}
+			else if (fileType == EFileType::MODEL)
+			{
+				openInAssetView(OVSERVICE(ModelManager).GetResource(p_path, false));
+			}
+			else if (fileType == EFileType::MATERIAL)
+			{
+				auto* material = OVSERVICE(MaterialManager).GetResource(p_path, false);
+				openInAssetView(material);
+				if (material)
+				{
+					auto& materialEditor = EDITOR_PANEL(MaterialEditor, "Material Editor");
+					EDITOR_EXEC(DelayAction([material, &materialEditor]() {
+						materialEditor.SetTarget(*material);
+						materialEditor.Open();
+						materialEditor.Focus();
+					}));
+				}
+			}
+			else if (fileType == EFileType::SHADER || fileType == EFileType::SHADER_PART)
+			{
+				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(p_path)));
+			}
 		}
 	);
 

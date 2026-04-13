@@ -38,5 +38,6 @@ namespace OvUI::Widgets::InputFields
 		float previewSize = 64.0f;
 
 		OvTools::Eventing::Event<> ClickedEvent;
+		OvTools::Eventing::Event<> DoubleClickedEvent;
 	};
 }

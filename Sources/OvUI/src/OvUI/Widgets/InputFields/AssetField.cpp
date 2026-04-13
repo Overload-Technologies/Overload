@@ -39,6 +39,9 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 	if (!tooltip.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
 		ImGui::SetTooltip("%s", tooltip.c_str());
 
+	if (!content.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+		DoubleClickedEvent.Invoke();
+
 	ImGui::SameLine(0, 0);
 
 	bool clicked;

@@ -41,6 +41,7 @@ namespace
 	OvCore::Helpers::GUIDrawer::FileItemBuilderCallback __FILE_ITEM_BUILDER;
 	OvCore::Helpers::GUIDrawer::PickerProviderCallback __PICKER_PROVIDER;
 	OvCore::Helpers::GUIDrawer::IconProviderCallback __ICON_PROVIDER;
+	OvCore::Helpers::GUIDrawer::OpenProviderCallback __OPEN_PROVIDER;
 
 	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
 	{
@@ -99,6 +100,11 @@ void OvCore::Helpers::GUIDrawer::SetPickerProvider(PickerProviderCallback p_prov
 void OvCore::Helpers::GUIDrawer::SetIconProvider(IconProviderCallback p_provider)
 {
 	__ICON_PROVIDER = std::move(p_provider);
+}
+
+void OvCore::Helpers::GUIDrawer::SetOpenProvider(OpenProviderCallback p_provider)
+{
+	__OPEN_PROVIDER = std::move(p_provider);
 }
 
 void OvCore::Helpers::GUIDrawer::OpenPicker(PickerItemList p_items, std::string p_title)
@@ -235,6 +241,9 @@ namespace
 			}
 		});
 
+		if (__OPEN_PROVIDER)
+			widget.DoubleClickedEvent += [&widget] { __OPEN_PROVIDER(widget.content); };
+
 		return widget;
 	}
 }
@@ -295,6 +304,9 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 				p_updateNotifier->Invoke();
 		}
 	});
+
+	if (__OPEN_PROVIDER)
+		widget.DoubleClickedEvent += [&widget] { __OPEN_PROVIDER(widget.content); };
 
 	return widget;
 }

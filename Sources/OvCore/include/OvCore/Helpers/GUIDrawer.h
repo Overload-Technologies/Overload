@@ -98,6 +98,8 @@ namespace OvCore::Helpers
 		*/
 		using FileItemBuilderCallback = std::function<PickerItemList(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
 
+		using OpenProviderCallback = std::function<void(const std::string&)>;
+
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 
 		using IconProviderCallback = std::function<uint32_t(OvTools::Utils::PathParser::EFileType)>;
@@ -137,6 +139,8 @@ namespace OvCore::Helpers
 			bool p_searchProjectFiles = true,
 			bool p_searchEngineFiles = true
 		);
+
+		static void SetOpenProvider(OpenProviderCallback p_provider);
 
 		/**
 		* Register the function that returns a texture ID for a given file type.

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvUI/Panels/PanelWindow.h>
 
 namespace OvUI::Widgets
@@ -45,7 +45,7 @@ namespace OvEditor::Panels
 		* @param p_items
 		* @param p_title  Title displayed in the window's title bar
 		*/
-		void Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title);
+		void Open(OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title);
 
 	private:
 		void _Draw_Impl() override;
@@ -60,7 +60,7 @@ namespace OvEditor::Panels
 		float m_anchorY = 0.f;  // bottom-left Y when m_usePivotAnchor is true
 
 	private:
-		OvCore::Helpers::GUIDrawer::PickerItemList m_items;
+		OvCore::Helpers::GUIHelpers::PickerItemList m_items;
 
 		OvUI::Widgets::InputFields::InputText* m_searchField = nullptr;
 		OvUI::Widgets::Layout::Group* m_listGroup = nullptr;

@@ -9,7 +9,7 @@
 #include <functional>
 #include <string>
 
-#include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvTools/Utils/PathParser.h>
 
 namespace OvEditor::Helpers::PickerHelpers
@@ -26,7 +26,7 @@ namespace OvEditor::Helpers::PickerHelpers
 	* @param p_searchEngine     Include engine assets
 	*/
 	void AddFileItems(
-		OvCore::Helpers::GUIDrawer::PickerItemList& p_list,
+		OvCore::Helpers::GUIHelpers::PickerItemList& p_list,
 		OvTools::Utils::PathParser::EFileType p_fileType,
 		std::function<void(std::string)> p_onSelected,
 		bool p_searchProject = true,

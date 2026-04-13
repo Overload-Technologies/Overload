@@ -9,6 +9,8 @@
 
 #include <OvTools/Utils/PathParser.h>
 
+#include <OvCore/Helpers/GUIHelpers.h>
+
 #include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Drags/DragSingleScalar.h>
 #include <OvUI/Widgets/Drags/DragMultipleScalars.h>
@@ -34,90 +36,6 @@
 const OvUI::Types::Color OvCore::Helpers::GUIDrawer::TitleColor = { 0.85f, 0.65f, 0.0f };
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
 const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
-
-namespace
-{
-	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
-	OvCore::Helpers::GUIDrawer::FileItemBuilderCallback __FILE_ITEM_BUILDER;
-	OvCore::Helpers::GUIDrawer::PickerProviderCallback __PICKER_PROVIDER;
-	OvCore::Helpers::GUIDrawer::IconProviderCallback __ICON_PROVIDER;
-	OvCore::Helpers::GUIDrawer::OpenProviderCallback __OPEN_PROVIDER;
-
-	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
-	{
-		using EFileType = OvTools::Utils::PathParser::EFileType;
-		switch (p_type)
-		{
-		case EFileType::MODEL:    return "Pick Model";
-		case EFileType::TEXTURE:  return "Pick Texture";
-		case EFileType::SHADER:   return "Pick Shader";
-		case EFileType::MATERIAL: return "Pick Material";
-		case EFileType::SOUND:    return "Pick Sound";
-		case EFileType::SCRIPT:   return "Pick Script";
-		default:                  return "Pick Asset";
-		}
-	}
-}
-
-void OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture)
-{
-	__EMPTY_TEXTURE = &p_emptyTexture;
-}
-
-void OvCore::Helpers::GUIDrawer::SetFileItemBuilder(FileItemBuilderCallback p_builder)
-{
-	__FILE_ITEM_BUILDER = std::move(p_builder);
-}
-
-void OvCore::Helpers::GUIDrawer::OpenAssetPicker(
-	OvTools::Utils::PathParser::EFileType p_fileType,
-	std::function<void(std::string)> p_onSelect,
-	bool p_searchProjectFiles,
-	bool p_searchEngineFiles
-)
-{
-	if (!__FILE_ITEM_BUILDER || !__PICKER_PROVIDER)
-		return;
-
-	// Keep a copy so we can attach it to the None item before moving.
-	auto onSelectCopy = p_onSelect;
-	auto assetItems = __FILE_ITEM_BUILDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
-
-	// Build the final list with "None" at the top.
-	PickerItemList items;
-	items.Add({ "__none__", "None", "Clear the current selection", 0, [onSelectCopy] { onSelectCopy(""); } });
-	for (const auto& item : assetItems.Items())
-		items.Add(item);
-
-	__PICKER_PROVIDER(std::move(items), TitleFromFileType(p_fileType));
-}
-
-void OvCore::Helpers::GUIDrawer::SetPickerProvider(PickerProviderCallback p_provider)
-{
-	__PICKER_PROVIDER = std::move(p_provider);
-}
-
-void OvCore::Helpers::GUIDrawer::SetIconProvider(IconProviderCallback p_provider)
-{
-	__ICON_PROVIDER = std::move(p_provider);
-}
-
-void OvCore::Helpers::GUIDrawer::SetOpenProvider(OpenProviderCallback p_provider)
-{
-	__OPEN_PROVIDER = std::move(p_provider);
-}
-
-void OvCore::Helpers::GUIDrawer::Open(const std::string& p_path)
-{
-	if (__OPEN_PROVIDER && !p_path.empty())
-		__OPEN_PROVIDER(p_path);
-}
-
-void OvCore::Helpers::GUIDrawer::OpenPicker(PickerItemList p_items, std::string p_title)
-{
-	if (__PICKER_PROVIDER)
-		__PICKER_PROVIDER(std::move(p_items), std::move(p_title));
-}
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
 {
@@ -191,7 +109,7 @@ namespace
 		p_clickedEvent += [p_fileType, p_onSelect = std::move(p_onSelect), token = std::move(token)]
 		{
 			std::weak_ptr<bool> weak = token;
-			OvCore::Helpers::GUIDrawer::OpenAssetPicker(p_fileType, [p_onSelect, weak](const std::string& p_path)
+			OvCore::Helpers::GUIHelpers::OpenAssetPicker(p_fileType, [p_onSelect, weak](const std::string& p_path)
 			{
 				if (!weak.expired()) p_onSelect(p_path);
 			}, true, true);
@@ -210,8 +128,7 @@ namespace
 
 		const std::string displayedText = p_data ? p_data->path : std::string{};
 		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
-		if (__ICON_PROVIDER)
-			widget.iconTextureID = __ICON_PROVIDER(p_fileType);
+		widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(p_fileType);
 
 		widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
 			[&widget, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)
@@ -247,8 +164,7 @@ namespace
 			}
 		});
 
-		if (__OPEN_PROVIDER)
-			widget.DoubleClickedEvent += [&widget] { __OPEN_PROVIDER(widget.content); };
+		widget.DoubleClickedEvent += [&widget] { OvCore::Helpers::GUIHelpers::Open(widget.content); };
 
 		return widget;
 	}
@@ -266,12 +182,12 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 	auto getPreviewID = [&]() -> uint32_t
 	{
 		if (p_data) return p_data->GetTexture().GetID();
-		return __EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0;
+		auto* empty = OvCore::Helpers::GUIHelpers::GetEmptyTexture();
+		return empty ? empty->GetTexture().GetID() : 0;
 	};
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_data ? p_data->path : std::string{});
-	if (__ICON_PROVIDER)
-		widget.iconTextureID = __ICON_PROVIDER(OvTools::Utils::PathParser::EFileType::TEXTURE);
+	widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::TEXTURE);
 	widget.previewTextureID = getPreviewID();
 
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
@@ -311,8 +227,7 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 		}
 	});
 
-	if (__OPEN_PROVIDER)
-		widget.DoubleClickedEvent += [&widget] { __OPEN_PROVIDER(widget.content); };
+	widget.DoubleClickedEvent += [&widget] { OvCore::Helpers::GUIHelpers::Open(widget.content); };
 
 	return widget;
 }
@@ -363,8 +278,7 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 	CreateTitle(p_root, p_name);
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
-	if (__ICON_PROVIDER)
-		widget.iconTextureID = __ICON_PROVIDER(OvTools::Utils::PathParser::EFileType::SCENE);
+	widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::SCENE);
 
 	widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(p_gatherer);
 
@@ -382,7 +296,7 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 	widget.ClickedEvent += [&widget, p_provider, token]()
 	{
 		std::weak_ptr<bool> weak = token;
-		OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider, weak](const std::string& p_path)
+		OvCore::Helpers::GUIHelpers::OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider, weak](const std::string& p_path)
 		{
 			if (!weak.expired())
 			{

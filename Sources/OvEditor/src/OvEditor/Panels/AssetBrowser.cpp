@@ -13,6 +13,7 @@
 #include <tinyxml2.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
@@ -310,7 +311,7 @@ namespace
 
 			ItemAddedEvent.Invoke(finalPath);
 
-			OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(finalPath.string())));
+			OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(finalPath.string())));
 
 			Close();
 		}
@@ -591,7 +592,7 @@ namespace
 			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
 
 			previewAction.ClickedEvent += [this] {
-				OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
 			};
 
 			FileContextualMenu::CreateList();
@@ -764,7 +765,7 @@ namespace
 
 			editAction.ClickedEvent += [this]
 			{
-				OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
 			};
 
 			auto& reload = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
@@ -1186,14 +1187,14 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 		if (fileType == OvTools::Utils::PathParser::EFileType::MODEL)
 		{
 			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
 			};
 		}
 
 		if (fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
 		{
 			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
 			};
 		}
 
@@ -1203,7 +1204,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			texturePreview.SetPath(resourceFormatPath);
 
 			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIDrawer::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
 			};
 		}
 

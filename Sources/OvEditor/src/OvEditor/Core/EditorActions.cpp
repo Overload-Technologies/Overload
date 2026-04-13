@@ -20,6 +20,7 @@
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
@@ -47,9 +48,9 @@ OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& 
 {
 	OvCore::Global::ServiceLocator::Provide<OvEditor::Core::EditorActions>(*this);
 
-	OvCore::Helpers::GUIDrawer::SetFileItemBuilder(
+	OvCore::Helpers::GUIHelpers::SetFileItemBuilder(
 		[](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback, bool p_searchProject, bool p_searchEngine) {
-			OvCore::Helpers::GUIDrawer::PickerItemList items;
+			OvCore::Helpers::GUIHelpers::PickerItemList items;
 			OvEditor::Helpers::PickerHelpers::AddFileItems(items, p_type, std::move(p_callback), p_searchProject, p_searchEngine);
 			return items;
 		}

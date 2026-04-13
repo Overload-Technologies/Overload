@@ -7,6 +7,7 @@
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
@@ -64,20 +65,20 @@ void OvEditor::Core::Editor::SetupUI()
 	settings.collapsable = true;
 	settings.dockable = true;
 
-	OvCore::Helpers::GUIDrawer::SetPickerProvider(
-		[this](OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title) {
+	OvCore::Helpers::GUIHelpers::SetPickerProvider(
+		[this](OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title) {
 			m_itemPicker->Open(std::move(p_items), std::move(p_title));
 		}
 	);
 
-	OvCore::Helpers::GUIDrawer::SetIconProvider(
+	OvCore::Helpers::GUIHelpers::SetIconProvider(
 		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
 			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
 			return texture ? texture->GetTexture().GetID() : 0;
 		}
 	);
 
-	OvCore::Helpers::GUIDrawer::SetOpenProvider(
+	OvCore::Helpers::GUIHelpers::SetOpenProvider(
 		[this](const std::string& p_path)
 		{
 			using EFileType = OvTools::Utils::PathParser::EFileType;

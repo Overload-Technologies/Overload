@@ -86,7 +86,7 @@ void ItemPicker::_Draw_Impl()
 	}
 }
 
-void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title)
+void ItemPicker::Open(OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title)
 {
 	name = std::move(p_title);
 	m_items = std::move(p_items);

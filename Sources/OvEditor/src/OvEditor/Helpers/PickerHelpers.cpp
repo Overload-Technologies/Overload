@@ -15,7 +15,7 @@ using namespace OvTools::Utils;
 namespace
 {
 	void CollectFromDirectory(
-		OvCore::Helpers::GUIDrawer::PickerItemList& p_list,
+		OvCore::Helpers::GUIHelpers::PickerItemList& p_list,
 		const std::filesystem::path& p_directory,
 		bool p_isEngine,
 		PathParser::EFileType p_fileType,
@@ -57,7 +57,7 @@ namespace
 }
 
 void OvEditor::Helpers::PickerHelpers::AddFileItems(
-	OvCore::Helpers::GUIDrawer::PickerItemList& p_list,
+	OvCore::Helpers::GUIHelpers::PickerItemList& p_list,
 	PathParser::EFileType p_fileType,
 	std::function<void(std::string)> p_onSelected,
 	bool p_searchProject,

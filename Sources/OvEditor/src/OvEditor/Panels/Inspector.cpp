@@ -25,6 +25,7 @@
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Helpers/PickerHelpers.h>
@@ -241,7 +242,7 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 
 		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
 
-		OvCore::Helpers::GUIDrawer::PickerItemList items;
+		OvCore::Helpers::GUIHelpers::PickerItemList items;
 
 		for (const auto& info : componentRegistry)
 		{
@@ -300,7 +301,7 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			true, false
 		);
 
-		OvCore::Helpers::GUIDrawer::OpenPicker(std::move(items), "Add Component");
+		OvCore::Helpers::GUIHelpers::OpenPicker(std::move(items), "Add Component");
 	};
 }
 

@@ -235,7 +235,6 @@ void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 void OvEditor::Panels::Inspector::_DrawAddSection()
 {
 	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
-
 	addButton.ClickedEvent += [this] {
 		if (!m_targetActor.has_value())
 			return;
@@ -317,37 +316,23 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component, int p_
 	if (!isTransform)
 	{
 		header.reorderable = true;
-		// CTransform is always at index 0; non-Transform components start at index 1
 		header.canMoveUp = (p_index > 1);
 		header.canMoveDown = (p_index < p_total - 1);
 
-		header.MoveUpEvent += [this, &p_component]
-		{
-			auto& components = p_component.owner.GetComponents();
-			auto it = std::find_if(components.begin(), components.end(),
-				[&](const auto& c) { return c.get() == &p_component; });
-			if (it != components.begin())
-			{
-				auto prev = std::prev(it);
-				if (!dynamic_cast<CTransform*>(prev->get()))
-					std::iter_swap(it, prev);
-			}
-			EDITOR_EXEC(DelayAction([this] { Refresh(); }));
-		};
-
-		header.MoveDownEvent += [this, &p_component]
-		{
-			auto& components = p_component.owner.GetComponents();
-			auto it = std::find_if(components.begin(), components.end(),
-				[&](const auto& c) { return c.get() == &p_component; });
-			if (it != components.end())
-			{
-				auto next = std::next(it);
-				if (next != components.end())
+		auto move = [this, &p_component](bool up) {
+			auto& comps = p_component.owner.GetComponents();
+			auto it = std::find_if(comps.begin(), comps.end(), [&](const auto& c) { return c.get() == &p_component; });
+			if (up) {
+				if (it != comps.begin() && !dynamic_cast<CTransform*>(std::prev(it)->get()))
+					std::iter_swap(it, std::prev(it));
+			} else {
+				if (auto next = std::next(it); next != comps.end())
 					std::iter_swap(it, next);
 			}
 			EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 		};
+		header.MoveUpEvent += [move] { move(true); };
+		header.MoveDownEvent += [move] { move(false); };
 	}
 
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
@@ -368,27 +353,20 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_i
 	header.canMoveUp = (p_index > 0);
 	header.canMoveDown = (p_index < p_total - 1);
 
-	header.MoveUpEvent += [this, &p_behaviour]
-	{
+	auto move = [this, &p_behaviour](bool up) {
 		auto& order = p_behaviour.owner.GetBehavioursOrder();
 		auto it = std::find(order.begin(), order.end(), p_behaviour.name);
-		if (it != order.begin())
-			std::iter_swap(it, std::prev(it));
-		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
-	};
-
-	header.MoveDownEvent += [this, &p_behaviour]
-	{
-		auto& order = p_behaviour.owner.GetBehavioursOrder();
-		auto it = std::find(order.begin(), order.end(), p_behaviour.name);
-		if (it != order.end())
-		{
-			auto next = std::next(it);
-			if (next != order.end())
+		if (up) {
+			if (it != order.begin())
+				std::iter_swap(it, std::prev(it));
+		} else {
+			if (auto next = std::next(it); next != order.end())
 				std::iter_swap(it, next);
 		}
 		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 	};
+	header.MoveUpEvent += [move] { move(true); };
+	header.MoveDownEvent += [move] { move(false); };
 
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
 	columns.SetID("bhv_" + p_behaviour.name);

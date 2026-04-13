@@ -348,11 +348,10 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 	if (__ICON_PROVIDER)
 		widget.iconTextureID = __ICON_PROVIDER(OvTools::Utils::PathParser::EFileType::SCENE);
 
-	auto& dispatcher = widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
-	dispatcher.RegisterGatherer(p_gatherer);
+	widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(p_gatherer);
 
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
-		[&widget, &dispatcher, p_provider](auto p_receivedData)
+		[&widget, p_provider](auto p_receivedData)
 	{
 		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::SCENE)
 		{
@@ -361,12 +360,17 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 		}
 	};
 
-	widget.ClickedEvent += [&widget, p_provider]()
+	auto token = std::make_shared<bool>(true);
+	widget.ClickedEvent += [&widget, p_provider, token]()
 	{
-		OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider](const std::string& p_path)
+		std::weak_ptr<bool> weak = token;
+		OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider, weak](const std::string& p_path)
 		{
-			widget.content = p_path;
-			p_provider(p_path);
+			if (!weak.expired())
+			{
+				widget.content = p_path;
+				p_provider(p_path);
+			}
 		}, true, false);
 	};
 

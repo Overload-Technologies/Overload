@@ -32,6 +32,11 @@ namespace OvUI::Widgets::InputFields
 	public:
 		std::string content;
 		uint32_t iconTextureID = 0;
+
+		/** When non-zero, a framed preview image is drawn above the input row. */
+		uint32_t previewTextureID = 0;
+		float previewSize = 64.0f;
+
 		OvTools::Eventing::Event<> ClickedEvent;
 	};
 }

@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -60,6 +59,27 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 
 	if (clicked)
 		ClickedEvent.Invoke();
+
+	if (previewTextureID != 0)
+	{
+		// Tighten the gap between the field row and preview to match frame inner padding.
+		const float gap = ImGui::GetStyle().FramePadding.y;
+		ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y + gap);
+
+		ImVec2 imgMin = ImGui::GetCursorScreenPos();
+		ImGui::Image(
+			(ImTextureID)(uintptr_t)previewTextureID,
+			ImVec2(previewSize, previewSize),
+			ImVec2(0.f, 1.f), ImVec2(1.f, 0.f)
+		);
+		ImGui::GetWindowDrawList()->AddRect(
+			imgMin,
+			ImVec2(imgMin.x + previewSize, imgMin.y + previewSize),
+			ImGui::GetColorU32(ImGuiCol_Border)
+		);
+		if (ImGui::IsItemClicked())
+			ClickedEvent.Invoke();
+	}
 
 	ImGui::EndGroup();
 }

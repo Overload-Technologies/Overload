@@ -24,7 +24,6 @@
 #include <OvUI/Widgets/Drags/DragMultipleScalars.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/InputFields/AssetField.h>
-#include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Types/Color.h>
 
 namespace OvCore::Resources
@@ -179,7 +178,7 @@ namespace OvCore::Helpers
 		static void DrawString(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data);
 		static void DrawColor(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvUI::Types::Color& p_color, bool p_hasAlpha = false);
 		static OvUI::Widgets::InputFields::AssetField& DrawMesh(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Model*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
-		static OvUI::Widgets::Visual::Image& DrawTexture(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Texture*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawTexture(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Texture*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawShader(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Shader*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);

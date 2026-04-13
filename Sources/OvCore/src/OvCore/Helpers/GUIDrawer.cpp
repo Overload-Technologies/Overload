@@ -244,40 +244,44 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawMesh(OvU
 	return DrawResourceWidget<OvRendering::Resources::Model, OvCore::ResourceManagement::ModelManager>(p_root, p_name, p_data, OvTools::Utils::PathParser::EFileType::MODEL, p_updateNotifier);
 }
 
-OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvRendering::Resources::Texture *& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvRendering::Resources::Texture*& p_data, OvTools::Eventing::Event<>* p_updateNotifier)
 {
 	CreateTitle(p_root, p_name);
 
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-	rightSide.horizontal = true;
-	rightSide.stretchWidget = 0;
+	auto getPreviewID = [&]() -> uint32_t
+	{
+		if (p_data) return p_data->GetTexture().GetID();
+		return __EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0;
+	};
 
-	auto& widget = rightSide.CreateWidget<OvUI::Widgets::Visual::Image>(p_data ? p_data->GetTexture().GetID() : (__EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0), OvMaths::FVector2{75, 75});
+	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_data ? p_data->path : std::string{});
+	if (__ICON_PROVIDER)
+		widget.iconTextureID = __ICON_PROVIDER(OvTools::Utils::PathParser::EFileType::TEXTURE);
+	widget.previewTextureID = getPreviewID();
 
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
+	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
+		[&widget, &p_data, p_updateNotifier, getPreviewID](auto p_receivedData)
 	{
 		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::TEXTURE)
 		{
 			if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_receivedData.first); resource)
 			{
 				p_data = resource;
-				widget.textureID.id = resource->GetTexture().GetID();
+				widget.content = p_receivedData.first;
+				widget.previewTextureID = resource->GetTexture().GetID();
 				if (p_updateNotifier)
 					p_updateNotifier->Invoke();
 			}
 		}
 	};
 
-	widget.lineBreak = false;
-
-	auto& selectButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::ButtonSmall>("...");
-	selectButton.lineBreak = false;
-	AddSelectButton(selectButton.ClickedEvent, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier, getPreviewID](const std::string& p_path)
 	{
 		if (p_path.empty())
 		{
 			p_data = nullptr;
-			widget.textureID.id = (__EMPTY_TEXTURE ? __EMPTY_TEXTURE->GetTexture().GetID() : 0);
+			widget.content.clear();
+			widget.previewTextureID = getPreviewID();
 			if (p_updateNotifier)
 				p_updateNotifier->Invoke();
 			return;
@@ -285,7 +289,8 @@ OvUI::Widgets::Visual::Image& OvCore::Helpers::GUIDrawer::DrawTexture(OvUI::Inte
 		if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
 		{
 			p_data = resource;
-			widget.textureID.id = resource->GetTexture().GetID();
+			widget.content = p_path;
+			widget.previewTextureID = resource->GetTexture().GetID();
 			if (p_updateNotifier)
 				p_updateNotifier->Invoke();
 		}

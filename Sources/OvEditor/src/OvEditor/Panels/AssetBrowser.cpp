@@ -525,7 +525,7 @@ namespace
 			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
 			editAction.ClickedEvent += [this] {
-				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
 			};
 
 			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
@@ -747,7 +747,7 @@ namespace
 
 			editAction.ClickedEvent += [this]
 			{
-				EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(filePath.string()))));
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
 			};
 
 			FileContextualMenu::CreateList();
@@ -1174,44 +1174,16 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			EDITOR_EXEC(DelayAction(std::bind(&AssetBrowser::ConsiderItem, this, p_root, std::filesystem::directory_entry{ newItem }, p_isEngineItem, false), 0));
 		};
 
-		if (fileType == OvTools::Utils::PathParser::EFileType::SOUND ||
-			fileType == OvTools::Utils::PathParser::EFileType::SCRIPT ||
-			fileType == OvTools::Utils::PathParser::EFileType::SHADER ||
-			fileType == OvTools::Utils::PathParser::EFileType::SHADER_PART)
-		{
-			clickableText.DoubleClickedEvent += [&contextMenu] {
-				OvTools::Utils::SystemCalls::OpenFile(contextMenu.filePath.string());
-			};
-		}
-
-		if (fileType == OvTools::Utils::PathParser::EFileType::MODEL)
-		{
-			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
-			};
-		}
-
-		if (fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
-		{
-			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
-			};
-		}
-
 		if (fileType == OvTools::Utils::PathParser::EFileType::TEXTURE)
 		{
 			auto& texturePreview = clickableText.AddPlugin<TexturePreview>();
 			texturePreview.SetPath(resourceFormatPath);
-
-			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
-			};
 		}
 
-		if (fileType == OvTools::Utils::PathParser::EFileType::SCENE)
+		if (fileType != OvTools::Utils::PathParser::EFileType::UNKNOWN)
 		{
-			clickableText.DoubleClickedEvent += [&contextMenu] {
-				EDITOR_EXEC(LoadSceneFromDisk(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string()))));
+			clickableText.DoubleClickedEvent += [&contextMenu, p_isEngineItem] {
+				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(contextMenu.filePath.string(), p_isEngineItem)));
 			};
 		}
 	}

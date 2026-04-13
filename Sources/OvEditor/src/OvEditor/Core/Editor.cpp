@@ -115,8 +115,13 @@ void OvEditor::Core::Editor::SetupUI()
 					}));
 				}
 			}
-			else if (fileType == EFileType::SHADER || fileType == EFileType::SHADER_PART)
+			else if (fileType == EFileType::SCENE)
 			{
+				EDITOR_EXEC(LoadSceneFromDisk(p_path));
+			}
+			else
+			{
+				// SHADER, SHADER_PART, SCRIPT, SOUND, FONT, UNKNOWN → open with OS default
 				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(p_path)));
 			}
 		}

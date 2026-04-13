@@ -16,6 +16,7 @@
 #include <OvDebug/Logger.h>
 
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 
 #include <OvCore/ECS/Components/CCamera.h>
 #include <OvCore/ECS/Components/CPointLight.h>
@@ -150,10 +151,13 @@ OvEditor::Panels::Hierarchy::Hierarchy
 	m_actions(CreateWidget<OvUI::Widgets::Layout::Group>()),
 	m_actors(CreateWidget<OvUI::Widgets::Layout::Group>())
 {
-	auto& searchBar = m_actions.CreateWidget<OvUI::Widgets::InputFields::InputText>();
-	searchBar.fullWidth = true;
-	if (auto* searchTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Search"))
-		searchBar.iconTextureID = searchTexture->GetTexture().GetID();
+	const uint32_t searchIconID = []{
+		if (auto* tex = EDITOR_CONTEXT(editorResources)->GetTexture("Search"))
+			return tex->GetTexture().GetID();
+		return 0u;
+	}();
+
+	auto& searchBar = OvCore::Helpers::GUIDrawer::DrawSearchBar(m_actions, searchIconID);
 	searchBar.ContentChangedEvent += [this](const std::string& p_content)
 	{
 		founds.clear();

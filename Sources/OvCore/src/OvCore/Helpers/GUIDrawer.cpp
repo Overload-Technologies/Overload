@@ -458,3 +458,11 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 	dispatcher.RegisterGatherer(p_gatherer);
 	dispatcher.RegisterProvider(p_provider);
 }
+
+OvUI::Widgets::InputFields::InputText& OvCore::Helpers::GUIDrawer::DrawSearchBar(OvUI::Internal::WidgetContainer& p_root, uint32_t p_searchIconTextureID)
+{
+	auto& searchBar = p_root.CreateWidget<OvUI::Widgets::InputFields::InputText>();
+	searchBar.fullWidth = true;
+	searchBar.iconTextureID = p_searchIconTextureID;
+	return searchBar;
+}

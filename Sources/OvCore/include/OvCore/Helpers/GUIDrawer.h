@@ -72,6 +72,13 @@ namespace OvCore::Helpers
 
 		static OvUI::Widgets::InputFields::AssetField& DrawScene(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider);
 
+		/**
+		* Creates a full-width search bar with an optional search icon
+		* @param p_root
+		* @param p_searchIconTextureID
+		*/
+		static OvUI::Widgets::InputFields::InputText& DrawSearchBar(OvUI::Internal::WidgetContainer& p_root, uint32_t p_searchIconTextureID = 0);
+
 		template <typename T>
 		static void DrawScalar(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<T(void)> p_gatherer, std::function<void(T)> p_provider, float p_step = 1.f, T p_min = std::numeric_limits<T>::min(), T p_max = std::numeric_limits<T>::max());
 		static void DrawBoolean(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<bool(void)> p_gatherer, std::function<void(bool)> p_provider);

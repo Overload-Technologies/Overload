@@ -151,6 +151,9 @@ OvEditor::Panels::Hierarchy::Hierarchy
 	m_actors(CreateWidget<OvUI::Widgets::Layout::Group>())
 {
 	auto& searchBar = m_actions.CreateWidget<OvUI::Widgets::InputFields::InputText>();
+	searchBar.fullWidth = true;
+	if (auto* searchTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Search"))
+		searchBar.iconTextureID = searchTexture->GetTexture().GetID();
 	searchBar.ContentChangedEvent += [this](const std::string& p_content)
 	{
 		founds.clear();

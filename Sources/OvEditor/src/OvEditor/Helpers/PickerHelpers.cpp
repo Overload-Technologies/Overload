@@ -42,12 +42,13 @@ namespace
 
 			const std::string resourcePath = EDITOR_EXEC(GetResourcePath(path, p_isEngine));
 			const std::string filename = PathParser::GetElementName(resourcePath);
+			const std::string friendlyPath = PathParser::GetFriendlyPath(resourcePath);
 			const uint32_t iconID = EDITOR_CONTEXT(editorResources)->GetFileIcon(path)->GetTexture().GetID();
 
 			p_list.Add({
 				resourcePath,
 				filename,
-				resourcePath,
+				friendlyPath,
 				iconID,
 				[onSelected = p_onSelected, resourcePath] { onSelected(resourcePath); }
 			});

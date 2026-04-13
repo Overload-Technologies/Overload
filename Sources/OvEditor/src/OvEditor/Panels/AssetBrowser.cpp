@@ -969,7 +969,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			treeNode.Open();
 		}
 
-		auto& ddSource = treeNode.AddPlugin<OvUI::Plugins::DDSource<std::pair<std::string, Layout::Group*>>>("Folder", resourceFormatPath, std::make_pair(resourceFormatPath, &itemGroup));
+		auto& ddSource = treeNode.AddPlugin<OvUI::Plugins::DDSource<std::pair<std::string, Layout::Group*>>>("Folder", OvTools::Utils::PathParser::GetFriendlyPath(resourceFormatPath), std::make_pair(resourceFormatPath, &itemGroup));
 		
 		if (!p_root)
 		{
@@ -1097,7 +1097,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 					const auto elementName = p_newPath.filename();
 					const auto data = std::filesystem::path{ ddSource.data.first }.parent_path() / elementName;
 					ddSource.data.first = data.string();
-					ddSource.tooltip = data.string();
+					ddSource.tooltip = OvTools::Utils::PathParser::GetFriendlyPath(data.string());
 					treeNode.name = elementName.string();
 					treeNode.Open();
 					treeNode.RemoveAllWidgets();
@@ -1162,7 +1162,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 
 		auto& ddSource = clickableText.AddPlugin<OvUI::Plugins::DDSource<std::pair<std::string, Layout::Group*>>>(
 			"File",
-			resourceFormatPath,
+			OvTools::Utils::PathParser::GetFriendlyPath(resourceFormatPath),
 			std::make_pair(resourceFormatPath, &itemGroup)
 		);
 
@@ -1177,7 +1177,7 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 					RenameAsset(p_prev, p_newPath);
 					const auto elementName = p_newPath.filename();
 					ddSource.data.first = (std::filesystem::path{ ddSource.data.first }.parent_path() / elementName).string();
-					ddSource.tooltip = ddSource.data.first;
+					ddSource.tooltip = OvTools::Utils::PathParser::GetFriendlyPath(ddSource.data.first);
 
 					EDITOR_EXEC(PropagateFileRename(p_prev.string(), p_newPath.string()));
 

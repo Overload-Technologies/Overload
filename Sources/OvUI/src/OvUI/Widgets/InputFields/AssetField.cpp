@@ -23,16 +23,9 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 	const float buttonSize = ImGui::GetFrameHeight();
 	const float innerSize = buttonSize - 2.0f * ImGui::GetStyle().FramePadding.x;
 
-	std::filesystem::path assetPath{
-		OvTools::Utils::PathParser::MakeNonWindowsStyle(content)
-	};
-
-	std::string displayName = assetPath.empty() ? "None" : assetPath.stem();
-
-	std::string tooltip =
-		content.starts_with(':') ?
-		"{ENGINE}/" + assetPath.string().substr(1) :
-		assetPath.string();
+	const std::string friendly = OvTools::Utils::PathParser::GetFriendlyPath(content);
+	const std::string displayName = friendly.empty() ? "None" : std::filesystem::path(friendly).stem().string();
+	const std::string tooltip = friendly;
 
 	ImGui::BeginGroup();
 

@@ -30,6 +30,16 @@ std::string OvTools::Utils::PathParser::MakeNonWindowsStyle(const std::string & 
 	return result;
 }
 
+std::string OvTools::Utils::PathParser::GetFriendlyPath(const std::string& p_path)
+{
+	const std::string normalized = MakeNonWindowsStyle(p_path);
+
+	if (!normalized.empty() && normalized[0] == ':')
+		return "{ENGINE}/" + normalized.substr(1);
+
+	return normalized;
+}
+
 std::string OvTools::Utils::PathParser::GetContainingFolder(const std::string & p_path)
 {
 	std::string result;

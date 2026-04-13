@@ -1162,10 +1162,10 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		{
 			for (auto actor : currentScene->GetActors())
 			{
-				if (actor->RemoveBehaviour(prev) && next != "?")
-				{
-					actor->AddBehaviour(next);
-				}
+				if (next != "?")
+					actor->RenameBehaviour(prev, next);
+				else
+					actor->RemoveBehaviour(prev);
 			}
 		}
 

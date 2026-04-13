@@ -290,6 +290,13 @@ namespace OvCore::ECS
 		bool RemoveBehaviour(const std::string& p_name);
 
 		/**
+		* Rename a behaviour, preserving its position in the ordering
+		* @param p_previousName
+		* @param p_newName
+		*/
+		bool RenameBehaviour(const std::string& p_previousName, const std::string& p_newName);
+
+		/**
 		* Try to get the given behaviour (Returns nullptr on failure)
 		* @param p_name
 		*/

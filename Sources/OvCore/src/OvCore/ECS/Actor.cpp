@@ -384,6 +384,33 @@ bool OvCore::ECS::Actor::RemoveBehaviour(const std::string & p_name)
 	}
 }
 
+bool OvCore::ECS::Actor::RenameBehaviour(const std::string& p_previousName, const std::string& p_newName)
+{
+	auto orderIt = std::find(m_behavioursOrder.begin(), m_behavioursOrder.end(), p_previousName);
+	if (orderIt == m_behavioursOrder.end())
+		return false;
+
+	Components::Behaviour* found = GetBehaviour(p_previousName);
+	if (!found)
+		return false;
+
+	BehaviourRemovedEvent.Invoke(*found);
+	m_behaviours.erase(p_previousName);
+
+	*orderIt = p_newName;
+
+	m_behaviours.try_emplace(p_newName, *this, p_newName);
+	Components::Behaviour& newInstance = m_behaviours.at(p_newName);
+	BehaviourAddedEvent.Invoke(newInstance);
+	if (m_playing && IsActive())
+	{
+		newInstance.OnAwake();
+		newInstance.OnEnable();
+		newInstance.OnStart();
+	}
+	return true;
+}
+
 OvCore::ECS::Components::Behaviour* OvCore::ECS::Actor::GetBehaviour(const std::string& p_name)
 {
 	if (auto result = m_behaviours.find(p_name); result != m_behaviours.end())

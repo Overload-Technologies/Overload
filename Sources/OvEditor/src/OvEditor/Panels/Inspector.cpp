@@ -211,26 +211,24 @@ void OvEditor::Panels::Inspector::_PopulateActorInfo()
 
 void OvEditor::Panels::Inspector::_PopulateActorComponents()
 {
-	for (auto component : m_targetActor->GetComponents() | std::views::reverse)
+	auto& components = m_targetActor->GetComponents();
+	const int total = static_cast<int>(components.size());
+	for (int i = 0; i < total; ++i)
 	{
-		_DrawComponent(*component);
+		_DrawComponent(*components[i], i, total);
 	}
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 {
-	std::map<std::string, std::reference_wrapper<Behaviour>> behaviours;
-
-	// Sorts the behaviours alphabetically
-	for (auto& behaviour : m_targetActor->GetBehaviours() | std::views::values)
+	auto& order = m_targetActor->GetBehavioursOrder();
+	auto& behaviours = m_targetActor->GetBehaviours();
+	const int total = static_cast<int>(order.size());
+	for (int i = 0; i < total; ++i)
 	{
-		behaviours.emplace(behaviour.name, std::ref(behaviour));
-	}
-
-	// Iterate through the sorted behaviours
-	for (auto& behaviour : behaviours | std::views::values)
-	{
-		_DrawBehaviour(behaviour.get());
+		auto it = behaviours.find(order[i]);
+		if (it != behaviours.end())
+			_DrawBehaviour(it->second, i, total);
 	}
 }
 
@@ -307,25 +305,89 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 	};
 }
 
-void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
+void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component, int p_index, int p_total)
 {
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_component.GetName());
-	header.closable = !dynamic_cast<CTransform*>(&p_component);
+	const bool isTransform = dynamic_cast<CTransform*>(&p_component) != nullptr;
+	header.closable = !isTransform;
 	header.CloseEvent += [this, &header, &p_component] { 
 		p_component.owner.RemoveComponent(p_component);
 	};
+
+	if (!isTransform)
+	{
+		header.reorderable = true;
+		// CTransform is always at index 0; non-Transform components start at index 1
+		header.canMoveUp = (p_index > 1);
+		header.canMoveDown = (p_index < p_total - 1);
+
+		header.MoveUpEvent += [this, &p_component]
+		{
+			auto& components = p_component.owner.GetComponents();
+			auto it = std::find_if(components.begin(), components.end(),
+				[&](const auto& c) { return c.get() == &p_component; });
+			if (it != components.begin())
+			{
+				auto prev = std::prev(it);
+				if (!dynamic_cast<CTransform*>(prev->get()))
+					std::iter_swap(it, prev);
+			}
+			EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+		};
+
+		header.MoveDownEvent += [this, &p_component]
+		{
+			auto& components = p_component.owner.GetComponents();
+			auto it = std::find_if(components.begin(), components.end(),
+				[&](const auto& c) { return c.get() == &p_component; });
+			if (it != components.end())
+			{
+				auto next = std::next(it);
+				if (next != components.end())
+					std::iter_swap(it, next);
+			}
+			EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+		};
+	}
+
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
 	columns.SetID("comp_" + p_component.GetName());
 	columns.widths[0] = 200;
 	p_component.OnInspector(columns);
 }
 
-void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
+void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_index, int p_total)
 {
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(std::filesystem::path(p_behaviour.name).replace_extension().string());
 	header.closable = true;
 	header.CloseEvent += [&p_behaviour] {
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);
+	};
+
+	header.reorderable = true;
+	header.canMoveUp = (p_index > 0);
+	header.canMoveDown = (p_index < p_total - 1);
+
+	header.MoveUpEvent += [this, &p_behaviour]
+	{
+		auto& order = p_behaviour.owner.GetBehavioursOrder();
+		auto it = std::find(order.begin(), order.end(), p_behaviour.name);
+		if (it != order.begin())
+			std::iter_swap(it, std::prev(it));
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
+
+	header.MoveDownEvent += [this, &p_behaviour]
+	{
+		auto& order = p_behaviour.owner.GetBehavioursOrder();
+		auto it = std::find(order.begin(), order.end(), p_behaviour.name);
+		if (it != order.end())
+		{
+			auto next = std::next(it);
+			if (next != order.end())
+				std::iter_swap(it, next);
+		}
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 	};
 
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();

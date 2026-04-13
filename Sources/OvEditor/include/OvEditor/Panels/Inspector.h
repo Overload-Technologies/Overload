@@ -66,8 +66,8 @@ namespace OvEditor::Panels
 		void _PopulateActorComponents();
 		void _PopulateActorBehaviours();
 		void _DrawAddSection();
-		void _DrawComponent(OvCore::ECS::Components::AComponent& p_component);
-		void _DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour);
+		void _DrawComponent(OvCore::ECS::Components::AComponent& p_component, int p_index, int p_total);
+		void _DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour, int p_index, int p_total);
 
 	private:
 		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_targetActor = std::nullopt;

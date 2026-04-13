@@ -301,6 +301,11 @@ namespace OvCore::ECS
 		std::unordered_map<std::string, Components::Behaviour>& GetBehaviours();
 
 		/**
+		* Returns the ordered list of behaviour names (display/serialization order)
+		*/
+		std::vector<std::string>& GetBehavioursOrder();
+
+		/**
 		* Serialize all the components
 		*/
 		virtual void OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_actorsRoot) override;
@@ -356,6 +361,7 @@ namespace OvCore::ECS
 		/* Actors components */
 		std::vector<std::shared_ptr<Components::AComponent>> m_components;
 		std::unordered_map<std::string, Components::Behaviour> m_behaviours;
+		std::vector<std::string> m_behavioursOrder;
 
 	public:
 		Components::CTransform& transform;

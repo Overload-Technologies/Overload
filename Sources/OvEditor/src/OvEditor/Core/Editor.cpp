@@ -94,15 +94,15 @@ void OvEditor::Core::Editor::SetupUI()
 
 			if (fileType == EFileType::TEXTURE)
 			{
-				openInAssetView(OVSERVICE(TextureManager).GetResource(p_path, false));
+				openInAssetView(OVSERVICE(TextureManager).GetResource(p_path));
 			}
 			else if (fileType == EFileType::MODEL)
 			{
-				openInAssetView(OVSERVICE(ModelManager).GetResource(p_path, false));
+				openInAssetView(OVSERVICE(ModelManager).GetResource(p_path));
 			}
 			else if (fileType == EFileType::MATERIAL)
 			{
-				auto* material = OVSERVICE(MaterialManager).GetResource(p_path, false);
+				auto* material = OVSERVICE(MaterialManager).GetResource(p_path);
 				openInAssetView(material);
 				if (material)
 				{

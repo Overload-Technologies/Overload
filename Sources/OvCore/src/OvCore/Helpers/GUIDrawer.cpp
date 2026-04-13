@@ -107,6 +107,12 @@ void OvCore::Helpers::GUIDrawer::SetOpenProvider(OpenProviderCallback p_provider
 	__OPEN_PROVIDER = std::move(p_provider);
 }
 
+void OvCore::Helpers::GUIDrawer::Open(const std::string& p_path)
+{
+	if (__OPEN_PROVIDER && !p_path.empty())
+		__OPEN_PROVIDER(p_path);
+}
+
 void OvCore::Helpers::GUIDrawer::OpenPicker(PickerItemList p_items, std::string p_title)
 {
 	if (__PICKER_PROVIDER)

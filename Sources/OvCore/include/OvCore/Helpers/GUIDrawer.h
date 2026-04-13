@@ -143,6 +143,13 @@ namespace OvCore::Helpers
 		static void SetOpenProvider(OpenProviderCallback p_provider);
 
 		/**
+		* Open the asset at the given resource path using the registered open provider.
+		* Has no effect if no provider has been registered or the path is empty.
+		* @param p_path  Resource path (e.g. ":Textures/Default.png" or "Materials/m.ovmat")
+		*/
+		static void Open(const std::string& p_path);
+
+		/**
 		* Register the function that returns a texture ID for a given file type.
 		* Used to show asset type icons in asset fields.
 		* Call this once during editor startup.

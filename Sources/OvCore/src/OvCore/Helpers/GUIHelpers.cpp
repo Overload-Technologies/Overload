@@ -1,8 +1,8 @@
 /**
-* @project: Overload
-* @author: Overload Tech.
-* @licence: MIT
-*/
+ * @project: Overload
+ * @author: Overload Tech.
+ * @licence: MIT
+ */
 
 #include <OvRendering/Resources/Texture.h>
 
@@ -27,6 +27,7 @@ namespace
 		case EFileType::MATERIAL: return "Pick Material";
 		case EFileType::SOUND:    return "Pick Sound";
 		case EFileType::SCRIPT:   return "Pick Script";
+		case EFileType::SCENE:    return "Pick Scene";
 		default:                  return "Pick Asset";
 		}
 	}
@@ -57,11 +58,10 @@ void OvCore::Helpers::GUIHelpers::OpenAssetPicker(
 	if (!__FILE_ITEM_BUILDER || !__PICKER_PROVIDER)
 		return;
 
-	auto onSelectCopy = p_onSelect;
-	auto assetItems = __FILE_ITEM_BUILDER(p_fileType, std::move(p_onSelect), p_searchProjectFiles, p_searchEngineFiles);
+	auto assetItems = __FILE_ITEM_BUILDER(p_fileType, p_onSelect, p_searchProjectFiles, p_searchEngineFiles);
 
 	PickerItemList items;
-	items.Add({ "__none__", "None", "Clear the current selection", 0, [onSelectCopy] { onSelectCopy(""); } });
+	items.Add({ "__none__", "None", "Clear the current selection", 0, [p_onSelect] { p_onSelect(""); } });
 	for (const auto& item : assetItems.Items())
 		items.Add(item);
 

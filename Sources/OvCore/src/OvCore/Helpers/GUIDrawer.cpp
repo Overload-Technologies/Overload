@@ -100,6 +100,10 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 
 namespace
 {
+	/**
+	* Helper to attach an asset picker to a widget's click event.
+	* The picker will be available only if the callback is still alive when invoked.
+	*/
 	void AddSelectButton(
 		OvTools::Eventing::Event<>& p_clickedEvent,
 		OvTools::Utils::PathParser::EFileType p_fileType,
@@ -116,6 +120,10 @@ namespace
 		};
 	}
 
+	/**
+	* Generic asset field widget for resources with drag-drop and file selection support.
+	* Handles resource loading via the service locator and optional change notifications.
+	*/
 	template<typename TResource, typename TResourceManager>
 	OvUI::Widgets::InputFields::AssetField& DrawResourceWidget(
 		OvUI::Internal::WidgetContainer& p_root,
@@ -130,27 +138,30 @@ namespace
 		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 		widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(p_fileType);
 
+		// Create a shared widget reference for safe access in captured lambdas
+		auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
+
 		widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
-			[&widget, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)
+			[widgetPtr, &p_data, p_updateNotifier, p_fileType](auto p_receivedData)
 		{
 			if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == p_fileType)
 			{
 				if (auto resource = OVSERVICE(TResourceManager).GetResource(p_receivedData.first); resource)
 				{
 					p_data = resource;
-					widget.content = p_receivedData.first;
+					widgetPtr->content = p_receivedData.first;
 					if (p_updateNotifier)
 						p_updateNotifier->Invoke();
 				}
 			}
 		};
 
-		AddSelectButton(widget.ClickedEvent, p_fileType, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+		AddSelectButton(widget.ClickedEvent, p_fileType, [widgetPtr, &p_data, p_updateNotifier](const std::string& p_path)
 		{
 			if (p_path.empty())
 			{
 				p_data = nullptr;
-				widget.content.clear();
+				widgetPtr->content.clear();
 				if (p_updateNotifier)
 					p_updateNotifier->Invoke();
 				return;
@@ -158,13 +169,13 @@ namespace
 			if (auto resource = OVSERVICE(TResourceManager).GetResource(p_path); resource)
 			{
 				p_data = resource;
-				widget.content = p_path;
+				widgetPtr->content = p_path;
 				if (p_updateNotifier)
 					p_updateNotifier->Invoke();
 			}
 		});
 
-		widget.DoubleClickedEvent += [&widget] { OvCore::Helpers::GUIHelpers::Open(widget.content); };
+		widget.DoubleClickedEvent += [widgetPtr] { OvCore::Helpers::GUIHelpers::Open(widgetPtr->content); };
 
 		return widget;
 	}
@@ -182,37 +193,40 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 	auto getPreviewID = [&]() -> uint32_t
 	{
 		if (p_data) return p_data->GetTexture().GetID();
-		auto* empty = OvCore::Helpers::GUIHelpers::GetEmptyTexture();
+		auto* empty = GUIHelpers::GetEmptyTexture();
 		return empty ? empty->GetTexture().GetID() : 0;
 	};
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_data ? p_data->path : std::string{});
-	widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::TEXTURE);
+	widget.iconTextureID = GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::TEXTURE);
 	widget.previewTextureID = getPreviewID();
 
+	// Create a shared widget reference for safe access in captured lambdas
+	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
+
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
-		[&widget, &p_data, p_updateNotifier, getPreviewID](auto p_receivedData)
+		[widgetPtr, &p_data, p_updateNotifier, getPreviewID](auto p_receivedData)
 	{
 		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::TEXTURE)
 		{
 			if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_receivedData.first); resource)
 			{
 				p_data = resource;
-				widget.content = p_receivedData.first;
-				widget.previewTextureID = resource->GetTexture().GetID();
+				widgetPtr->content = p_receivedData.first;
+				widgetPtr->previewTextureID = resource->GetTexture().GetID();
 				if (p_updateNotifier)
 					p_updateNotifier->Invoke();
 			}
 		}
 	};
 
-	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::TEXTURE, [&widget, &p_data, p_updateNotifier, getPreviewID](const std::string& p_path)
+	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::TEXTURE, [widgetPtr, &p_data, p_updateNotifier, getPreviewID](const std::string& p_path)
 	{
 		if (p_path.empty())
 		{
 			p_data = nullptr;
-			widget.content.clear();
-			widget.previewTextureID = getPreviewID();
+			widgetPtr->content.clear();
+			widgetPtr->previewTextureID = getPreviewID();
 			if (p_updateNotifier)
 				p_updateNotifier->Invoke();
 			return;
@@ -220,14 +234,14 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 		if (auto resource = OVSERVICE(OvCore::ResourceManagement::TextureManager).GetResource(p_path); resource)
 		{
 			p_data = resource;
-			widget.content = p_path;
-			widget.previewTextureID = resource->GetTexture().GetID();
+			widgetPtr->content = p_path;
+			widgetPtr->previewTextureID = resource->GetTexture().GetID();
 			if (p_updateNotifier)
 				p_updateNotifier->Invoke();
 		}
 	});
 
-	widget.DoubleClickedEvent += [&widget] { OvCore::Helpers::GUIHelpers::Open(widget.content); };
+	widget.DoubleClickedEvent += [widgetPtr] { GUIHelpers::Open(widgetPtr->content); };
 
 	return widget;
 }
@@ -254,18 +268,21 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 	const std::string displayedText = p_data;
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 
-	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [&widget, &p_data, p_updateNotifier](auto p_receivedData)
+	// Create a shared widget reference for safe access in captured lambdas
+	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
+
+	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent += [widgetPtr, &p_data, p_updateNotifier](auto p_receivedData)
 	{
 		p_data = p_receivedData.first;
-		widget.content = p_receivedData.first;
+		widgetPtr->content = p_receivedData.first;
 		if (p_updateNotifier)
 			p_updateNotifier->Invoke();
 	};
 
-	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::UNKNOWN, [&widget, &p_data, p_updateNotifier](const std::string& p_path)
+	AddSelectButton(widget.ClickedEvent, OvTools::Utils::PathParser::EFileType::UNKNOWN, [widgetPtr, &p_data, p_updateNotifier](const std::string& p_path)
 	{
 		p_data = p_path;
-		widget.content = p_path;
+		widgetPtr->content = p_path;
 		if (p_updateNotifier)
 			p_updateNotifier->Invoke();
 	});
@@ -278,29 +295,32 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 	CreateTitle(p_root, p_name);
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
-	widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::SCENE);
+	widget.iconTextureID = GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::SCENE);
+
+	// Create a shared widget reference for safe access in captured lambdas
+	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
 
 	widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(p_gatherer);
 
 	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
-		[&widget, p_provider](auto p_receivedData)
+		[widgetPtr, p_provider](auto p_receivedData)
 	{
 		if (OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == OvTools::Utils::PathParser::EFileType::SCENE)
 		{
-			widget.content = p_receivedData.first;
+			widgetPtr->content = p_receivedData.first;
 			p_provider(p_receivedData.first);
 		}
 	};
 
 	auto token = std::make_shared<bool>(true);
-	widget.ClickedEvent += [&widget, p_provider, token]()
+	widget.ClickedEvent += [widgetPtr, p_provider, token]()
 	{
 		std::weak_ptr<bool> weak = token;
-		OvCore::Helpers::GUIHelpers::OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [&widget, p_provider, weak](const std::string& p_path)
+		GUIHelpers::OpenAssetPicker(OvTools::Utils::PathParser::EFileType::SCENE, [widgetPtr, p_provider, weak](const std::string& p_path)
 		{
 			if (!weak.expired())
 			{
-				widget.content = p_path;
+				widgetPtr->content = p_path;
 				p_provider(p_path);
 			}
 		}, true, false);

@@ -52,11 +52,6 @@ namespace OvCore::Helpers
 		static const float _MIN_FLOAT;
 		static const float _MAX_FLOAT;
 
-		/**
-		* Draw a title with the title color
-		* @param p_root
-		* @param p_name
-		*/
 		static void CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name);
 	
 		template <typename T>

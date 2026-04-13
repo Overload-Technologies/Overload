@@ -83,6 +83,7 @@ void OvEditor::Core::Editor::SetupUI()
 		{
 			using EFileType = OvTools::Utils::PathParser::EFileType;
 			const auto fileType = OvTools::Utils::PathParser::GetFileType(p_path);
+			const auto path = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
 
 			auto openInAssetView = [&](auto* p_resource)
 			{
@@ -95,15 +96,15 @@ void OvEditor::Core::Editor::SetupUI()
 
 			if (fileType == EFileType::TEXTURE)
 			{
-				openInAssetView(OVSERVICE(TextureManager).GetResource(p_path));
+				openInAssetView(OVSERVICE(TextureManager).GetResource(path));
 			}
 			else if (fileType == EFileType::MODEL)
 			{
-				openInAssetView(OVSERVICE(ModelManager).GetResource(p_path));
+				openInAssetView(OVSERVICE(ModelManager).GetResource(path));
 			}
 			else if (fileType == EFileType::MATERIAL)
 			{
-				auto* material = OVSERVICE(MaterialManager).GetResource(p_path);
+				auto* material = OVSERVICE(MaterialManager).GetResource(path);
 				openInAssetView(material);
 				if (material)
 				{
@@ -117,12 +118,12 @@ void OvEditor::Core::Editor::SetupUI()
 			}
 			else if (fileType == EFileType::SCENE)
 			{
-				EDITOR_EXEC(LoadSceneFromDisk(p_path));
+				EDITOR_EXEC(LoadSceneFromDisk(path));
 			}
 			else
 			{
 				// SHADER, SHADER_PART, SCRIPT, SOUND, FONT, UNKNOWN → open with OS default
-				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(p_path)));
+				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(path)));
 			}
 		}
 	);

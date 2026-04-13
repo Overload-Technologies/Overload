@@ -287,6 +287,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 			p_updateNotifier->Invoke();
 	});
 
+	widget.DoubleClickedEvent += [widgetPtr] { GUIHelpers::Open(widgetPtr->content); };
+
 	return widget;
 }
 
@@ -325,6 +327,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 			}
 		}, true, false);
 	};
+
+	widget.DoubleClickedEvent += [widgetPtr] { GUIHelpers::Open(widgetPtr->content); };
 
 	return widget;
 }

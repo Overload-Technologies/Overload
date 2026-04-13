@@ -48,7 +48,9 @@ void OvUI::Widgets::InputFields::AssetField::_Draw_Impl()
 		clicked = ImGui::ImageButton(
 			("icon" + m_widgetID).c_str(),
 			(ImTextureID)(uintptr_t)iconTextureID,
-			ImVec2(innerSize, innerSize)
+			ImVec2(innerSize, innerSize),
+			ImVec2(0.f, 1.f),
+			ImVec2(1.f, 0.f)
 		);
 	}
 	else

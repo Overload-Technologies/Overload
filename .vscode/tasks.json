@@ -19,7 +19,7 @@
     {
       "label": "Build (Debug x64)",
       "type": "shell",
-      "command": "bear -- make -j$(nproc) config=debug_x64",
+      "command": "bear --append -- make -j$(nproc) config=debug_x64",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -49,7 +49,7 @@
     {
       "label": "Build (Release x64)",
       "type": "shell",
-      "command": "bear -- make -j$(nproc) config=release_x64",
+      "command": "bear --append -- make -j$(nproc) config=release_x64",
       "options": {
         "cwd": "${workspaceFolder}"
       },

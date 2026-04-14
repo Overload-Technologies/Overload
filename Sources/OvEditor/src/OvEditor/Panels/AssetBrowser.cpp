@@ -344,12 +344,6 @@ namespace
 				OvTools::Utils::SystemCalls::ShowInExplorer(filePath.string());
 			};
 
-			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
-			openInCodeEditor.ClickedEvent += [this]
-			{
-				EDITOR_EXEC(OpenInCodeEditor(filePath));
-			};
-
 			if (!m_protected)
 			{
 				auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
@@ -538,12 +532,6 @@ namespace
 
 			openExternallyAction.ClickedEvent += [this] {
 				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
-			};
-
-			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
-			openInCodeEditor.ClickedEvent += [this]
-			{
-				EDITOR_EXEC(OpenInCodeEditor(filePath));
 			};
 
 			if (!m_protected)

@@ -266,8 +266,12 @@ namespace OvEditor::Core
 		* Open the given path in the code editor.
 		* Returns true if the operation was successful
 		* @param p_path
+		* @param p_workdir (optional) working directory
 		*/
-		bool OpenInCodeEditor(const std::filesystem::path& p_path);
+		bool OpenInCodeEditor(
+			const std::filesystem::path& p_path,
+			OvTools::Utils::OptRef<const std::filesystem::path> p_workdir = std::nullopt
+		);
 
 		/**
 		* Import an asset

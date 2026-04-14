@@ -10,15 +10,17 @@
 #include <string>
 #include <variant>
 
+#include <OvTools/Utils/PathParser.h>
+
 namespace OvCore::Scripting
 {
 	/**
-	* Represents a reference to an asset (path + type tag).
+	* Represents a reference to an asset (file type + path).
 	* Used as a script property so the inspector can display an asset picker.
 	*/
 	struct AssetRef
 	{
-		std::string assetType; // "Model", "Texture", "Shader", "Material", or "Sound"
+		OvTools::Utils::PathParser::EFileType fileType = OvTools::Utils::PathParser::EFileType::UNKNOWN;
 		std::string path;
 	};
 

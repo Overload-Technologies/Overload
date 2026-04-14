@@ -40,15 +40,15 @@ void BindLuaGlobal(sol::state& p_luaState)
 	// The inspector renders an asset picker for any field initialised with one of the
 	// factory functions below (Model(), Texture(), Shader(), Material(), Sound()).
 	p_luaState.new_usertype<AssetRef>("AssetRef",
-		"path",      &AssetRef::path,
-		"assetType", sol::readonly(&AssetRef::assetType)
+		"path", &AssetRef::path
 	);
 
-	p_luaState["Model"]    = []() { return AssetRef{"Model",    ""}; };
-	p_luaState["Texture"]  = []() { return AssetRef{"Texture",  ""}; };
-	p_luaState["Shader"]   = []() { return AssetRef{"Shader",   ""}; };
-	p_luaState["Material"] = []() { return AssetRef{"Material", ""}; };
-	p_luaState["Sound"]    = []() { return AssetRef{"Sound",    ""}; };
+	using EFT = OvTools::Utils::PathParser::EFileType;
+	p_luaState["Model"]    = []() { return AssetRef{EFT::MODEL,    ""}; };
+	p_luaState["Texture"]  = []() { return AssetRef{EFT::TEXTURE,  ""}; };
+	p_luaState["Shader"]   = []() { return AssetRef{EFT::SHADER,   ""}; };
+	p_luaState["Material"] = []() { return AssetRef{EFT::MATERIAL, ""}; };
+	p_luaState["Sound"]    = []() { return AssetRef{EFT::SOUND,    ""}; };
 
 	// ActorRef is a C++-only internal sentinel type. It is registered so that sol2 can
 	// identify it via is<ActorRef>() in GetDefaultProperties. The Lua-visible factory is

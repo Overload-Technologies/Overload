@@ -81,6 +81,12 @@ namespace OvTools::Utils
 		static std::string FileTypeToString(EFileType p_fileType);
 
 		/**
+		* Convert a string to an EFileType value (inverse of FileTypeToString)
+		* @param p_type
+		*/
+		static EFileType StringToFileType(const std::string& p_type);
+
+		/**
 		* Returns the file type of the file identified by the given path
 		* @param p_path
 		*/

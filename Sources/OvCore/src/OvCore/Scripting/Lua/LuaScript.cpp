@@ -100,29 +100,22 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 		{
 			// Resolve the path to the actual loaded resource so Lua code can use
 			// the value directly (e.g. materialRenderer:SetMaterial(0, self.mat)).
+			using EFT = OvTools::Utils::PathParser::EFileType;
 			if (v.path.empty())
 			{
 				(*m_context.table)[p_key] = sol::nil;
 			}
-			else if (v.assetType == "Model")
+			else
 			{
-				(*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>()[v.path];
-			}
-			else if (v.assetType == "Texture")
-			{
-				(*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[v.path];
-			}
-			else if (v.assetType == "Shader")
-			{
-				(*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[v.path];
-			}
-			else if (v.assetType == "Material")
-			{
-				(*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>()[v.path];
-			}
-			else if (v.assetType == "Sound")
-			{
-				(*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[v.path];
+				switch (v.fileType)
+				{
+				case EFT::MODEL:    (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ModelManager>()[v.path];    break;
+				case EFT::TEXTURE:  (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>()[v.path];  break;
+				case EFT::SHADER:   (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[v.path];   break;
+				case EFT::MATERIAL: (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>()[v.path]; break;
+				case EFT::SOUND:    (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[v.path];    break;
+				default:            (*m_context.table)[p_key] = sol::nil; break;
+				}
 			}
 		}
 		else if constexpr (std::is_same_v<T, ActorRef>)

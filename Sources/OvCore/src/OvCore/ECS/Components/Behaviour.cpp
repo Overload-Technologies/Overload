@@ -6,7 +6,6 @@
 
 #include <format>
 #include <limits>
-#include <unordered_map>
 #include <utility>
 
 #include <tinyxml2.h>
@@ -195,7 +194,7 @@ void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_d
 			else if constexpr (std::is_same_v<T, double>)
 				{ elem->SetAttribute("type", "number"); elem->SetText(v); }
 			else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
-				{ elem->SetAttribute("type", "asset"); elem->SetAttribute("assetType", v.assetType.c_str()); elem->SetText(v.path.c_str()); }
+				{ elem->SetAttribute("type", "asset"); elem->SetAttribute("assetType", OvTools::Utils::PathParser::FileTypeToString(v.fileType).c_str()); elem->SetText(v.path.c_str()); }
 			else if constexpr (std::is_same_v<T, OvCore::Scripting::ActorRef>)
 				{ elem->SetAttribute("type", "actor"); elem->SetText(std::to_string(v.guid).c_str()); }
 			else
@@ -239,9 +238,10 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 			val = elem->GetText() ? elem->GetText() : "";
 		else if (typeStr == "asset" && std::holds_alternative<OvCore::Scripting::AssetRef>(val))
 		{
-			const char* assetType = elem->Attribute("assetType");
+			const char* assetTypeStr = elem->Attribute("assetType");
 			val = OvCore::Scripting::AssetRef{
-				assetType ? assetType : std::get<OvCore::Scripting::AssetRef>(val).assetType,
+				assetTypeStr ? OvTools::Utils::PathParser::StringToFileType(assetTypeStr)
+				             : std::get<OvCore::Scripting::AssetRef>(val).fileType,
 				elem->GetText() ? elem->GetText() : ""
 			};
 		}
@@ -323,19 +323,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 				}
 				else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
 				{
-					// Determine the file-type filter so the picker shows the right assets.
-					static const std::unordered_map<std::string, OvTools::Utils::PathParser::EFileType> assetTypeMap = {
-						{"Model",    OvTools::Utils::PathParser::EFileType::MODEL},
-						{"Texture",  OvTools::Utils::PathParser::EFileType::TEXTURE},
-						{"Shader",   OvTools::Utils::PathParser::EFileType::SHADER},
-						{"Material", OvTools::Utils::PathParser::EFileType::MATERIAL},
-						{"Sound",    OvTools::Utils::PathParser::EFileType::SOUND},
-					};
-					const auto assetType = getter().assetType;
-					auto fileTypeIt = assetTypeMap.find(assetType);
-					const auto fileType = fileTypeIt != assetTypeMap.end()
-						? fileTypeIt->second
-						: OvTools::Utils::PathParser::EFileType::UNKNOWN;
+					const auto fileType = getter().fileType;
 
 					auto pathGatherer = [getter]() { return getter().path; };
 					auto pathProvider = [setter, getter](std::string newPath) {

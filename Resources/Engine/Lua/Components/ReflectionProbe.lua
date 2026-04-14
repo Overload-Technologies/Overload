@@ -68,5 +68,5 @@ function ReflectionProbe:IsBoxProjectionEnabled() end
 function ReflectionProbe:RequestCapture() end
 
 --- Returns the last complete cubemap captured by the reflection probe
----@return userdata|nil
+---@return Texture|nil
 function ReflectionProbe:GetCubemap() end

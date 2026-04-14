@@ -5,6 +5,7 @@
 */
 
 #include <limits>
+#include <unordered_map>
 #include <utility>
 
 #include <tinyxml2.h>
@@ -13,12 +14,17 @@
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvCore/Scripting/ScriptEngine.h>
+
+#include <OvTools/Utils/PathParser.h>
 
 #include <OvDebug/Logger.h>
 
 #include <OvUI/Plugins/DataDispatcher.h>
+#include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Drags/DragSingleScalar.h>
+#include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Layout/Group.h>
@@ -183,6 +189,8 @@ void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_d
 				{ elem->SetAttribute("type", "bool");   elem->SetText(v); }
 			else if constexpr (std::is_same_v<T, double>)
 				{ elem->SetAttribute("type", "number"); elem->SetText(v); }
+			else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
+				{ elem->SetAttribute("type", "asset"); elem->SetAttribute("assetType", v.assetType.c_str()); elem->SetText(v.path.c_str()); }
 			else
 				{ elem->SetAttribute("type", "string"); elem->SetText(v.c_str()); }
 		}, fieldValue);
@@ -222,6 +230,14 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 		}
 		else if (typeStr == "string" && std::holds_alternative<std::string>(val))
 			val = elem->GetText() ? elem->GetText() : "";
+		else if (typeStr == "asset" && std::holds_alternative<OvCore::Scripting::AssetRef>(val))
+		{
+			const char* assetType = elem->Attribute("assetType");
+			val = OvCore::Scripting::AssetRef{
+				assetType ? assetType : std::get<OvCore::Scripting::AssetRef>(val).assetType,
+				elem->GetText() ? elem->GetText() : ""
+			};
+		}
 		else
 			continue;
 
@@ -289,6 +305,68 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					auto& d = w.template AddPlugin<OvUI::Plugins::DataDispatcher<double>>();
 					d.RegisterGatherer(getter);
 					d.RegisterProvider(setter);
+					inputPtr = &w;
+				}
+				else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
+				{
+					// Determine the file-type filter so the picker shows the right assets.
+					static const std::unordered_map<std::string, OvTools::Utils::PathParser::EFileType> assetTypeMap = {
+						{"Model",    OvTools::Utils::PathParser::EFileType::MODEL},
+						{"Texture",  OvTools::Utils::PathParser::EFileType::TEXTURE},
+						{"Shader",   OvTools::Utils::PathParser::EFileType::SHADER},
+						{"Material", OvTools::Utils::PathParser::EFileType::MATERIAL},
+						{"Sound",    OvTools::Utils::PathParser::EFileType::SOUND},
+					};
+					const auto assetType = getter().assetType;
+					auto fileTypeIt = assetTypeMap.find(assetType);
+					const auto fileType = fileTypeIt != assetTypeMap.end()
+						? fileTypeIt->second
+						: OvTools::Utils::PathParser::EFileType::UNKNOWN;
+
+					auto pathGatherer = [getter]() { return getter().path; };
+					auto pathProvider = [setter, getter](std::string newPath) {
+						auto ref = getter();
+						ref.path = std::move(newPath);
+						setter(std::move(ref));
+					};
+
+					// Create the AssetField directly (without a GUIDrawer title, since the
+					// label row above already serves that purpose).
+					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(pathGatherer());
+					w.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(fileType);
+
+					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&w, [](void*) {});
+					w.template AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(pathGatherer);
+
+					w.template AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
+						[widgetPtr, pathProvider, fileType](auto p_receivedData)
+					{
+						const bool typeMatch = fileType == OvTools::Utils::PathParser::EFileType::UNKNOWN
+							|| OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == fileType;
+						if (typeMatch)
+						{
+							widgetPtr->content = p_receivedData.first;
+							pathProvider(p_receivedData.first);
+						}
+					};
+
+					auto token = std::make_shared<bool>(true);
+					w.ClickedEvent += [widgetPtr, pathProvider, fileType, token]()
+					{
+						std::weak_ptr<bool> weak = token;
+						OvCore::Helpers::GUIHelpers::OpenAssetPicker(fileType,
+							[widgetPtr, pathProvider, weak](const std::string& p_path)
+							{
+								if (!weak.expired())
+								{
+									widgetPtr->content = p_path;
+									pathProvider(p_path);
+								}
+							}, true, true);
+					};
+
+					w.DoubleClickedEvent += [widgetPtr] { OvCore::Helpers::GUIHelpers::Open(widgetPtr->content); };
+
 					inputPtr = &w;
 				}
 				else

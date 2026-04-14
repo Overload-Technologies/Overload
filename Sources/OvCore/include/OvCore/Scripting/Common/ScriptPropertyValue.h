@@ -12,8 +12,18 @@
 namespace OvCore::Scripting
 {
 	/**
-	* Represents a primitive script property value (boolean, number, or string).
+	* Represents a reference to an asset (path + type tag).
+	* Used as a script property so the inspector can display an asset picker.
+	*/
+	struct AssetRef
+	{
+		std::string assetType; // "Model", "Texture", "Shader", "Material", or "Sound"
+		std::string path;
+	};
+
+	/**
+	* Represents a primitive or asset script property value.
 	* This type is backend-agnostic and used by Behaviour to store and expose script fields.
 	*/
-	using ScriptPropertyValue = std::variant<bool, double, std::string>;
+	using ScriptPropertyValue = std::variant<bool, double, std::string, AssetRef>;
 }

@@ -18,6 +18,7 @@
 #include "OvCore/ResourceManagement/TextureManager.h"
 #include "OvCore/ResourceManagement/MaterialManager.h"
 #include "OvCore/ResourceManagement/SoundManager.h"
+#include "OvCore/Scripting/Common/ScriptPropertyValue.h"
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 
@@ -30,9 +31,24 @@ void BindLuaGlobal(sol::state& p_luaState)
 	using namespace OvWindowing;
 	using namespace OvWindowing::Inputs;
 	using namespace OvMaths;
+	using namespace OvCore::Scripting;
 	using namespace OvCore::ECS;
 	using namespace OvCore::SceneSystem;
 	using namespace OvCore::ResourceManagement;
+
+	// Asset reference type — used in script local tables to declare asset properties.
+	// The inspector renders an asset picker for any field initialised with one of the
+	// factory functions below (Model(), Texture(), Shader(), Material(), Sound()).
+	p_luaState.new_usertype<AssetRef>("AssetRef",
+		"path",      &AssetRef::path,
+		"assetType", sol::readonly(&AssetRef::assetType)
+	);
+
+	p_luaState["Model"]    = []() { return AssetRef{"Model",    ""}; };
+	p_luaState["Texture"]  = []() { return AssetRef{"Texture",  ""}; };
+	p_luaState["Shader"]   = []() { return AssetRef{"Shader",   ""}; };
+	p_luaState["Material"] = []() { return AssetRef{"Material", ""}; };
+	p_luaState["Sound"]    = []() { return AssetRef{"Sound",    ""}; };
 
 	p_luaState.new_usertype<Scene>("Scene",
 		"FindActorByName", &Scene::FindActorByName,

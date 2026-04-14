@@ -292,6 +292,49 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 	return widget;
 }
 
+OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider, OvTools::Utils::PathParser::EFileType p_fileType)
+{
+	CreateTitle(p_root, p_name);
+
+	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
+	widget.iconTextureID = GUIHelpers::GetIconForFileType(p_fileType);
+
+	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
+
+	widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(p_gatherer);
+
+	widget.AddPlugin<OvUI::Plugins::DDTarget<std::pair<std::string, OvUI::Widgets::Layout::Group*>>>("File").DataReceivedEvent +=
+		[widgetPtr, p_provider, p_fileType](auto p_receivedData)
+	{
+		const bool fileTypeMatch = p_fileType == OvTools::Utils::PathParser::EFileType::UNKNOWN
+			|| OvTools::Utils::PathParser::GetFileType(p_receivedData.first) == p_fileType;
+
+		if (fileTypeMatch)
+		{
+			widgetPtr->content = p_receivedData.first;
+			p_provider(p_receivedData.first);
+		}
+	};
+
+	auto token = std::make_shared<bool>(true);
+	widget.ClickedEvent += [widgetPtr, p_provider, p_fileType, token]()
+	{
+		std::weak_ptr<bool> weak = token;
+		GUIHelpers::OpenAssetPicker(p_fileType, [widgetPtr, p_provider, weak](const std::string& p_path)
+		{
+			if (!weak.expired())
+			{
+				widgetPtr->content = p_path;
+				p_provider(p_path);
+			}
+		}, true, true);
+	};
+
+	widget.DoubleClickedEvent += [widgetPtr] { GUIHelpers::Open(widgetPtr->content); };
+
+	return widget;
+}
+
 OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider)
 {
 	CreateTitle(p_root, p_name);

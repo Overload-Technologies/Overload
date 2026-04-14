@@ -9,11 +9,11 @@ ModelRenderer = {}
 function ModelRenderer:GetOwner() end
 
 --- Returns the current model
----@return userdata|nil
+---@return Model|nil
 function ModelRenderer:GetModel() end
 
 --- Defines the model to use
----@param model userdata
+---@param model Model
 function ModelRenderer:SetModel(model) end
 
 --- Returns the current bounding mode

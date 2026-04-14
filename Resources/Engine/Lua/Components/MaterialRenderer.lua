@@ -10,7 +10,7 @@ function MaterialRenderer:GetOwner() end
 
 --- Defines the material to use for the given index
 ---@param index integer
----@param material userdata
+---@param material Material
 function MaterialRenderer:SetMaterial(index, material) end
 
 --- Defines an element of the user matrix

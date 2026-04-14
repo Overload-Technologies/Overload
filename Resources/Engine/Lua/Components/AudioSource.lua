@@ -21,7 +21,7 @@ function AudioSource:Pause() end
 function AudioSource:Resume() end
 
 --- Returns the sound attached to the audio source
----@return userdata|nil
+---@return Sound|nil
 function AudioSource:GetSound() end
 
 --- Returns the current volume
@@ -53,7 +53,7 @@ function AudioSource:IsSpatial() end
 function AudioSource:GetAttenuationThreshold() end
 
 --- Defines the sound to play on the audio source
----@param sound userdata
+---@param sound Sound
 function AudioSource:SetSound(sound) end
 
 --- Defines the audio source volume

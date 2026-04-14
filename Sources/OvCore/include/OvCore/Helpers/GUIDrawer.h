@@ -9,6 +9,8 @@
 #include <functional>
 #include <string>
 
+#include <OvTools/Utils/PathParser.h>
+
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FVector4.h>
@@ -69,6 +71,7 @@ namespace OvCore::Helpers
 		static OvUI::Widgets::InputFields::AssetField& DrawMaterial(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawSound(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvAudio::Resources::Sound*& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
+		static OvUI::Widgets::InputFields::AssetField& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider, OvTools::Utils::PathParser::EFileType p_fileType = OvTools::Utils::PathParser::EFileType::UNKNOWN);
 
 		static OvUI::Widgets::InputFields::AssetField& DrawScene(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider);
 

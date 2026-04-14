@@ -5,7 +5,6 @@
 */
 
 #include <algorithm>
-#include <span>
 #include <ranges>
 
 #include "OvUI/Internal/WidgetContainer.h"

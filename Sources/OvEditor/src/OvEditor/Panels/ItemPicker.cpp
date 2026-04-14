@@ -10,6 +10,9 @@
 #include <imgui.h>
 
 #include <OvEditor/Panels/ItemPicker.h>
+#include <OvEditor/Core/EditorActions.h>
+
+#include <OvCore/Helpers/GUIDrawer.h>
 
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Group.h>
@@ -44,7 +47,13 @@ ItemPicker::ItemPicker(
 {
 	minSize = { 250.f, 250.f };
 
-	m_searchField = &CreateWidget<OvUI::Widgets::InputFields::InputText>("", "Search");
+	const uint32_t searchIconID = []{
+		if (auto* tex = EDITOR_CONTEXT(editorResources)->GetTexture("Search"))
+			return tex->GetTexture().GetID();
+		return 0u;
+	}();
+
+	m_searchField = &OvCore::Helpers::GUIDrawer::DrawSearchBar(*this, searchIconID);
 	m_searchField->ContentChangedEvent += [this](const std::string& p_text)
 	{
 		FilterList(p_text);
@@ -64,11 +73,29 @@ void ItemPicker::_Draw_Impl()
 		m_usePivotAnchor = false;
 	}
 	PanelWindow::_Draw_Impl();
-	if (IsOpened() && IsFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape))
-		Close();
+	if (IsOpened() && IsFocused())
+	{
+		if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+		{
+			Close();
+		}
+		else if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter))
+		{
+			const auto& items = m_items.Items();
+			for (size_t i = 0; i < m_rows.size() && i < items.size(); ++i)
+			{
+				if (m_rows[i].second->enabled)
+				{
+					items[i].onSelected();
+					Close();
+					break;
+				}
+			}
+		}
+	}
 }
 
-void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::string p_title)
+void ItemPicker::Open(OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title)
 {
 	name = std::move(p_title);
 	m_items = std::move(p_items);
@@ -86,13 +113,17 @@ void ItemPicker::Open(OvCore::Helpers::GUIDrawer::PickerItemList p_items, std::s
 	const bool placeBelow = spaceBelow >= spaceAbove;
 
 	// Constrain the picker height so it never clips off-screen.
-	// Use a large but positive x value so the height-only constraint is respected.
-	maxSize = { 10000.f, placeBelow ? spaceBelow : spaceAbove };
+	maxSize.y = placeBelow ? spaceBelow : spaceAbove;
 
+	// Try to align the left edge with the button, then clamp so the right
+	// side of the minimum-width window stays within the display, and the
+	// left side doesn't go negative.
 	float x = buttonMin.x;
-	if (x + minSize.x > display.x)
-		x = buttonMax.x - minSize.x;
+	x = std::min(x, display.x - minSize.x);
 	x = std::max(0.f, x);
+
+	// Constrain horizontal growth so the window can never overflow the right edge.
+	maxSize.x = display.x - x;
 
 	if (placeBelow)
 	{

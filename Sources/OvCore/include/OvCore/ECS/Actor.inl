@@ -17,8 +17,8 @@ namespace OvCore::ECS
 
 		if (auto found = GetComponent<T>(); !found)
 		{
-			m_components.insert(m_components.begin(), std::make_shared<T>(*this, p_args...));
-			T& instance = *dynamic_cast<T*>(m_components.front().get());
+			m_components.push_back(std::make_shared<T>(*this, p_args...));
+			T& instance = *dynamic_cast<T*>(m_components.back().get());
 			ComponentAddedEvent.Invoke(instance);
 			if (m_playing && IsActive())
 			{

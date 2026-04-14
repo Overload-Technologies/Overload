@@ -24,6 +24,7 @@
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
@@ -221,9 +222,9 @@ OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& 
 {
 	OvCore::Global::ServiceLocator::Provide<OvEditor::Core::EditorActions>(*this);
 
-	OvCore::Helpers::GUIDrawer::SetFileItemBuilder(
+	OvCore::Helpers::GUIHelpers::SetFileItemBuilder(
 		[](OvTools::Utils::PathParser::EFileType p_type, std::function<void(std::string)> p_callback, bool p_searchProject, bool p_searchEngine) {
-			OvCore::Helpers::GUIDrawer::PickerItemList items;
+			OvCore::Helpers::GUIHelpers::PickerItemList items;
 			OvEditor::Helpers::PickerHelpers::AddFileItems(items, p_type, std::move(p_callback), p_searchProject, p_searchEngine);
 			return items;
 		}
@@ -1372,10 +1373,10 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		{
 			for (auto actor : currentScene->GetActors())
 			{
-				if (actor->RemoveBehaviour(prev) && next != "?")
-				{
-					actor->AddBehaviour(next);
-				}
+				if (next != "?")
+					actor->RenameBehaviour(prev, next);
+				else
+					actor->RemoveBehaviour(prev);
 			}
 		}
 

@@ -7,6 +7,7 @@
 #include <filesystem>
 
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvDebug/Assertion.h>
 #include <OvEditor/Core/EditorResources.h>
 #include <OvRendering/Settings/ETextureFilteringMode.h>
@@ -130,7 +131,9 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 		{"Directional_Light", CreateTexture<NEAREST>(texturesFolder / "Directional_Light.png")},
 		{"Ambient_Box_Light", CreateTexture<NEAREST>(texturesFolder / "Ambient_Box_Light.png")},
 		{"Ambient_Sphere_Light", CreateTexture<NEAREST>(texturesFolder / "Ambient_Sphere_Light.png")},
-		{"Empty_Texture", CreateTexture<LINEAR>(texturesFolder / "Empty_Texture.png")}
+		{"Empty_Texture", CreateTexture<LINEAR>(texturesFolder / "Empty_Texture.png")},
+		{"Actor", CreateTexture<LINEAR>(texturesFolder / "Actor.png")},
+		{"Search", CreateTexture<LINEAR>(texturesFolder / "Search.png")}
 	};
 
 	m_models = {
@@ -161,7 +164,7 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 	ValidateResources(m_shaders);
 
 	// Register the empty texture for the GUIDrawer to use it when a texture is missing
-	OvCore::Helpers::GUIDrawer::ProvideEmptyTexture(*m_textures["Empty_Texture"]);
+	OvCore::Helpers::GUIHelpers::ProvideEmptyTexture(*m_textures["Empty_Texture"]);
 }
 
 OvEditor::Core::EditorResources::~EditorResources()

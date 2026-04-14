@@ -146,7 +146,7 @@ OvEditor::Panels::MaterialEditor::MaterialEditor(
 	PanelWindow(p_title, p_opened, p_windowSettings)
 {
 	CreateHeaderButtons();
-	CreateWidget<OvUI::Widgets::Visual::Separator>();
+	CreateWidget<Visual::Separator>();
 	CreateMaterialSelector();
 	m_settings = &CreateWidget<Layout::Group>();
 	CreateShaderSelector();
@@ -182,7 +182,7 @@ OvCore::Resources::Material * OvEditor::Panels::MaterialEditor::GetTarget() cons
 void OvEditor::Panels::MaterialEditor::RemoveTarget()
 {
 	m_target = nullptr;
-	m_targetMaterialText->content = "Empty";
+	m_targetMaterialText->content.clear();
 	OnMaterialDropped();
 }
 
@@ -214,7 +214,8 @@ void OvEditor::Panels::MaterialEditor::OnMaterialDropped()
 	if (m_settings->enabled)
 	{
 		GenerateMaterialSettingsContent();
-		m_shaderText->content = m_target->GetShader() ? m_target->GetShader()->path : "Empty";
+		const auto shader = m_target->GetShader();
+		m_shaderText->content = shader ? shader->path : std::string{};
 		m_shader = m_target->GetShader();
 	}
 	else

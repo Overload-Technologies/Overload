@@ -25,6 +25,7 @@
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Helpers/PickerHelpers.h>
@@ -211,42 +212,37 @@ void OvEditor::Panels::Inspector::_PopulateActorInfo()
 
 void OvEditor::Panels::Inspector::_PopulateActorComponents()
 {
-	for (auto component : m_targetActor->GetComponents() | std::views::reverse)
+	auto& components = m_targetActor->GetComponents();
+	const int total = static_cast<int>(components.size());
+	for (int i = 0; i < total; ++i)
 	{
-		_DrawComponent(*component);
+		_DrawComponent(*components[i], i, total);
 	}
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorBehaviours()
 {
-	std::map<std::string, std::reference_wrapper<Behaviour>> behaviours;
-
-	// Sorts the behaviours alphabetically
-	for (auto& behaviour : m_targetActor->GetBehaviours() | std::views::values)
+	auto& order = m_targetActor->GetBehavioursOrder();
+	auto& behaviours = m_targetActor->GetBehaviours();
+	const int total = static_cast<int>(order.size());
+	for (int i = 0; i < total; ++i)
 	{
-		behaviours.emplace(behaviour.name, std::ref(behaviour));
-	}
-
-	// Iterate through the sorted behaviours
-	for (auto& behaviour : behaviours | std::views::values)
-	{
-		_DrawBehaviour(behaviour.get());
+		auto it = behaviours.find(order[i]);
+		if (it != behaviours.end())
+			_DrawBehaviour(it->second, i, total);
 	}
 }
 
 void OvEditor::Panels::Inspector::_DrawAddSection()
 {
 	auto& addButton = m_content->CreateWidget<Buttons::Button>("Add Component...", OvMaths::FVector2{ -1.f, 0 });
-	addButton.idleBackgroundColor = OvUI::Types::Color{ 0.7f, 0.5f, 0.f };
-	addButton.textColor = OvUI::Types::Color::White;
-
 	addButton.ClickedEvent += [this] {
 		if (!m_targetActor.has_value())
 			return;
 
 		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
 
-		OvCore::Helpers::GUIDrawer::PickerItemList items;
+		OvCore::Helpers::GUIHelpers::PickerItemList items;
 
 		for (const auto& info : componentRegistry)
 		{
@@ -305,23 +301,48 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			true, false
 		);
 
-		OvCore::Helpers::GUIDrawer::OpenPicker(std::move(items), "Add Component");
+		OvCore::Helpers::GUIHelpers::OpenPicker(std::move(items), "Add Component");
 	};
 }
 
-void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component)
+void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component, int p_index, int p_total)
 {
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_component.GetName());
-	header.closable = !dynamic_cast<CTransform*>(&p_component);
+	const bool isTransform = dynamic_cast<CTransform*>(&p_component) != nullptr;
+	header.closable = !isTransform;
 	header.CloseEvent += [this, &header, &p_component] { 
 		p_component.owner.RemoveComponent(p_component);
 	};
+
+	if (!isTransform)
+	{
+		header.reorderable = true;
+		header.canMoveUp = (p_index > 1);
+		header.canMoveDown = (p_index < p_total - 1);
+
+		auto move = [this, &p_component](bool up) {
+			auto& comps = p_component.owner.GetComponents();
+			auto it = std::find_if(comps.begin(), comps.end(), [&](const auto& c) { return c.get() == &p_component; });
+			if (up) {
+				if (it != comps.begin() && !dynamic_cast<CTransform*>(std::prev(it)->get()))
+					std::iter_swap(it, std::prev(it));
+			} else {
+				if (auto next = std::next(it); next != comps.end())
+					std::iter_swap(it, next);
+			}
+			EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+		};
+		header.MoveUpEvent += [move] { move(true); };
+		header.MoveDownEvent += [move] { move(false); };
+	}
+
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("comp_" + p_component.GetName());
 	columns.widths[0] = 200;
 	p_component.OnInspector(columns);
 }
 
-void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
+void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_index, int p_total)
 {
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(std::filesystem::path(p_behaviour.name).replace_extension().string());
 	header.closable = true;
@@ -329,7 +350,27 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour)
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);
 	};
 
+	header.reorderable = true;
+	header.canMoveUp = (p_index > 0);
+	header.canMoveDown = (p_index < p_total - 1);
+
+	auto move = [this, &p_behaviour](bool up) {
+		auto& order = p_behaviour.owner.GetBehavioursOrder();
+		auto it = std::find(order.begin(), order.end(), p_behaviour.name);
+		if (up) {
+			if (it != order.begin())
+				std::iter_swap(it, std::prev(it));
+		} else {
+			if (auto next = std::next(it); next != order.end())
+				std::iter_swap(it, next);
+		}
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
+	header.MoveUpEvent += [move] { move(true); };
+	header.MoveDownEvent += [move] { move(false); };
+
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
+	columns.SetID("bhv_" + p_behaviour.name);
 	columns.widths[0] = 200;
 	p_behaviour.OnInspector(columns);
 }

@@ -128,6 +128,31 @@ namespace
 		return p_path;
 	}
 
+	bool IsPathSameOrDescendant(const std::filesystem::path& p_path, const std::filesystem::path& p_ancestor)
+	{
+		const std::filesystem::path ancestor = p_ancestor.lexically_normal();
+		std::filesystem::path current = p_path.lexically_normal();
+
+		while (!current.empty())
+		{
+			if (current == ancestor)
+			{
+				return true;
+			}
+
+			const std::filesystem::path parent = current.parent_path();
+
+			if (parent == current)
+			{
+				break;
+			}
+
+			current = parent;
+		}
+
+		return false;
+	}
+
 	class TexturePreview : public OvUI::Plugins::IPlugin
 	{
 	private:
@@ -965,6 +990,18 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				const std::filesystem::path prevPath = folderReceivedPath;
 				const std::filesystem::path correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : std::filesystem::path(path);
 				const std::filesystem::path newPath = correctPath / folderName;
+
+				if (IsPathSameOrDescendant(correctPath, prevPath))
+				{
+					OVLOG_WARNING(
+						std::format(
+							"Cannot move folder \"{}\" to \"{}\" because the destination is inside the source folder.",
+							prevPath.string(),
+							correctPath.string()
+						)
+					);
+					return;
+				}
 
 				if (!std::filesystem::exists(newPath))
 				{

@@ -19,47 +19,32 @@
 
 namespace
 {
-	struct TextureMetaData
+	struct TextureMetadata
 	{
-		OvRendering::Settings::ETextureFilteringMode minFilter;
-		OvRendering::Settings::ETextureFilteringMode magFilter;
-		OvRendering::Settings::ETextureWrapMode horizontalWrap;
-		OvRendering::Settings::ETextureWrapMode verticalWrap;
-		bool generateMipmap;
+		OvRendering::Settings::ETextureFilteringMode minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR;
+		OvRendering::Settings::ETextureFilteringMode magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR;
+		OvRendering::Settings::ETextureWrapMode horizontalWrap = OvRendering::Settings::ETextureWrapMode::REPEAT;
+		OvRendering::Settings::ETextureWrapMode verticalWrap = OvRendering::Settings::ETextureWrapMode::REPEAT;
+		bool generateMipmap = true;
 	};
 
-	TextureMetaData GetDefaultTextureMetadata()
-	{
-		using namespace OvRendering::Settings;
-		using enum ETextureFilteringMode;
-		using enum ETextureWrapMode;
-
-		return TextureMetaData{
-			.minFilter = LINEAR_MIPMAP_LINEAR,
-			.magFilter = LINEAR,
-			.horizontalWrap = REPEAT,
-			.verticalWrap = REPEAT,
-			.generateMipmap = true
-		};
-	}
-
-	TextureMetaData LoadTextureMetadata(const std::string_view p_filePath)
+	TextureMetadata LoadTextureMetadata(const std::string_view p_filePath)
 	{
 		const auto metaFile = OvTools::Filesystem::IniFile(std::format("{}.meta", p_filePath));
-		const auto defaultMetadata = GetDefaultTextureMetadata();
+		auto metadata = TextureMetadata{};
 
-		return TextureMetaData{
-			.minFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(defaultMetadata.minFilter))),
-			.magFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(defaultMetadata.magFilter))),
-			.horizontalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(defaultMetadata.horizontalWrap))),
-			.verticalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(defaultMetadata.verticalWrap))),
-			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", defaultMetadata.generateMipmap)
-		};
+		metadata.minFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(metadata.minFilter)));
+		metadata.magFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(metadata.magFilter)));
+		metadata.horizontalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(metadata.horizontalWrap)));
+		metadata.verticalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(metadata.verticalWrap)));
+		metadata.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", metadata.generateMipmap);
+
+		return metadata;
 	}
 
 	struct EmbeddedTextureContext
 	{
-		const OvRendering::Resources::EmbeddedTextureData* textureData = nullptr;
+		const OvRendering::Resources::EmbeddedTextureData& textureData;
 	};
 
 	std::optional<EmbeddedTextureContext> ResolveEmbeddedTextureContext(const std::filesystem::path& p_path)
@@ -91,7 +76,7 @@ namespace
 		}
 
 		return EmbeddedTextureContext{
-			.textureData = &embeddedTexture.value()
+			.textureData = embeddedTexture.value()
 		};
 	}
 
@@ -100,8 +85,8 @@ namespace
 		const EmbeddedTextureContext& p_context
 	)
 	{
-		const auto settings = GetDefaultTextureMetadata();
-		const auto& textureData = *p_context.textureData;
+		const auto settings = TextureMetadata{};
+		const auto& textureData = p_context.textureData;
 		using SourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType;
 
 		OvRendering::Resources::Texture* texture = nullptr;
@@ -157,8 +142,8 @@ namespace
 		const EmbeddedTextureContext& p_context
 	)
 	{
-		const auto settings = GetDefaultTextureMetadata();
-		const auto& textureData = *p_context.textureData;
+		const auto settings = TextureMetadata{};
+		const auto& textureData = p_context.textureData;
 		using SourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType;
 
 		switch (textureData.sourceType)
@@ -212,15 +197,15 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 
 	std::string realPath = GetRealPath(p_path).string();
 
-	const auto metaData = LoadTextureMetadata(realPath);
+	const auto metadata = LoadTextureMetadata(realPath);
 
 	OvRendering::Resources::Texture* texture = OvRendering::Resources::Loaders::TextureLoader::Create(
 		realPath,
-		metaData.minFilter,
-		metaData.magFilter,
-		metaData.horizontalWrap,
-		metaData.verticalWrap,
-		metaData.generateMipmap
+		metadata.minFilter,
+		metadata.magFilter,
+		metadata.horizontalWrap,
+		metadata.verticalWrap,
+		metadata.generateMipmap
 	);
 
 	if (texture)
@@ -246,15 +231,15 @@ void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Res
 
 	std::string realPath = GetRealPath(p_path).string();
 
-	const auto metaData = LoadTextureMetadata(realPath);
+	const auto metadata = LoadTextureMetadata(realPath);
 
 	OvRendering::Resources::Loaders::TextureLoader::Reload(
 		*p_resource,
 		realPath,
-		metaData.minFilter,
-		metaData.magFilter,
-		metaData.horizontalWrap,
-		metaData.verticalWrap,
-		metaData.generateMipmap
+		metadata.minFilter,
+		metadata.magFilter,
+		metadata.horizontalWrap,
+		metadata.verticalWrap,
+		metadata.generateMipmap
 	);
 }

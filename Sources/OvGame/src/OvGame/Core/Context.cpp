@@ -58,6 +58,10 @@ OvGame::Core::Context::Context() :
 	MaterialManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	SoundManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 
+	materialManager.ProvideStandardShaderDefinition({
+		.shaderPath = ":Shaders/Standard.ovfx"
+	});
+
 	/* Settings */
 	OvWindowing::Settings::DeviceSettings deviceSettings;
 	projectSettings.TryGet("samples", deviceSettings.samples);

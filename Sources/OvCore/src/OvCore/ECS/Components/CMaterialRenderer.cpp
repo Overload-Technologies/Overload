@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <format>
-#include <string_view>
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
@@ -20,11 +19,6 @@
 #include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Visual/Separator.h>
-
-namespace
-{
-	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
-}
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
@@ -254,7 +248,6 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 	}
 
 	auto& materialManager = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>();
-	auto* defaultMaterial = materialManager.GetResource(std::string{ kDefaultMaterialPath });
 
 	const uint8_t materialCount = static_cast<uint8_t>(std::min(
 		model->GetMaterialNames().size(),
@@ -273,11 +266,6 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 
 		if (i >= embeddedMaterialCount)
 		{
-			if (defaultMaterial)
-			{
-				SetMaterialAtIndex(i, *defaultMaterial);
-			}
-
 			continue;
 		}
 
@@ -285,10 +273,6 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 		if (auto* embeddedMaterial = materialManager.GetResource(embeddedMaterialPath))
 		{
 			SetMaterialAtIndex(i, *embeddedMaterial);
-		}
-		else if (defaultMaterial)
-		{
-			SetMaterialAtIndex(i, *defaultMaterial);
 		}
 	}
 }

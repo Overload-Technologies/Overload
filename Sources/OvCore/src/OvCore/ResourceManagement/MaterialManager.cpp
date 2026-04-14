@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
@@ -19,9 +20,6 @@
 
 namespace
 {
-	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
-	constexpr std::string_view kStandardShaderPath = ":Shaders\\Standard.ovfx";
-
 	struct EmbeddedMaterialContext
 	{
 		std::string modelPath;
@@ -51,7 +49,7 @@ namespace
 			return std::nullopt;
 		}
 
-		const auto* embeddedMaterial = model->GetEmbeddedMaterial(materialIndex.value());
+		const auto embeddedMaterial = model->GetEmbeddedMaterial(materialIndex.value());
 		if (!embeddedMaterial)
 		{
 			return std::nullopt;
@@ -60,7 +58,7 @@ namespace
 		return EmbeddedMaterialContext{
 			.modelPath = embeddedAssetPath->modelPath,
 			.model = model,
-			.materialData = embeddedMaterial
+			.materialData = &embeddedMaterial.value()
 		};
 	}
 
@@ -101,16 +99,17 @@ namespace
 		}
 
 		auto& textureManager = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>();
-		const auto* embeddedTexture = p_context.model->GetEmbeddedTexture(p_textureIndex.value());
+		const auto embeddedTexture = p_context.model->GetEmbeddedTexture(p_textureIndex.value());
 		if (!embeddedTexture)
 		{
 			return false;
 		}
 
+		const auto& textureData = embeddedTexture.value();
 		using SourceType = OvRendering::Resources::EmbeddedTextureData::ESourceType;
-		if (embeddedTexture->sourceType == SourceType::EXTERNAL_FILE)
+		if (textureData.sourceType == SourceType::EXTERNAL_FILE)
 		{
-			if (const auto linkedTexturePath = ResolveLinkedTextureResourcePath(p_context.modelPath, embeddedTexture->sourcePath))
+			if (const auto linkedTexturePath = ResolveLinkedTextureResourcePath(p_context.modelPath, textureData.sourcePath))
 			{
 				if (auto* linkedTexture = textureManager.GetResource(linkedTexturePath.value()))
 				{
@@ -122,7 +121,7 @@ namespace
 			return false;
 		}
 
-		const std::string extension = embeddedTexture->extension.empty() ? "bin" : embeddedTexture->extension;
+		const std::string extension = textureData.extension.empty() ? "bin" : textureData.extension;
 		const std::string texturePath = OvRendering::Resources::Parsers::MakeEmbeddedTexturePath(
 			p_context.modelPath,
 			p_textureIndex.value(),
@@ -140,10 +139,11 @@ namespace
 
 	bool ConfigureEmbeddedMaterial(
 		OvCore::Resources::Material& p_material,
-		const EmbeddedMaterialContext& p_context
+		const EmbeddedMaterialContext& p_context,
+		const OvCore::ResourceManagement::MaterialManager::StandardShaderDefinition& p_shaderDefinition
 	)
 	{
-		auto* shader = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[std::string{ kStandardShaderPath }];
+		auto* shader = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[p_shaderDefinition.shaderPath];
 		if (!shader)
 		{
 			return false;
@@ -154,13 +154,13 @@ namespace
 		p_material.SetShader(shader);
 		p_material.SetFeatures(OvRendering::Data::FeatureSet{});
 
-		p_material.TrySetProperty("u_Albedo", materialData.albedo);
-		p_material.TrySetProperty("u_Metallic", materialData.metallic);
-		p_material.TrySetProperty("u_Roughness", materialData.roughness);
-		p_material.TrySetProperty("u_EmissiveColor", materialData.emissiveColor);
-		p_material.TrySetProperty("u_EmissiveIntensity", materialData.emissiveIntensity);
+		p_material.TrySetProperty(p_shaderDefinition.albedoUniform, materialData.albedo);
+		p_material.TrySetProperty(p_shaderDefinition.metallicUniform, materialData.metallic);
+		p_material.TrySetProperty(p_shaderDefinition.roughnessUniform, materialData.roughness);
+		p_material.TrySetProperty(p_shaderDefinition.emissiveColorUniform, materialData.emissiveColor);
+		p_material.TrySetProperty(p_shaderDefinition.emissiveIntensityUniform, materialData.emissiveIntensity);
 
-		const bool normalTextureBound = BindEmbeddedTextureProperty(p_material, p_context, materialData.normalTexture, "u_NormalMap");
+		const bool normalTextureBound = BindEmbeddedTextureProperty(p_material, p_context, materialData.normalTexture, p_shaderDefinition.normalMapUniform);
 		const bool hasDistinctHeightTexture =
 			materialData.heightTexture.has_value() &&
 			(
@@ -168,35 +168,67 @@ namespace
 				materialData.heightTexture.value() != materialData.normalTexture.value()
 			);
 		const bool heightTextureBound = hasDistinctHeightTexture &&
-			BindEmbeddedTextureProperty(p_material, p_context, materialData.heightTexture, "u_HeightMap");
+			BindEmbeddedTextureProperty(p_material, p_context, materialData.heightTexture, p_shaderDefinition.heightMapUniform);
 
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.albedoTexture, "u_AlbedoMap");
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.metallicTexture, "u_MetallicMap");
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.roughnessTexture, "u_RoughnessMap");
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.ambientOcclusionTexture, "u_AmbientOcclusionMap");
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.emissiveTexture, "u_EmissiveMap");
-		BindEmbeddedTextureProperty(p_material, p_context, materialData.opacityTexture, "u_MaskMap");
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.albedoTexture, p_shaderDefinition.albedoMapUniform);
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.metallicTexture, p_shaderDefinition.metallicMapUniform);
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.roughnessTexture, p_shaderDefinition.roughnessMapUniform);
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.ambientOcclusionTexture, p_shaderDefinition.ambientOcclusionMapUniform);
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.emissiveTexture, p_shaderDefinition.emissiveMapUniform);
+		BindEmbeddedTextureProperty(p_material, p_context, materialData.opacityTexture, p_shaderDefinition.opacityMapUniform);
 
 		if (normalTextureBound)
 		{
-			p_material.AddFeature("NORMAL_MAPPING");
+			p_material.AddFeature(p_shaderDefinition.normalMappingFeature);
 		}
 
 		if (heightTextureBound)
 		{
-			p_material.AddFeature("PARALLAX_MAPPING");
+			p_material.AddFeature(p_shaderDefinition.parallaxMappingFeature);
 		}
 
 		return true;
 	}
+
+	bool ResetMissingEmbeddedMaterial(
+		OvCore::Resources::Material& p_material,
+		const OvCore::ResourceManagement::MaterialManager::StandardShaderDefinition& p_shaderDefinition
+	)
+	{
+		auto* shader = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[p_shaderDefinition.shaderPath];
+		if (!shader)
+		{
+			return false;
+		}
+
+		p_material.SetShader(shader);
+		p_material.SetFeatures(OvRendering::Data::FeatureSet{});
+		return true;
+	}
+}
+
+void OvCore::ResourceManagement::MaterialManager::ProvideStandardShaderDefinition(StandardShaderDefinition p_definition)
+{
+	m_standardShaderDefinition = std::move(p_definition);
+}
+
+const OvCore::ResourceManagement::MaterialManager::StandardShaderDefinition* OvCore::ResourceManagement::MaterialManager::GetStandardShaderDefinition() const
+{
+	return m_standardShaderDefinition ? &m_standardShaderDefinition.value() : nullptr;
 }
 
 OvCore::Resources::Material * OvCore::ResourceManagement::MaterialManager::CreateResource(const std::filesystem::path & p_path)
 {
 	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
 	{
+		const auto* shaderDefinition = GetStandardShaderDefinition();
+		if (!shaderDefinition)
+		{
+			return nullptr;
+		}
+
 		auto* material = new OvCore::Resources::Material{};
-		if (ConfigureEmbeddedMaterial(*material, embeddedMaterialContext.value()))
+		if (ConfigureEmbeddedMaterial(*material, embeddedMaterialContext.value(), *shaderDefinition))
 		{
 			const_cast<std::string&>(material->path) = p_path.string(); // Force the resource path to fit the given path
 			return material;
@@ -230,14 +262,31 @@ void OvCore::ResourceManagement::MaterialManager::ReloadResource(OvCore::Resourc
 
 	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
 	{
-		ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value());
+		if (const auto* shaderDefinition = GetStandardShaderDefinition())
+		{
+			if (ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value(), *shaderDefinition))
+			{
+				return;
+			}
+		}
+
+		p_resource->SetShader(nullptr);
+		p_resource->SetFeatures(OvRendering::Data::FeatureSet{});
 		return;
 	}
 
 	if (isEmbeddedMaterialPath)
 	{
-		const auto defaultMaterialRealPath = GetRealPath(std::filesystem::path{ std::string{ kDefaultMaterialPath } }).string();
-		OvCore::Resources::Loaders::MaterialLoader::Reload(*p_resource, defaultMaterialRealPath);
+		if (const auto* shaderDefinition = GetStandardShaderDefinition())
+		{
+			ResetMissingEmbeddedMaterial(*p_resource, *shaderDefinition);
+		}
+		else
+		{
+			p_resource->SetShader(nullptr);
+			p_resource->SetFeatures(OvRendering::Data::FeatureSet{});
+		}
+
 		return;
 	}
 

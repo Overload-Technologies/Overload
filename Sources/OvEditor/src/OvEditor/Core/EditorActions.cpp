@@ -770,6 +770,7 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 			return false;
 		}
 
+		OvTools::Utils::String::ReplaceAll(command, "{workdir}", m_context.projectFolder);
 		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{

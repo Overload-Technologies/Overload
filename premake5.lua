@@ -22,7 +22,8 @@ workspace "Overload"
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
 		"TRACY_ENABLE",
 		"TRACY_ON_DEMAND",
-		"TRACY_MEMORY_ENABLE"
+		"TRACY_MEMORY_ENABLE",
+		"SOL_NO_LUA_HPP"
 	}
 
 	-- Set toolset based on operating system

@@ -525,7 +525,7 @@ namespace
 			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
 			editAction.ClickedEvent += [this] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
+				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
 			};
 
 			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");

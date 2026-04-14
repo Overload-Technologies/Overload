@@ -966,6 +966,12 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				const std::filesystem::path correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : std::filesystem::path(path);
 				const std::filesystem::path newPath = correctPath / folderName;
 
+				std::error_code equivalenceError;
+				if (std::filesystem::equivalent(folderReceivedPath, correctPath, equivalenceError))
+				{
+					return;
+				}
+
 				if (!std::filesystem::exists(newPath))
 				{
 					const bool isEngineFolder = !p_data.first.empty() && p_data.first[0] == ':';							// Copy dd folder from Engine resources

@@ -19,6 +19,7 @@ namespace
 	constexpr uint32_t kStencilMask = 0xFF;
 	constexpr int32_t kStencilReference = 1;
 	constexpr std::string_view kOutlinePassName = "OUTLINE_PASS";
+	const std::string kSkinningFeatureName = std::string{ OvCore::Rendering::SkinningUtils::kFeatureName };
 
 	using MaterialList = OvCore::ECS::Components::CMaterialRenderer::MaterialList;
 
@@ -242,15 +243,19 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelToStencil(
 	for (auto mesh : p_model.GetMeshes())
 	{
 		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
-		const bool skinningEnabled = hasSkinning && originalMaterial &&
-			originalMaterial->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
-
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
 			m_stencilFillMaterial
 		);
+		const bool originalMaterialSupportsSkinning =
+			!originalMaterial || originalMaterial->SupportsFeature(kSkinningFeatureName);
+		const bool skinningEnabled =
+			hasSkinning &&
+			mesh->HasSkinningData() &&
+			originalMaterialSupportsSkinning &&
+			targetMaterial.SupportsFeature(kSkinningFeatureName);
 
 		auto stateMask = targetMaterial.GenerateStateMask();
 
@@ -289,15 +294,19 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawModelOutline(
 	for (auto mesh : p_model.GetMeshes())
 	{
 		const auto* originalMaterial = FindMeshMaterial(p_materials, mesh->GetMaterialIndex());
-		const bool skinningEnabled = hasSkinning && originalMaterial &&
-			originalMaterial->SupportsFeature(std::string{ OvCore::Rendering::SkinningUtils::kFeatureName });
-
 		auto& targetMaterial = ResolveOutlineMaterial(
 			mesh->GetMaterialIndex(),
 			outlinePassName,
 			p_materials,
 			m_outlineMaterial
 		);
+		const bool originalMaterialSupportsSkinning =
+			!originalMaterial || originalMaterial->SupportsFeature(kSkinningFeatureName);
+		const bool skinningEnabled =
+			hasSkinning &&
+			mesh->HasSkinningData() &&
+			originalMaterialSupportsSkinning &&
+			targetMaterial.SupportsFeature(kSkinningFeatureName);
 
 		// Set the outline color property if it exists
 		if (targetMaterial.GetProperty("_OutlineColor"))

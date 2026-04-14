@@ -33,8 +33,12 @@ namespace OvUI::Widgets::Layout
 		std::string name;
 		bool closable = false;
 		bool opened = true;
-		bool collapsed = false;
+		bool reorderable = false;
+		bool canMoveUp = true;
+		bool canMoveDown = true;
 		OvTools::Eventing::Event<> CloseEvent;
 		OvTools::Eventing::Event<> OpenEvent;
+		OvTools::Eventing::Event<> MoveUpEvent;
+		OvTools::Eventing::Event<> MoveDownEvent;
 	};
 }

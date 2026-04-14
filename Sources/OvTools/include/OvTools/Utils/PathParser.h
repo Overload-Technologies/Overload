@@ -49,6 +49,14 @@ namespace OvTools::Utils
 		static std::string MakeNonWindowsStyle(const std::string& p_path);
 
 		/**
+		* Returns a human-friendly representation of a resource path.
+		* Backslashes are normalized to forward slashes.
+		* Engine paths (starting with ':') are displayed as {ENGINE}/rest/of/path.
+		* @param p_path
+		*/
+		static std::string GetFriendlyPath(const std::string& p_path);
+
+		/**
 		* Returns the containing folder of the file or folder identified by the given path
 		* @param p_path
 		*/

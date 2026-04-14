@@ -19,7 +19,8 @@ workspace "Overload"
 	defines {
 		"LUA_SCRIPTING",
 		"GRAPHICS_API_OPENGL",
-		"OVERLOAD_VERSION=\"" .. version .. "\""
+		"OVERLOAD_VERSION=\"" .. version .. "\"",
+		"SOL_NO_LUA_HPP"
 	}
 
 	filter { "configurations:Debug" }

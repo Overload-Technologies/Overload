@@ -8,7 +8,7 @@
 
 #include <filesystem>
 #include <string>
-#include <vector>
+#include <unordered_set>
 
 #include <OvCore/Scripting/Common/EScriptingLanguage.h>
 
@@ -54,7 +54,7 @@ namespace OvCore::Scripting
 		/**
 		* Returns a list of valid extensions for scripts.
 		*/
-		std::vector<std::string> GetValidExtensions();
+		std::unordered_set<std::string> GetValidExtensions();
 
 		/**
 		* Returns the content for a default script

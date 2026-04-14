@@ -34,7 +34,8 @@ void OvCore::Rendering::SkinningUtils::ApplyDescriptor(
 	p_drawable.SetDescriptor<OvCore::Rendering::SkinningDrawableDescriptor>({
 		.matrices = boneMatrices.data(),
 		.count = static_cast<uint32_t>(boneMatrices.size()),
-		.poseVersion = p_renderer.GetPoseVersion()
+		.poseVersion = p_renderer.GetPoseVersion(),
+		.boundsScale = p_renderer.GetMeshBoundsScale()
 	});
 }
 

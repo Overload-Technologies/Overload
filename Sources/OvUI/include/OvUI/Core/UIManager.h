@@ -103,6 +103,13 @@ namespace OvUI::Core
         void ResetLayout(const std::string & p_config) const;
 
 		/**
+		* Enable or disable mouse input in ImGui.
+		* Typically disabled when the cursor is locked during gameplay.
+		* @param p_value
+		*/
+		void EnableMouse(bool p_value);
+
+		/**
 		* Return true if the docking system is enabled
 		*/
 		bool IsDockingEnabled() const;

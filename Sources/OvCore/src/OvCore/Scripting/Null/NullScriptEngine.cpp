@@ -7,6 +7,7 @@
 #include <filesystem>
 
 #include <OvCore/Scripting/Null/NullScriptEngine.h>
+#include <unordered_set>
 
 template<>
 OvCore::Scripting::NullScriptEngineBase::TScriptEngine(
@@ -27,7 +28,7 @@ std::string OvCore::Scripting::NullScriptEngineBase::GetDefaultExtension()
 }
 
 template<>
-std::vector<std::string> OvCore::Scripting::NullScriptEngineBase::GetValidExtensions()
+std::unordered_set<std::string> OvCore::Scripting::NullScriptEngineBase::GetValidExtensions()
 {
 	return { GetDefaultExtension() };
 }

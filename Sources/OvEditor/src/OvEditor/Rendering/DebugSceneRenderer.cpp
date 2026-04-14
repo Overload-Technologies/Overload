@@ -706,7 +706,13 @@ protected:
 			const auto& actorRotation = actor.transform.GetWorldRotation();
 			const auto& actorPosition = actor.transform.GetWorldPosition();
 
-			const float radiusScale = std::max(std::max(std::max(actorScale.x, actorScale.y), actorScale.z), 0.0f);
+			float radiusScale = std::max(std::max(std::max(actorScale.x, actorScale.y), actorScale.z), 0.0f);
+
+			const auto skinnedMeshRenderer = actor.GetComponent<CSkinnedMeshRenderer>();
+			if (skinnedMeshRenderer && skinnedMeshRenderer->HasSkinningData())
+			{
+				radiusScale *= skinnedMeshRenderer->GetMeshBoundsScale();
+			}
 
 			auto drawBounds = [&](const OvRendering::Geometry::BoundingSphere& p_bounds) {
 				const float scaledRadius = p_bounds.radius * radiusScale;

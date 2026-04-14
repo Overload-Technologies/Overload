@@ -6,8 +6,19 @@
 
 #include <tracy/Tracy.hpp>
 
+#include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/GUIHelpers.h>
+
+#include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvCore/ResourceManagement/MaterialManager.h>
+
+#include <OvTools/Utils/SystemCalls.h>
+#include <OvTools/Utils/PathParser.h>
+
 #include <OvEditor/Core/Editor.h>
 #include <OvEditor/Panels/AssetBrowser.h>
+#include <OvEditor/Panels/ItemPicker.h>
 #include <OvEditor/Panels/AssetProperties.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/Console.h>
@@ -24,13 +35,14 @@
 #include <OvEditor/Panels/Toolbar.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvPhysics/Core/PhysicsEngine.h>
+#include <OvUI/Settings/PanelWindowSettings.h>
 
 using namespace OvCore::ResourceManagement;
 using namespace OvEditor::Panels;
 using namespace OvRendering::Resources::Loaders;
 using namespace OvRendering::Resources::Parsers;
 
-OvEditor::Core::Editor::Editor(Context& p_context) : 
+OvEditor::Core::Editor::Editor(Context& p_context) :
 	m_context(p_context),
 	m_panelsManager(m_canvas),
 	m_editorActions(m_context, m_panelsManager)
@@ -53,6 +65,69 @@ void OvEditor::Core::Editor::SetupUI()
 	settings.collapsable = true;
 	settings.dockable = true;
 
+	OvCore::Helpers::GUIHelpers::SetPickerProvider(
+		[this](OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title) {
+			m_itemPicker->Open(std::move(p_items), std::move(p_title));
+		}
+	);
+
+	OvCore::Helpers::GUIHelpers::SetIconProvider(
+		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
+			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));
+			return texture ? texture->GetTexture().GetID() : 0;
+		}
+	);
+
+	OvCore::Helpers::GUIHelpers::SetOpenProvider(
+		[this](const std::string& p_path)
+		{
+			using EFileType = OvTools::Utils::PathParser::EFileType;
+			const auto fileType = OvTools::Utils::PathParser::GetFileType(p_path);
+			const auto path = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
+
+			auto openInAssetView = [&](auto* p_resource)
+			{
+				if (!p_resource) return;
+				auto& assetView = EDITOR_PANEL(AssetView, "Asset View");
+				assetView.SetResource(AssetView::ViewableResource{ p_resource });
+				assetView.Open();
+				assetView.Focus();
+			};
+
+			if (fileType == EFileType::TEXTURE)
+			{
+				openInAssetView(OVSERVICE(TextureManager).GetResource(path));
+			}
+			else if (fileType == EFileType::MODEL)
+			{
+				openInAssetView(OVSERVICE(ModelManager).GetResource(path));
+			}
+			else if (fileType == EFileType::MATERIAL)
+			{
+				auto* material = OVSERVICE(MaterialManager).GetResource(path);
+				openInAssetView(material);
+				if (material)
+				{
+					auto& materialEditor = EDITOR_PANEL(MaterialEditor, "Material Editor");
+					EDITOR_EXEC(DelayAction([material, &materialEditor]() {
+						materialEditor.SetTarget(*material);
+						materialEditor.Open();
+						materialEditor.Focus();
+					}));
+				}
+			}
+			else if (fileType == EFileType::SCENE)
+			{
+				EDITOR_EXEC(LoadSceneFromDisk(path));
+			}
+			else
+			{
+				// SHADER, SHADER_PART, SCRIPT, SOUND, FONT, UNKNOWN → open with OS default
+				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(path)));
+			}
+		}
+	);
+
 	m_panelsManager.CreatePanel<Panels::MenuBar>("Menu Bar");
 	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings);
 	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings);
@@ -74,6 +149,13 @@ void OvEditor::Core::Editor::SetupUI()
 
 	m_canvas.MakeDockspace(true);
 	m_context.uiManager->SetCanvas(m_canvas);
+
+	m_itemPicker = std::make_unique<OvEditor::Panels::ItemPicker>(
+		false,
+		OvUI::Settings::PanelWindowSettings{ .closable = true }
+	);
+
+	m_canvas.AddPanel(*m_itemPicker);
 }
 
 void OvEditor::Core::Editor::PreUpdate()
@@ -84,16 +166,9 @@ void OvEditor::Core::Editor::PreUpdate()
 
 void OvEditor::Core::Editor::Update(float p_deltaTime)
 {
-	// Disable ImGui mouse update if the mouse cursor is disabled.
-	// i.e. when locked during gameplay, or when a view is being interacted
-	if (m_context.window->GetCursorMode() == OvWindowing::Cursor::ECursorMode::DISABLED)
-	{
-		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
-	}
-	else
-	{
-		ImGui::GetIO().ConfigFlags &= ~(ImGuiConfigFlags_NoMouse);
-	}
+	// Disable mouse input when the cursor is locked during gameplay or view interaction.
+	const bool mouseEnabled = m_context.window->GetCursorMode() != OvWindowing::Cursor::ECursorMode::DISABLED;
+	m_context.uiManager->EnableMouse(mouseEnabled);
 
 	HandleGlobalShortcuts();
 	UpdateCurrentEditorMode(p_deltaTime);

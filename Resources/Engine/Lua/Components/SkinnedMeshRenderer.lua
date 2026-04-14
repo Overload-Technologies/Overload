@@ -37,6 +37,16 @@ function SkinnedMeshRenderer:SetPlaybackSpeed(speed) end
 ---@return number
 function SkinnedMeshRenderer:GetPlaybackSpeed() end
 
+--- Sets the bounds scale used during frustum culling for skinned meshes
+--- Values below 1.0 are clamped to 1.0
+---@param scale number
+function SkinnedMeshRenderer:SetMeshBoundsScale(scale) end
+
+--- Returns the bounds scale used during frustum culling for skinned meshes
+--- Returned value is always >= 1.0
+---@return number
+function SkinnedMeshRenderer:GetMeshBoundsScale() end
+
 --- Sets playback time in seconds
 ---@param timeSeconds number
 function SkinnedMeshRenderer:SetTime(timeSeconds) end

@@ -335,6 +335,7 @@ std::vector<std::shared_ptr<OvCore::ECS::Components::AComponent>>& OvCore::ECS::
 OvCore::ECS::Components::Behaviour & OvCore::ECS::Actor::AddBehaviour(const std::string & p_name)
 {
 	m_behaviours.try_emplace(p_name, *this, p_name);
+	m_behavioursOrder.push_back(p_name);
 	Components::Behaviour& newInstance = m_behaviours.at(p_name);
 	BehaviourAddedEvent.Invoke(newInstance);
 	if (m_playing && IsActive())
@@ -371,12 +372,43 @@ bool OvCore::ECS::Actor::RemoveBehaviour(const std::string & p_name)
 	if (found)
 	{
 		BehaviourRemovedEvent.Invoke(*found);
-		return m_behaviours.erase(p_name);
+		m_behaviours.erase(p_name);
+		auto it = std::find(m_behavioursOrder.begin(), m_behavioursOrder.end(), p_name);
+		if (it != m_behavioursOrder.end())
+			m_behavioursOrder.erase(it);
+		return true;
 	}
 	else
 	{
 		return false;
 	}
+}
+
+bool OvCore::ECS::Actor::RenameBehaviour(const std::string& p_previousName, const std::string& p_newName)
+{
+	auto orderIt = std::find(m_behavioursOrder.begin(), m_behavioursOrder.end(), p_previousName);
+	if (orderIt == m_behavioursOrder.end())
+		return false;
+
+	Components::Behaviour* found = GetBehaviour(p_previousName);
+	if (!found)
+		return false;
+
+	BehaviourRemovedEvent.Invoke(*found);
+	m_behaviours.erase(p_previousName);
+
+	*orderIt = p_newName;
+
+	m_behaviours.try_emplace(p_newName, *this, p_newName);
+	Components::Behaviour& newInstance = m_behaviours.at(p_newName);
+	BehaviourAddedEvent.Invoke(newInstance);
+	if (m_playing && IsActive())
+	{
+		newInstance.OnAwake();
+		newInstance.OnEnable();
+		newInstance.OnStart();
+	}
+	return true;
 }
 
 OvCore::ECS::Components::Behaviour* OvCore::ECS::Actor::GetBehaviour(const std::string& p_name)
@@ -390,6 +422,11 @@ OvCore::ECS::Components::Behaviour* OvCore::ECS::Actor::GetBehaviour(const std::
 std::unordered_map<std::string, OvCore::ECS::Components::Behaviour>& OvCore::ECS::Actor::GetBehaviours()
 {
 	return m_behaviours;
+}
+
+std::vector<std::string>& OvCore::ECS::Actor::GetBehavioursOrder()
+{
+	return m_behavioursOrder;
 }
 
 void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_actorsRoot)
@@ -426,21 +463,25 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 	tinyxml2::XMLNode* behavioursNode = p_doc.NewElement("behaviours");
 	actorNode->InsertEndChild(behavioursNode);
 
-	for (auto& behaviour : m_behaviours)
+	for (auto& name : m_behavioursOrder)
 	{
+		auto it = m_behaviours.find(name);
+		if (it == m_behaviours.end()) continue;
+		auto& behaviour = it->second;
+
 		/* Current behaviour root */
 		tinyxml2::XMLNode* behaviourNode = p_doc.NewElement("behaviour");
 		behavioursNode->InsertEndChild(behaviourNode);
 
 		/* Behaviour type */
-		OvCore::Helpers::Serializer::SerializeString(p_doc, behaviourNode, "type", behaviour.first);
+		OvCore::Helpers::Serializer::SerializeString(p_doc, behaviourNode, "type", name);
 
 		/* Data node (Will be passed to the behaviour) */
 		tinyxml2::XMLElement* data = p_doc.NewElement("data");
 		behaviourNode->InsertEndChild(data);
 
 		/* Data serialization of the behaviour */
-		behaviour.second.OnSerialize(p_doc, data);
+		behaviour.OnSerialize(p_doc, data);
 	}
 }
 

@@ -290,6 +290,13 @@ namespace OvCore::ECS
 		bool RemoveBehaviour(const std::string& p_name);
 
 		/**
+		* Rename a behaviour, preserving its position in the ordering
+		* @param p_previousName
+		* @param p_newName
+		*/
+		bool RenameBehaviour(const std::string& p_previousName, const std::string& p_newName);
+
+		/**
 		* Try to get the given behaviour (Returns nullptr on failure)
 		* @param p_name
 		*/
@@ -299,6 +306,11 @@ namespace OvCore::ECS
 		* Returns a reference to the vector of behaviours
 		*/
 		std::unordered_map<std::string, Components::Behaviour>& GetBehaviours();
+
+		/**
+		* Returns the ordered list of behaviour names (display/serialization order)
+		*/
+		std::vector<std::string>& GetBehavioursOrder();
 
 		/**
 		* Serialize all the components
@@ -356,6 +368,7 @@ namespace OvCore::ECS
 		/* Actors components */
 		std::vector<std::shared_ptr<Components::AComponent>> m_components;
 		std::unordered_map<std::string, Components::Behaviour> m_behaviours;
+		std::vector<std::string> m_behavioursOrder;
 
 	public:
 		Components::CTransform& transform;

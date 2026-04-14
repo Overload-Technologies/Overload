@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <filesystem>
 #include <format>
 #include <limits>
 #include <utility>
@@ -337,13 +336,8 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					// label row above already serves that purpose).
 					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(pathGatherer());
 					w.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(fileType);
-					w.displayFormatter = [](const std::string& path) -> std::string {
-						const std::string friendly = OvTools::Utils::PathParser::GetFriendlyPath(path);
-						return friendly.empty() ? "" : std::filesystem::path(friendly).stem().string();
-					};
-					w.tooltipFormatter = [](const std::string& path) {
-						return OvTools::Utils::PathParser::GetFriendlyPath(path);
-					};
+					w.displayFormatter = &OvCore::Helpers::GUIDrawer::GetAssetDisplayName;
+					w.tooltipFormatter = &OvCore::Helpers::GUIDrawer::GetAssetTooltip;
 
 					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&w, [](void*) {});
 					w.template AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(pathGatherer);

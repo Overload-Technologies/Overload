@@ -73,6 +73,12 @@ namespace OvCore::Helpers
 		static OvUI::Widgets::InputFields::AssetField& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::string& p_data, OvTools::Eventing::Event<>* p_updateNotifier = nullptr);
 		static OvUI::Widgets::InputFields::AssetField& DrawAsset(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider, OvTools::Utils::PathParser::EFileType p_fileType = OvTools::Utils::PathParser::EFileType::UNKNOWN);
 
+		/** Returns the display stem (filename without extension) for an asset path */
+		static std::string GetAssetDisplayName(const std::string& p_path);
+
+		/** Returns the friendly (project-relative) path for an asset, suitable as a tooltip */
+		static std::string GetAssetTooltip(const std::string& p_path);
+
 		static OvUI::Widgets::InputFields::AssetField& DrawScene(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string()> p_gatherer, std::function<void(std::string)> p_provider);
 
 		/**

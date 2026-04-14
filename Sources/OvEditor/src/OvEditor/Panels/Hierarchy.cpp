@@ -350,6 +350,11 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	textSelectable.AddPlugin<OvUI::Plugins::DDSource<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor", "Attach to...", std::make_pair(&p_actor, &textSelectable));
 	textSelectable.AddPlugin<OvUI::Plugins::DDTarget<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor").DataReceivedEvent += [&p_actor, &textSelectable](std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*> p_element)
 	{
+		if (&p_actor == p_element.first)
+		{
+			return;
+		}
+
 		if (p_actor.IsDescendantOf(p_element.first))
 		{
 			OVLOG_WARNING("Cannot attach \"" + p_element.first->GetName() + "\" to \"" + p_actor.GetName() + "\" because it is a descendant of the latter.");
@@ -363,7 +368,7 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	OvCore::ECS::Actor* targetPtr = &p_actor;
 	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
 	{
-		const bool isActive = targetPtr->IsSelfActive();
+		const bool isActive = targetPtr->IsActive();
 		textSelectable.overrideLabelColor = !isActive;
 		if (!isActive)
 			textSelectable.labelColor = {0.5f, 0.5f, 0.5f, 1.0f};

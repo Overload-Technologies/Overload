@@ -401,12 +401,11 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 
 					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::ActorField>(&w, [](void*) {});
 
-					// Keep display name and icon in sync each frame.
+					// Keep display name in sync each frame.
 					w.template AddPlugin<OvUI::Plugins::DataDispatcher<uint64_t>>().RegisterGatherer(
 						[getter, widgetPtr, resolveDisplayName]() -> uint64_t {
 							const auto ref = getter();
 							widgetPtr->displayName = resolveDisplayName(ref.guid);
-							widgetPtr->iconTextureID = OvCore::Helpers::GUIHelpers::GetActorIconID();
 							return ref.guid;
 						}
 					);
@@ -438,11 +437,12 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 						auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
 						if (!scene) return;
 
+						std::weak_ptr<bool> weak = token;
 						OvCore::Helpers::GUIHelpers::PickerItemList items;
 						items.Add({ "__none__", "None", "Clear the current selection", 0u,
-							[widgetPtr, setter, resolveDisplayName, token]()
+							[widgetPtr, setter, weak]()
 							{
-								if (!token.use_count()) return;
+								if (weak.expired()) return;
 								widgetPtr->guid = 0;
 								widgetPtr->displayName = "";
 								setter(OvCore::Scripting::ActorRef{0});
@@ -451,7 +451,6 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 						for (auto& actor : scene->GetActors())
 						{
 							const uint64_t guid = actor->GetGUID();
-							std::weak_ptr<bool> weak = token;
 							items.Add({
 								std::to_string(guid),
 								actor->GetName(),

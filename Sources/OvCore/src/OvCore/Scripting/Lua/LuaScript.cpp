@@ -126,25 +126,25 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 			}
 		}
 		else if constexpr (std::is_same_v<T, ActorRef>)
-{
-// Resolve the GUID to the actual actor so Lua code can use the actor directly.
-if (v.guid == 0)
-{
-(*m_context.table)[p_key] = sol::nil;
-}
-else
-{
-auto* scene = OvCore::Global::ServiceLocator::Get<OvCore::SceneSystem::SceneManager>().GetCurrentScene();
-auto* actor = scene ? scene->FindActorByGUID(v.guid) : nullptr;
-if (actor)
-(*m_context.table)[p_key] = actor;
-else
-(*m_context.table)[p_key] = sol::nil;
-}
-}
-else
-{
-(*m_context.table)[p_key] = v;
-}
-}, p_value);
+		{
+			// Resolve the GUID to the actual actor so Lua code can use the actor directly.
+			if (v.guid == 0)
+			{
+				(*m_context.table)[p_key] = sol::nil;
+			}
+			else
+			{
+				auto* scene = OvCore::Global::ServiceLocator::Get<OvCore::SceneSystem::SceneManager>().GetCurrentScene();
+				auto* actor = scene ? scene->FindActorByGUID(v.guid) : nullptr;
+				if (actor)
+					(*m_context.table)[p_key] = actor;
+				else
+					(*m_context.table)[p_key] = sol::nil;
+			}
+		}
+		else
+		{
+			(*m_context.table)[p_key] = v;
+		}
+	}, p_value);
 }

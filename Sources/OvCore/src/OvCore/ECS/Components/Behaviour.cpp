@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <format>
 #include <limits>
 #include <unordered_map>
 #include <utility>
@@ -21,13 +22,17 @@
 
 #include <OvDebug/Logger.h>
 
+#include <OvCore/SceneSystem/SceneManager.h>
+
 #include <OvUI/Plugins/DataDispatcher.h>
 #include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Drags/DragSingleScalar.h>
+#include <OvUI/Widgets/InputFields/ActorField.h>
 #include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/Layout/TreeNode.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
 
@@ -191,6 +196,8 @@ void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_d
 				{ elem->SetAttribute("type", "number"); elem->SetText(v); }
 			else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
 				{ elem->SetAttribute("type", "asset"); elem->SetAttribute("assetType", v.assetType.c_str()); elem->SetText(v.path.c_str()); }
+			else if constexpr (std::is_same_v<T, OvCore::Scripting::ActorRef>)
+				{ elem->SetAttribute("type", "actor"); elem->SetText(std::to_string(v.guid).c_str()); }
 			else
 				{ elem->SetAttribute("type", "string"); elem->SetText(v.c_str()); }
 		}, fieldValue);
@@ -237,6 +244,13 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 				assetType ? assetType : std::get<OvCore::Scripting::AssetRef>(val).assetType,
 				elem->GetText() ? elem->GetText() : ""
 			};
+		}
+		else if (typeStr == "actor" && std::holds_alternative<OvCore::Scripting::ActorRef>(val))
+		{
+			uint64_t guid = 0;
+			if (const char* text = elem->GetText())
+				guid = std::stoull(text);
+			val = OvCore::Scripting::ActorRef{guid};
 		}
 		else
 			continue;
@@ -366,6 +380,97 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					};
 
 					w.DoubleClickedEvent += [widgetPtr] { OvCore::Helpers::GUIHelpers::Open(widgetPtr->content); };
+
+					inputPtr = &w;
+				}
+				else if constexpr (std::is_same_v<T, OvCore::Scripting::ActorRef>)
+				{
+					// Determine initial display name from the scene.
+					auto resolveDisplayName = [](uint64_t guid) -> std::string {
+						if (guid == 0) return "";
+						auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
+						auto* actor = scene ? scene->FindActorByGUID(guid) : nullptr;
+						return actor ? actor->GetName() : "(Missing)";
+					};
+
+					const OvCore::Scripting::ActorRef initial = getter();
+					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::ActorField>(
+						initial.guid, resolveDisplayName(initial.guid)
+					);
+					w.iconTextureID = OvCore::Helpers::GUIHelpers::GetActorIconID();
+
+					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::ActorField>(&w, [](void*) {});
+
+					// Keep display name and icon in sync each frame.
+					w.template AddPlugin<OvUI::Plugins::DataDispatcher<uint64_t>>().RegisterGatherer(
+						[getter, widgetPtr, resolveDisplayName]() -> uint64_t {
+							const auto ref = getter();
+							widgetPtr->displayName = resolveDisplayName(ref.guid);
+							widgetPtr->iconTextureID = OvCore::Helpers::GUIHelpers::GetActorIconID();
+							return ref.guid;
+						}
+					);
+
+					// Drag-drop: accept an actor dropped from the hierarchy.
+					using ActorPayload = std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>;
+					w.template AddPlugin<OvUI::Plugins::DDTarget<ActorPayload>>("Actor").DataReceivedEvent +=
+						[widgetPtr, setter, resolveDisplayName](ActorPayload p_payload)
+					{
+						if (p_payload.first)
+						{
+							const uint64_t guid = p_payload.first->GetGUID();
+							widgetPtr->guid = guid;
+							widgetPtr->displayName = resolveDisplayName(guid);
+							setter(OvCore::Scripting::ActorRef{guid});
+						}
+					};
+
+					// Double-click: select the referenced actor in the hierarchy.
+					w.DoubleClickedEvent += [widgetPtr]()
+					{
+						OvCore::Helpers::GUIHelpers::SelectActor(widgetPtr->guid);
+					};
+
+					// Picker button: list all scene actors.
+					auto token = std::make_shared<bool>(true);
+					w.ClickedEvent += [widgetPtr, setter, resolveDisplayName, token]()
+					{
+						auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
+						if (!scene) return;
+
+						OvCore::Helpers::GUIHelpers::PickerItemList items;
+						items.Add({ "__none__", "None", "Clear the current selection", 0u,
+							[widgetPtr, setter, resolveDisplayName, token]()
+							{
+								if (!token.use_count()) return;
+								widgetPtr->guid = 0;
+								widgetPtr->displayName = "";
+								setter(OvCore::Scripting::ActorRef{0});
+							}
+						});
+						for (auto& actor : scene->GetActors())
+						{
+							const uint64_t guid = actor->GetGUID();
+							std::weak_ptr<bool> weak = token;
+							items.Add({
+								std::to_string(guid),
+								actor->GetName(),
+								"GUID: " + std::format("{:016X}", guid),
+								OvCore::Helpers::GUIHelpers::GetActorIconID(),
+								[widgetPtr, setter, resolveDisplayName, guid, weak]()
+								{
+									if (!weak.expired())
+									{
+										widgetPtr->guid = guid;
+										widgetPtr->displayName = resolveDisplayName(guid);
+										setter(OvCore::Scripting::ActorRef{guid});
+									}
+								}
+							});
+						}
+
+						OvCore::Helpers::GUIHelpers::OpenPicker(std::move(items), "Select Actor");
+					};
 
 					inputPtr = &w;
 				}

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <string>
+
 #include <tinyxml2.h>
 
 #include <OvCore/ResourceManagement/TextureManager.h>
@@ -60,6 +62,13 @@ void OvCore::Helpers::Serializer::SerializeInt64(tinyxml2::XMLDocument & p_doc, 
 {
 	tinyxml2::XMLElement* element = p_doc.NewElement(p_name.c_str());
 	element->SetText(p_value);
+	p_node->InsertEndChild(element);
+}
+
+void OvCore::Helpers::Serializer::SerializeUInt64(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node, const std::string& p_name, uint64_t p_value)
+{
+	tinyxml2::XMLElement* element = p_doc.NewElement(p_name.c_str());
+	element->SetText(std::to_string(p_value).c_str());
 	p_node->InsertEndChild(element);
 }
 
@@ -244,6 +253,13 @@ void OvCore::Helpers::Serializer::DeserializeInt64(tinyxml2::XMLDocument & p_doc
 		element->QueryInt64Text(&p_out);
 }
 
+void OvCore::Helpers::Serializer::DeserializeUInt64(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node, const std::string& p_name, uint64_t& p_out)
+{
+	if (auto element = p_node->FirstChildElement(p_name.c_str()); element)
+		if (const char* text = element->GetText())
+			p_out = std::stoull(text);
+}
+
 void OvCore::Helpers::Serializer::DeserializeVec2(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node, const std::string & p_name, OvMaths::FVector2 & p_out)
 {
 	if (auto node = p_node->FirstChildElement(p_name.c_str()); node)
@@ -423,6 +439,13 @@ int64_t OvCore::Helpers::Serializer::DeserializeInt64(tinyxml2::XMLDocument & p_
 {
 	int64_t result;
 	DeserializeInt64(p_doc, p_node, p_name, result);
+	return result;
+}
+
+uint64_t OvCore::Helpers::Serializer::DeserializeUInt64(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node, const std::string& p_name)
+{
+	uint64_t result = 0;
+	DeserializeUInt64(p_doc, p_node, p_name, result);
 	return result;
 }
 

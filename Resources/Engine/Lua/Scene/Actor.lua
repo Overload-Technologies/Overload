@@ -2,6 +2,7 @@
 
 --- The Actor is the main class of the ECS, it corresponds to the entity and is composed of components and behaviours (scripts)
 ---@class Actor
+---@overload fun(): Actor|nil
 Actor = {}
 
 --- Returns the name of the actor

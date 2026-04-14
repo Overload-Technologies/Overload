@@ -50,6 +50,19 @@ void BindLuaGlobal(sol::state& p_luaState)
 	p_luaState["Material"] = []() { return AssetRef{"Material", ""}; };
 	p_luaState["Sound"]    = []() { return AssetRef{"Sound",    ""}; };
 
+	// ActorRef is a C++-only internal sentinel type. It is registered so that sol2 can
+	// identify it via is<ActorRef>() in GetDefaultProperties. The Lua-visible factory is
+	// named "Actor" (overrides the non-callable Actor usertype with a factory lambda) so
+	// scripts can write: actor = Actor()
+	// After the inspector resolves the field, self.actor becomes the real Actor*.
+	p_luaState.new_usertype<ActorRef>("_ActorRef",
+		"guid", &ActorRef::guid
+	);
+
+	// Override "Actor" global with a factory that returns a sentinel ActorRef{0}.
+	// The Actor metatable (registered by LuaActorBindings) remains intact on Actor* values.
+	p_luaState["Actor"] = []() { return ActorRef{0}; };
+
 	p_luaState.new_usertype<Scene>("Scene",
 		"FindActorByName", &Scene::FindActorByName,
 		"FindActorByTag", &Scene::FindActorByTag,

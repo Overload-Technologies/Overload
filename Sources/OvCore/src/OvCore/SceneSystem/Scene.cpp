@@ -237,6 +237,16 @@ OvCore::ECS::Actor* OvCore::SceneSystem::Scene::FindActorByID(int64_t p_id) cons
 		return nullptr;
 }
 
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::FindActorByGUID(uint64_t p_guid) const
+{
+	auto result = std::find_if(m_actors.begin(), m_actors.end(), [p_guid](OvCore::ECS::Actor* element)
+	{
+		return element->GetGUID() == p_guid;
+	});
+
+	return result != m_actors.end() ? *result : nullptr;
+}
+
 std::vector<std::reference_wrapper<OvCore::ECS::Actor>> OvCore::SceneSystem::Scene::FindActorsByName(const std::string & p_name) const
 {
 	std::vector<std::reference_wrapper<OvCore::ECS::Actor>> actors;

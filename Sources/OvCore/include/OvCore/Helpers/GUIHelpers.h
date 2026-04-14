@@ -61,6 +61,7 @@ namespace OvCore::Helpers
 		using OpenProviderCallback = std::function<void(const std::string&)>;
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
 		using IconProviderCallback = std::function<uint32_t(OvTools::Utils::PathParser::EFileType)>;
+		using ActorSelectionProviderCallback = std::function<void(uint64_t)>;
 
 		static void ProvideEmptyTexture(OvRendering::Resources::Texture& p_emptyTexture);
 		static OvRendering::Resources::Texture* GetEmptyTexture();
@@ -82,5 +83,11 @@ namespace OvCore::Helpers
 
 		static void SetPickerProvider(PickerProviderCallback p_provider);
 		static void OpenPicker(PickerItemList p_items, std::string p_title);
+
+		static void SetActorIconID(uint32_t p_id);
+		static uint32_t GetActorIconID();
+
+		static void SetActorSelectionProvider(ActorSelectionProviderCallback p_provider);
+		static void SelectActor(uint64_t p_guid);
 	};
 }

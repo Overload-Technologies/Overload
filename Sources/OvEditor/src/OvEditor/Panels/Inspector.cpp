@@ -5,7 +5,9 @@
 */
 
 #include <filesystem>
+#include <format>
 #include <ranges>
+#include <string>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
@@ -205,6 +207,12 @@ void OvEditor::Panels::Inspector::_PopulateActorInfo()
 		"Active",
 		[this]{ return m_targetActor->IsSelfActive(); },
 		[this](bool p_active) { m_targetActor->SetActive(p_active); }
+	);
+
+	OvCore::Helpers::GUIDrawer::DrawReadOnlyString(
+		headerColumns,
+		"GUID",
+		[this] { return std::format("{:016X}", m_targetActor->GetGUID()); }
 	);
 
 	_DrawAddSection();

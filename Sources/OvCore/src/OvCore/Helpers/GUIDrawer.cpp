@@ -493,6 +493,15 @@ void OvCore::Helpers::GUIDrawer::DrawString(OvUI::Internal::WidgetContainer & p_
 	dispatcher.RegisterProvider(p_provider);
 }
 
+void OvCore::Helpers::GUIDrawer::DrawReadOnlyString(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, std::function<std::string(void)> p_gatherer)
+{
+	CreateTitle(p_root, p_name);
+	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+	widget.disabled = true;
+	auto& dispatcher = widget.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
+	dispatcher.RegisterGatherer(p_gatherer);
+}
+
 void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, std::function<OvUI::Types::Color(void)> p_gatherer, std::function<void(OvUI::Types::Color)> p_provider, bool p_hasAlpha)
 {
 	CreateTitle(p_root, p_name);

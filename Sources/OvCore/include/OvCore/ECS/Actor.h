@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <OvTools/Eventing/Event.h>
+#include <OvTools/Utils/GUID.h>
 
 #include "OvCore/ECS/Components/AComponent.h"
 #include "OvCore/ECS/Components/CTransform.h"
@@ -88,6 +89,12 @@ namespace OvCore::ECS
 		* Returns the ID of the actor
 		*/
 		int64_t GetID() const;
+
+		/**
+		* Returns the globally unique identifier of this actor.
+		* Assigned once at creation and preserved through serialization.
+		*/
+		uint64_t GetGUID() const;
 
 		/**
 		* Set an actor as the parent of this actor
@@ -353,8 +360,9 @@ namespace OvCore::ECS
 		bool&			m_playing;
 
 		/* Internal settings */
-		int64_t	m_actorID;
-		bool	m_destroyed = false;
+		int64_t		m_actorID;
+		uint64_t	m_guid;
+		bool		m_destroyed = false;
 		bool	m_sleeping = true;
 		bool	m_awaked = false;
 		bool	m_started = false;

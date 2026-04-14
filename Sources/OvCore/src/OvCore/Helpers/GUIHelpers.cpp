@@ -15,6 +15,8 @@ namespace
 	OvCore::Helpers::GUIHelpers::PickerProviderCallback __PICKER_PROVIDER;
 	OvCore::Helpers::GUIHelpers::IconProviderCallback __ICON_PROVIDER;
 	OvCore::Helpers::GUIHelpers::OpenProviderCallback __OPEN_PROVIDER;
+	OvCore::Helpers::GUIHelpers::ActorSelectionProviderCallback __ACTOR_SELECTION_PROVIDER;
+	uint32_t __ACTOR_ICON_ID = 0;
 
 	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
 	{
@@ -98,4 +100,25 @@ void OvCore::Helpers::GUIHelpers::OpenPicker(PickerItemList p_items, std::string
 {
 	if (__PICKER_PROVIDER)
 		__PICKER_PROVIDER(std::move(p_items), std::move(p_title));
+}
+
+void OvCore::Helpers::GUIHelpers::SetActorIconID(uint32_t p_id)
+{
+	__ACTOR_ICON_ID = p_id;
+}
+
+uint32_t OvCore::Helpers::GUIHelpers::GetActorIconID()
+{
+	return __ACTOR_ICON_ID;
+}
+
+void OvCore::Helpers::GUIHelpers::SetActorSelectionProvider(ActorSelectionProviderCallback p_provider)
+{
+	__ACTOR_SELECTION_PROVIDER = std::move(p_provider);
+}
+
+void OvCore::Helpers::GUIHelpers::SelectActor(uint64_t p_guid)
+{
+	if (__ACTOR_SELECTION_PROVIDER)
+		__ACTOR_SELECTION_PROVIDER(p_guid);
 }

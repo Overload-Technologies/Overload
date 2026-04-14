@@ -146,6 +146,12 @@ namespace OvCore::SceneSystem
 		ECS::Actor* FindActorByID(int64_t p_id) const;
 
 		/**
+		* Return the actor identified by the given GUID (Returns nullptr on fail)
+		* @param p_guid
+		*/
+		ECS::Actor* FindActorByGUID(uint64_t p_guid) const;
+
+		/**
 		* Return every actors identified by the given name
 		* @param p_name
 		*/

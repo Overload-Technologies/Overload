@@ -133,6 +133,27 @@ void OvEditor::Core::Editor::SetupUI()
 		}
 	);
 
+	// Provide the actor icon ID for ActorField widgets.
+	if (auto* actorTexture = m_context.editorResources->GetTexture("Actor"))
+		OvCore::Helpers::GUIHelpers::SetActorIconID(actorTexture->GetTexture().GetID());
+
+	// Provide actor selection so double-clicking an ActorField selects it in the inspector.
+	OvCore::Helpers::GUIHelpers::SetActorSelectionProvider(
+		[this](uint64_t p_guid)
+		{
+			// Defer to next frame — selecting an actor rebuilds the inspector widget tree,
+			// which would corrupt iteration if called directly from within DrawWidgets().
+			EDITOR_EXEC(DelayAction([this, p_guid]()
+			{
+				auto* scene = m_context.sceneManager.GetCurrentScene();
+				if (!scene) return;
+				auto* actor = scene->FindActorByGUID(p_guid);
+				if (actor)
+					EDITOR_EXEC(SelectActor(*actor));
+			}));
+		}
+	);
+
 	m_panelsManager.CreatePanel<Panels::MenuBar>("Menu Bar");
 	m_panelsManager.CreatePanel<Panels::AssetBrowser>("Asset Browser", true, settings);
 	m_panelsManager.CreatePanel<Panels::HardwareInfo>("Hardware Info", false, settings);

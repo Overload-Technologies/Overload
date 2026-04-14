@@ -44,6 +44,7 @@ OvTools::Eventing::Event<OvCore::ECS::Actor&> OvCore::ECS::Actor::DettachEvent;
 
 OvCore::ECS::Actor::Actor(int64_t p_actorID, const std::string & p_name, const std::string & p_tag, bool& p_playing) :
 	m_actorID(p_actorID),
+	m_guid(OvTools::Utils::GenerateGUID()),
 	m_name(p_name),
 	m_tag(p_tag),
 	m_playing(p_playing),
@@ -127,6 +128,11 @@ void OvCore::ECS::Actor::SetID(int64_t p_id)
 int64_t OvCore::ECS::Actor::GetID() const
 {
 	return m_actorID;
+}
+
+uint64_t OvCore::ECS::Actor::GetGUID() const
+{
+	return m_guid;
 }
 
 void OvCore::ECS::Actor::SetParent(Actor& p_parent)
@@ -438,6 +444,7 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "tag", m_tag);
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, actorNode, "active", m_active);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "id", m_actorID);
+	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "guid", m_guid);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "parent", m_parentID);
 
 	tinyxml2::XMLNode* componentsNode = p_doc.NewElement("components");
@@ -491,6 +498,7 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "tag", m_tag);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_actorsRoot, "active", m_active);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "id", m_actorID);
+	OvCore::Helpers::Serializer::DeserializeUInt64(p_doc, p_actorsRoot, "guid", m_guid);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "parent", m_parentID);
 
 	{

@@ -528,10 +528,16 @@ namespace
 
 		virtual void CreateList() override
 		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
+			auto& openAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
-			editAction.ClickedEvent += [this] {
+			openAction.ClickedEvent += [this] {
 				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
+			};
+
+			auto& openExternallyAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open Externally...");
+
+			openExternallyAction.ClickedEvent += [this] {
+				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
 			};
 
 			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
@@ -588,23 +594,6 @@ namespace
 		OvTools::Eventing::Event<std::filesystem::path> DuplicateEvent;
 	};
 
-	class PreviewableContextualMenu : public FileContextualMenu
-	{
-	public:
-		PreviewableContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-		virtual void CreateList() override
-		{
-			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
-
-			previewAction.ClickedEvent += [this] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
-			FileContextualMenu::CreateList();
-		}
-	};
-
 	class ShaderContextualMenu : public FileContextualMenu
 	{
 	public:
@@ -641,16 +630,10 @@ namespace
 		}
 	};
 
-	class ShaderPartContextualMenu : public FileContextualMenu
+	class ModelContextualMenu : public FileContextualMenu
 	{
 	public:
-		ShaderPartContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-	};
-
-	class ModelContextualMenu : public PreviewableContextualMenu
-	{
-	public:
-		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		void CreateMaterialFiles(const std::string_view shaderType)
 		{
@@ -713,14 +696,14 @@ namespace
 				CreateMaterialCreationOption(generateMaterialsMenu, "Unlit");
 			}
 
-			PreviewableContextualMenu::CreateList();
+			FileContextualMenu::CreateList();
 		}
 	};
 
-	class TextureContextualMenu : public PreviewableContextualMenu
+	class TextureContextualMenu : public FileContextualMenu
 	{
 	public:
-		TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		virtual void CreateList() override
 		{
@@ -738,42 +721,17 @@ namespace
 				}
 			};
 
-			PreviewableContextualMenu::CreateList();
-		}
-	};
-
-	class SceneContextualMenu : public FileContextualMenu
-	{
-	public:
-		SceneContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-		virtual void CreateList() override
-		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
-
-			editAction.ClickedEvent += [this]
-			{
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
 			FileContextualMenu::CreateList();
 		}
 	};
 
-	class MaterialContextualMenu : public PreviewableContextualMenu
+	class MaterialContextualMenu : public FileContextualMenu
 	{
 	public:
-		MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		virtual void CreateList() override
 		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
-
-			editAction.ClickedEvent += [this]
-			{
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
 			auto& reload = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
 			reload.ClickedEvent += [this]
 			{
@@ -787,7 +745,7 @@ namespace
 				}
 			};
 
-			PreviewableContextualMenu::CreateList();
+			FileContextualMenu::CreateList();
 		}
 	};
 
@@ -805,9 +763,7 @@ namespace
 			case MODEL: return p_root.AddPlugin<ModelContextualMenu>(path, p_protected);
 			case TEXTURE: return p_root.AddPlugin<TextureContextualMenu>(path, p_protected);
 			case SHADER: return p_root.AddPlugin<ShaderContextualMenu>(path, p_protected);
-			case SHADER_PART: return p_root.AddPlugin<ShaderPartContextualMenu>(path, p_protected);
 			case MATERIAL: return p_root.AddPlugin<MaterialContextualMenu>(path, p_protected);
-			case SCENE: return p_root.AddPlugin<SceneContextualMenu>(path, p_protected);
 			default: return p_root.AddPlugin<FileContextualMenu>(path, p_protected);
 		}
 	}
@@ -844,7 +800,7 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 	importButton.lineBreak = false;
 
-	auto& codeEditorButton = CreateWidget<Buttons::Button>("Edit Scripts");
+	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");
 	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
 	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 

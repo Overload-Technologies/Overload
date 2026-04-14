@@ -212,23 +212,23 @@ void OvCore::ResourceManagement::MaterialManager::ProvideStandardShaderDefinitio
 	m_standardShaderDefinition = std::move(p_definition);
 }
 
-const OvCore::ResourceManagement::MaterialManager::StandardShaderDefinition* OvCore::ResourceManagement::MaterialManager::GetStandardShaderDefinition() const
+const std::optional<OvCore::ResourceManagement::MaterialManager::StandardShaderDefinition>& OvCore::ResourceManagement::MaterialManager::GetStandardShaderDefinition() const
 {
-	return m_standardShaderDefinition ? &m_standardShaderDefinition.value() : nullptr;
+	return m_standardShaderDefinition;
 }
 
 OvCore::Resources::Material * OvCore::ResourceManagement::MaterialManager::CreateResource(const std::filesystem::path & p_path)
 {
 	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
 	{
-		const auto* shaderDefinition = GetStandardShaderDefinition();
-		if (!shaderDefinition)
+		const auto& shaderDefinition = GetStandardShaderDefinition();
+		if (!shaderDefinition.has_value())
 		{
 			return nullptr;
 		}
 
 		auto* material = new OvCore::Resources::Material{};
-		if (ConfigureEmbeddedMaterial(*material, embeddedMaterialContext.value(), *shaderDefinition))
+		if (ConfigureEmbeddedMaterial(*material, embeddedMaterialContext.value(), shaderDefinition.value()))
 		{
 			const_cast<std::string&>(material->path) = p_path.string(); // Force the resource path to fit the given path
 			return material;
@@ -262,9 +262,9 @@ void OvCore::ResourceManagement::MaterialManager::ReloadResource(OvCore::Resourc
 
 	if (const auto embeddedMaterialContext = ResolveEmbeddedMaterialContext(p_path))
 	{
-		if (const auto* shaderDefinition = GetStandardShaderDefinition())
+		if (const auto& shaderDefinition = GetStandardShaderDefinition(); shaderDefinition.has_value())
 		{
-			if (ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value(), *shaderDefinition))
+			if (ConfigureEmbeddedMaterial(*p_resource, embeddedMaterialContext.value(), shaderDefinition.value()))
 			{
 				return;
 			}
@@ -277,9 +277,9 @@ void OvCore::ResourceManagement::MaterialManager::ReloadResource(OvCore::Resourc
 
 	if (isEmbeddedMaterialPath)
 	{
-		if (const auto* shaderDefinition = GetStandardShaderDefinition())
+		if (const auto& shaderDefinition = GetStandardShaderDefinition(); shaderDefinition.has_value())
 		{
-			ResetMissingEmbeddedMaterial(*p_resource, *shaderDefinition);
+			ResetMissingEmbeddedMaterial(*p_resource, shaderDefinition.value());
 		}
 		else
 		{

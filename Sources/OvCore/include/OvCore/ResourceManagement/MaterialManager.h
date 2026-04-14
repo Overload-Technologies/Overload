@@ -49,7 +49,7 @@ namespace OvCore::ResourceManagement
 		/**
 		* Returns the current shader definition used for embedded materials
 		*/
-		const StandardShaderDefinition* GetStandardShaderDefinition() const;
+		const std::optional<StandardShaderDefinition>& GetStandardShaderDefinition() const;
 
 		/**
 		* Create the resource identified by the given path

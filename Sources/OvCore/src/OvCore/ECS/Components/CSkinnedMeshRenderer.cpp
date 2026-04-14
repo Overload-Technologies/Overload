@@ -404,16 +404,18 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::OnInspector(OvUI::Internal::
 	GUIDrawer::CreateTitle(p_root, "Active Animation");
 	const int currentAnimIndex = GetActiveAnimationIndex().has_value() ? static_cast<int>(*GetActiveAnimationIndex()) : -1;
 	auto& animationChoice = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(currentAnimIndex);
-	animationChoice.choices.emplace(-1, "<None>");
-
-	for (size_t i = 0; i < m_animationNames.size(); ++i)
-	{
-		animationChoice.choices.emplace(static_cast<int>(i), m_animationNames[i]);
-	}
 
 	auto& animDispatcher = animationChoice.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
-	animDispatcher.RegisterGatherer([this]
+	animDispatcher.RegisterGatherer([this, &animationChoice]
 	{
+		animationChoice.choices.clear();
+		animationChoice.choices.emplace(-1, "<None>");
+
+		for (size_t i = 0; i < m_animationNames.size(); ++i)
+		{
+			animationChoice.choices.emplace(static_cast<int>(i), m_animationNames[i]);
+		}
+
 		return GetActiveAnimationIndex().has_value() ? static_cast<int>(*GetActiveAnimationIndex()) : -1;
 	});
 	animDispatcher.RegisterProvider([this](int p_choice)

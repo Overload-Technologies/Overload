@@ -35,14 +35,24 @@ const std::vector<OvRendering::Resources::EmbeddedTextureData>& OvRendering::Res
 	return m_embeddedTextures;
 }
 
-const OvRendering::Resources::EmbeddedMaterialData* OvRendering::Resources::Model::GetEmbeddedMaterial(uint32_t p_index) const
+OvTools::Utils::OptRef<const OvRendering::Resources::EmbeddedMaterialData> OvRendering::Resources::Model::GetEmbeddedMaterial(uint32_t p_index) const
 {
-	return p_index < m_embeddedMaterials.size() ? &m_embeddedMaterials[p_index] : nullptr;
+	if (p_index < m_embeddedMaterials.size())
+	{
+		return m_embeddedMaterials[p_index];
+	}
+
+	return std::nullopt;
 }
 
-const OvRendering::Resources::EmbeddedTextureData* OvRendering::Resources::Model::GetEmbeddedTexture(uint32_t p_index) const
+OvTools::Utils::OptRef<const OvRendering::Resources::EmbeddedTextureData> OvRendering::Resources::Model::GetEmbeddedTexture(uint32_t p_index) const
 {
-	return p_index < m_embeddedTextures.size() ? &m_embeddedTextures[p_index] : nullptr;
+	if (p_index < m_embeddedTextures.size())
+	{
+		return m_embeddedTextures[p_index];
+	}
+
+	return std::nullopt;
 }
 
 const std::vector<OvRendering::Animation::SkeletalAnimation>& OvRendering::Resources::Model::GetAnimations() const

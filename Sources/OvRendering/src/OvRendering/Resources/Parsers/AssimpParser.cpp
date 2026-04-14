@@ -517,9 +517,6 @@ namespace
 				embeddedMaterial.heightTexture.reset();
 			}
 
-			embeddedMaterial.normalMapping = embeddedMaterial.normalTexture.has_value();
-			embeddedMaterial.parallaxMapping = embeddedMaterial.heightTexture.has_value();
-
 			aiColor4D albedoColor{};
 			bool hasBaseColor = false;
 #if defined(AI_MATKEY_BASE_COLOR)

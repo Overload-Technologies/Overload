@@ -11,9 +11,10 @@
 #include <string>
 #include <optional>
 
-#include "OvRendering/Resources/EmbeddedAssets.h"
 #include "OvRendering/Animation/SkeletalData.h"
+#include "OvRendering/Resources/EmbeddedAssets.h"
 #include "OvRendering/Resources/Mesh.h"
+#include "OvTools/Utils/OptRef.h"
 
 namespace OvRendering::Resources
 {
@@ -65,12 +66,12 @@ namespace OvRendering::Resources
 		/**
 		* Returns an embedded material data by index
 		*/
-		const EmbeddedMaterialData* GetEmbeddedMaterial(uint32_t p_index) const;
+		OvTools::Utils::OptRef<const EmbeddedMaterialData> GetEmbeddedMaterial(uint32_t p_index) const;
 
 		/**
 		* Returns an embedded texture data by index
 		*/
-		const EmbeddedTextureData* GetEmbeddedTexture(uint32_t p_index) const;
+		OvTools::Utils::OptRef<const EmbeddedTextureData> GetEmbeddedTexture(uint32_t p_index) const;
 
 		/**
 		* Returns all animations available on this model

@@ -50,8 +50,6 @@ namespace OvRendering::Resources
 		std::optional<uint32_t> heightTexture;
 		std::optional<uint32_t> emissiveTexture;
 		std::optional<uint32_t> opacityTexture;
-		bool normalMapping = false;
-		bool parallaxMapping = false;
 	};
 }
 

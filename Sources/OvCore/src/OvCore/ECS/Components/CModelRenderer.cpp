@@ -34,7 +34,7 @@ OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : A
 		{
 			if (p_updateMaterials)
 			{
-				materialRenderer->FillWithEmbeddedMaterials(false);
+				materialRenderer->FillWithEmbeddedMaterials(true);
 			}
 			materialRenderer->UpdateMaterialList();
 		}

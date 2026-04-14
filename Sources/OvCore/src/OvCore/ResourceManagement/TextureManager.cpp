@@ -8,6 +8,7 @@
 #include <format>
 #include <optional>
 
+#include <OvDebug/Assertion.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
@@ -15,7 +16,6 @@
 #include <OvRendering/Settings/DriverSettings.h>
 
 #include <OvTools/Filesystem/IniFile.h>
-#include <OvTools/Utils/PathParser.h>
 
 namespace
 {
@@ -45,24 +45,20 @@ namespace
 
 	TextureMetaData LoadTextureMetadata(const std::string_view p_filePath)
 	{
-		using namespace OvRendering::Settings;
-		using enum ETextureFilteringMode;
-		using enum ETextureWrapMode;
-
 		const auto metaFile = OvTools::Filesystem::IniFile(std::format("{}.meta", p_filePath));
+		const auto defaultMetadata = GetDefaultTextureMetadata();
 
 		return TextureMetaData{
-			.minFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(LINEAR_MIPMAP_LINEAR))),
-			.magFilter = static_cast<ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(LINEAR))),
-			.horizontalWrap = static_cast<ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(REPEAT))),
-			.verticalWrap = static_cast<ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(REPEAT))),
-			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", true)
+			.minFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(defaultMetadata.minFilter))),
+			.magFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(defaultMetadata.magFilter))),
+			.horizontalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(defaultMetadata.horizontalWrap))),
+			.verticalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(defaultMetadata.verticalWrap))),
+			.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", defaultMetadata.generateMipmap)
 		};
 	}
 
 	struct EmbeddedTextureContext
 	{
-		std::string modelPath;
 		const OvRendering::Resources::EmbeddedTextureData* textureData = nullptr;
 	};
 
@@ -88,40 +84,20 @@ namespace
 			return std::nullopt;
 		}
 
-		const auto* embeddedTexture = model->GetEmbeddedTexture(textureIndex.value());
+		const auto embeddedTexture = model->GetEmbeddedTexture(textureIndex.value());
 		if (!embeddedTexture)
 		{
 			return std::nullopt;
 		}
 
 		return EmbeddedTextureContext{
-			.modelPath = embeddedAssetPath->modelPath,
-			.textureData = embeddedTexture
+			.textureData = &embeddedTexture.value()
 		};
-	}
-
-	std::string ResolveRuntimeExternalTexturePath(const std::string& p_sourcePath, const std::string& p_modelRealPath)
-	{
-		auto sourcePath = std::filesystem::path{ OvTools::Utils::PathParser::MakeNonWindowsStyle(p_sourcePath) };
-		if (sourcePath.is_relative())
-		{
-			sourcePath = std::filesystem::path{ p_modelRealPath }.parent_path() / sourcePath;
-		}
-
-		std::error_code errorCode;
-		sourcePath = std::filesystem::weakly_canonical(sourcePath, errorCode);
-		if (errorCode)
-		{
-			sourcePath = sourcePath.lexically_normal();
-		}
-
-		return sourcePath.string();
 	}
 
 	OvRendering::Resources::Texture* CreateEmbeddedTexture(
 		const std::filesystem::path& p_resourcePath,
-		const EmbeddedTextureContext& p_context,
-		const std::string& p_modelRealPath
+		const EmbeddedTextureContext& p_context
 	)
 	{
 		const auto settings = GetDefaultTextureMetadata();
@@ -133,18 +109,7 @@ namespace
 		switch (textureData.sourceType)
 		{
 		case SourceType::EXTERNAL_FILE:
-			if (!textureData.sourcePath.empty())
-			{
-				const auto realTexturePath = ResolveRuntimeExternalTexturePath(textureData.sourcePath, p_modelRealPath);
-				texture = OvRendering::Resources::Loaders::TextureLoader::Create(
-					realTexturePath,
-					settings.minFilter,
-					settings.magFilter,
-					settings.horizontalWrap,
-					settings.verticalWrap,
-					settings.generateMipmap
-				);
-			}
+			OVASSERT(false, "External embedded textures should resolve to regular texture resources.");
 			break;
 
 		case SourceType::EMBEDDED_COMPRESSED:
@@ -189,8 +154,7 @@ namespace
 
 	void ReloadEmbeddedTexture(
 		OvRendering::Resources::Texture& p_texture,
-		const EmbeddedTextureContext& p_context,
-		const std::string& p_modelRealPath
+		const EmbeddedTextureContext& p_context
 	)
 	{
 		const auto settings = GetDefaultTextureMetadata();
@@ -200,19 +164,7 @@ namespace
 		switch (textureData.sourceType)
 		{
 		case SourceType::EXTERNAL_FILE:
-			if (!textureData.sourcePath.empty())
-			{
-				const auto realTexturePath = ResolveRuntimeExternalTexturePath(textureData.sourcePath, p_modelRealPath);
-				OvRendering::Resources::Loaders::TextureLoader::Reload(
-					p_texture,
-					realTexturePath,
-					settings.minFilter,
-					settings.magFilter,
-					settings.horizontalWrap,
-					settings.verticalWrap,
-					settings.generateMipmap
-				);
-			}
+			OVASSERT(false, "External embedded textures should resolve to regular texture resources.");
 			break;
 
 		case SourceType::EMBEDDED_COMPRESSED:
@@ -255,8 +207,7 @@ OvRendering::Resources::Texture* OvCore::ResourceManagement::TextureManager::Cre
 {
 	if (const auto embeddedTextureContext = ResolveEmbeddedTextureContext(p_path))
 	{
-		const auto modelRealPath = GetRealPath(embeddedTextureContext->modelPath).string();
-		return CreateEmbeddedTexture(p_path, embeddedTextureContext.value(), modelRealPath);
+		return CreateEmbeddedTexture(p_path, embeddedTextureContext.value());
 	}
 
 	std::string realPath = GetRealPath(p_path).string();
@@ -289,8 +240,7 @@ void OvCore::ResourceManagement::TextureManager::ReloadResource(OvRendering::Res
 {
 	if (const auto embeddedTextureContext = ResolveEmbeddedTextureContext(p_path))
 	{
-		const auto modelRealPath = GetRealPath(embeddedTextureContext->modelPath).string();
-		ReloadEmbeddedTexture(*p_resource, embeddedTextureContext.value(), modelRealPath);
+		ReloadEmbeddedTexture(*p_resource, embeddedTextureContext.value());
 		return;
 	}
 

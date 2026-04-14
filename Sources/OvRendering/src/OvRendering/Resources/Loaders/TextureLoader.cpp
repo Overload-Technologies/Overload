@@ -103,7 +103,7 @@ namespace
 			.useMipMaps = p_generateMipmap
 		});
 
-		p_texture.Upload(const_cast<void*>(p_data), EFormat::RGBA, p_hdr ? EPixelDataType::FLOAT : EPixelDataType::UNSIGNED_BYTE);
+		p_texture.Upload(p_data, EFormat::RGBA, p_hdr ? EPixelDataType::FLOAT : EPixelDataType::UNSIGNED_BYTE);
 
 		if (p_generateMipmap)
 		{

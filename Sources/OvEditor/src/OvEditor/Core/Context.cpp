@@ -80,6 +80,12 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 		projectSettings.Rewrite();
 	}
 
+	if (!projectSettings.IsKeyExisting("disable_profiling"))
+	{
+		projectSettings.Add<bool>("disable_profiling", false);
+		projectSettings.Rewrite();
+	}
+
 	ModelManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	TextureManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	ShaderManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
@@ -199,6 +205,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<bool>("multisampling", false);
 	projectSettings.Add<int>("samples", 4);
 	projectSettings.Add<bool>("dev_build", true);
+	projectSettings.Add<bool>("disable_profiling", false);
 }
 
 bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()

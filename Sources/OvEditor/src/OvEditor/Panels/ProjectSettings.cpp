@@ -54,9 +54,10 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Build settings */
 		auto& generationRoot = CreateWidget<Layout::GroupCollapsable>("Build");
 		auto& columns = generationRoot.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 190;
 
 		GUIDrawer::DrawBoolean(columns, "Development build", GenerateGatherer<bool>("dev_build"), GenerateProvider<bool>("dev_build"));
+		GUIDrawer::DrawBoolean(columns, "Publish build (no profiling)", GenerateGatherer<bool>("disable_profiling"), GenerateProvider<bool>("disable_profiling"));
 	}
 
 	{

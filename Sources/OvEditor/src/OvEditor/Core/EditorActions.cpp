@@ -212,7 +212,14 @@ void OvEditor::Core::EditorActions::Build(bool p_autoRun, bool p_tempFolder)
 		return; // Operation cancelled (No folder selected)
 	}
 
-	BuildAtLocation(m_context.projectSettings.Get<bool>("dev_build") ? "Development" : "Shipping", destinationFolder, p_autoRun);
+	const bool isDevelopmentBuild = m_context.projectSettings.Get<bool>("dev_build");
+	const bool disableProfiling = m_context.projectSettings.Get<bool>("disable_profiling");
+
+	const std::string buildConfiguration = isDevelopmentBuild ?
+		"Development" :
+		(disableProfiling ? "Publish" : "Shipping");
+
+	BuildAtLocation(buildConfiguration, destinationFolder, p_autoRun);
 }
 
 void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_configuration, const std::filesystem::path& p_buildPath, bool p_autoRun)
@@ -361,7 +368,10 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 				}
 				else
 				{
-					const std::string buildConfiguration = p_configuration == "Development" ? "Debug" : "Release";
+					const std::string buildConfiguration = p_configuration == "Development" ?
+						"Debug" :
+						(p_configuration == "Publish" ? "Publish" : "Release");
+
 					OVLOG_ERROR(std::format(
 						"Builder folder for \"{}\" not found. Verify you have compiled Engine source code in \"{}\" configuration.",
 						p_configuration,

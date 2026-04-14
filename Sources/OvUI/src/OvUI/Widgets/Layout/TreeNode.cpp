@@ -58,13 +58,10 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 
 	const bool hasIcon = iconTextureID != 0;
 	bool opened;
-	bool itemClicked = false;
-
 	if (hasIcon)
 	{
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 		opened = ImGui::TreeNodeEx(m_widgetID.c_str(), flags);
-		itemClicked = ImGui::IsItemClicked();
 
 		// Draw icon and text via the draw list so they don't create new ImGui
 		// items (the TreeNodeEx must remain the "last item" for plugins like
@@ -89,18 +86,22 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 	else
 	{
 		opened = ImGui::TreeNodeEx((name + m_widgetID).c_str(), flags);
-		itemClicked = ImGui::IsItemClicked();
 	}
 
-    if (itemClicked && (ImGui::GetMousePos().x - ImGui::GetItemRectMin().x) > ImGui::GetTreeNodeToLabelSpacing())
-    {
-        ClickedEvent.Invoke();
+	const bool inLabelArea = (ImGui::GetMousePos().x - ImGui::GetItemRectMin().x) > ImGui::GetTreeNodeToLabelSpacing();
 
-        if (ImGui::IsMouseDoubleClicked(0))
-        {
-            DoubleClickedEvent.Invoke();
-        }
-    }
+	// DoubleClickedEvent fires on the down event so it is detected reliably.
+	if (ImGui::IsItemHovered() && inLabelArea && ImGui::IsMouseDoubleClicked(0))
+	{
+		DoubleClickedEvent.Invoke();
+	}
+
+	// ClickedEvent fires on mouse release so that initiating a drag-and-drop does not
+	// immediately select the actor (which would hide the drop target in the inspector).
+	if (ImGui::IsItemHovered() && inLabelArea && ImGui::IsMouseReleased(0) && !ImGui::IsMouseDragging(0))
+	{
+		ClickedEvent.Invoke();
+	}
 
 	if (overrideLabelColor)
 		ImGui::PopStyleColor();

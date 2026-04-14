@@ -271,15 +271,6 @@ void OvEditor::Core::EditorActions::LoadSceneFromDisk(const std::string& p_path,
 	if (!m_context.sceneManager.LoadScene(p_path, p_absolute))
 	{
 		OVLOG_ERROR("Failed to load scene from disk: " + p_path);
-
-		OvWindowing::Dialogs::MessageBox message(
-			"Failed to Load Scene",
-			std::format("Could not load scene:\n{}", p_path),
-			OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
-			OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
-			true
-		);
-
 		return;
 	}
 

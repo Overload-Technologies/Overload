@@ -27,11 +27,11 @@ OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : A
 	{
 		if (auto materialRenderer = owner.GetComponent<CMaterialRenderer>())
 		{
-			materialRenderer->UpdateMaterialList();
 			if (!m_isDeserializing)
 			{
 				materialRenderer->FillWithEmbeddedMaterials(false);
 			}
+			materialRenderer->UpdateMaterialList();
 		}
 
 		if (auto skinnedMeshRenderer = owner.GetComponent<CSkinnedMeshRenderer>())

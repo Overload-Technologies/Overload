@@ -17,6 +17,7 @@
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvUI/Widgets/Layout/Dummy.h>
+#include <OvUI/Widgets/InputFields/AssetField.h>
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
@@ -228,6 +229,8 @@ void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 			m_materialFields[i][1]->enabled = enabled;
 			static_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0])->content =
 				std::format("Material [{}]: <{}>", i, m_materialNames[i]);
+			static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
+				m_materials[i] ? m_materials[i]->path : std::string{};
 		}
 	}
 }

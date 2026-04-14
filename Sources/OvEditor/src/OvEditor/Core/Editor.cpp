@@ -121,7 +121,7 @@ void OvEditor::Core::Editor::SetupUI()
 			{
 				EDITOR_EXEC(LoadSceneFromDisk(path));
 			}
-			else if (fileType == EFileType::SCRIPT)
+			else if (fileType == EFileType::SCRIPT || fileType == EFileType::SHADER || fileType == EFileType::SHADER_PART)
 			{
 				EDITOR_EXEC(OpenInCodeEditor(m_editorActions.GetRealPath(path)));
 			}

@@ -14,16 +14,16 @@
 
 namespace
 {
-	struct ModelMetaData
+	struct ModelMetadata
 	{
 		OvRendering::Resources::Parsers::EModelParserFlags parserFlags = OvRendering::Resources::Parsers::EModelParserFlags::NONE;
 		bool generateEmbeddedAssets = true;
 	};
 
-	ModelMetaData GetAssetMetadata(const std::string& p_path)
+	ModelMetadata GetAssetMetadata(const std::string& p_path)
 	{
 		auto metaFile = OvTools::Filesystem::IniFile(p_path + ".meta");
-		ModelMetaData modelMetadata;
+		ModelMetadata modelMetadata;
 
 		if (metaFile.GetOrDefault("CALC_TANGENT_SPACE",			true))	modelMetadata.parserFlags |= OvRendering::Resources::Parsers::EModelParserFlags::CALC_TANGENT_SPACE;
 		if (metaFile.GetOrDefault("JOIN_IDENTICAL_VERTICES",		true))	modelMetadata.parserFlags |= OvRendering::Resources::Parsers::EModelParserFlags::JOIN_IDENTICAL_VERTICES;

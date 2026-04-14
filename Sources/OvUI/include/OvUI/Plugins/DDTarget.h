@@ -37,13 +37,26 @@ namespace OvUI::Plugins
 		*/
 		virtual void Execute(EPluginExecutionContext p_context) override
 		{
-			const bool result =
-				p_context == EPluginExecutionContext::WIDGET ?
-				ImGui::BeginDragDropTarget() :
-				ImGui::BeginDragDropTargetCustom(
+			bool result = false;
+
+			if (p_context == EPluginExecutionContext::WIDGET)
+			{
+				const ImGuiID itemID = ImGui::GetItemID();
+				const ImGuiID targetSeed = itemID != 0 ? itemID : ImGui::GetID(this);
+				const ImGuiID targetID = ImHashStr(identifier.c_str(), 0, targetSeed);
+
+				result = ImGui::BeginDragDropTargetCustom(
+					ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()),
+					targetID
+				);
+			}
+			else
+			{
+				result = ImGui::BeginDragDropTargetCustom(
 					ImGui::GetCurrentWindow()->WorkRect,
 					ImGui::GetID(identifier.c_str())
 				);
+			}
 
 			if (result)
 			{

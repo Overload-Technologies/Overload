@@ -73,6 +73,16 @@ project "OvEditor"
 		optimize "Speed"
 		kind "WindowedApp"
 
+	filter { "configurations:Publish" }
+		defines {
+			"NDEBUG",
+			"TRACY_ENABLE",
+			"TRACY_ON_DEMAND",
+			"TRACY_MEMORY_ENABLE"
+		}
+		optimize "Speed"
+		kind "WindowedApp"
+
 	filter { "system:windows" }
 		characterset ("MBCS")
 		-- forces post-build commands to trigger even if nothing changed
@@ -106,6 +116,8 @@ project "OvEditor"
 			"xcopy \"%{outputdir}Debug\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Development\" /y /i /c",
 			"xcopy \"%{outputdir}Release\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
 			"xcopy \"%{outputdir}Release\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Shipping\" /y /i /c",
+			"xcopy \"%{outputdir}Publish\\OvGame\\*.exe\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Publish\" /y /i /c",
+			"xcopy \"%{outputdir}Publish\\OvGame\\*.dll\" \"%{builddir}%{cfg.buildcfg}\\Builder\\Publish\" /y /i /c",
 
 			"EXIT /B 0"
 		}
@@ -139,6 +151,7 @@ project "OvEditor"
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Config",
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Development",
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Shipping",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Publish",
 
 			"cp -r %{resdir}Engine %{builddir}%{cfg.buildcfg}/Data/Engine",
 			"cp -r %{resdir}Editor %{builddir}%{cfg.buildcfg}/Data/Editor",
@@ -148,6 +161,7 @@ project "OvEditor"
 
 			"cp %{outputdir}Debug/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Development/ 2>/dev/null || true",
 			"cp %{outputdir}Release/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Shipping/ 2>/dev/null || true",
+			"cp %{outputdir}Publish/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Publish/ 2>/dev/null || true",
 
 			"true"
 		}

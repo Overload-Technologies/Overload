@@ -127,7 +127,7 @@ void OvEditor::Core::Editor::SetupUI()
 			}
 			else
 			{
-				// SHADER, SHADER_PART, SOUND, FONT, UNKNOWN → open with OS default
+				// SOUND, FONT, UNKNOWN → open with OS default
 				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(path)));
 			}
 		}

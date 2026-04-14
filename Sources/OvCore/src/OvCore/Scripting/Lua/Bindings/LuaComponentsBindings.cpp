@@ -76,7 +76,10 @@ void BindLuaComponents(sol::state& p_luaState)
 	p_luaState.new_usertype<CModelRenderer>("ModelRenderer",
 		sol::base_classes, sol::bases<AComponent>(),
 		"GetModel", &CModelRenderer::GetModel,
-		"SetModel", &CModelRenderer::SetModel,
+		"SetModel", [](CModelRenderer& p_this, OvRendering::Resources::Model* p_model)
+		{
+			p_this.SetModel(p_model);
+		},
 		"GetFrustumBehaviour", &CModelRenderer::GetFrustumBehaviour,
 		"SetFrustumBehaviour", &CModelRenderer::SetFrustumBehaviour
 	);

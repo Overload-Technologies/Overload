@@ -5,6 +5,7 @@
 */
 
 #include <array>
+#include <filesystem>
 #include <memory>
 
 #include <OvTools/Utils/PathParser.h>
@@ -100,6 +101,19 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 
 namespace
 {
+	/** Derives a human-readable stem from a raw asset path. */
+	auto PathToDisplayName(const std::string& path) -> std::string
+	{
+		const std::string friendly = OvTools::Utils::PathParser::GetFriendlyPath(path);
+		return friendly.empty() ? "" : std::filesystem::path(friendly).stem().string();
+	}
+
+	/** Returns the full friendly path, used as tooltip for asset fields. */
+	auto PathToTooltip(const std::string& path) -> std::string
+	{
+		return OvTools::Utils::PathParser::GetFriendlyPath(path);
+	}
+
 	/**
 	* Helper to attach an asset picker to a widget's click event.
 	* The picker will be available only if the callback is still alive when invoked.
@@ -137,6 +151,8 @@ namespace
 		const std::string displayedText = p_data ? p_data->path : std::string{};
 		auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
 		widget.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(p_fileType);
+		widget.displayFormatter = PathToDisplayName;
+		widget.tooltipFormatter = PathToTooltip;
 
 		// Create a shared widget reference for safe access in captured lambdas
 		auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
@@ -199,6 +215,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawTexture(
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_data ? p_data->path : std::string{});
 	widget.iconTextureID = GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::TEXTURE);
+	widget.displayFormatter = PathToDisplayName;
+	widget.tooltipFormatter = PathToTooltip;
 	widget.previewTextureID = getPreviewID();
 
 	// Create a shared widget reference for safe access in captured lambdas
@@ -267,6 +285,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 
 	const std::string displayedText = p_data;
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(displayedText);
+	widget.displayFormatter = PathToDisplayName;
+	widget.tooltipFormatter = PathToTooltip;
 
 	// Create a shared widget reference for safe access in captured lambdas
 	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
@@ -298,6 +318,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawAsset(Ov
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
 	widget.iconTextureID = GUIHelpers::GetIconForFileType(p_fileType);
+	widget.displayFormatter = PathToDisplayName;
+	widget.tooltipFormatter = PathToTooltip;
 
 	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});
 
@@ -341,6 +363,8 @@ OvUI::Widgets::InputFields::AssetField& OvCore::Helpers::GUIDrawer::DrawScene(Ov
 
 	auto& widget = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(p_gatherer());
 	widget.iconTextureID = GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::SCENE);
+	widget.displayFormatter = PathToDisplayName;
+	widget.tooltipFormatter = PathToTooltip;
 
 	// Create a shared widget reference for safe access in captured lambdas
 	auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&widget, [](void*) {});

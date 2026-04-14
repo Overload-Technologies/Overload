@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <filesystem>
 #include <format>
 #include <limits>
 #include <utility>
@@ -336,6 +337,13 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					// label row above already serves that purpose).
 					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::AssetField>(pathGatherer());
 					w.iconTextureID = OvCore::Helpers::GUIHelpers::GetIconForFileType(fileType);
+					w.displayFormatter = [](const std::string& path) -> std::string {
+						const std::string friendly = OvTools::Utils::PathParser::GetFriendlyPath(path);
+						return friendly.empty() ? "" : std::filesystem::path(friendly).stem().string();
+					};
+					w.tooltipFormatter = [](const std::string& path) {
+						return OvTools::Utils::PathParser::GetFriendlyPath(path);
+					};
 
 					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::AssetField>(&w, [](void*) {});
 					w.template AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>().RegisterGatherer(pathGatherer);
@@ -373,7 +381,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 				}
 				else if constexpr (std::is_same_v<T, OvCore::Scripting::ActorRef>)
 				{
-					// Determine initial display name from the scene.
+					// Determine display name and tooltip from the scene.
 					auto resolveDisplayName = [](uint64_t guid) -> std::string {
 						if (guid == 0) return "";
 						auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
@@ -382,45 +390,40 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					};
 
 					const OvCore::Scripting::ActorRef initial = getter();
-					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::ActorField>(
-						initial.guid, resolveDisplayName(initial.guid)
-					);
+					auto& w = p_root.CreateWidget<OvUI::Widgets::InputFields::ActorField>(initial.guid);
 					w.iconTextureID = OvCore::Helpers::GUIHelpers::GetActorIconID();
+					w.displayFormatter = [resolveDisplayName](uint64_t guid) { return resolveDisplayName(guid); };
+					w.tooltipFormatter = [](uint64_t guid) -> std::string {
+						return guid != 0 ? std::format("GUID: {:016X}", guid) : "";
+					};
 
 					auto widgetPtr = std::shared_ptr<OvUI::Widgets::InputFields::ActorField>(&w, [](void*) {});
 
-					// Keep display name in sync each frame.
 					w.template AddPlugin<OvUI::Plugins::DataDispatcher<uint64_t>>().RegisterGatherer(
-						[getter, widgetPtr, resolveDisplayName]() -> uint64_t {
-							const auto ref = getter();
-							widgetPtr->displayName = resolveDisplayName(ref.guid);
-							return ref.guid;
-						}
+						[getter]() -> uint64_t { return getter().guid; }
 					);
 
 					// Drag-drop: accept an actor dropped from the hierarchy.
 					using ActorPayload = std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>;
 					w.template AddPlugin<OvUI::Plugins::DDTarget<ActorPayload>>("Actor").DataReceivedEvent +=
-						[widgetPtr, setter, resolveDisplayName](ActorPayload p_payload)
+						[widgetPtr, setter](ActorPayload p_payload)
 					{
 						if (p_payload.first)
 						{
-							const uint64_t guid = p_payload.first->GetGUID();
-							widgetPtr->guid = guid;
-							widgetPtr->displayName = resolveDisplayName(guid);
-							setter(OvCore::Scripting::ActorRef{guid});
+							widgetPtr->content = p_payload.first->GetGUID();
+							setter(OvCore::Scripting::ActorRef{widgetPtr->content});
 						}
 					};
 
 					// Double-click: select the referenced actor in the hierarchy.
 					w.DoubleClickedEvent += [widgetPtr]()
 					{
-						OvCore::Helpers::GUIHelpers::SelectActor(widgetPtr->guid);
+						OvCore::Helpers::GUIHelpers::SelectActor(widgetPtr->content);
 					};
 
 					// Picker button: list all scene actors.
 					auto token = std::make_shared<bool>(true);
-					w.ClickedEvent += [widgetPtr, setter, resolveDisplayName, token]()
+					w.ClickedEvent += [widgetPtr, setter, token]()
 					{
 						auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
 						if (!scene) return;
@@ -431,8 +434,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 							[widgetPtr, setter, weak]()
 							{
 								if (weak.expired()) return;
-								widgetPtr->guid = 0;
-								widgetPtr->displayName = "";
+								widgetPtr->content = 0;
 								setter(OvCore::Scripting::ActorRef{0});
 							}
 						});
@@ -444,12 +446,11 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 								actor->GetName(),
 								"GUID: " + std::format("{:016X}", guid),
 								OvCore::Helpers::GUIHelpers::GetActorIconID(),
-								[widgetPtr, setter, resolveDisplayName, guid, weak]()
+								[widgetPtr, setter, guid, weak]()
 								{
 									if (!weak.expired())
 									{
-										widgetPtr->guid = guid;
-										widgetPtr->displayName = resolveDisplayName(guid);
+										widgetPtr->content = guid;
 										setter(OvCore::Scripting::ActorRef{guid});
 									}
 								}

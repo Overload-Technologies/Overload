@@ -23,11 +23,16 @@
 
 OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : AComponent(p_owner)
 {
-	m_modelChangedEvent += [this]
+	m_modelChangedNotifier += [this]
+	{
+		m_modelChangedEvent.Invoke(true);
+	};
+
+	m_modelChangedEvent += [this](bool p_updateMaterials)
 	{
 		if (auto materialRenderer = owner.GetComponent<CMaterialRenderer>())
 		{
-			if (!m_isDeserializing)
+			if (p_updateMaterials)
 			{
 				materialRenderer->FillWithEmbeddedMaterials(false);
 			}
@@ -49,10 +54,10 @@ std::string OvCore::ECS::Components::CModelRenderer::GetTypeName()
 	return std::string{ComponentTraits<CModelRenderer>::Name};
 }
 
-void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model)
+void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model, bool p_updateMaterials)
 {
 	m_model = p_model;
-	m_modelChangedEvent.Invoke();
+	m_modelChangedEvent.Invoke(p_updateMaterials);
 }
 
 OvRendering::Resources::Model * OvCore::ECS::Components::CModelRenderer::GetModel() const
@@ -92,10 +97,7 @@ void OvCore::ECS::Components::CModelRenderer::OnDeserialize(tinyxml2::XMLDocumen
 {
 	OvRendering::Resources::Model* model = nullptr;
 	OvCore::Helpers::Serializer::DeserializeModel(p_doc, p_node, "model", model);
-
-	m_isDeserializing = true;
-	SetModel(model);
-	m_isDeserializing = false;
+	SetModel(model, false);
 
 	OvCore::Helpers::Serializer::DeserializeInt(p_doc, p_node, "frustum_behaviour", reinterpret_cast<int&>(m_frustumBehaviour));
 	OvCore::Helpers::Serializer::DeserializeVec3(p_doc, p_node, "custom_bounding_sphere_position", m_customBoundingSphere.position);
@@ -106,7 +108,7 @@ void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::Widget
 {
 	using namespace OvCore::Helpers;
 
-	GUIDrawer::DrawMesh(p_root, "Model", m_model, &m_modelChangedEvent);
+	GUIDrawer::DrawMesh(p_root, "Model", m_model, &m_modelChangedNotifier);
 
 	GUIDrawer::CreateTitle(p_root, "Frustum Culling Behaviour");
 	auto& boundingMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(0);

@@ -26,3 +26,12 @@ project "tracy"
 	filter { "configurations:Release" }
 		defines { "NDEBUG" }
 		optimize "On"
+
+	filter { "configurations:Publish" }
+		defines {
+			"NDEBUG",
+			"TRACY_ENABLE",
+			"TRACY_ON_DEMAND",
+			"TRACY_MEMORY_ENABLE"
+		}
+		optimize "On"

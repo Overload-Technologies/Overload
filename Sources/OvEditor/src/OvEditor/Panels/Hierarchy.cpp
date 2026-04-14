@@ -363,7 +363,7 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	OvCore::ECS::Actor* targetPtr = &p_actor;
 	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
 	{
-		const bool isActive = targetPtr->IsSelfActive();
+		const bool isActive = targetPtr->IsActive();
 		textSelectable.overrideLabelColor = !isActive;
 		if (!isActive)
 			textSelectable.labelColor = {0.5f, 0.5f, 0.5f, 1.0f};

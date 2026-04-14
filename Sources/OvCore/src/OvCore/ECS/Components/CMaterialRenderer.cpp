@@ -138,7 +138,6 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 	}
 
 	UpdateMaterialList();
-	ApplyEmbeddedMaterialFallback();
 
 	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
@@ -233,7 +232,7 @@ void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 	}
 }
 
-void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
+void OvCore::ECS::Components::CMaterialRenderer::FillWithEmbeddedMaterials(bool p_overwriteExisting, OvCore::Resources::Material* p_fallbackMaterial)
 {
 	auto* modelRenderer = owner.GetComponent<CModelRenderer>();
 	if (!modelRenderer)
@@ -258,7 +257,7 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 	for (uint8_t i = 0; i < materialCount; ++i)
 	{
 		auto* currentMaterial = GetMaterialAtIndex(i);
-		const bool shouldOverride = !currentMaterial;
+		const bool shouldOverride = p_overwriteExisting || !currentMaterial;
 		if (!shouldOverride)
 		{
 			continue;
@@ -266,6 +265,14 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 
 		if (i >= embeddedMaterialCount)
 		{
+			if (p_fallbackMaterial)
+			{
+				SetMaterialAtIndex(i, *p_fallbackMaterial);
+			}
+			else if (p_overwriteExisting)
+			{
+				RemoveMaterialAtIndex(i);
+			}
 			continue;
 		}
 
@@ -273,6 +280,22 @@ void OvCore::ECS::Components::CMaterialRenderer::ApplyEmbeddedMaterialFallback()
 		if (auto* embeddedMaterial = materialManager.GetResource(embeddedMaterialPath))
 		{
 			SetMaterialAtIndex(i, *embeddedMaterial);
+		}
+		else if (p_fallbackMaterial)
+		{
+			SetMaterialAtIndex(i, *p_fallbackMaterial);
+		}
+		else if (p_overwriteExisting)
+		{
+			RemoveMaterialAtIndex(i);
+		}
+	}
+
+	if (p_overwriteExisting)
+	{
+		for (uint8_t i = materialCount; i < kMaxMaterialCount; ++i)
+		{
+			RemoveMaterialAtIndex(i);
 		}
 	}
 }

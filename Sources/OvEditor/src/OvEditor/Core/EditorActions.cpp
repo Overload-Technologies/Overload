@@ -51,105 +51,6 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
-	void ApplyEmbeddedModelMaterials(
-		OvEditor::Core::Context& p_context,
-		OvCore::ECS::Components::CMaterialRenderer& p_materialRenderer,
-		const OvRendering::Resources::Model& p_model,
-		OvCore::Resources::Material* p_defaultMaterial,
-		bool p_overwriteExisting
-	)
-	{
-		const uint8_t materialCount = static_cast<uint8_t>(std::min(
-			p_model.GetMaterialNames().size(),
-			static_cast<size_t>(kMaxMaterialCount)
-		));
-		const size_t embeddedMaterialCount = p_model.GetEmbeddedMaterials().size();
-
-		for (uint8_t i = 0; i < materialCount; ++i)
-		{
-			OvCore::Resources::Material* currentMaterial = p_materialRenderer.GetMaterialAtIndex(i);
-			const bool shouldOverride =
-				p_overwriteExisting ||
-				!currentMaterial;
-
-			if (!shouldOverride)
-			{
-				continue;
-			}
-
-			if (i >= embeddedMaterialCount)
-			{
-				if (p_defaultMaterial)
-				{
-					p_materialRenderer.SetMaterialAtIndex(i, *p_defaultMaterial);
-				}
-				else
-				{
-					p_materialRenderer.RemoveMaterialAtIndex(i);
-				}
-
-				continue;
-			}
-
-			const auto embeddedMaterialPath = OvRendering::Resources::Parsers::MakeEmbeddedMaterialPath(p_model.path, i);
-			if (auto* embeddedMaterial = p_context.materialManager.GetResource(embeddedMaterialPath))
-			{
-				p_materialRenderer.SetMaterialAtIndex(i, *embeddedMaterial);
-			}
-			else if (p_defaultMaterial)
-			{
-				p_materialRenderer.SetMaterialAtIndex(i, *p_defaultMaterial);
-			}
-			else
-			{
-				p_materialRenderer.RemoveMaterialAtIndex(i);
-			}
-		}
-
-		if (p_overwriteExisting)
-		{
-			for (uint8_t i = materialCount; i < kMaxMaterialCount; ++i)
-			{
-				p_materialRenderer.RemoveMaterialAtIndex(i);
-			}
-		}
-	}
-
-	void ApplyEmbeddedModelMaterialsToCurrentScene(OvEditor::Core::Context& p_context)
-	{
-		auto* currentScene = p_context.sceneManager.GetCurrentScene();
-		if (!currentScene)
-		{
-			return;
-		}
-
-		auto* defaultMaterial = p_context.materialManager[std::string{ kDefaultMaterialPath }];
-
-		for (auto* actor : currentScene->GetActors())
-		{
-			auto* modelRenderer = actor->GetComponent<OvCore::ECS::Components::CModelRenderer>();
-			auto* materialRenderer = actor->GetComponent<OvCore::ECS::Components::CMaterialRenderer>();
-			if (!modelRenderer || !materialRenderer)
-			{
-				continue;
-			}
-
-			auto* model = modelRenderer->GetModel();
-			if (!model)
-			{
-				continue;
-			}
-
-			ApplyEmbeddedModelMaterials(
-				p_context,
-				*materialRenderer,
-				*model,
-				defaultMaterial,
-				false
-			);
-		}
-	}
-
 	template<typename TResourceManager, typename TAssetNameValidator>
 	void MoveEmbeddedResourcesForRenamedModel(
 		TResourceManager& p_resourceManager,
@@ -274,7 +175,6 @@ void OvEditor::Core::EditorActions::LoadSceneFromDisk(const std::string& p_path,
 		return;
 	}
 
-	ApplyEmbeddedModelMaterialsToCurrentScene(m_context);
 	OVLOG_INFO("Scene loaded from disk: " + m_context.sceneManager.GetCurrentSceneSourcePath());
 	m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View").Focus();
 }
@@ -806,20 +706,13 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateActorWithModel(const s
 
 	auto& materialRenderer = instance.AddComponent<OvCore::ECS::Components::CMaterialRenderer>();
 	const auto defaultMaterial = m_context.materialManager[std::string{ kDefaultMaterialPath }];
-	if (defaultMaterial)
-	{
-		materialRenderer.FillWithMaterial(*defaultMaterial);
-	}
-
 	if (model)
 	{
-		ApplyEmbeddedModelMaterials(
-			m_context,
-			materialRenderer,
-			*model,
-			defaultMaterial,
-			true
-		);
+		materialRenderer.FillWithEmbeddedMaterials(true, defaultMaterial);
+	}
+	else if (defaultMaterial)
+	{
+		materialRenderer.FillWithMaterial(*defaultMaterial);
 	}
 
 	if (p_focusOnCreation)

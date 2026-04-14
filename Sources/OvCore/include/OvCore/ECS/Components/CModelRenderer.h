@@ -104,6 +104,7 @@ namespace OvCore::ECS::Components
 	private:
 		OvRendering::Resources::Model* m_model = nullptr;
 		OvTools::Eventing::Event<> m_modelChangedEvent;
+		bool m_isDeserializing = false;
 		OvRendering::Geometry::BoundingSphere m_customBoundingSphere = { {}, 1.0f };
 		EFrustumBehaviour m_frustumBehaviour = EFrustumBehaviour::MESH_BOUNDS;
 	};

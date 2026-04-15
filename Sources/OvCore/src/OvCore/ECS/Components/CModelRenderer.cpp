@@ -8,10 +8,6 @@
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
-#include <OvCore/Global/ServiceLocator.h>
-#include <OvCore/ResourceManagement/ModelManager.h>
-#include <OvCore/ResourceManagement/ShaderManager.h>
-#include <OvCore/ResourceManagement/TextureManager.h>
 
 #include <OvUI/Plugins/DDTarget.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
@@ -23,19 +19,10 @@
 
 OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : AComponent(p_owner)
 {
-	m_modelChangedNotifier += [this]
-	{
-		m_modelChangedEvent.Invoke(true);
-	};
-
-	m_modelChangedEvent += [this](bool p_updateMaterials)
+	m_modelChangedEvent += [this]()
 	{
 		if (auto materialRenderer = owner.GetComponent<CMaterialRenderer>())
 		{
-			if (p_updateMaterials)
-			{
-				materialRenderer->FillWithEmbeddedMaterials(true);
-			}
 			materialRenderer->UpdateMaterialList();
 		}
 
@@ -54,10 +41,10 @@ std::string OvCore::ECS::Components::CModelRenderer::GetTypeName()
 	return std::string{ComponentTraits<CModelRenderer>::Name};
 }
 
-void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model, bool p_updateMaterials)
+void OvCore::ECS::Components::CModelRenderer::SetModel(OvRendering::Resources::Model* p_model)
 {
 	m_model = p_model;
-	m_modelChangedEvent.Invoke(p_updateMaterials);
+	m_modelChangedEvent.Invoke();
 }
 
 OvRendering::Resources::Model * OvCore::ECS::Components::CModelRenderer::GetModel() const
@@ -97,7 +84,7 @@ void OvCore::ECS::Components::CModelRenderer::OnDeserialize(tinyxml2::XMLDocumen
 {
 	OvRendering::Resources::Model* model = nullptr;
 	OvCore::Helpers::Serializer::DeserializeModel(p_doc, p_node, "model", model);
-	SetModel(model, false);
+	SetModel(model);
 
 	OvCore::Helpers::Serializer::DeserializeInt(p_doc, p_node, "frustum_behaviour", reinterpret_cast<int&>(m_frustumBehaviour));
 	OvCore::Helpers::Serializer::DeserializeVec3(p_doc, p_node, "custom_bounding_sphere_position", m_customBoundingSphere.position);
@@ -108,7 +95,7 @@ void OvCore::ECS::Components::CModelRenderer::OnInspector(OvUI::Internal::Widget
 {
 	using namespace OvCore::Helpers;
 
-	GUIDrawer::DrawMesh(p_root, "Model", m_model, &m_modelChangedNotifier);
+	GUIDrawer::DrawMesh(p_root, "Model", m_model, &m_modelChangedEvent);
 
 	GUIDrawer::CreateTitle(p_root, "Frustum Culling Behaviour");
 	auto& boundingMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(0);

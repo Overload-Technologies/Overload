@@ -77,3 +77,50 @@ function SkinnedMeshRenderer:GetActiveAnimationIndex() end
 --- Returns current clip name or nil
 ---@return string|nil
 function SkinnedMeshRenderer:GetActiveAnimationName() end
+
+--- Returns the number of available bones
+---@return integer
+function SkinnedMeshRenderer:GetBoneCount() end
+
+--- Returns bone name at index or nil
+---@param index integer
+---@return string|nil
+function SkinnedMeshRenderer:GetBoneName(index) end
+
+--- Returns bone index by name or nil
+---@param name string
+---@return integer|nil
+function SkinnedMeshRenderer:GetBoneIndex(name) end
+
+--- Returns local bone position or nil
+---@param boneIndex integer
+---@return Vector3|nil
+function SkinnedMeshRenderer:GetBoneLocalPosition(boneIndex) end
+
+--- Returns local bone rotation or nil
+---@param boneIndex integer
+---@return Quaternion|nil
+function SkinnedMeshRenderer:GetBoneLocalRotation(boneIndex) end
+
+--- Returns local bone scale or nil
+---@param boneIndex integer
+---@return Vector3|nil
+function SkinnedMeshRenderer:GetBoneLocalScale(boneIndex) end
+
+--- Sets local bone position
+---@param boneIndex integer
+---@param position Vector3
+---@return boolean
+function SkinnedMeshRenderer:SetBoneLocalPosition(boneIndex, position) end
+
+--- Sets local bone rotation
+---@param boneIndex integer
+---@param rotation Quaternion
+---@return boolean
+function SkinnedMeshRenderer:SetBoneLocalRotation(boneIndex, rotation) end
+
+--- Sets local bone scale
+---@param boneIndex integer
+---@param scale Vector3
+---@return boolean
+function SkinnedMeshRenderer:SetBoneLocalScale(boneIndex, scale) end

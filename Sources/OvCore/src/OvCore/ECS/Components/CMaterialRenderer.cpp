@@ -17,11 +17,17 @@
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
+#include <OvUI/Widgets/InputFields/AssetField.h>
+#include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
 	m_materials.fill(nullptr);
+
+	for (auto& field : m_materialFields)
+		field.fill(nullptr);
+
 	UpdateMaterialList();
 }
 
@@ -160,30 +166,51 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
-	m_materialFieldsGroup = &p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
+	{
+		const size_t before = p_root.GetWidgets().size();
+		GUIDrawer::DrawMaterial(p_root, "Material", m_materials[i], nullptr);
+		auto& widgets = p_root.GetWidgets();
+		m_materialFields[i] = { widgets[before].first, widgets[before + 1].first };
+		m_materialFields[i][0]->enabled = false;
+		m_materialFields[i][1]->enabled = false;
+	}
+
 	UpdateMaterialList();
+}
+
+void OvCore::ECS::Components::CMaterialRenderer::OnInspectorClosed()
+{
+	for (auto& field : m_materialFields)
+		field.fill(nullptr);
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 {
-	if (!m_materialFieldsGroup)
-		return;
-
-	m_materialFieldsGroup->RemoveAllWidgets();
+	std::vector<std::string> materialNames;
 
 	if (auto modelRenderer = owner.GetComponent<CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
 	{
-		const auto& materialNames = modelRenderer->GetModel()->GetMaterialNames();
-		const uint8_t count = static_cast<uint8_t>(std::min(materialNames.size(), static_cast<size_t>(kMaxMaterialCount)));
+		const auto& names = modelRenderer->GetModel()->GetMaterialNames();
+		const size_t count = std::min(names.size(), static_cast<size_t>(kMaxMaterialCount));
+		materialNames.assign(names.begin(), names.begin() + count);
+	}
 
-		for (uint8_t i = 0; i < count; ++i)
+	for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
+	{
+		if (!m_materialFields[i][0])
+			continue;
+
+		const bool active = i < materialNames.size();
+		m_materialFields[i][0]->enabled = active;
+		m_materialFields[i][1]->enabled = active;
+
+		if (active)
 		{
-			Helpers::GUIDrawer::DrawMaterial(
-				*m_materialFieldsGroup,
-				std::format("Material [{}]: <{}>", i, materialNames[i]),
-				m_materials[i],
-				nullptr
-			);
+			static_cast<OvUI::Widgets::Texts::TextColored*>(m_materialFields[i][0])->content =
+				std::format("Material [{}]: <{}>", i, materialNames[i]);
+			static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
+				m_materials[i] ? m_materials[i]->path : std::string{};
 		}
 	}
 }

@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include "OvDebug/Logger.h"
 #include <algorithm>
 #include <format>
 #include <tinyxml2.h>
@@ -18,14 +17,17 @@
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvUI/Widgets/InputFields/AssetField.h>
-#include <OvUI/Widgets/Layout/Dummy.h>
-#include <OvUI/Widgets/Texts/TextColored.h>
+#include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 #include <imgui.h>
 
 namespace
 {
+	// FIXME: Very dirty, but hey, it works!
+	// This widget essentially allow us to inject some code (callback)
+	// in the middle of the UI drawing. In this case, it is used to keep
+	// the material list up-to-date with the model.
 	class ModelWatcher final : public OvUI::Widgets::AWidget
 	{
 	public:
@@ -34,7 +36,6 @@ namespace
 	protected:
 		void _Draw_Impl() override
 		{
-			ImGui::Dummy({ 0.0f, 0.0f });
 			callback();
 		}
 	};
@@ -120,6 +121,20 @@ bool OvCore::ECS::Components::CMaterialRenderer::HasVisibilityFlags(OvCore::Rend
 	return OvCore::Rendering::SatisfiesVisibility(m_visibilityFlags, p_flags);
 }
 
+void OvCore::ECS::Components::CMaterialRenderer::SetUserMatrixElement(uint32_t p_row, uint32_t p_column, float p_value)
+{
+	if (p_row < 4 && p_column < 4)
+		m_userMatrix.data[4 * p_row + p_column] = p_value;
+}
+
+float OvCore::ECS::Components::CMaterialRenderer::GetUserMatrixElement(uint32_t p_row, uint32_t p_column) const
+{
+	if (p_row < 4 && p_column < 4)
+		return m_userMatrix.data[4 * p_row + p_column];
+	else
+		return 0.0f;
+}
+
 void OvCore::ECS::Components::CMaterialRenderer::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
 	tinyxml2::XMLNode* materialsNode = p_doc.NewElement("materials");
@@ -191,12 +206,12 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 		m_materialFields[i][1]->enabled = false;
 	}
 
-	// Invisible zero-height widget pair that syncs material field visibility each frame.
+	// Invisible zero-height widget that syncs material field visibility each frame.
 	// Running the sync here (inside Draw) guarantees widgets are always alive when accessed.
 	auto syncFields = [this]()
 	{
-		auto* modelRenderer = owner.GetComponent<CModelRenderer>();
-		auto* model = modelRenderer ? modelRenderer->GetModel() : nullptr;
+		const auto* modelRenderer = owner.GetComponent<CModelRenderer>();
+		const auto* model = modelRenderer ? modelRenderer->GetModel() : nullptr;
 		const auto* names = model ? &model->GetMaterialNames() : nullptr;
 		const size_t count = names ? std::min(names->size(), static_cast<size_t>(kMaxMaterialCount)) : 0;
 
@@ -208,7 +223,7 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 
 			if (active)
 			{
-				static_cast<OvUI::Widgets::Texts::TextColored*>(m_materialFields[i][0])->content =
+				static_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0])->content =
 					std::format("Material [{}]: <{}>", i, (*names)[i]);
 				static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
 					m_materials[i] ? m_materials[i]->path : std::string{};
@@ -218,7 +233,6 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 
 	auto& watcher = p_root.CreateWidget<ModelWatcher>();
 	watcher.callback = syncFields;
-	p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>(); // column 1 filler
 
 	syncFields(); // initial population
 }
@@ -291,16 +305,3 @@ void OvCore::ECS::Components::CMaterialRenderer::FillWithEmbeddedMaterials(bool 
 	}
 }
 
-void OvCore::ECS::Components::CMaterialRenderer::SetUserMatrixElement(uint32_t p_row, uint32_t p_column, float p_value)
-{
-	if (p_row < 4 && p_column < 4)
-		m_userMatrix.data[4 * p_row + p_column] = p_value;
-}
-
-float OvCore::ECS::Components::CMaterialRenderer::GetUserMatrixElement(uint32_t p_row, uint32_t p_column) const
-{
-	if (p_row < 4 && p_column < 4)
-		return m_userMatrix.data[4 * p_row + p_column];
-	else
-		return 0.0f;
-}

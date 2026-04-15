@@ -52,16 +52,6 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
-	std::string GetBuildTypeName(OvEditor::Core::EBuildType p_buildType)
-	{
-		switch (p_buildType)
-		{
-			case OvEditor::Core::EBuildType::Debug: return "Debug";
-			case OvEditor::Core::EBuildType::Release: return "Release";
-			case OvEditor::Core::EBuildType::Publish: return "Publish";
-		}
-	}
-
 	template<typename TResourceManager, typename TAssetNameValidator>
 	void MoveEmbeddedResourcesForRenamedModel(
 		TResourceManager& p_resourceManager,
@@ -125,6 +115,16 @@ namespace
 				return OvRendering::Resources::Parsers::ParseEmbeddedTextureIndex(p_assetName).has_value();
 			}
 		);
+	}
+}
+
+std::string OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType p_buildType)
+{
+	switch (p_buildType)
+	{
+		case OvEditor::Core::EBuildType::Debug: return "Debug";
+		case OvEditor::Core::EBuildType::Release: return "Release";
+		case OvEditor::Core::EBuildType::Publish: return "Publish";
 	}
 }
 

@@ -35,6 +35,12 @@ namespace OvEditor::Core
 	};
 
 	/**
+	* Returns the name of a build type
+	* @param p_buildType
+	*/
+	std::string GetBuildTypeName(EBuildType p_buildType);
+
+	/**
 	* A set of editor actions
 	*/
 	class EditorActions

@@ -13,6 +13,8 @@
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Buttons/Button.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Plugins/DataDispatcher.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -56,7 +58,16 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		auto& columns = generationRoot.CreateWidget<Layout::Columns<2>>();
 		columns.widths[0] = 125;
 
-		GUIDrawer::DrawScalar<int>(columns, "Build Type", GenerateGatherer<int>("build_type"), GenerateProvider<int>("build_type"), 1, 0, 2);
+		GUIDrawer::CreateTitle(columns, "Build Type");
+		auto& comboBox = columns.CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_projectFile.Get<int>("build_type"));
+		comboBox.choices = {
+			{ static_cast<int>(OvEditor::Core::EBuildType::Debug),   OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType::Debug) },
+			{ static_cast<int>(OvEditor::Core::EBuildType::Release), OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType::Release) },
+			{ static_cast<int>(OvEditor::Core::EBuildType::Publish), OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType::Publish) },
+		};
+		auto& dispatcher = comboBox.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
+		dispatcher.RegisterGatherer(GenerateGatherer<int>("build_type"));
+		dispatcher.RegisterProvider(GenerateProvider<int>("build_type"));
 	}
 
 	{

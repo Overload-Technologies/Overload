@@ -46,6 +46,11 @@ namespace OvCore::ECS::Components
 		virtual std::string GetTypeName() override;
 
 		/**
+		* Called on play mode start before scripts are executed
+		*/
+		virtual void OnAwake() override;
+
+		/**
 		* Fill the material renderer with the given material
 		* @param p_material
 		*/

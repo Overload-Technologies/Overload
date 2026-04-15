@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include "OvTools/Utils/OptRef.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -856,7 +857,7 @@ void OvEditor::Core::EditorActions::RegenerateScriptingProjectFiles()
 	}
 }
 
-bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path& p_path)
+bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path& p_path, OvTools::Utils::OptRef<const std::filesystem::path> p_workdir)
 {
 	std::string command = OvEditor::Settings::EditorSettings::CodeEditorCommand.Get();
 	if (!command.empty())
@@ -870,6 +871,7 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 			return false;
 		}
 
+		OvTools::Utils::String::ReplaceAll(command, "{workdir}", p_workdir ? p_workdir->string() : m_context.projectFolder.string());
 		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{

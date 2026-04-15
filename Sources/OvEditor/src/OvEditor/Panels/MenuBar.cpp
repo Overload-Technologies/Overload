@@ -197,6 +197,7 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	};
 
 	auto& codeEditorMenu = m_settingsMenu->CreateWidget<MenuList>("Code Editor Command");
+	codeEditorMenu.CreateWidget<Texts::Text>("Use {workdir} to retrieve the project folder.");
 	codeEditorMenu.CreateWidget<Texts::Text>("Use {path} to retrieve the file/folder path.");
 	auto& codeEditorInput = codeEditorMenu.CreateWidget<OvUI::Widgets::InputFields::InputText>(Settings::EditorSettings::CodeEditorCommand.Get());
 	codeEditorInput.ContentChangedEvent += [](const std::string& p_value)
@@ -280,7 +281,7 @@ void OvEditor::Panels::MenuBar::CreateHelpMenu()
 	helpMenu.CreateWidget<MenuItem>("Wiki").ClickedEvent += [repoURL] {OvTools::Utils::SystemCalls::OpenURL(repoURL + "/wiki"); };
 	helpMenu.CreateWidget<MenuItem>("Lua Reference").ClickedEvent += [] {
 		const std::filesystem::path luaDefinitions = EDITOR_CONTEXT(engineAssetsPath) / "Lua";
-		if (!EDITOR_EXEC(OpenInCodeEditor(luaDefinitions)))
+		if (!EDITOR_EXEC(OpenInCodeEditor(luaDefinitions, luaDefinitions)))
 		{
 			OvTools::Utils::SystemCalls::ShowInExplorer(luaDefinitions.string());
 

@@ -128,6 +128,12 @@ namespace
 		return p_path;
 	}
 
+	bool IsPathSameOrDescendant(const std::filesystem::path& p_path, const std::filesystem::path& p_ancestor)
+	{
+		const std::filesystem::path relativePath = p_path.lexically_normal().lexically_relative(p_ancestor.lexically_normal());
+		return !relativePath.empty() && *relativePath.begin() != "..";
+	}
+
 	class TexturePreview : public OvUI::Plugins::IPlugin
 	{
 	private:
@@ -338,12 +344,6 @@ namespace
 				OvTools::Utils::SystemCalls::ShowInExplorer(filePath.string());
 			};
 
-			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
-			openInCodeEditor.ClickedEvent += [this]
-			{
-				EDITOR_EXEC(OpenInCodeEditor(filePath));
-			};
-
 			if (!m_protected)
 			{
 				auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
@@ -522,16 +522,16 @@ namespace
 
 		virtual void CreateList() override
 		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
+			auto& openAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
 
-			editAction.ClickedEvent += [this] {
+			openAction.ClickedEvent += [this] {
 				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
 			};
 
-			auto& openInCodeEditor = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open in code editor");
-			openInCodeEditor.ClickedEvent += [this]
-			{
-				EDITOR_EXEC(OpenInCodeEditor(filePath));
+			auto& openExternallyAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open Externally...");
+
+			openExternallyAction.ClickedEvent += [this] {
+				OvTools::Utils::SystemCalls::OpenFile(filePath.string());
 			};
 
 			if (!m_protected)
@@ -582,23 +582,6 @@ namespace
 		OvTools::Eventing::Event<std::filesystem::path> DuplicateEvent;
 	};
 
-	class PreviewableContextualMenu : public FileContextualMenu
-	{
-	public:
-		PreviewableContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-		virtual void CreateList() override
-		{
-			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
-
-			previewAction.ClickedEvent += [this] {
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
-			FileContextualMenu::CreateList();
-		}
-	};
-
 	class ShaderContextualMenu : public FileContextualMenu
 	{
 	public:
@@ -635,16 +618,10 @@ namespace
 		}
 	};
 
-	class ShaderPartContextualMenu : public FileContextualMenu
+	class ModelContextualMenu : public FileContextualMenu
 	{
 	public:
-		ShaderPartContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-	};
-
-	class ModelContextualMenu : public PreviewableContextualMenu
-	{
-	public:
-		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		ModelContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		void CreateMaterialFiles(const std::string_view p_shaderType)
 		{
@@ -703,14 +680,14 @@ namespace
 				CreateMaterialCreationOption(generateMaterialsMenu, "Unlit");
 			}
 
-			PreviewableContextualMenu::CreateList();
+			FileContextualMenu::CreateList();
 		}
 	};
 
-	class TextureContextualMenu : public PreviewableContextualMenu
+	class TextureContextualMenu : public FileContextualMenu
 	{
 	public:
-		TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		TextureContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		virtual void CreateList() override
 		{
@@ -728,42 +705,17 @@ namespace
 				}
 			};
 
-			PreviewableContextualMenu::CreateList();
-		}
-	};
-
-	class SceneContextualMenu : public FileContextualMenu
-	{
-	public:
-		SceneContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
-
-		virtual void CreateList() override
-		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
-
-			editAction.ClickedEvent += [this]
-			{
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
 			FileContextualMenu::CreateList();
 		}
 	};
 
-	class MaterialContextualMenu : public PreviewableContextualMenu
+	class MaterialContextualMenu : public FileContextualMenu
 	{
 	public:
-		MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : PreviewableContextualMenu(p_filePath, p_protected) {}
+		MaterialContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
 
 		virtual void CreateList() override
 		{
-			auto& editAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Edit");
-
-			editAction.ClickedEvent += [this]
-			{
-				OvCore::Helpers::GUIHelpers::Open(EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected)));
-			};
-
 			auto& reload = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
 			reload.ClickedEvent += [this]
 			{
@@ -777,7 +729,7 @@ namespace
 				}
 			};
 
-			PreviewableContextualMenu::CreateList();
+			FileContextualMenu::CreateList();
 		}
 	};
 
@@ -795,9 +747,7 @@ namespace
 			case MODEL: return p_root.AddPlugin<ModelContextualMenu>(path, p_protected);
 			case TEXTURE: return p_root.AddPlugin<TextureContextualMenu>(path, p_protected);
 			case SHADER: return p_root.AddPlugin<ShaderContextualMenu>(path, p_protected);
-			case SHADER_PART: return p_root.AddPlugin<ShaderPartContextualMenu>(path, p_protected);
 			case MATERIAL: return p_root.AddPlugin<MaterialContextualMenu>(path, p_protected);
-			case SCENE: return p_root.AddPlugin<SceneContextualMenu>(path, p_protected);
 			default: return p_root.AddPlugin<FileContextualMenu>(path, p_protected);
 		}
 	}
@@ -834,7 +784,7 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 	importButton.lineBreak = false;
 
-	auto& codeEditorButton = CreateWidget<Buttons::Button>("Edit Scripts");
+	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");
 	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
 	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
 
@@ -965,6 +915,18 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 				std::error_code equivalenceError;
 				if (std::filesystem::equivalent(folderReceivedPath, correctPath, equivalenceError))
 				{
+					return;
+				}
+
+				if (IsPathSameOrDescendant(correctPath, prevPath))
+				{
+					OVLOG_WARNING(
+						std::format(
+							"Cannot move folder \"{}\" to \"{}\" because the destination is inside the source folder.",
+							prevPath.string(),
+							correctPath.string()
+						)
+					);
 					return;
 				}
 

@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvEditor/Core/EditorActions.h"
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -120,9 +121,13 @@ void OvEditor::Core::Editor::SetupUI()
 			{
 				EDITOR_EXEC(LoadSceneFromDisk(path));
 			}
+			else if (fileType == EFileType::SCRIPT || fileType == EFileType::SHADER || fileType == EFileType::SHADER_PART)
+			{
+				EDITOR_EXEC(OpenInCodeEditor(m_editorActions.GetRealPath(path)));
+			}
 			else
 			{
-				// SHADER, SHADER_PART, SCRIPT, SOUND, FONT, UNKNOWN → open with OS default
+				// SOUND, FONT, UNKNOWN → open with OS default
 				OvTools::Utils::SystemCalls::OpenFile(EDITOR_EXEC(GetRealPath(path)));
 			}
 		}

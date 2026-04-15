@@ -68,7 +68,7 @@ project "OvEditor"
 		symbols "On"
 		kind "ConsoleApp"
 
-	filter { "configurations:Release" }
+	filter { "configurations:Release or configurations:Publish" }
 		defines { "NDEBUG" }
 		optimize "Speed"
 		kind "WindowedApp"
@@ -137,8 +137,9 @@ project "OvEditor"
 			"rm -rf %{builddir}%{cfg.buildcfg}/Data",
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Data",
 			"mkdir -p %{builddir}%{cfg.buildcfg}/Config",
-			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Development",
-			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Shipping",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Debug",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Release",
+			"mkdir -p %{builddir}%{cfg.buildcfg}/Builder/Publish",
 
 			"cp -r %{resdir}Engine %{builddir}%{cfg.buildcfg}/Data/Engine",
 			"cp -r %{resdir}Editor %{builddir}%{cfg.buildcfg}/Data/Editor",
@@ -146,8 +147,9 @@ project "OvEditor"
 
 			"cp %{outputdir}%{cfg.buildcfg}/%{prj.name}/OvEditor %{builddir}%{cfg.buildcfg}/",
 
-			"cp %{outputdir}Debug/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Development/ 2>/dev/null || true",
-			"cp %{outputdir}Release/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Shipping/ 2>/dev/null || true",
+			"cp %{outputdir}Debug/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Debug/OvGame 2>/dev/null || true",
+			"cp %{outputdir}Release/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Release/OvGame 2>/dev/null || true",
+			"cp %{outputdir}Publish/OvGame/OvGame %{builddir}%{cfg.buildcfg}/Builder/Publish/OvGame 2>/dev/null || true",
 
 			"true"
 		}

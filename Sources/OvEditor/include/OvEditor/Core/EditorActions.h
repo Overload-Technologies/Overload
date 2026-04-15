@@ -27,6 +27,13 @@ namespace OvEditor::Core
 {
 	enum class EGizmoOperation;
 
+	enum class EBuildType : int
+	{
+		Debug = 0,
+		Release = 1,
+		Publish = 2
+	};
+
 	/**
 	* A set of editor actions
 	*/
@@ -398,11 +405,15 @@ namespace OvEditor::Core
 
 		/**
 		* Build the current project at the given location
-		* @param p_configuration
+		* @param p_buildType
 		* @param p_buildPath
 		* @param p_autoRun
 		*/
-		void BuildAtLocation(const std::string& p_configuration, const std::filesystem::path&, bool p_autoRun = false);
+		void BuildAtLocation(
+			EBuildType p_buildType,
+			const std::filesystem::path&,
+			bool p_autoRun = false
+		);
 		#pragma endregion
 
 		#pragma region PROFILNIG

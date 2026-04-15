@@ -52,6 +52,16 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
+	std::string GetBuildTypeName(OvEditor::Core::EBuildType p_buildType)
+	{
+		switch (p_buildType)
+		{
+			case OvEditor::Core::EBuildType::Debug: return "Debug";
+			case OvEditor::Core::EBuildType::Release: return "Release";
+			case OvEditor::Core::EBuildType::Publish: return "Publish";
+		}
+	}
+
 	template<typename TResourceManager, typename TAssetNameValidator>
 	void MoveEmbeddedResourcesForRenamedModel(
 		TResourceManager& p_resourceManager,
@@ -307,10 +317,18 @@ void OvEditor::Core::EditorActions::Build(bool p_autoRun, bool p_tempFolder)
 		return; // Operation cancelled (No folder selected)
 	}
 
-	BuildAtLocation(m_context.projectSettings.Get<bool>("dev_build") ? "Development" : "Shipping", destinationFolder, p_autoRun);
+	BuildAtLocation(
+		static_cast<EBuildType>(m_context.projectSettings.Get<int>("build_type")),
+		destinationFolder,
+		p_autoRun
+	);
 }
 
-void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_configuration, const std::filesystem::path& p_buildPath, bool p_autoRun)
+void OvEditor::Core::EditorActions::BuildAtLocation(
+	EBuildType p_buildType,
+	const std::filesystem::path& p_buildPath,
+	bool p_autoRun
+)
 {
 	const std::string extension = 
 #if defined(_WIN32)
@@ -406,7 +424,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 					failed = true;
 				}
 
-				const auto builderFolder = std::filesystem::current_path() / "Builder" / p_configuration;
+				const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
 
 				if (std::filesystem::exists(builderFolder))
 				{
@@ -456,11 +474,9 @@ void OvEditor::Core::EditorActions::BuildAtLocation(const std::string & p_config
 				}
 				else
 				{
-					const std::string buildConfiguration = p_configuration == "Development" ? "Debug" : "Release";
 					OVLOG_ERROR(std::format(
-						"Builder folder for \"{}\" not found. Verify you have compiled Engine source code in \"{}\" configuration.",
-						p_configuration,
-						buildConfiguration
+						"Builder folder for \"{}\" not found.",
+						GetBuildTypeName(p_buildType)
 					));
 					failed = true;
 				}

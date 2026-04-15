@@ -56,7 +56,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		auto& columns = generationRoot.CreateWidget<Layout::Columns<2>>();
 		columns.widths[0] = 125;
 
-		GUIDrawer::DrawBoolean(columns, "Development build", GenerateGatherer<bool>("dev_build"), GenerateProvider<bool>("dev_build"));
+		GUIDrawer::DrawScalar<int>(columns, "Build Type", GenerateGatherer<int>("build_type"), GenerateProvider<int>("build_type"), 1, 0, 2);
 	}
 
 	{

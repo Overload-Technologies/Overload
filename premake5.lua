@@ -13,18 +13,23 @@ end
 local version = readVersion()
 
 workspace "Overload"
-	configurations { "Debug", "Release" }
+	configurations { "Debug", "Release", "Publish" }
 	platforms { "x64" }
 	startproject "OvEditor"
 	defines {
 		"LUA_SCRIPTING",
 		"GRAPHICS_API_OPENGL",
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
-		"TRACY_ENABLE",
-		"TRACY_ON_DEMAND",
-		"TRACY_MEMORY_ENABLE",
 		"SOL_NO_LUA_HPP"
 	}
+
+	filter {"configurations:Debug or configurations:Release"}
+		defines {
+			"TRACY_ENABLE",
+			"TRACY_ON_DEMAND",
+			"TRACY_MEMORY_ENABLE",
+		}
+	filter{}
 
 	-- Set toolset based on operating system
 	filter {"system:windows"}

@@ -24,6 +24,13 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
+# Build Publish
+"$SCRIPT_DIR/Build.sh" publish
+if [ $? -ne 0 ]; then
+    echo "Publish build failed. Exiting."
+    exit $?
+fi
+
 # Read version from VERSION.txt
 VERSION=$(cat "$SCRIPT_DIR/../../VERSION.txt")
 PLATFORM="linux_x64"
@@ -39,8 +46,8 @@ fi
 # Create Releases folder if it doesn't exist
 mkdir -p ../Releases
 
-# Copy the Release folder to a new folder
-cp -r Release "../Releases/Overload-$VERSION-$PLATFORM"
+# Copy the Publish folder to a new folder
+cp -r Publish "../Releases/Overload-$VERSION-$PLATFORM"
 
 # Create the archive, delete any existing one first
 if [ -f "../Releases/Overload-$VERSION-$PLATFORM.tar.gz" ]; then

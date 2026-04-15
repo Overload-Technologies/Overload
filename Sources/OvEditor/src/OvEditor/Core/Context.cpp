@@ -202,7 +202,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<bool>("vsync", true);
 	projectSettings.Add<bool>("multisampling", false);
 	projectSettings.Add<int>("samples", 4);
-	projectSettings.Add<bool>("dev_build", true);
+	projectSettings.Add<int>("build_type", 0);
 }
 
 bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
@@ -217,7 +217,7 @@ bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
 		projectSettings.IsKeyExisting("vsync") &&
 		projectSettings.IsKeyExisting("multisampling") &&
 		projectSettings.IsKeyExisting("samples") &&
-		projectSettings.IsKeyExisting("dev_build");
+		projectSettings.IsKeyExisting("build_type");
 }
 
 void OvEditor::Core::Context::ApplyProjectSettings()

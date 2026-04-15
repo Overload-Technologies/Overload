@@ -41,6 +41,11 @@ std::string OvCore::ECS::Components::CMaterialRenderer::GetTypeName()
 void OvCore::ECS::Components::CMaterialRenderer::OnAwake()
 {
 	m_inspectorRoot = nullptr;
+
+	for (auto& materialField : m_materialFields)
+	{
+		materialField.fill(nullptr);
+	}
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::FillWithMaterial(OvCore::Resources::Material & p_material)

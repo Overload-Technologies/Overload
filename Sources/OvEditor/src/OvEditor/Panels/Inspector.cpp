@@ -104,6 +104,13 @@ namespace
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
 	});
 
+	void InvalidateComponentInspectorCaches(Actor& p_actor)
+	{
+		if (auto materialRenderer = p_actor.GetComponent<CMaterialRenderer>())
+		{
+			materialRenderer->InvalidateInspectorCache();
+		}
+	}
 }
 
 OvEditor::Panels::Inspector::Inspector(
@@ -159,6 +166,7 @@ void OvEditor::Panels::Inspector::UnFocus()
 	m_targetActor->BehaviourAddedEvent -= m_behaviourAddedListener;
 	m_targetActor->BehaviourRemovedEvent -= m_behaviourRemovedListener;
 
+	InvalidateComponentInspectorCaches(m_targetActor.value());
 	m_content->RemoveAllWidgets();
 
 	EDITOR_EVENT(ActorUnselectedEvent).Invoke(m_targetActor.value());
@@ -379,6 +387,7 @@ void OvEditor::Panels::Inspector::Refresh()
 {
 	if (m_targetActor)
 	{
+		InvalidateComponentInspectorCaches(m_targetActor.value());
 		m_content->RemoveAllWidgets();
 		_Populate();
 	}

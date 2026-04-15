@@ -46,9 +46,9 @@ namespace OvCore::ECS::Components
 		virtual std::string GetTypeName() override;
 
 		/**
-		* Called on play mode start before scripts are executed
+		* Clears cached inspector pointers for this component
 		*/
-		virtual void OnAwake() override;
+		void InvalidateInspectorCache();
 
 		/**
 		* Fill the material renderer with the given material

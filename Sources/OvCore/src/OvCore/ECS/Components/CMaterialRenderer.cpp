@@ -22,9 +22,7 @@ OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_own
 {
 	m_materials.fill(nullptr);
 
-	for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
-		m_materialFields[i].fill(nullptr);
-
+	InvalidateInspectorCache();
 	UpdateMaterialList();
 }
 
@@ -38,7 +36,7 @@ std::string OvCore::ECS::Components::CMaterialRenderer::GetTypeName()
 	return std::string{ComponentTraits<CMaterialRenderer>::Name};
 }
 
-void OvCore::ECS::Components::CMaterialRenderer::OnAwake()
+void OvCore::ECS::Components::CMaterialRenderer::InvalidateInspectorCache()
 {
 	m_inspectorRoot = nullptr;
 
@@ -164,12 +162,8 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 	using namespace OvCore::Helpers;
 	using enum Rendering::EVisibilityFlags;
 
+	InvalidateInspectorCache();
 	m_inspectorRoot = &p_root;
-
-	for (auto& materialField : m_materialFields)
-	{
-		materialField.fill(nullptr);
-	}
 
 	auto drawVisibilityToggle = [this, &p_root](const std::string& p_flagName, Rendering::EVisibilityFlags p_flag) {
 		GUIDrawer::DrawBoolean(

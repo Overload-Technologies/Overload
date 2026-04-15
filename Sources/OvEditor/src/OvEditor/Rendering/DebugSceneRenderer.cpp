@@ -612,8 +612,8 @@ protected:
 		if (auto capsuleColliderComponent = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalCapsule>(); capsuleColliderComponent)
 		{
 			FVector3 actorScale = p_actor.transform.GetWorldScale();
-			float radius = abs(capsuleColliderComponent->GetRadius() * std::max(std::max(actorScale.x, actorScale.z), 0.f));
-			float height = abs(capsuleColliderComponent->GetHeight() * actorScale.y);
+			float radius = std::abs(capsuleColliderComponent->GetRadius() * std::max(std::max(actorScale.x, actorScale.z), 0.f));
+			float height = std::abs(capsuleColliderComponent->GetHeight() * actorScale.y);
 
 			m_debugShapeFeature.DrawCapsule(
 				pso,

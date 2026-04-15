@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <tracy/Tracy.hpp>
+
 #if defined(GRAPHICS_API_OPENGL)
 #include <glad.h>
 #include <tracy/TracyOpenGL.hpp>

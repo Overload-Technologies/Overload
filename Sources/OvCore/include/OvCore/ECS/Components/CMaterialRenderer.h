@@ -12,7 +12,7 @@
 #include <OvCore/Rendering/EVisibilityFlags.h>
 #include <OvCore/Resources/Material.h>
 #include <OvRendering/Resources/Mesh.h>
-#include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Layout/Group.h>
 
 constexpr uint8_t kMaxMaterialCount = 0xFF;
 
@@ -27,7 +27,6 @@ namespace OvCore::ECS::Components
 	{
 	public:
 		using MaterialList = std::array<OvCore::Resources::Material*, kMaxMaterialCount>;
-		using MaterialField = std::array<std::array<OvUI::Widgets::AWidget*, 2>, kMaxMaterialCount>;
 
 		/**
 		* Constructor
@@ -157,11 +156,9 @@ namespace OvCore::ECS::Components
 
 	private:
 		MaterialList m_materials;
-		MaterialField m_materialFields;
-		std::array<std::string, kMaxMaterialCount> m_materialNames;
+		OvUI::Widgets::Layout::Group* m_materialFieldsGroup = nullptr;
 		OvMaths::FMatrix4 m_userMatrix;
 		Rendering::EVisibilityFlags m_visibilityFlags = Rendering::EVisibilityFlags::ALL;
-		OvUI::Internal::WidgetContainer* m_inspectorRoot = nullptr;
 	};
 
 	template<>

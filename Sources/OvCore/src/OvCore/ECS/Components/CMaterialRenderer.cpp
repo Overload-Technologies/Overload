@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvDebug/Logger.h"
 #include <algorithm>
 #include <format>
 #include <tinyxml2.h>
@@ -16,18 +17,11 @@
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
-#include <OvUI/Widgets/Layout/Dummy.h>
-#include <OvUI/Widgets/InputFields/AssetField.h>
-#include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
 	m_materials.fill(nullptr);
-
-	for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
-		m_materialFields[i].fill(nullptr);
-
 	UpdateMaterialList();
 }
 
@@ -143,26 +137,10 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
 
-std::array<OvUI::Widgets::AWidget*, 2> CustomMaterialDrawer(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvCore::Resources::Material*& p_data)
-{
-	const size_t before = p_root.GetWidgets().size();
-	OvCore::Helpers::GUIDrawer::DrawMaterial(p_root, p_name, p_data, nullptr);
-	auto& widgets = p_root.GetWidgets();
-	// DrawMaterial adds exactly 2 widgets: [before]=TextColored title, [before+1]=AssetField
-	return { widgets[before].first, widgets[before + 1].first };
-}
-
 void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::WidgetContainer & p_root)
 {
 	using namespace OvCore::Helpers;
 	using enum Rendering::EVisibilityFlags;
-
-	m_inspectorRoot = &p_root;
-
-	for (auto& materialField : m_materialFields)
-	{
-		materialField.fill(nullptr);
-	}
 
 	auto drawVisibilityToggle = [this, &p_root](const std::string& p_flagName, Rendering::EVisibilityFlags p_flag) {
 		GUIDrawer::DrawBoolean(
@@ -182,55 +160,30 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 
 	p_root.CreateWidget<OvUI::Widgets::Visual::Separator>();
 
-	uint8_t materialCount = 0;
-
-	if (auto modelRenderer = owner.GetComponent<CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
-	{
-		materialCount = static_cast<uint8_t>(std::min(modelRenderer->GetModel()->GetMaterialNames().size(), static_cast<size_t>(kMaxMaterialCount)));
-	}
-
-	for (uint8_t i = 0; i < materialCount; ++i)
-	{
-		m_materialFields[i] = CustomMaterialDrawer(p_root, "Material", m_materials[i]);
-	}
-
+	m_materialFieldsGroup = &p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
 	UpdateMaterialList();
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
 {
+	if (!m_materialFieldsGroup)
+		return;
+
+	m_materialFieldsGroup->RemoveAllWidgets();
+
 	if (auto modelRenderer = owner.GetComponent<CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
 	{
-		uint8_t materialIndex = 0;
+		const auto& materialNames = modelRenderer->GetModel()->GetMaterialNames();
+		const uint8_t count = static_cast<uint8_t>(std::min(materialNames.size(), static_cast<size_t>(kMaxMaterialCount)));
 
-		for (const std::string& materialName : modelRenderer->GetModel()->GetMaterialNames())
+		for (uint8_t i = 0; i < count; ++i)
 		{
-			m_materialNames[materialIndex++] = materialName;
-		}
-
-		for (uint8_t i = materialIndex; i < kMaxMaterialCount; ++i)
-			m_materialNames[i] = "";
-	}
-	else
-	{
-		m_materialNames.fill("");
-	}
-
-	for (uint8_t i = 0; i < m_materialFields.size(); ++i)
-	{
-		// If the slot became active but has no widget yet, create it now.
-		if (!m_materialFields[i][0] && !m_materialNames[i].empty() && m_inspectorRoot)
-			m_materialFields[i] = CustomMaterialDrawer(*m_inspectorRoot, "Material", m_materials[i]);
-
-		if (m_materialFields[i][0])
-		{
-			const bool enabled = !m_materialNames[i].empty();
-			m_materialFields[i][0]->enabled = enabled;
-			m_materialFields[i][1]->enabled = enabled;
-			static_cast<OvUI::Widgets::Texts::Text*>(m_materialFields[i][0])->content =
-				std::format("Material [{}]: <{}>", i, m_materialNames[i]);
-			static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
-				m_materials[i] ? m_materials[i]->path : std::string{};
+			Helpers::GUIDrawer::DrawMaterial(
+				*m_materialFieldsGroup,
+				std::format("Material [{}]: <{}>", i, materialNames[i]),
+				m_materials[i],
+				nullptr
+			);
 		}
 	}
 }

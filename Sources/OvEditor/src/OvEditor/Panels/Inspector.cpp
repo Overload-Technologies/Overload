@@ -161,9 +161,6 @@ void OvEditor::Panels::Inspector::UnFocus()
 	m_targetActor->BehaviourAddedEvent -= m_behaviourAddedListener;
 	m_targetActor->BehaviourRemovedEvent -= m_behaviourRemovedListener;
 
-	for (auto& component : m_targetActor->GetComponents())
-		component->OnInspectorClosed();
-
 	m_content->RemoveAllWidgets();
 
 	EDITOR_EVENT(ActorUnselectedEvent).Invoke(m_targetActor.value());
@@ -390,9 +387,6 @@ void OvEditor::Panels::Inspector::Refresh()
 {
 	if (m_targetActor)
 	{
-		for (auto& component : m_targetActor->GetComponents())
-			component->OnInspectorClosed();
-
 		m_content->RemoveAllWidgets();
 		_Populate();
 	}

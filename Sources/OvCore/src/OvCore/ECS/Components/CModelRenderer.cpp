@@ -6,7 +6,6 @@
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CModelRenderer.h>
-#include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 
 #include <OvUI/Plugins/DDTarget.h>
@@ -21,11 +20,6 @@ OvCore::ECS::Components::CModelRenderer::CModelRenderer(ECS::Actor& p_owner) : A
 {
 	m_modelChangedEvent += [this]()
 	{
-		if (auto materialRenderer = owner.GetComponent<CMaterialRenderer>())
-		{
-			materialRenderer->UpdateMaterialList();
-		}
-
 		if (auto skinnedMeshRenderer = owner.GetComponent<CSkinnedMeshRenderer>())
 			skinnedMeshRenderer->NotifyModelChanged();
 	};

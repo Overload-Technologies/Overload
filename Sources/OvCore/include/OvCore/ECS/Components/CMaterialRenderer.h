@@ -82,11 +82,6 @@ namespace OvCore::ECS::Components
 		void RemoveAllMaterials();
 
 		/**
-		* Update the material list by fetching model information
-		*/
-		void UpdateMaterialList();
-
-		/**
 		* Fill material entries using the embedded materials of the current model
 		* @param p_overwriteExisting
 		* @param p_fallbackMaterial
@@ -154,11 +149,6 @@ namespace OvCore::ECS::Components
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
-
-		/**
-		* Clears inspector widget references when the inspector is closed or refreshed
-		*/
-		virtual void OnInspectorClosed() override;
 
 	private:
 		MaterialList m_materials;

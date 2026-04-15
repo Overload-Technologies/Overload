@@ -18,8 +18,27 @@
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvUI/Widgets/InputFields/AssetField.h>
+#include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Visual/Separator.h>
+
+#include <imgui.h>
+
+namespace
+{
+	class ModelWatcher final : public OvUI::Widgets::AWidget
+	{
+	public:
+		std::function<void()> callback;
+
+	protected:
+		void _Draw_Impl() override
+		{
+			ImGui::Dummy({ 0.0f, 0.0f });
+			callback();
+		}
+	};
+}
 
 OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_owner) : AComponent(p_owner)
 {
@@ -27,8 +46,6 @@ OvCore::ECS::Components::CMaterialRenderer::CMaterialRenderer(ECS::Actor & p_own
 
 	for (auto& field : m_materialFields)
 		field.fill(nullptr);
-
-	UpdateMaterialList();
 }
 
 std::string OvCore::ECS::Components::CMaterialRenderer::GetName()
@@ -138,8 +155,6 @@ void OvCore::ECS::Components::CMaterialRenderer::OnDeserialize(tinyxml2::XMLDocu
 		}
 	}
 
-	UpdateMaterialList();
-
 	OvCore::Helpers::Serializer::DeserializeUint32(p_doc, p_node, "visibility_flags", reinterpret_cast<uint32_t&>(m_visibilityFlags));
 }
 
@@ -176,43 +191,36 @@ void OvCore::ECS::Components::CMaterialRenderer::OnInspector(OvUI::Internal::Wid
 		m_materialFields[i][1]->enabled = false;
 	}
 
-	UpdateMaterialList();
-}
-
-void OvCore::ECS::Components::CMaterialRenderer::OnInspectorClosed()
-{
-	for (auto& field : m_materialFields)
-		field.fill(nullptr);
-}
-
-void OvCore::ECS::Components::CMaterialRenderer::UpdateMaterialList()
-{
-	std::vector<std::string> materialNames;
-
-	if (auto modelRenderer = owner.GetComponent<CModelRenderer>(); modelRenderer && modelRenderer->GetModel())
+	// Invisible zero-height widget pair that syncs material field visibility each frame.
+	// Running the sync here (inside Draw) guarantees widgets are always alive when accessed.
+	auto syncFields = [this]()
 	{
-		const auto& names = modelRenderer->GetModel()->GetMaterialNames();
-		const size_t count = std::min(names.size(), static_cast<size_t>(kMaxMaterialCount));
-		materialNames.assign(names.begin(), names.begin() + count);
-	}
+		auto* modelRenderer = owner.GetComponent<CModelRenderer>();
+		auto* model = modelRenderer ? modelRenderer->GetModel() : nullptr;
+		const auto* names = model ? &model->GetMaterialNames() : nullptr;
+		const size_t count = names ? std::min(names->size(), static_cast<size_t>(kMaxMaterialCount)) : 0;
 
-	for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
-	{
-		if (!m_materialFields[i][0])
-			continue;
-
-		const bool active = i < materialNames.size();
-		m_materialFields[i][0]->enabled = active;
-		m_materialFields[i][1]->enabled = active;
-
-		if (active)
+		for (uint8_t i = 0; i < kMaxMaterialCount; ++i)
 		{
-			static_cast<OvUI::Widgets::Texts::TextColored*>(m_materialFields[i][0])->content =
-				std::format("Material [{}]: <{}>", i, materialNames[i]);
-			static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
-				m_materials[i] ? m_materials[i]->path : std::string{};
+			const bool active = i < count;
+			m_materialFields[i][0]->enabled = active;
+			m_materialFields[i][1]->enabled = active;
+
+			if (active)
+			{
+				static_cast<OvUI::Widgets::Texts::TextColored*>(m_materialFields[i][0])->content =
+					std::format("Material [{}]: <{}>", i, (*names)[i]);
+				static_cast<OvUI::Widgets::InputFields::AssetField*>(m_materialFields[i][1])->content =
+					m_materials[i] ? m_materials[i]->path : std::string{};
+			}
 		}
-	}
+	};
+
+	auto& watcher = p_root.CreateWidget<ModelWatcher>();
+	watcher.callback = syncFields;
+	p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>(); // column 1 filler
+
+	syncFields(); // initial population
 }
 
 void OvCore::ECS::Components::CMaterialRenderer::FillWithEmbeddedMaterials(bool p_overwriteExisting, OvCore::Resources::Material* p_fallbackMaterial)

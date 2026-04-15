@@ -114,12 +114,6 @@ namespace OvCore::ECS::Components
 		virtual void OnTriggerExit(Components::CPhysicalObject& p_otherObject) {}
 
 		/**
-		* Called when the inspector is closed or refreshed for this component's owner.
-		* Override to release any references to inspector widgets.
-		*/
-		virtual void OnInspectorClosed() {}
-
-		/**
 		* Returns the name of the component
 		*/
 		virtual std::string GetName() = 0;

@@ -13,6 +13,8 @@
 
 #include <OvCore/ECS/Components/AComponent.h>
 #include <OvMaths/FMatrix4.h>
+#include <OvMaths/FQuaternion.h>
+#include <OvMaths/FVector3.h>
 
 namespace OvCore::ECS { class Actor; }
 namespace OvRendering::Resources { class Model; }
@@ -151,6 +153,62 @@ namespace OvCore::ECS::Components
 		std::optional<std::string> GetActiveAnimationName() const;
 
 		/**
+		* Returns the number of available bones
+		*/
+		uint32_t GetBoneCount() const;
+
+		/**
+		* Returns the bone name at index (std::nullopt if index is invalid)
+		* @param p_index
+		*/
+		std::optional<std::string> GetBoneName(uint32_t p_index) const;
+
+		/**
+		* Returns the bone index by name (std::nullopt if not found)
+		* @param p_name
+		*/
+		std::optional<uint32_t> GetBoneIndex(const std::string& p_name) const;
+
+		/**
+		* Returns the local bone position (std::nullopt if index is invalid)
+		* @param p_boneIndex
+		*/
+		std::optional<OvMaths::FVector3> GetBoneLocalPosition(uint32_t p_boneIndex) const;
+
+		/**
+		* Returns the local bone rotation (std::nullopt if index is invalid)
+		* @param p_boneIndex
+		*/
+		std::optional<OvMaths::FQuaternion> GetBoneLocalRotation(uint32_t p_boneIndex) const;
+
+		/**
+		* Returns the local bone scale (std::nullopt if index is invalid)
+		* @param p_boneIndex
+		*/
+		std::optional<OvMaths::FVector3> GetBoneLocalScale(uint32_t p_boneIndex) const;
+
+		/**
+		* Sets the local bone position
+		* @param p_boneIndex
+		* @param p_position
+		*/
+		bool SetBoneLocalPosition(uint32_t p_boneIndex, const OvMaths::FVector3& p_position);
+
+		/**
+		* Sets the local bone rotation
+		* @param p_boneIndex
+		* @param p_rotation
+		*/
+		bool SetBoneLocalRotation(uint32_t p_boneIndex, const OvMaths::FQuaternion& p_rotation);
+
+		/**
+		* Sets the local bone scale
+		* @param p_boneIndex
+		* @param p_scale
+		*/
+		bool SetBoneLocalScale(uint32_t p_boneIndex, const OvMaths::FVector3& p_scale);
+
+		/**
 		* Returns the transposed skinning matrix palette ready for GPU upload
 		*/
 		const std::vector<OvMaths::FMatrix4>& GetBoneMatricesTransposed() const;
@@ -191,6 +249,8 @@ namespace OvCore::ECS::Components
 		void SyncWithModel();
 		void RebuildRuntimeData();
 		void EvaluatePose();
+		std::optional<uint32_t> GetNodeIndexFromBoneIndex(uint32_t p_boneIndex) const;
+		void RecomputeBoneMatricesFromLocalPose();
 		float GetAnimationDurationSeconds() const;
 		void UpdatePlayback(float p_deltaTime);
 

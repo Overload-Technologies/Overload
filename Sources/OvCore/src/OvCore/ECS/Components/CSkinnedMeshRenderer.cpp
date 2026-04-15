@@ -17,6 +17,7 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
+#include <OvMaths/FMatrix3.h>
 #include <OvMaths/FTransform.h>
 #include <OvUI/Plugins/DataDispatcher.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
@@ -99,6 +100,52 @@ namespace
 		const auto& prev = *std::prev(nextIt);
 		const auto& next = *nextIt;
 		return interpolate(prev, next, next.time - prev.time);
+	}
+
+	void DecomposeLocalTransform(
+		const OvMaths::FMatrix4& p_matrix,
+		OvMaths::FVector3& p_position,
+		OvMaths::FQuaternion& p_rotation,
+		OvMaths::FVector3& p_scale
+	)
+	{
+		p_position.x = p_matrix.data[3];
+		p_position.y = p_matrix.data[7];
+		p_position.z = p_matrix.data[11];
+
+		OvMaths::FVector3 columns[3] =
+		{
+			{ p_matrix.data[0], p_matrix.data[4], p_matrix.data[8] },
+			{ p_matrix.data[1], p_matrix.data[5], p_matrix.data[9] },
+			{ p_matrix.data[2], p_matrix.data[6], p_matrix.data[10] }
+		};
+
+		p_scale.x = OvMaths::FVector3::Length(columns[0]);
+		p_scale.y = OvMaths::FVector3::Length(columns[1]);
+		p_scale.z = OvMaths::FVector3::Length(columns[2]);
+
+		if (p_scale.x > 0.0f)
+		{
+			columns[0] /= p_scale.x;
+		}
+
+		if (p_scale.y > 0.0f)
+		{
+			columns[1] /= p_scale.y;
+		}
+
+		if (p_scale.z > 0.0f)
+		{
+			columns[2] /= p_scale.z;
+		}
+
+		const OvMaths::FMatrix3 rotationMatrix(
+			columns[0].x, columns[1].x, columns[2].x,
+			columns[0].y, columns[1].y, columns[2].y,
+			columns[0].z, columns[1].z, columns[2].z
+		);
+
+		p_rotation = OvMaths::FQuaternion(rotationMatrix);
 	}
 }
 
@@ -293,6 +340,144 @@ std::optional<std::string> OvCore::ECS::Components::CSkinnedMeshRenderer::GetAct
 	}
 
 	return GetAnimationName(m_animationIndex.value());
+}
+
+uint32_t OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneCount() const
+{
+	if (!HasCompatibleModel())
+	{
+		return 0;
+	}
+
+	return static_cast<uint32_t>(m_model->GetSkeleton().value().bones.size());
+}
+
+std::optional<std::string> OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneName(uint32_t p_index) const
+{
+	if (!HasCompatibleModel())
+	{
+		return std::nullopt;
+	}
+
+	const auto& bones = m_model->GetSkeleton().value().bones;
+	if (p_index >= bones.size())
+	{
+		return std::nullopt;
+	}
+
+	return bones[p_index].name;
+}
+
+std::optional<uint32_t> OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneIndex(const std::string& p_name) const
+{
+	if (!HasCompatibleModel())
+	{
+		return std::nullopt;
+	}
+
+	return m_model->GetSkeleton().value().FindBoneIndex(p_name);
+}
+
+std::optional<OvMaths::FVector3> OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneLocalPosition(uint32_t p_boneIndex) const
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return std::nullopt;
+	}
+
+	OvMaths::FVector3 position;
+	OvMaths::FQuaternion rotation;
+	OvMaths::FVector3 scale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], position, rotation, scale);
+	return position;
+}
+
+std::optional<OvMaths::FQuaternion> OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneLocalRotation(uint32_t p_boneIndex) const
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return std::nullopt;
+	}
+
+	OvMaths::FVector3 position;
+	OvMaths::FQuaternion rotation;
+	OvMaths::FVector3 scale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], position, rotation, scale);
+	return rotation;
+}
+
+std::optional<OvMaths::FVector3> OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneLocalScale(uint32_t p_boneIndex) const
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return std::nullopt;
+	}
+
+	OvMaths::FVector3 position;
+	OvMaths::FQuaternion rotation;
+	OvMaths::FVector3 scale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], position, rotation, scale);
+	return scale;
+}
+
+bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalPosition(uint32_t p_boneIndex, const OvMaths::FVector3& p_position)
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return false;
+	}
+
+	OvMaths::FVector3 currentPosition;
+	OvMaths::FQuaternion currentRotation;
+	OvMaths::FVector3 currentScale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], currentPosition, currentRotation, currentScale);
+
+	const OvMaths::FTransform transform(p_position, currentRotation, currentScale);
+	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	RecomputeBoneMatricesFromLocalPose();
+	return true;
+}
+
+bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalRotation(uint32_t p_boneIndex, const OvMaths::FQuaternion& p_rotation)
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return false;
+	}
+
+	OvMaths::FVector3 currentPosition;
+	OvMaths::FQuaternion currentRotation;
+	OvMaths::FVector3 currentScale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], currentPosition, currentRotation, currentScale);
+
+	const OvMaths::FTransform transform(currentPosition, p_rotation, currentScale);
+	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	RecomputeBoneMatricesFromLocalPose();
+	return true;
+}
+
+bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalScale(uint32_t p_boneIndex, const OvMaths::FVector3& p_scale)
+{
+	const auto nodeIndex = GetNodeIndexFromBoneIndex(p_boneIndex);
+	if (!nodeIndex.has_value())
+	{
+		return false;
+	}
+
+	OvMaths::FVector3 currentPosition;
+	OvMaths::FQuaternion currentRotation;
+	OvMaths::FVector3 currentScale;
+	DecomposeLocalTransform(m_localPose[*nodeIndex], currentPosition, currentRotation, currentScale);
+
+	const OvMaths::FTransform transform(currentPosition, currentRotation, p_scale);
+	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	RecomputeBoneMatricesFromLocalPose();
+	return true;
 }
 
 const std::vector<OvMaths::FMatrix4>& OvCore::ECS::Components::CSkinnedMeshRenderer::GetBoneMatricesTransposed() const
@@ -584,6 +769,49 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 			const OvMaths::FTransform sampled(sampledPosition, sampledRotation, sampledScale);
 			m_localPose[track.nodeIndex] = sampled.GetLocalMatrix();
 		}
+	}
+
+	RecomputeBoneMatricesFromLocalPose();
+}
+
+std::optional<uint32_t> OvCore::ECS::Components::CSkinnedMeshRenderer::GetNodeIndexFromBoneIndex(uint32_t p_boneIndex) const
+{
+	if (!HasCompatibleModel())
+	{
+		return std::nullopt;
+	}
+
+	const auto& skeleton = m_model->GetSkeleton().value();
+	if (p_boneIndex >= skeleton.bones.size())
+	{
+		return std::nullopt;
+	}
+
+	const uint32_t nodeIndex = skeleton.bones[p_boneIndex].nodeIndex;
+	if (nodeIndex >= m_localPose.size())
+	{
+		return std::nullopt;
+	}
+
+	return nodeIndex;
+}
+
+void OvCore::ECS::Components::CSkinnedMeshRenderer::RecomputeBoneMatricesFromLocalPose()
+{
+	if (!HasCompatibleModel())
+	{
+		return;
+	}
+
+	const auto& skeleton = m_model->GetSkeleton().value();
+	if (
+		m_localPose.size() != skeleton.nodes.size() ||
+		m_globalPose.size() != skeleton.nodes.size() ||
+		m_boneMatrices.size() != skeleton.bones.size() ||
+		m_boneMatricesTransposed.size() != skeleton.bones.size()
+	)
+	{
+		return;
 	}
 
 	for (size_t nodeIndex = 0; nodeIndex < skeleton.nodes.size(); ++nodeIndex)

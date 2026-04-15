@@ -109,7 +109,16 @@ void BindLuaComponents(sol::state& p_luaState)
 			sol::resolve<bool(const std::string&)>(&CSkinnedMeshRenderer::SetAnimation)
 		),
 		"GetActiveAnimationIndex", &CSkinnedMeshRenderer::GetActiveAnimationIndex,
-		"GetActiveAnimationName", &CSkinnedMeshRenderer::GetActiveAnimationName
+		"GetActiveAnimationName", &CSkinnedMeshRenderer::GetActiveAnimationName,
+		"GetBoneCount", &CSkinnedMeshRenderer::GetBoneCount,
+		"GetBoneName", &CSkinnedMeshRenderer::GetBoneName,
+		"GetBoneIndex", &CSkinnedMeshRenderer::GetBoneIndex,
+		"GetBoneLocalPosition", &CSkinnedMeshRenderer::GetBoneLocalPosition,
+		"GetBoneLocalRotation", &CSkinnedMeshRenderer::GetBoneLocalRotation,
+		"GetBoneLocalScale", &CSkinnedMeshRenderer::GetBoneLocalScale,
+		"SetBoneLocalPosition", &CSkinnedMeshRenderer::SetBoneLocalPosition,
+		"SetBoneLocalRotation", &CSkinnedMeshRenderer::SetBoneLocalRotation,
+		"SetBoneLocalScale", &CSkinnedMeshRenderer::SetBoneLocalScale
 	);
 
 	p_luaState.new_enum<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>("CollisionDetectionMode", {

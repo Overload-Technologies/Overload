@@ -62,6 +62,7 @@ namespace OvEditor::Panels
 		void HandleActorPicking();
 		OvEditor::Rendering::PickingRenderPass::PickingResult GetPickingResult();
 		void OnSceneDropped(const std::string& p_path);
+		void OnPrefabDropped(const std::string& p_path);
 		void OnModelDropped(const std::string& p_path);
 		void OnMaterialDropped(const std::string& p_path);
 

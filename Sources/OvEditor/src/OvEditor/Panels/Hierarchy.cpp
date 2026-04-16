@@ -61,6 +61,12 @@ public:
 				EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*m_target), nullptr, true), 0));
 			};
 
+			auto& createPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Save as prefab...");
+			createPrefabButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(SaveActorAsPrefab(*m_target));
+			};
+
 			auto& deleteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
 			deleteButton.ClickedEvent += [this]
 			{

@@ -12,6 +12,7 @@
 #include <iostream>
 #include <ranges>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include <tinyxml2.h>
 
@@ -52,6 +53,20 @@
 namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+
+	void SerializeActorHierarchy(
+		tinyxml2::XMLDocument& p_doc,
+		tinyxml2::XMLNode& p_actorsRoot,
+		OvCore::ECS::Actor& p_actor
+	)
+	{
+		p_actor.OnSerialize(p_doc, &p_actorsRoot);
+
+		for (auto* child : p_actor.GetChildren())
+		{
+			SerializeActorHierarchy(p_doc, p_actorsRoot, *child);
+		}
+	}
 
 	template<typename TResourceManager, typename TAssetNameValidator>
 	void MoveEmbeddedResourcesForRenamedModel(
@@ -800,6 +815,150 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 		DuplicateActor(*child, &newActor, false);
 }
 
+void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor)
+{
+	OvWindowing::Dialogs::SaveFileDialog dialog("Save Prefab");
+	const auto initialPath = m_context.projectAssetsPath / p_actor.GetName();
+	dialog.SetInitialDirectory(initialPath.string());
+	dialog.DefineExtension("Overload Prefab", ".ovprefab");
+	dialog.Show();
+
+	if (!dialog.HasSucceeded())
+	{
+		return;
+	}
+
+	if (dialog.IsFileExisting())
+	{
+		OvWindowing::Dialogs::MessageBox message(
+			"File already exists!",
+			"The file \"" + dialog.GetSelectedFileName() + "\" already exists.\n\nUsing this file as the new home for your prefab will erase any content stored in this file.\n\nAre you ok with that?",
+			OvWindowing::Dialogs::MessageBox::EMessageType::WARNING,
+			OvWindowing::Dialogs::MessageBox::EButtonLayout::YES_NO,
+			true
+		);
+
+		if (message.GetUserAction() != OvWindowing::Dialogs::MessageBox::EUserAction::YES)
+		{
+			return;
+		}
+	}
+
+	SavePrefabToDisk(p_actor, dialog.GetSelectedFilePath());
+	OVLOG_INFO("Prefab saved to: " + dialog.GetSelectedFilePath());
+}
+
+void OvEditor::Core::EditorActions::SavePrefabToDisk(OvCore::ECS::Actor& p_actor, const std::string& p_path)
+{
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLNode* rootNode = doc.NewElement("root");
+	doc.InsertFirstChild(rootNode);
+
+	tinyxml2::XMLNode* actorsNode = doc.NewElement("actors");
+	rootNode->InsertEndChild(actorsNode);
+
+	SerializeActorHierarchy(doc, *actorsNode, p_actor);
+
+	doc.SaveFile(p_path.c_str());
+}
+
+OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefabFromDisk(
+	const std::string& p_path,
+	bool p_absolute,
+	OvCore::ECS::Actor* p_parent,
+	bool p_focusOnCreation
+)
+{
+	const auto isAbsolutePath = p_absolute || std::filesystem::path{ p_path }.is_absolute();
+	const std::string resolvedPath = isAbsolutePath ? p_path : GetRealPath(p_path);
+
+	tinyxml2::XMLDocument doc;
+	doc.LoadFile(resolvedPath.c_str());
+
+	if (doc.Error())
+	{
+		OVLOG_ERROR("Failed to load prefab from disk: " + resolvedPath);
+		return nullptr;
+	}
+
+	tinyxml2::XMLNode* root = doc.FirstChildElement("root");
+
+	if (!root)
+	{
+		root = doc.FirstChild();
+	}
+
+	if (!root)
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: Invalid prefab file \"" + resolvedPath + "\"");
+		return nullptr;
+	}
+
+	tinyxml2::XMLNode* actorsRoot = root->FirstChildElement("actors");
+
+	if (!actorsRoot)
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: Missing actor data in \"" + resolvedPath + "\"");
+		return nullptr;
+	}
+
+	std::vector<OvCore::ECS::Actor*> createdActors;
+	std::unordered_map<int64_t, OvCore::ECS::Actor*> actorLookup;
+
+	for (tinyxml2::XMLElement* currentActor = actorsRoot->FirstChildElement("actor"); currentActor; currentActor = currentActor->NextSiblingElement("actor"))
+	{
+		auto& newActor = CreateEmptyActor(false);
+		const int64_t generatedID = newActor.GetID();
+		newActor.OnDeserialize(doc, currentActor);
+
+		const int64_t sourceID = newActor.GetID();
+		actorLookup[sourceID] = &newActor;
+
+		newActor.SetID(generatedID);
+		createdActors.push_back(&newActor);
+	}
+
+	if (createdActors.empty())
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: No actor found in \"" + resolvedPath + "\"");
+		return nullptr;
+	}
+
+	for (auto* actor : createdActors)
+	{
+		const int64_t parentID = actor->GetParentID();
+
+		if (parentID <= 0)
+		{
+			continue;
+		}
+
+		if (auto found = actorLookup.find(parentID); found != actorLookup.end())
+		{
+			actor->SetParent(*found->second);
+		}
+		else
+		{
+			actor->DetachFromParent();
+		}
+	}
+
+	auto* rootActor = createdActors.front();
+
+	if (p_parent)
+	{
+		rootActor->SetParent(*p_parent);
+	}
+
+	if (p_focusOnCreation)
+	{
+		SelectActor(*rootActor);
+	}
+
+	OVLOG_INFO("Prefab instantiated from disk: " + resolvedPath);
+	return rootActor;
+}
+
 void OvEditor::Core::EditorActions::SelectActor(OvCore::ECS::Actor& p_target)
 {
 	EDITOR_PANEL(Panels::Inspector, "Inspector").FocusActor(p_target);
@@ -1138,6 +1297,7 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 				const auto newRelPath = (std::filesystem::path("Scripts") / entry.path().filename()).generic_string();
 
 				PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
+				PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::PREFAB);
 			}
 		}
 	}
@@ -1299,6 +1459,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		if (next != "?")
 		{
 			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::SCENE);
+			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::PREFAB);
 		}
 
 		EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
@@ -1306,9 +1467,11 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	}
 	case OvTools::Utils::PathParser::EFileType::MATERIAL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	case OvTools::Utils::PathParser::EFileType::MODEL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SHADER:
@@ -1319,6 +1482,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	default:
 		break;

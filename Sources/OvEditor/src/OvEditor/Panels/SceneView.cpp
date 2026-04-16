@@ -59,6 +59,7 @@ OvEditor::Panels::SceneView::SceneView
 		switch (PathParser::GetFileType(path))
 		{
 			case SCENE: OnSceneDropped(path); break;
+			case PREFAB: OnPrefabDropped(path); break;
 			case MODEL: OnModelDropped(path); break;
 			case MATERIAL: OnMaterialDropped(path); break;
 			default: break;
@@ -276,6 +277,11 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Panels::SceneVie
 void OvEditor::Panels::SceneView::OnSceneDropped(const std::string& p_path)
 {
 	EDITOR_EXEC(LoadSceneFromDisk(p_path));
+}
+
+void OvEditor::Panels::SceneView::OnPrefabDropped(const std::string& p_path)
+{
+	EDITOR_EXEC(InstantiatePrefabFromDisk(p_path));
 }
 
 void OvEditor::Panels::SceneView::OnModelDropped(const std::string& p_path)

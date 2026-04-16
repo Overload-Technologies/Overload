@@ -223,6 +223,33 @@ namespace OvEditor::Core
 		* @param bool
 		*/
 		void DuplicateActor(OvCore::ECS::Actor& p_toDuplicate, OvCore::ECS::Actor* p_forcedParent = nullptr, bool p_focus = true);
+
+		/**
+		* Save an actor hierarchy as a prefab
+		* @param p_actor
+		*/
+		void SaveActorAsPrefab(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Save an actor hierarchy as a prefab to disk
+		* @param p_actor
+		* @param p_path
+		*/
+		void SavePrefabToDisk(OvCore::ECS::Actor& p_actor, const std::string& p_path);
+
+		/**
+		* Instantiate a prefab from disk
+		* @param p_path
+		* @param p_absolute
+		* @param p_parent
+		* @param p_focusOnCreation
+		*/
+		OvCore::ECS::Actor* InstantiatePrefabFromDisk(
+			const std::string& p_path,
+			bool p_absolute = false,
+			OvCore::ECS::Actor* p_parent = nullptr,
+			bool p_focusOnCreation = true
+		);
 		#pragma endregion
 
 		#pragma region ACTOR_MANIPULATION

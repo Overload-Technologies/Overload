@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Resources/Parsers/EmbeddedAssetPath.h"
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
@@ -12,6 +11,7 @@
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/MaterialEditor.h>
 
+#include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 #include <OvTools/Utils/SystemCalls.h>
 
 #include <OvUI/Widgets/Buttons/Button.h>

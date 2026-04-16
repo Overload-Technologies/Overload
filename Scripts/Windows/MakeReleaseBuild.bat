@@ -4,7 +4,7 @@ set NO_OPEN=false
 if "%1"=="--no-open" set NO_OPEN=true
 
 :: Generate projects
-call .\GenerateProjects.sh
+call .\GenerateProjects.bat
 
 :: Build Debug
 call .\Build.bat Debug -skip-project-generation

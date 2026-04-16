@@ -269,6 +269,7 @@ namespace OvCore::ECS::Components
 		std::string m_deserializedAnimationName;
 
 		uint64_t m_poseVersion = 0;
+		bool m_manualPoseOverride = false;
 
 		std::vector<std::string> m_animationNames;
 		std::vector<OvMaths::FMatrix4> m_localPose;

@@ -173,7 +173,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::NotifyModelChanged()
 
 bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasSkinningData() const
 {
-	return HasCompatibleModel() && !m_boneMatrices.empty();
+	return HasCompatibleModel() && !m_boneMatrices.empty() && (m_animationIndex.has_value() || m_manualPoseOverride);
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::Play()
@@ -193,6 +193,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::Stop()
 	m_playing = false;
 	m_currentTimeTicks = 0.0f;
 	m_poseEvaluationAccumulator = 0.0f;
+	m_manualPoseOverride = false;
 	EvaluatePose();
 }
 
@@ -289,6 +290,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(std::optional<u
 		m_animationIndex = std::nullopt;
 		m_currentTimeTicks = 0.0f;
 		m_poseEvaluationAccumulator = 0.0f;
+		m_manualPoseOverride = false;
 		EvaluatePose();
 		return true;
 	}
@@ -301,6 +303,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetAnimation(std::optional<u
 	m_animationIndex = p_index;
 	m_currentTimeTicks = 0.0f;
 	m_poseEvaluationAccumulator = 0.0f;
+	m_manualPoseOverride = false;
 	EvaluatePose();
 	return true;
 }
@@ -438,6 +441,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalPosition(uint32_
 
 	const OvMaths::FTransform transform(p_position, currentRotation, currentScale);
 	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	m_manualPoseOverride = true;
 	RecomputeBoneMatricesFromLocalPose();
 	return true;
 }
@@ -457,6 +461,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalRotation(uint32_
 
 	const OvMaths::FTransform transform(currentPosition, p_rotation, currentScale);
 	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	m_manualPoseOverride = true;
 	RecomputeBoneMatricesFromLocalPose();
 	return true;
 }
@@ -476,6 +481,7 @@ bool OvCore::ECS::Components::CSkinnedMeshRenderer::SetBoneLocalScale(uint32_t p
 
 	const OvMaths::FTransform transform(currentPosition, currentRotation, p_scale);
 	m_localPose[*nodeIndex] = transform.GetLocalMatrix();
+	m_manualPoseOverride = true;
 	RecomputeBoneMatricesFromLocalPose();
 	return true;
 }
@@ -651,6 +657,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::RebuildRuntimeData()
 	m_animationIndex = std::nullopt;
 	m_currentTimeTicks = preservedTimeTicks;
 	m_poseEvaluationAccumulator = 0.0f;
+	m_manualPoseOverride = false;
 
 	if (!HasCompatibleModel())
 	{
@@ -771,6 +778,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::EvaluatePose()
 		}
 	}
 
+	m_manualPoseOverride = false;
 	RecomputeBoneMatricesFromLocalPose();
 }
 

@@ -53,6 +53,25 @@
 namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
+	bool s_logActorCreation = true;
+
+	class ScopedActorCreationLog
+	{
+	public:
+		explicit ScopedActorCreationLog(bool p_enabled) :
+			m_previousState(s_logActorCreation)
+		{
+			s_logActorCreation = p_enabled;
+		}
+
+		~ScopedActorCreationLog()
+		{
+			s_logActorCreation = m_previousState;
+		}
+
+	private:
+		bool m_previousState;
+	};
 
 	void SerializeActorHierarchy(
 		tinyxml2::XMLDocument& p_doc,
@@ -723,7 +742,8 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateEmptyActor(bool p_focu
 	if (p_focusOnCreation)
 		SelectActor(instance);
 
-	OVLOG_INFO("Actor created");
+	if (s_logActorCreation)
+		OVLOG_INFO("Actor created");
 
 	return instance;
 }
@@ -904,6 +924,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefabFromDisk(
 
 	std::vector<OvCore::ECS::Actor*> createdActors;
 	std::unordered_map<int64_t, OvCore::ECS::Actor*> actorLookup;
+	ScopedActorCreationLog actorCreationLogScope(false);
 
 	for (tinyxml2::XMLElement* currentActor = actorsRoot->FirstChildElement("actor"); currentActor; currentActor = currentActor->NextSiblingElement("actor"))
 	{

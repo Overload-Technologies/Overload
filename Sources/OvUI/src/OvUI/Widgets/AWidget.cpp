@@ -4,9 +4,10 @@
 * @licence: MIT
 */
 
-#include <imgui.h>
-
 #include <OvUI/Widgets/AWidget.h>
+
+#include <imgui.h>
+#include <imgui_internal.h>
 
 uint64_t OvUI::Widgets::AWidget::__WIDGET_ID_INCREMENT = 0;
 
@@ -45,6 +46,24 @@ OvUI::Internal::WidgetContainer * OvUI::Widgets::AWidget::GetParent()
 	return m_parent;
 }
 
+void OvUI::Widgets::AWidget::BeginDisableOverride()
+{
+	if (GImGui->CurrentItemFlags & ImGuiItemFlags_Disabled && neverDisabled)
+	{
+		ImGui::BeginDisabledOverrideReenable();
+		m_isInDisableOverrideScope = true;
+	}
+}
+
+void OvUI::Widgets::AWidget::EndDisableOverride()
+{
+	if (m_isInDisableOverrideScope)
+	{
+		ImGui::EndDisabledOverrideReenable();
+		m_isInDisableOverrideScope = false;
+	}
+}
+
 void OvUI::Widgets::AWidget::Draw()
 {
 	if (enabled)
@@ -53,6 +72,8 @@ void OvUI::Widgets::AWidget::Draw()
 		{
 			ImGui::BeginDisabled();
 		}
+
+		BeginDisableOverride();
 
 		_Draw_Impl();
 
@@ -63,6 +84,8 @@ void OvUI::Widgets::AWidget::Draw()
 				ImGui::SetTooltip("%s", tooltip.c_str());
 			}
 		}
+
+		EndDisableOverride();
 
 		if (disabled)
 		{

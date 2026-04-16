@@ -59,9 +59,8 @@ namespace OvUI::Internal
 
 		/**
 		* Draw every widgets
-		* @param p_readonly Disable all widgets (can be bypassed on a per-widget basis)
 		*/
-		void DrawWidgets(bool p_readonly = false);
+		void DrawWidgets();
 
 		/**
 		* Allow the user to reverse the draw order of this widget container

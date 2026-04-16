@@ -6,24 +6,32 @@
 
 #include <filesystem>
 
-#include <OvTools/Utils/PathParser.h>
-#include <OvTools/Utils/SizeConverter.h>
-
-#include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
 
-#include <OvUI/Widgets/Visual/Separator.h>
+#include <OvEditor/Core/EditorActions.h>
+#include <OvEditor/Panels/AssetProperties.h>
+#include <OvEditor/Panels/AssetView.h>
+
+#include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/SizeConverter.h>
+
+#include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Layout/NewLine.h>
-#include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Widgets/Visual/Separator.h>
 
-#include "OvEditor/Panels/AssetProperties.h"
-#include "OvEditor/Panels/AssetView.h"
-#include "OvEditor/Core/EditorActions.h"
+namespace
+{
+	bool IsReadOnlyAsset(const std::string& p_path)
+	{
+		return p_path.starts_with(":");
+	}
+}
 
 OvEditor::Panels::AssetProperties::AssetProperties
 (
@@ -43,10 +51,12 @@ OvEditor::Panels::AssetProperties::AssetProperties
 	CreateAssetSelector();
 
 	m_settings = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Settings");
+	m_settings->neverDisabled = true;
 	m_settingsColumns = &m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_settingsColumns->widths[0] = 150;
 
 	m_info = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Info");
+	m_info->neverDisabled = true;
 	m_infoColumns = &m_info->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_infoColumns->widths[0] = 150;
 
@@ -55,6 +65,8 @@ OvEditor::Panels::AssetProperties::AssetProperties
 
 void OvEditor::Panels::AssetProperties::SetTarget(const std::string& p_path)
 {
+	disabled = IsReadOnlyAsset(p_path);
+
 	m_resource = p_path == "" ? p_path : EDITOR_EXEC(GetResourcePath(p_path));
 
 	if (m_assetSelector)

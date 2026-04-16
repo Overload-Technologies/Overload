@@ -75,7 +75,7 @@ void OvUI::Internal::WidgetContainer::CollectGarbages()
 	}), m_widgets.end());
 }
 
-void OvUI::Internal::WidgetContainer::DrawWidgets(bool p_readonly)
+void OvUI::Internal::WidgetContainer::DrawWidgets()
 {
 	CollectGarbages();
 
@@ -88,31 +88,18 @@ void OvUI::Internal::WidgetContainer::DrawWidgets(bool p_readonly)
 	widgetsToDraw.reserve(m_widgets.size());
 	std::ranges::copy(m_widgets | std::views::keys, std::back_inserter(widgetsToDraw));
 
-	auto drawWidget = [p_readonly](const WidgetType& widget) {
-		if (p_readonly && !widget->neverReadonly)
-		{
-			ImGui::BeginDisabled();
-			widget->Draw();
-			ImGui::EndDisabled();
-		}
-		else
-		{
-			widget->Draw();
-		}
-	};
-
 	if (m_reversedDrawOrder) [[unlikely]]
 	{
 		for (WidgetType widget : widgetsToDraw | std::views::reverse)
 		{
-			drawWidget(widget);
+			widget->Draw();
 		}
 	}
 	else
 	{
 		for (WidgetType widget : widgetsToDraw)
 		{
-			drawWidget(widget);
+			widget->Draw();
 		}
 	}
 }

@@ -78,21 +78,25 @@ namespace OvUI::Widgets
 
 	protected:
 		virtual void _Draw_Impl() = 0;
+		void BeginDisableOverride();
+		void EndDisableOverride();
 
 	public:
 		std::string tooltip;
 		bool enabled = true;
 		bool disabled = false;
 		bool lineBreak = true;
-		bool neverReadonly = false; // provide a way to bypass the "readonly" setting used by a WidgetContainer
+		bool neverDisabled = false; // provide a way to bypass the "readonly" setting used by a WidgetContainer
 
 	protected:
 		Internal::WidgetContainer* m_parent;
 		std::string m_widgetID = "?";
 		bool m_autoExecutePlugins = true;
+		bool m_skipDisableOverrideLogic = false;
 
 	private:
 		static uint64_t __WIDGET_ID_INCREMENT;
 		bool m_destroyed = false;
+		bool m_isInDisableOverrideScope = false;
 	};
 }

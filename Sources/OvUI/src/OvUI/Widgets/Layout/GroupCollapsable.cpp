@@ -20,6 +20,8 @@ void OvUI::Widgets::Layout::GroupCollapsable::_Draw_Impl()
 
 	bool isOpen = ImGui::CollapsingHeader(name.c_str(), closable ? &opened : nullptr, ImGuiTreeNodeFlags_DefaultOpen);
 
+	EndDisableOverride(); // Early end disable override group so that children are not affected
+
 	if (reorderable)
 	{
 		const ImVec2 headerMin = ImGui::GetItemRectMin();

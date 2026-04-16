@@ -175,7 +175,18 @@ void OvUI::Panels::PanelWindow::_Draw_Impl()
 			}
 
 			ExecutePlugins(Plugins::EPluginExecutionContext::PANEL);
-			DrawWidgets(readonly);
+
+			if (disabled)
+			{
+				ImGui::BeginDisabled();
+			}
+
+			DrawWidgets();
+
+			if (disabled)
+			{
+				ImGui::EndDisabled();
+			}
 		}
 
 		ImGui::End();

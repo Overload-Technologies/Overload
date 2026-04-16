@@ -108,7 +108,7 @@ namespace OvUI::Panels
 		OvMaths::FVector2 minSize = { 0.f, 0.f };
 		OvMaths::FVector2 maxSize = { 0.f, 0.f };
 
-		bool readonly = false;
+		bool disabled = false;
 		bool resizable = true;
 		bool closable = false;
 		bool movable = true;
@@ -130,9 +130,9 @@ namespace OvUI::Panels
 		bool m_opened = false;
 		bool m_hovered = false;
 		bool m_focused = false;
-        bool m_mustScrollToBottom = false;
-        bool m_mustScrollToTop = false;
-        bool m_scrolledToBottom = false;
-        bool m_scrolledToTop = false;
+		bool m_mustScrollToBottom = false;
+		bool m_mustScrollToTop = false;
+		bool m_scrolledToBottom = false;
+		bool m_scrolledToTop = false;
 	};
 }

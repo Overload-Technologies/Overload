@@ -179,7 +179,7 @@ void OvEditor::Panels::MaterialEditor::SetTarget(OvCore::Resources::Material & p
 {
 	m_target = &p_newTarget;
 	m_targetMaterialText->content = m_target->path;
-	readonly = IsReadyOnlyMaterial(*m_target);
+	disabled = IsReadyOnlyMaterial(*m_target);
 	OnMaterialDropped();
 }
 
@@ -278,7 +278,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& reloadButton = CreateWidget<Buttons::Button>("Reload");
-	reloadButton.neverReadonly = true;
+	reloadButton.neverDisabled = true;
 	reloadButton.tooltip = "Reload the current material from file";
 	reloadButton.lineBreak = false;
 	reloadButton.ClickedEvent += [this] {
@@ -292,7 +292,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 
 	auto& compileButton = CreateWidget<Buttons::Button>("Compile");
 	m_compileShaderButton = &compileButton;
-	compileButton.neverReadonly = true;
+	compileButton.neverDisabled = true;
 	compileButton.tooltip = "Compile the shader of the current material";
 	compileButton.lineBreak = false;
 	compileButton.ClickedEvent += [this] {
@@ -323,7 +323,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& previewButton = CreateWidget<Buttons::Button>("Preview");
-	previewButton.neverReadonly = true;
+	previewButton.neverDisabled = true;
 	previewButton.tooltip = "Preview the current material in the Asset View";
 	previewButton.lineBreak = false;
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
@@ -351,10 +351,12 @@ void OvEditor::Panels::MaterialEditor::CreateShaderSelector()
 void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 {
 	m_materialPipelineState = &m_settings->CreateWidget<Layout::GroupCollapsable>("Pipeline State");
+	m_materialPipelineState->neverDisabled = true;
 	m_materialPipelineStateColumns = &m_materialPipelineState->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialPipelineStateColumns->widths[0] = 150;
 
 	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Settings");
+	m_materialSettings->neverDisabled = true;
 	m_materialSettingsColumns = &m_materialSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialSettingsColumns->widths[0] = 150;
 }
@@ -362,6 +364,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
 {
 	m_materialFeatures = &m_settings->CreateWidget<Layout::GroupCollapsable>("Features");
+	m_materialFeatures->neverDisabled = true;
 	m_materialFeaturesColumns = &m_materialFeatures->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialFeaturesColumns->widths[0] = 150;
 }
@@ -369,6 +372,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
 void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
 {
 	m_materialProperties = &m_settings->CreateWidget<Layout::GroupCollapsable>("Properties");
+	m_materialProperties->neverDisabled = true;
 	m_materialPropertiesColumns = &m_materialProperties->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	m_materialPropertiesColumns->widths[0] = 150;
 }

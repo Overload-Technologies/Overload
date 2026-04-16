@@ -4,10 +4,6 @@
 * @licence: MIT
 */
 
-#include "OvMaths/FMatrix4.h"
-#include "OvMaths/FVector3.h"
-#include "assimp/types.h"
-#include "assimp/vector3.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -18,7 +14,6 @@
 #include <optional>
 #include <span>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -28,8 +23,12 @@
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/types.h>
+#include <assimp/vector3.h>
 
 #include <OvDebug/Logger.h>
+#include <OvMaths/FMatrix4.h>
+#include <OvMaths/FVector3.h>
 #include <OvRendering/Resources/Parsers/AssimpParser.h>
 #include <OvTools/Utils/PathParser.h>
 

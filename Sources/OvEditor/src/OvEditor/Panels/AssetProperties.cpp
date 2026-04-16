@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvCore/ResourceManagement/MaterialManager.h"
 #include <filesystem>
 
 #include <OvCore/Global/ServiceLocator.h>
@@ -125,6 +126,13 @@ void OvEditor::Panels::AssetProperties::Preview()
 			assetView.SetResource(resource);
 		}
 	}
+	else if (fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
+	{
+		if (auto resource = OVSERVICE(OvCore::ResourceManagement::MaterialManager).GetResource(m_resource))
+		{
+			assetView.SetResource(resource);
+		}
+	}
 
 	assetView.Open();
 }
@@ -145,6 +153,7 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 	m_revertButton->ClickedEvent += [this] { SetTarget(m_resource); };
 
 	m_previewButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Preview");
+	m_previewButton->neverDisabled = true;
 	m_previewButton->tooltip = "Preview the asset in the Asset View";
 	m_previewButton->enabled = false;
 	m_previewButton->lineBreak = false;

@@ -1,15 +1,30 @@
 #!/bin/bash
 
-# Get the configuration parameter (default to debug)
-CONFIGURATION="${1:-debug}"
+SKIP_PROJECT_GENERATION=false
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        -skip-project-generation)
+            SKIP_PROJECT_GENERATION=true
+            ;;
+        *)
+            CONFIGURATION="$arg"
+            ;;
+    esac
+done
+
+CONFIGURATION="${CONFIGURATION:-debug}"
 
 # Convert to lowercase for make
 CONFIG_LOWER=$(echo "$CONFIGURATION" | tr '[:upper:]' '[:lower:]')
 
 # Generate project files
-pushd "$(dirname "$0")" > /dev/null
-./GenerateProjects.sh
-popd > /dev/null
+if [ "$SKIP_PROJECT_GENERATION" != "true" ]; then
+    pushd "$(dirname "$0")" > /dev/null
+    ./GenerateProjects.sh
+    popd > /dev/null
+fi
 
 # Build the solution
 echo "Building Overload in $CONFIGURATION mode..."

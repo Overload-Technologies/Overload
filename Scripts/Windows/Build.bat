@@ -2,12 +2,23 @@
 setlocal enabledelayedexpansion
 
 :: Get the configuration parameter
-set "CONFIGURATION=%~1"
+set "CONFIGURATION="
+set "SKIP_PROJECT_GENERATION=false"
+
+for %%a in (%*) do (
+    if "%%a"=="-skip-project-generation" (
+        set "SKIP_PROJECT_GENERATION=true"
+    ) else (
+        set "CONFIGURATION=%%a"
+    )
+)
 
 :: Generate the projects
-pushd "%~dp0"
-call .\GenerateProjects.bat vs2022 %CONFIGURATION%
-popd
+if "!SKIP_PROJECT_GENERATION!"=="false" (
+    pushd "%~dp0"
+    call .\GenerateProjects.bat vs2022 %CONFIGURATION%
+    popd
+)
 
 :: Initialize variables
 set "VSWHERE_PATH="

@@ -3,19 +3,31 @@ pushd "%~dp0"
 set NO_OPEN=false
 if "%1"=="--no-open" set NO_OPEN=true
 
-call .\Build.bat Debug
+:: Generate projects
+call .\GenerateProjects.sh
+
+:: Build Debug
+call .\Build.bat Debug -skip-project-generation
 if %ERRORLEVEL% neq 0 (
     echo Debug build failed. Exiting.
     exit /b %ERRORLEVEL%
 )
 
-call .\Build.bat Release
+:: Build Release
+call .\Build.bat Release -skip-project-generation
 if %ERRORLEVEL% neq 0 (
     echo Release build failed. Exiting.
     exit /b %ERRORLEVEL%
 )
 
-:: The output is located in a folder called ..\..\Build\Release. Create an archive with this folder's content, and name the archive Overload-<version>-<platform>.zip.
+:: Build Publish
+call .\Build.bat Publish -skip-project-generation
+if %ERRORLEVEL% neq 0 (
+    echo Publish build failed. Exiting.
+    exit /b %ERRORLEVEL%
+)
+
+:: The output is located in a folder called ..\..\Build\Publish. Create an archive with this folder's content, and name the archive Overload-<version>-<platform>.zip.
 for /f "delims=" %%v in (..\..\VERSION.txt) do set version=%%v
 set platform=windows_x64
 
@@ -27,8 +39,8 @@ if exist Overload-%version%-%platform% (
     rmdir /s /q Overload-%version%-%platform%
 )
 
-:: Copy the folder "Release" to a new folder called "Overload-%version%-%platform%"
-xcopy Release\ ..\Releases\Overload-%version%-%platform% /E /I
+:: Copy the folder "Publish" to a new folder called "Overload-%version%-%platform%"
+xcopy Publish\ ..\Releases\Overload-%version%-%platform% /E /I
 
 :: Ensure the Releases folder exists
 if not exist ..\Releases (

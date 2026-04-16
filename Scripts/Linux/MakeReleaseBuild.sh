@@ -10,22 +10,25 @@ for arg in "$@"; do
     fi
 done
 
+# Generate projects
+"$SCRIPT_DIR/GenerateProjects.sh"
+
 # Build Debug
-"$SCRIPT_DIR/Build.sh" debug
+"$SCRIPT_DIR/Build.sh" debug -skip-project-generation
 if [ $? -ne 0 ]; then
     echo "Debug build failed. Exiting."
     exit $?
 fi
 
 # Build Release
-"$SCRIPT_DIR/Build.sh" release
+"$SCRIPT_DIR/Build.sh" release -skip-project-generation
 if [ $? -ne 0 ]; then
     echo "Release build failed. Exiting."
     exit $?
 fi
 
 # Build Publish
-"$SCRIPT_DIR/Build.sh" publish
+"$SCRIPT_DIR/Build.sh" publish -skip-project-generation
 if [ $? -ne 0 ]; then
     echo "Publish build failed. Exiting."
     exit $?

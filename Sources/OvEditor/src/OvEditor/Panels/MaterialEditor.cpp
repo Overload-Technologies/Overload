@@ -339,6 +339,9 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSelector()
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	columns.widths[0] = 150;
 	m_targetMaterialText = &GUIDrawer::DrawMaterial(columns, "Material", m_target, &m_materialDroppedEvent);
+	const auto& widgets = columns.GetWidgets();
+	widgets[widgets.size() - 1].first->neverDisabled = true;
+	widgets[widgets.size() - 2].first->neverDisabled = true;
 }
 
 void OvEditor::Panels::MaterialEditor::CreateShaderSelector()

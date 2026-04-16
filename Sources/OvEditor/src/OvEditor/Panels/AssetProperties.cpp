@@ -178,6 +178,9 @@ void OvEditor::Panels::AssetProperties::CreateAssetSelector()
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 	columns.widths[0] = 150;
 	m_assetSelector = &OvCore::Helpers::GUIDrawer::DrawAsset(columns, "Target", m_resource, &m_targetChanged);
+	const auto& widgets = columns.GetWidgets();
+	widgets[widgets.size() - 1].first->neverDisabled = true;
+	widgets[widgets.size() - 2].first->neverDisabled = true;
 }
 
 void OvEditor::Panels::AssetProperties::CreateSettings()

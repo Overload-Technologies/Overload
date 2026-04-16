@@ -118,11 +118,6 @@ bool OvUI::Panels::PanelWindow::IsScrolledToTop() const
 
 void OvUI::Panels::PanelWindow::_Draw_Impl()
 {
-	if (readonly)
-	{
-		ImGui::BeginDisabled();
-	}
-
 	if (m_opened)
 	{
 		int windowFlags = ImGuiWindowFlags_None;
@@ -180,14 +175,9 @@ void OvUI::Panels::PanelWindow::_Draw_Impl()
 			}
 
 			ExecutePlugins(Plugins::EPluginExecutionContext::PANEL);
-			DrawWidgets();
+			DrawWidgets(readonly);
 		}
 
 		ImGui::End();
-	}
-
-	if (readonly)
-	{
-		ImGui::EndDisabled();
 	}
 }

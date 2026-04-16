@@ -84,6 +84,7 @@ namespace OvUI::Widgets
 		bool enabled = true;
 		bool disabled = false;
 		bool lineBreak = true;
+		bool neverReadonly = false; // provide a way to bypass the "readonly" setting used by a WidgetContainer
 
 	protected:
 		Internal::WidgetContainer* m_parent;

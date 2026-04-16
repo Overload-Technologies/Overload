@@ -278,6 +278,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& reloadButton = CreateWidget<Buttons::Button>("Reload");
+	reloadButton.neverReadonly = true;
 	reloadButton.tooltip = "Reload the current material from file";
 	reloadButton.lineBreak = false;
 	reloadButton.ClickedEvent += [this] {
@@ -291,6 +292,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 
 	auto& compileButton = CreateWidget<Buttons::Button>("Compile");
 	m_compileShaderButton = &compileButton;
+	compileButton.neverReadonly = true;
 	compileButton.tooltip = "Compile the shader of the current material";
 	compileButton.lineBreak = false;
 	compileButton.ClickedEvent += [this] {
@@ -321,6 +323,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	};
 
 	auto& previewButton = CreateWidget<Buttons::Button>("Preview");
+	previewButton.neverReadonly = true;
 	previewButton.tooltip = "Preview the current material in the Asset View";
 	previewButton.lineBreak = false;
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);

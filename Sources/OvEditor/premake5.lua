@@ -95,7 +95,7 @@ project "OvEditor"
 
 			"xcopy \"%{resdir}Engine\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Engine\" /y /i /r /e /q",
 			"xcopy \"%{resdir}Editor\\*\" \"%{builddir}%{cfg.buildcfg}\\Data\\Editor\" /y /i /r /e /q",
-			"xcopy \"%{prj.location}\\Layout.ini\" \"%{builddir}%{cfg.buildcfg}\\Config\\\" /y /i",
+			"xcopy \"%{prj.location}\\layout.ini\" \"%{builddir}%{cfg.buildcfg}\\Config\\\" /y /i",
 
 			"xcopy \"%{wks.location}\\Tools\\tracy-profiler.exe\" \"%{builddir}%{cfg.buildcfg}\\Tools\\\" /y /i",
 

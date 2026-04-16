@@ -430,7 +430,9 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 
 				const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
 
-				if (std::filesystem::exists(builderFolder))
+				const std::string initialExecutableName = "OvGame" + extension;
+
+				if (std::filesystem::exists(builderFolder) && std::filesystem::exists(builderFolder / initialExecutableName))
 				{
 					std::error_code err;
 
@@ -440,8 +442,6 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 					{
 						OVLOG_INFO("Builder data (Dlls and executable) copied");
 							
-						const std::string initialExecutableName = "OvGame" + extension;
-
 						std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
 
 						if (!err)
@@ -479,7 +479,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 				else
 				{
 					OVLOG_ERROR(std::format(
-						"Builder folder for \"{}\" not found.",
+						"OvGame executable not found for \"{}\" configuration. Build OvGame and OvEditor in that configuration first, then try again.",
 						GetBuildTypeName(p_buildType)
 					));
 					failed = true;

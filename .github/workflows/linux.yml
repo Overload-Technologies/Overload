@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Debug, Release, Publish]
 
     steps:
     - uses: actions/checkout@v6

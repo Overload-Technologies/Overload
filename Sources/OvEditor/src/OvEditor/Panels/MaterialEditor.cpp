@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvRendering/Resources/Parsers/EmbeddedAssetPath.h"
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
@@ -136,6 +137,13 @@ namespace
 			rgbaWidget.enabled = true;
 		};
 	}
+
+	bool IsReadyOnlyMaterial(const OvCore::Resources::Material& p_material)
+	{
+		return
+			p_material.path.starts_with(":") || // check if the material is an engine material
+			OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(p_material.path).has_value();
+	}
 }
 
 OvEditor::Panels::MaterialEditor::MaterialEditor(
@@ -171,6 +179,7 @@ void OvEditor::Panels::MaterialEditor::SetTarget(OvCore::Resources::Material & p
 {
 	m_target = &p_newTarget;
 	m_targetMaterialText->content = m_target->path;
+	readonly = IsReadyOnlyMaterial(*m_target);
 	OnMaterialDropped();
 }
 

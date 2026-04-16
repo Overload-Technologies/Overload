@@ -118,22 +118,27 @@ bool OvUI::Panels::PanelWindow::IsScrolledToTop() const
 
 void OvUI::Panels::PanelWindow::_Draw_Impl()
 {
+	if (readonly)
+	{
+		ImGui::BeginDisabled();
+	}
+
 	if (m_opened)
 	{
 		int windowFlags = ImGuiWindowFlags_None;
 
-		if (!resizable)					windowFlags |= ImGuiWindowFlags_NoResize;
-		if (!movable)					windowFlags |= ImGuiWindowFlags_NoMove;
-		if (!dockable)					windowFlags |= ImGuiWindowFlags_NoDocking;
-		if (hideBackground)				windowFlags |= ImGuiWindowFlags_NoBackground;
-		if (forceHorizontalScrollbar)	windowFlags |= ImGuiWindowFlags_AlwaysHorizontalScrollbar;
-		if (forceVerticalScrollbar)		windowFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
-		if (allowHorizontalScrollbar)	windowFlags |= ImGuiWindowFlags_HorizontalScrollbar;
-		if (!bringToFrontOnFocus)		windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-		if (!collapsable)				windowFlags |= ImGuiWindowFlags_NoCollapse;
-		if (!allowInputs)				windowFlags |= ImGuiWindowFlags_NoInputs;
-        if (!scrollable)                windowFlags |= ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
-		if (!titleBar)					windowFlags |= ImGuiWindowFlags_NoTitleBar;
+		if (!resizable) windowFlags |= ImGuiWindowFlags_NoResize;
+		if (!movable) windowFlags |= ImGuiWindowFlags_NoMove;
+		if (!dockable) windowFlags |= ImGuiWindowFlags_NoDocking;
+		if (hideBackground) windowFlags |= ImGuiWindowFlags_NoBackground;
+		if (forceHorizontalScrollbar) windowFlags |= ImGuiWindowFlags_AlwaysHorizontalScrollbar;
+		if (forceVerticalScrollbar) windowFlags |= ImGuiWindowFlags_AlwaysVerticalScrollbar;
+		if (allowHorizontalScrollbar) windowFlags |= ImGuiWindowFlags_HorizontalScrollbar;
+		if (!bringToFrontOnFocus) windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+		if (!collapsable) windowFlags |= ImGuiWindowFlags_NoCollapse;
+		if (!allowInputs) windowFlags |= ImGuiWindowFlags_NoInputs;
+		if (!scrollable) windowFlags |= ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
+		if (!titleBar) windowFlags |= ImGuiWindowFlags_NoTitleBar;
 
 		ImVec2 minSizeConstraint = Internal::Converter::ToImVec2(minSize);
 		ImVec2 maxSizeConstraint = Internal::Converter::ToImVec2(maxSize);
@@ -152,32 +157,37 @@ void OvUI::Panels::PanelWindow::_Draw_Impl()
 			m_hovered = ImGui::IsWindowHovered();
 			m_focused = ImGui::IsWindowFocused();
 
-            auto scrollY = ImGui::GetScrollY();
+			auto scrollY = ImGui::GetScrollY();
 
-            m_scrolledToBottom = scrollY == ImGui::GetScrollMaxY();
-            m_scrolledToTop = scrollY == 0.0f;
+			m_scrolledToBottom = scrollY == ImGui::GetScrollMaxY();
+			m_scrolledToTop = scrollY == 0.0f;
 
 			if (!m_opened)
 				CloseEvent.Invoke();
 
 			Update();
 
-            if (m_mustScrollToBottom)
-            {
-                ImGui::SetScrollY(ImGui::GetScrollMaxY());
-                m_mustScrollToBottom = false;
-            }
+			if (m_mustScrollToBottom)
+			{
+					ImGui::SetScrollY(ImGui::GetScrollMaxY());
+					m_mustScrollToBottom = false;
+			}
 
-            if (m_mustScrollToTop)
-            {
-                ImGui::SetScrollY(0.0f);
-                m_mustScrollToTop = false;
-            }
+			if (m_mustScrollToTop)
+			{
+					ImGui::SetScrollY(0.0f);
+					m_mustScrollToTop = false;
+			}
 
 			ExecutePlugins(Plugins::EPluginExecutionContext::PANEL);
 			DrawWidgets();
 		}
 
 		ImGui::End();
+	}
+
+	if (readonly)
+	{
+		ImGui::EndDisabled();
 	}
 }

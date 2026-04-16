@@ -79,25 +79,25 @@ namespace OvUI::Panels
 		*/
 		bool IsVisible() const;
 
-        /**
-        * Scrolls to the bottom of the window
-        */
-        void ScrollToBottom();
+		/**
+		* Scrolls to the bottom of the window
+		*/
+		void ScrollToBottom();
 
-        /**
-        * Scrolls to the top of the window
-        */
-        void ScrollToTop();
+		/**
+		* Scrolls to the top of the window
+		*/
+		void ScrollToTop();
 
-        /**
-        * Returns true if the window is scrolled to the bottom
-        */
-        bool IsScrolledToBottom() const;
+		/**
+		* Returns true if the window is scrolled to the bottom
+		*/
+		bool IsScrolledToBottom() const;
 
-        /**
-        * Returns true if the window is scrolled to the bottom
-        */
-        bool IsScrolledToTop() const;
+		/**
+		* Returns true if the window is scrolled to the bottom
+		*/
+		bool IsScrolledToTop() const;
 
 	protected:
 		void _Draw_Impl() override;
@@ -108,6 +108,7 @@ namespace OvUI::Panels
 		OvMaths::FVector2 minSize = { 0.f, 0.f };
 		OvMaths::FVector2 maxSize = { 0.f, 0.f };
 
+		bool readonly = false;
 		bool resizable = true;
 		bool closable = false;
 		bool movable = true;

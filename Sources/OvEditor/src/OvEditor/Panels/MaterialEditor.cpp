@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvUI/Widgets/Layout/Group.h"
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
@@ -15,12 +16,9 @@
 #include <OvTools/Utils/SystemCalls.h>
 
 #include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
-#include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
-#include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
 using namespace OvUI::Panels;
@@ -66,76 +64,6 @@ namespace
 		}
 
 		return result;
-	}
-
-	void DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
-	{
-		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
-
-		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
-		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
-		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
-		xyzWidget.lineBreak = false;
-
-		auto& rgbWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
-		auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-		rgbDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
-		rgbWidget.enabled = false;
-		rgbWidget.lineBreak = false;
-
-		auto& xyzButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
-		xyzButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-		xyzButton.lineBreak = false;
-
-		auto& rgbButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGB");
-		rgbButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-
-		xyzButton.ClickedEvent += [&] {
-			xyzWidget.enabled = true;
-			rgbWidget.enabled = false;
-		};
-
-		rgbButton.ClickedEvent += [&] {
-			xyzWidget.enabled = false;
-			rgbWidget.enabled = true;
-		};
-	}
-
-	void DrawHybridVec4(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector4& p_data, float p_step, float p_min, float p_max)
-	{
-		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
-
-		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
-		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
-		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
-		xyzWidget.lineBreak = false;
-
-		auto& rgbaWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
-		auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-		rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
-		rgbaWidget.enabled = false;
-		rgbaWidget.lineBreak = false;
-
-		auto& xyzwButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
-		xyzwButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-		xyzwButton.lineBreak = false;
-
-		auto& rgbaButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGBA");
-		rgbaButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-
-		xyzwButton.ClickedEvent += [&] {
-			xyzWidget.enabled = true;
-			rgbaWidget.enabled = false;
-		};
-
-		rgbaButton.ClickedEvent += [&] {
-			xyzWidget.enabled = false;
-			rgbaWidget.enabled = true;
-		};
 	}
 
 	bool IsReadyOnlyMaterial(const OvCore::Resources::Material& p_material)
@@ -534,11 +462,11 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
 			}
 			else if constexpr (std::is_same_v<T, OvMaths::FVector3>)
 			{
-				DrawHybridVec3(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				GUIDrawer::DrawHybridVec3(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
 			}
 			else if constexpr (std::is_same_v<T, OvMaths::FVector4>)
 			{
-				DrawHybridVec4(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
+				GUIDrawer::DrawHybridVec4(*m_materialPropertiesColumns, formattedType, arg, 0.01f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
 			}
 			else if constexpr (std::is_same_v<T, Texture*>)
 			{

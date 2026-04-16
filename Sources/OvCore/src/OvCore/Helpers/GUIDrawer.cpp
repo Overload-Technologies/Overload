@@ -75,6 +75,81 @@ void OvCore::Helpers::GUIDrawer::DrawVec4(OvUI::Internal::WidgetContainer & p_ro
 	dispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
 }
 
+void OvCore::Helpers::GUIDrawer::DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
+{
+	CreateTitle(p_root, p_name);
+
+	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	rightSide.horizontal = true;
+	rightSide.stretchWidget = 0;
+
+	auto& inputField = rightSide.CreateWidget<OvUI::Widgets::Layout::Group>();
+
+	auto& xyzWidget = inputField.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(GetDataType<float>(), p_min, p_max, 0.f, p_step, "", GetFormat<float>());
+	auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
+	xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
+
+	auto& rgbWidget = inputField.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
+	auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
+	rgbDispatcher.RegisterGatherer([&p_data]() -> OvUI::Types::Color { return { p_data.x, p_data.y, p_data.z }; });
+	rgbDispatcher.RegisterProvider([&p_data](OvUI::Types::Color c) { p_data.x = c.r; p_data.y = c.g; p_data.z = c.b; });
+	rgbWidget.enabled = false;
+
+	auto& toggle = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
+	toggle.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+	toggle.ClickedEvent += [&] {
+		if (toggle.label == "XYZ")
+		{
+			toggle.label = "RGB";
+			xyzWidget.enabled = false;
+			rgbWidget.enabled = true;
+		}
+		else
+		{
+			toggle.label = "XYZ";
+			xyzWidget.enabled = true;
+			rgbWidget.enabled = false;
+		}
+	};
+}
+
+void OvCore::Helpers::GUIDrawer::DrawHybridVec4(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector4& p_data, float p_step, float p_min, float p_max)
+{
+	CreateTitle(p_root, p_name);
+
+	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	rightSide.horizontal = true;
+	rightSide.stretchWidget = 0;
+
+	auto& inputField = rightSide.CreateWidget<OvUI::Widgets::Layout::Group>();
+
+	auto& xyzwWidget = inputField.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(GetDataType<float>(), p_min, p_max, 0.f, p_step, "", GetFormat<float>());
+	auto& xyzwDispatcher = xyzwWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
+	xyzwDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
+
+	auto& rgbaWidget = inputField.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
+	auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
+	rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
+	rgbaWidget.enabled = false;
+
+	auto& toggle = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
+	toggle.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+	toggle.ClickedEvent += [&] {
+		if (toggle.label == "XYZW")
+		{
+			toggle.label = "RGBA";
+			xyzwWidget.enabled = false;
+			rgbaWidget.enabled = true;
+		}
+		else
+		{
+			toggle.label = "XYZW";
+			xyzwWidget.enabled = true;
+			rgbaWidget.enabled = false;
+		}
+	};
+}
+
 void OvCore::Helpers::GUIDrawer::DrawQuat(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvMaths::FQuaternion & p_data, float p_step, float p_min, float p_max)
 {
 	CreateTitle(p_root, p_name);

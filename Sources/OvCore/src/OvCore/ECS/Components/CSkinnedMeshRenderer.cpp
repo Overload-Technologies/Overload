@@ -173,7 +173,7 @@ void OvCore::ECS::Components::CSkinnedMeshRenderer::NotifyModelChanged()
 
 bool OvCore::ECS::Components::CSkinnedMeshRenderer::HasSkinningData() const
 {
-	return HasCompatibleModel() && m_animationIndex.has_value() && !m_boneMatrices.empty();
+	return HasCompatibleModel() && !m_boneMatrices.empty();
 }
 
 void OvCore::ECS::Components::CSkinnedMeshRenderer::Play()

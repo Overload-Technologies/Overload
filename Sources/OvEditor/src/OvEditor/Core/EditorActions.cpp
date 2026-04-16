@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include "OvDebug/Assertion.h"
 #include "OvTools/Utils/OptRef.h"
 #include <filesystem>
 #include <fstream>
@@ -126,6 +127,9 @@ std::string OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType p_buildT
 		case OvEditor::Core::EBuildType::Release: return "Release";
 		case OvEditor::Core::EBuildType::Publish: return "Publish";
 	}
+
+	OVASSERT(false, "Unknown build type used.");
+	return "";
 }
 
 OvEditor::Core::EditorActions::EditorActions(Context& p_context, PanelsManager& p_panelsManager) :

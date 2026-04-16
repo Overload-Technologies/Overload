@@ -4,6 +4,10 @@
 * @licence: MIT
 */
 
+#include "OvMaths/FMatrix4.h"
+#include "OvMaths/FVector3.h"
+#include "assimp/types.h"
+#include "assimp/vector3.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -97,10 +101,23 @@ namespace
 		};
 	}
 
-	float ToPerceptualColor(const float p_linear)
+	OvMaths::FVector3 ToVec3(const aiColor3D& p_color)
 	{
-		constexpr float gamma = 2.2f;
-		return std::pow(std::clamp(p_linear, 0.0f, 1.0f), 1.0f / gamma);
+		return OvMaths::FVector3(
+			p_color.r,
+			p_color.g,
+			p_color.b
+		);
+	}
+
+	OvMaths::FVector4 ToVec4(const aiColor4D& p_color)
+	{
+		return OvMaths::FVector4(
+			p_color.r,
+			p_color.g,
+			p_color.b,
+			p_color.a
+		);
 	}
 
 	bool AddBoneData(OvRendering::Geometry::SkinnedVertex& p_vertex, uint32_t p_boneIndex, float p_weight)
@@ -525,19 +542,14 @@ namespace
 
 			if (hasBaseColor)
 			{
-				embeddedMaterial.albedo.x = ToPerceptualColor(albedoColor.r);
-				embeddedMaterial.albedo.y = ToPerceptualColor(albedoColor.g);
-				embeddedMaterial.albedo.z = ToPerceptualColor(albedoColor.b);
-				embeddedMaterial.albedo.w = std::clamp(albedoColor.a, 0.0f, 1.0f);
+				embeddedMaterial.albedo = ToVec4(albedoColor);
 			}
 			else
 			{
 				aiColor3D diffuseColor{};
 				if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
 				{
-					embeddedMaterial.albedo.x = ToPerceptualColor(diffuseColor.r);
-					embeddedMaterial.albedo.y = ToPerceptualColor(diffuseColor.g);
-					embeddedMaterial.albedo.z = ToPerceptualColor(diffuseColor.b);
+					embeddedMaterial.albedo = ToVec3(diffuseColor);
 				}
 			}
 
@@ -584,11 +596,7 @@ namespace
 			aiColor3D emissiveColor{};
 			if (material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
 			{
-				embeddedMaterial.emissiveColor = {
-					ToPerceptualColor(emissiveColor.r),
-					ToPerceptualColor(emissiveColor.g),
-					ToPerceptualColor(emissiveColor.b)
-				};
+				embeddedMaterial.emissiveColor = ToVec3(emissiveColor);
 			}
 
 			float emissiveIntensity = 0.0f;

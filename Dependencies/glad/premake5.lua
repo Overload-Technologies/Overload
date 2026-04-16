@@ -20,6 +20,6 @@ project "glad"
 		defines { "DEBUG", "_DEBUG" }
 		optimize "On"
 
-	filter { "configurations:Release" }
+	filter { "configurations:Release or configurations:Publish" }
 		defines { "NDEBUG" }
 		optimize "On"

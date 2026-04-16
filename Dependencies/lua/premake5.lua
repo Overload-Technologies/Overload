@@ -13,6 +13,6 @@ project "lua"
 		symbols "Off"
 		runtime "Debug" -- Ensures /MDd is used
 
-	filter { "configurations:Release" }
+	filter { "configurations:Release or configurations:Publish" }
 		defines { "NDEBUG" }
 		optimize "Speed"

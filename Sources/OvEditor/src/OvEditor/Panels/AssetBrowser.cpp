@@ -594,36 +594,8 @@ namespace
 			auto& compileAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Compile");
 
 			compileAction.ClickedEvent += [this] {
-				using namespace OvRendering::Resources::Loaders;
-				auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected));
-				const auto previousLoggingSettings = ShaderLoader::GetLoggingSettings();
-				auto newLoggingSettings = previousLoggingSettings;
-				newLoggingSettings.summary = true; // Force enable summary logging
-				ShaderLoader::SetLoggingSettings(newLoggingSettings);
-				OvRendering::Resources::Shader* compiledShader = nullptr;
-
-				if (shaderManager.IsResourceRegistered(resourcePath))
-				{
-					// Trying to recompile
-					compiledShader = shaderManager[resourcePath];
-					shaderManager.ReloadResource(compiledShader, filePath.string());
-				}
-				else
-				{
-					// Trying to compile
-					compiledShader = shaderManager.LoadResource(resourcePath);
-				}
-
-				ShaderLoader::SetLoggingSettings(previousLoggingSettings);
-
-				auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-				if (auto* targetMaterial = materialEditor.GetTarget(); targetMaterial && compiledShader && targetMaterial->GetShader() == compiledShader)
-				{
-					targetMaterial->UpdateProperties();
-					materialEditor.Refresh();
-				}
-
+				EDITOR_EXEC(CompileShader(resourcePath));
 			};
 		}
 	};

@@ -69,7 +69,7 @@ namespace
 
 	void RefreshMaterialEditorIfTargetUsesShader(OvRendering::Resources::Shader& p_shader)
 	{
-		auto& materialEditor = EDITOR_PANEL(Panels::MaterialEditor, "Material Editor");
+		auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
 
 		if (auto* targetMaterial = materialEditor.GetTarget(); targetMaterial && targetMaterial->GetShader() == &p_shader)
 		{

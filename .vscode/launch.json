@@ -16,6 +16,15 @@
       "cwd": "${workspaceFolder}/Build/Release",
       "program": "${workspaceFolder}/Build/Release/OvEditor",
       "preLaunchTask": "Build (Release x64)"
+    },
+    {
+      "name": "Debug OvEditor (Publish)",
+      "type": "lldb",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/Build/Publish",
+      "program": "${workspaceFolder}/Build/Publish/OvEditor",
+      "preLaunchTask": "Build (Publish x64)"
     }
+
   ]
 }

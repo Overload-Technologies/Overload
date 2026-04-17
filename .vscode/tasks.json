@@ -77,6 +77,36 @@
       "dependsOn": []
     },
     {
+      "label": "Build (Publish x64)",
+      "type": "shell",
+      "command": "bear --append -- make -j$(nproc) config=publish_x64",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": false
+      },
+      "problemMatcher": {
+        "owner": "cpp",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "dependsOn": []
+    },
+    {
       "label": "Clean",
       "type": "shell",
       "command": "make clean",

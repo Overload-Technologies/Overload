@@ -25,6 +25,7 @@
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/AssetProperties.h>
+#include <OvEditor/Panels/Inspector.h>
 #include <OvEditor/Panels/MaterialEditor.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
@@ -669,6 +670,8 @@ namespace
 				if (modelManager.IsResourceRegistered(resourcePath))
 				{
 					modelManager.AResourceManager::ReloadResource(resourcePath);
+					EDITOR_PANEL(OvEditor::Panels::Inspector, "Inspector").Refresh();
+					EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
 				}
 			};
 

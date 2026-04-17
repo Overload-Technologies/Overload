@@ -507,8 +507,9 @@ namespace
 				{
 					EDITOR_EXEC(PropagateFolderDestruction(filePath.string()));
 					std::filesystem::remove_all(filePath);
-					DestroyedEvent.Invoke(filePath);
 				}
+				
+				DestroyedEvent.Invoke(filePath);
 			}
 		}
 

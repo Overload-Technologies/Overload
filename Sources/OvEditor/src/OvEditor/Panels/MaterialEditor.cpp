@@ -73,6 +73,8 @@ namespace
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
 		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+		rightSide.horizontal = true;
+		rightSide.stretchWidget = 0;
 
 		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
 		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
@@ -95,11 +97,13 @@ namespace
 		xyzButton.ClickedEvent += [&] {
 			xyzWidget.enabled = true;
 			rgbWidget.enabled = false;
+			rightSide.stretchWidget = 0;
 		};
 
 		rgbButton.ClickedEvent += [&] {
 			xyzWidget.enabled = false;
 			rgbWidget.enabled = true;
+			rightSide.stretchWidget = 1;
 		};
 	}
 
@@ -108,6 +112,8 @@ namespace
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
 		auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+		rightSide.horizontal = true;
+		rightSide.stretchWidget = 0;
 
 		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
 		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
@@ -130,11 +136,13 @@ namespace
 		xyzwButton.ClickedEvent += [&] {
 			xyzWidget.enabled = true;
 			rgbaWidget.enabled = false;
+			rightSide.stretchWidget = 0;
 		};
 
 		rgbaButton.ClickedEvent += [&] {
 			xyzWidget.enabled = false;
 			rgbaWidget.enabled = true;
+			rightSide.stretchWidget = 1;
 		};
 	}
 

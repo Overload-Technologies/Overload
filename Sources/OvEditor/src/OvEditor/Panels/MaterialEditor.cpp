@@ -17,6 +17,7 @@
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Layout/Dummy.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
@@ -88,6 +89,8 @@ namespace
 		auto& xyzButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
 		xyzButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 
+		rightSide.CreateWidget<OvUI::Widgets::Layout::Dummy>(OvMaths::FVector2{ 4.0f, 0.0f });
+
 		auto& rgbButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGB");
 		rgbButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
 
@@ -123,6 +126,8 @@ namespace
 
 		auto& xyzwButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
 		xyzwButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+
+		rightSide.CreateWidget<OvUI::Widgets::Layout::Dummy>(OvMaths::FVector2{ 4.0f, 0.0f });
 
 		auto& rgbaButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGBA");
 		rgbaButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };

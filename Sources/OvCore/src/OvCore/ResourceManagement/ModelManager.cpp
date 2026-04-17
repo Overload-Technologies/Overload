@@ -11,6 +11,7 @@
 #include <OvCore/ResourceManagement/TextureManager.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 #include <OvTools/Filesystem/IniFile.h>
+#include <OvTools/Utils/PathParser.h>
 
 namespace
 {
@@ -69,11 +70,16 @@ namespace
 		TIndexParser p_parseIndex
 	)
 	{
+		const std::string normalizedModelPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_modelPath);
+
 		for (auto& [resourcePath, resource] : p_resourceManager.GetResources())
 		{
 			(void)resource;
 			const auto embeddedAssetPath = OvRendering::Resources::Parsers::ParseEmbeddedAssetPath(resourcePath.string());
-			if (!embeddedAssetPath || embeddedAssetPath->modelPath != p_modelPath)
+			if (
+				!embeddedAssetPath ||
+				OvTools::Utils::PathParser::MakeNonWindowsStyle(embeddedAssetPath->modelPath) != normalizedModelPath
+			)
 			{
 				continue;
 			}

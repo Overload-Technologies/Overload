@@ -8,8 +8,6 @@
 #include <filesystem>
 #include <memory>
 
-#include <imgui.h>
-
 #include <OvTools/Utils/PathParser.h>
 
 #include <OvCore/Helpers/GUIHelpers.h>
@@ -25,6 +23,7 @@
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Buttons/ButtonSmall.h>
+#include <OvUI/Widgets/Buttons/Toggle.h>
 #include <OvUI/Plugins/DDTarget.h>
 
 #include <OvCore/Global/ServiceLocator.h>
@@ -79,90 +78,6 @@ void OvCore::Helpers::GUIDrawer::DrawVec4(OvUI::Internal::WidgetContainer & p_ro
 
 namespace
 {
-	/**
-	* A two-state segmented toggle rendered as a single unified pill.
-	* Both halves share one invisible button: clicking anywhere toggles the state.
-	* The active half is highlighted in amber; the inactive half is dark.
-	*/
-	class HybridModeToggle : public OvUI::Widgets::AWidget
-	{
-	public:
-		HybridModeToggle(std::string_view p_labelA, std::string_view p_labelB)
-			: m_labelA(p_labelA), m_labelB(p_labelB) {}
-
-		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B (right) active
-		bool state = false;
-
-	protected:
-		void _Draw_Impl() override
-		{
-			const float rounding = ImGui::GetStyle().FrameRounding;
-			const float padX     = ImGui::GetStyle().FramePadding.x;
-			const float padY     = ImGui::GetStyle().FramePadding.y;
-			const float height   = ImGui::GetFrameHeight();
-			const float widthA   = ImGui::CalcTextSize(m_labelA.c_str()).x + padX * 2.0f;
-			const float widthB   = ImGui::CalcTextSize(m_labelB.c_str()).x + padX * 2.0f;
-			constexpr float kSep = 1.0f;
-
-			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetStyle().ItemSpacing.x);
-			const ImVec2 origin = ImGui::GetCursorScreenPos();
-			const ImVec2 posB   = { origin.x + widthA + kSep, origin.y };
-
-			// Single interaction area covering the entire pill
-			const bool clicked = ImGui::InvisibleButton(m_widgetID.c_str(), { widthA + kSep + widthB, height });
-			const bool hovered = ImGui::IsItemHovered();
-			const bool pressed = ImGui::IsItemActive();
-
-			// Color palette — fully self-contained, no theme bleed
-			static const ImVec4 kAmberIdle  = { 0.70f, 0.50f, 0.00f, 1.0f };
-			static const ImVec4 kAmberHover = { 0.80f, 0.60f, 0.00f, 1.0f };
-			static const ImVec4 kAmberPress = { 0.55f, 0.38f, 0.00f, 1.0f };
-			static const ImVec4 kDarkIdle   = { 0.18f, 0.18f, 0.18f, 1.0f };
-			static const ImVec4 kDarkHover  = { 0.26f, 0.26f, 0.26f, 1.0f };
-			static const ImVec4 kDarkPress  = { 0.12f, 0.12f, 0.12f, 1.0f };
-
-			auto resolveColor = [&](bool isActive) -> ImU32 {
-				const ImVec4& c = pressed ? (isActive ? kAmberPress : kDarkPress)
-				                : hovered ? (isActive ? kAmberHover : kDarkHover)
-				                :           (isActive ? kAmberIdle  : kDarkIdle);
-				return ImGui::ColorConvertFloat4ToU32(c);
-			};
-
-			ImDrawList* dl = ImGui::GetWindowDrawList();
-
-			// Left half — rounded left corners only
-			dl->AddRectFilled(
-				origin,
-				{ origin.x + widthA, origin.y + height },
-				resolveColor(!state),
-				rounding,
-				ImDrawFlags_RoundCornersLeft);
-
-			// Right half — rounded right corners only
-			dl->AddRectFilled(
-				posB,
-				{ posB.x + widthB, posB.y + height },
-				resolveColor(state),
-				rounding,
-				ImDrawFlags_RoundCornersRight);
-
-			// Labels (vertically centered)
-			const ImU32 textColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
-			dl->AddText({ origin.x + padX, origin.y + padY }, textColor, m_labelA.c_str());
-			dl->AddText({ posB.x   + padX, posB.y   + padY }, textColor, m_labelB.c_str());
-
-			if (clicked)
-			{
-				state = !state;
-				StateChangedEvent.Invoke(state);
-			}
-		}
-
-	private:
-		std::string m_labelA;
-		std::string m_labelB;
-	};
-
 	template <size_t N>
 	requires (N == 3 || N == 4)
 	void DrawHybridVecNImpl(
@@ -176,9 +91,7 @@ namespace
 		using namespace OvUI::Widgets;
 		using namespace OvUI::Plugins;
 
-		constexpr auto kVecLabel   = "VEC";
-		constexpr auto kColorLabel = "COL";
-		constexpr bool kHasAlpha   = N == 4;
+		constexpr bool kHasAlpha = N == 4;
 
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
 
@@ -186,7 +99,6 @@ namespace
 		rightSide.horizontal = true;
 		rightSide.stretchWidget = 0;
 
-		// Stretch column: holds the active input widget
 		auto& inputField = rightSide.CreateWidget<Layout::Group>();
 
 		auto& vecWidget = inputField.CreateWidget<Drags::DragMultipleScalars<float, N>>(
@@ -213,8 +125,7 @@ namespace
 		}
 		colorWidget.enabled = false;
 
-		// Fixed column: unified pill toggle
-		auto& toggle = rightSide.CreateWidget<HybridModeToggle>(kVecLabel, kColorLabel);
+		auto& toggle = rightSide.CreateWidget<Buttons::Toggle>("VEC", "COL");
 		toggle.tooltip = "Toggle between vector and color display";
 		toggle.neverDisabled = true;
 		toggle.StateChangedEvent += [&vecWidget, &colorWidget](bool colorMode) {

@@ -617,6 +617,13 @@ namespace
 
 				ShaderLoader::SetLoggingSettings(previousLoggingSettings);
 
+				auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+				if (auto* targetMaterial = materialEditor.GetTarget(); targetMaterial && compiledShader && targetMaterial->GetShader() == compiledShader)
+				{
+					targetMaterial->UpdateProperties();
+					materialEditor.Refresh();
+				}
+
 			};
 		}
 	};

@@ -38,6 +38,7 @@
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/TextClickable.h>
+#include <OvUI/Widgets/Texts/TextColored.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
@@ -1060,6 +1061,18 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 		treeNode.OpenedEvent += [this, &treeNode, path, p_isEngineItem] {
 			treeNode.RemoveAllWidgets();
 			std::filesystem::path updatedPath = std::filesystem::path{path}.parent_path() / treeNode.name;
+			
+			// Check if the directory still exists
+			if (!std::filesystem::exists(updatedPath) || !std::filesystem::is_directory(updatedPath))
+			{
+				// Show error message to the user
+				auto& errorText = treeNode.CreateWidget<Texts::TextColored>(
+					"[MISSING] Folder was deleted externally",
+					OvUI::Types::Color{1.0f, 0.3f, 0.3f, 1.0f}
+				);
+				return;
+			}
+			
 			ParseFolder(treeNode, std::filesystem::directory_entry(updatedPath), p_isEngineItem);
 		};
 

@@ -79,17 +79,14 @@ namespace
 		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
 		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
 		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
-		xyzWidget.lineBreak = false;
 
 		auto& rgbWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
 		auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
 		rgbDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
 		rgbWidget.enabled = false;
-		rgbWidget.lineBreak = false;
 
 		auto& xyzButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
 		xyzButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-		xyzButton.lineBreak = false;
 
 		auto& rgbButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGB");
 		rgbButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
@@ -118,17 +115,14 @@ namespace
 		auto& xyzWidget = rightSide.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
 		auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
 		xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
-		xyzWidget.lineBreak = false;
 
 		auto& rgbaWidget = rightSide.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
 		auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
 		rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
 		rgbaWidget.enabled = false;
-		rgbaWidget.lineBreak = false;
 
 		auto& xyzwButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
 		xyzwButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-		xyzwButton.lineBreak = false;
 
 		auto& rgbaButton = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("RGBA");
 		rgbaButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };

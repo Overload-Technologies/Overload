@@ -601,19 +601,22 @@ namespace
 				auto newLoggingSettings = previousLoggingSettings;
 				newLoggingSettings.summary = true; // Force enable summary logging
 				ShaderLoader::SetLoggingSettings(newLoggingSettings);
+				OvRendering::Resources::Shader* compiledShader = nullptr;
 
 				if (shaderManager.IsResourceRegistered(resourcePath))
 				{
 					// Trying to recompile
-					shaderManager.ReloadResource(shaderManager[resourcePath], filePath.string());
+					compiledShader = shaderManager[resourcePath];
+					shaderManager.ReloadResource(compiledShader, filePath.string());
 				}
 				else
 				{
 					// Trying to compile
-					OVSERVICE(OvCore::ResourceManagement::ShaderManager).LoadResource(resourcePath);
+					compiledShader = shaderManager.LoadResource(resourcePath);
 				}
 
 				ShaderLoader::SetLoggingSettings(previousLoggingSettings);
+
 			};
 		}
 	};

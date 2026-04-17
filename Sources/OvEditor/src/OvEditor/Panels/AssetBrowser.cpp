@@ -25,6 +25,7 @@
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/AssetProperties.h>
+#include <OvEditor/Panels/Inspector.h>
 #include <OvEditor/Panels/MaterialEditor.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
@@ -596,26 +597,8 @@ namespace
 			auto& compileAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Compile");
 
 			compileAction.ClickedEvent += [this] {
-				using namespace OvRendering::Resources::Loaders;
-				auto& shaderManager = OVSERVICE(OvCore::ResourceManagement::ShaderManager);
 				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected));
-				const auto previousLoggingSettings = ShaderLoader::GetLoggingSettings();
-				auto newLoggingSettings = previousLoggingSettings;
-				newLoggingSettings.summary = true; // Force enable summary logging
-				ShaderLoader::SetLoggingSettings(newLoggingSettings);
-
-				if (shaderManager.IsResourceRegistered(resourcePath))
-				{
-					// Trying to recompile
-					shaderManager.ReloadResource(shaderManager[resourcePath], filePath.string());
-				}
-				else
-				{
-					// Trying to compile
-					OVSERVICE(OvCore::ResourceManagement::ShaderManager).LoadResource(resourcePath);
-				}
-
-				ShaderLoader::SetLoggingSettings(previousLoggingSettings);
+				EDITOR_EXEC(CompileShader(resourcePath));
 			};
 		}
 	};
@@ -671,6 +654,8 @@ namespace
 				if (modelManager.IsResourceRegistered(resourcePath))
 				{
 					modelManager.AResourceManager::ReloadResource(resourcePath);
+					EDITOR_PANEL(OvEditor::Panels::Inspector, "Inspector").Refresh();
+					EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
 				}
 			};
 

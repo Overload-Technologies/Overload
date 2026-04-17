@@ -229,8 +229,6 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 			if (const auto shader = m_target->GetShader())
 			{
 				EDITOR_EXEC(CompileShader(*shader));
-				m_target->UpdateProperties();
-				OnShaderDropped();
 			}
 		}
 	};

@@ -15,6 +15,8 @@
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/AssetProperties.h>
 #include <OvEditor/Panels/AssetView.h>
+#include <OvEditor/Panels/Inspector.h>
+#include <OvEditor/Panels/MaterialEditor.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SizeConverter.h>
@@ -386,6 +388,8 @@ void OvEditor::Panels::AssetProperties::Apply()
 		if (modelManager.IsResourceRegistered(resourcePath))
 		{
 			modelManager.AResourceManager::ReloadResource(resourcePath);
+			EDITOR_PANEL(OvEditor::Panels::Inspector, "Inspector").Refresh();
+			EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor").Refresh();
 		}
 	}
 	else if (fileType == OvTools::Utils::PathParser::EFileType::TEXTURE)

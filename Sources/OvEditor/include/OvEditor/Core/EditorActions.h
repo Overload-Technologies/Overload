@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvEditor/Core/Context.h>
 #include <OvEditor/Core/PanelsManager.h>
@@ -264,6 +266,11 @@ namespace OvEditor::Core
 		* Compile the given shader
 		*/
 		void CompileShader(OvRendering::Resources::Shader& p_shader);
+
+		/**
+		* Compile the shader at the given resource path
+		*/
+		void CompileShader(const std::filesystem::path& p_shaderPath);
 
 		/**
 		* Save every materials to their respective files

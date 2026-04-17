@@ -53,6 +53,30 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
+	void RefreshMaterialsUsingShader(
+		OvCore::ResourceManagement::MaterialManager& p_materialManager,
+		OvRendering::Resources::Shader& p_shader
+	)
+	{
+		for (const auto material : p_materialManager.GetResources() | std::views::values)
+		{
+			if (material && material->GetShader() == &p_shader)
+			{
+				material->UpdateProperties();
+			}
+		}
+	}
+
+	void RefreshMaterialEditorIfTargetUsesShader(OvRendering::Resources::Shader& p_shader)
+	{
+		auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
+
+		if (auto* targetMaterial = materialEditor.GetTarget(); targetMaterial && targetMaterial->GetShader() == &p_shader)
+		{
+			materialEditor.Refresh();
+		}
+	}
+
 	template<typename TResourceManager, typename TAssetNameValidator>
 	void MoveEmbeddedResourcesForRenamedModel(
 		TResourceManager& p_resourceManager,
@@ -829,11 +853,19 @@ void OvEditor::Core::EditorActions::CompileShaders()
 {
 	for (const auto shader : m_context.shaderManager.GetResources() | std::views::values)
 	{
-		CompileShader(*shader);
+		if (shader)
+		{
+			CompileShader(shader->path);
+		}
 	}
 }
 
 void OvEditor::Core::EditorActions::CompileShader(OvRendering::Resources::Shader& p_shader)
+{
+	CompileShader(p_shader.path);
+}
+
+void OvEditor::Core::EditorActions::CompileShader(const std::filesystem::path& p_shaderPath)
 {
 	using namespace OvRendering::Resources::Loaders;
 
@@ -841,10 +873,29 @@ void OvEditor::Core::EditorActions::CompileShader(OvRendering::Resources::Shader
 	auto newLoggingSettings = previousLoggingSettings;
 	newLoggingSettings.summary = true; // Force enable summary logging
 	ShaderLoader::SetLoggingSettings(newLoggingSettings);
+	OvRendering::Resources::Shader* compiledShader = nullptr;
 
-	m_context.shaderManager.ReloadResource(&p_shader, GetRealPath(p_shader.path));
+	if (m_context.shaderManager.IsResourceRegistered(p_shaderPath))
+	{
+		compiledShader = m_context.shaderManager[p_shaderPath];
+
+		if (compiledShader)
+		{
+			m_context.shaderManager.ReloadResource(compiledShader, GetRealPath(compiledShader->path));
+		}
+	}
+	else
+	{
+		compiledShader = m_context.shaderManager.LoadResource(p_shaderPath);
+	}
 
 	ShaderLoader::SetLoggingSettings(previousLoggingSettings);
+
+	if (compiledShader)
+	{
+		RefreshMaterialsUsingShader(m_context.materialManager, *compiledShader);
+		RefreshMaterialEditorIfTargetUsesShader(*compiledShader);
+	}
 }
 
 void OvEditor::Core::EditorActions::SaveMaterials()

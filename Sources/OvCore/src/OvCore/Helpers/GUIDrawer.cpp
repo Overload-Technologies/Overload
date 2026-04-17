@@ -176,8 +176,8 @@ namespace
 		using namespace OvUI::Widgets;
 		using namespace OvUI::Plugins;
 
-		constexpr auto kVecLabel   = "Vector";
-		constexpr auto kColorLabel = "Color";
+		constexpr auto kVecLabel   = "VEC";
+		constexpr auto kColorLabel = "COL";
 		constexpr bool kHasAlpha   = N == 4;
 
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);

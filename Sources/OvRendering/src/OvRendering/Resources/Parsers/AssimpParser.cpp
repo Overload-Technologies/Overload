@@ -549,7 +549,16 @@ namespace
 
 #if defined(AI_MATKEY_METALLIC_FACTOR)
 			float metallicFactor = 0.0f;
-			if (material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS)
+			bool hasMetallicFactor = material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS;
+#if defined(AI_MATKEY_REFLECTIVITY)
+			if (!hasMetallicFactor)
+			{
+				// FBX can expose metallic as ReflectionFactor.
+				hasMetallicFactor = material->Get(AI_MATKEY_REFLECTIVITY, metallicFactor) == AI_SUCCESS;
+			}
+#endif
+
+			if (hasMetallicFactor)
 			{
 				embeddedMaterial.metallic = std::clamp(metallicFactor, 0.0f, 1.0f);
 			}

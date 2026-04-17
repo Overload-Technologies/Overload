@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <memory>
 
+#include <imgui.h>
+
 #include <OvTools/Utils/PathParser.h>
 
 #include <OvCore/Helpers/GUIHelpers.h>
@@ -75,79 +77,161 @@ void OvCore::Helpers::GUIDrawer::DrawVec4(OvUI::Internal::WidgetContainer & p_ro
 	dispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
 }
 
-void OvCore::Helpers::GUIDrawer::DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
+namespace
 {
-	CreateTitle(p_root, p_name);
+	/**
+	* A two-state segmented toggle rendered as a single unified pill.
+	* Both halves share one invisible button: clicking anywhere toggles the state.
+	* The active half is highlighted in amber; the inactive half is dark.
+	*/
+	class HybridModeToggle : public OvUI::Widgets::AWidget
+	{
+	public:
+		HybridModeToggle(std::string_view p_labelA, std::string_view p_labelB)
+			: m_labelA(p_labelA), m_labelB(p_labelB) {}
 
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-	rightSide.horizontal = true;
-	rightSide.stretchWidget = 0;
+		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B (right) active
+		bool state = false;
 
-	auto& inputField = rightSide.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& xyzWidget = inputField.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 3>>(GetDataType<float>(), p_min, p_max, 0.f, p_step, "", GetFormat<float>());
-	auto& xyzDispatcher = xyzWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 3>>>();
-	xyzDispatcher.RegisterReference(reinterpret_cast<std::array<float, 3>&>(p_data));
-
-	auto& rgbWidget = inputField.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(false, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z });
-	auto& rgbDispatcher = rgbWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-	rgbDispatcher.RegisterGatherer([&p_data]() -> OvUI::Types::Color { return { p_data.x, p_data.y, p_data.z }; });
-	rgbDispatcher.RegisterProvider([&p_data](OvUI::Types::Color c) { p_data.x = c.r; p_data.y = c.g; p_data.z = c.b; });
-	rgbWidget.enabled = false;
-
-	auto& toggle = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZ");
-	toggle.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	toggle.ClickedEvent += [&] {
-		if (toggle.label == "XYZ")
+	protected:
+		void _Draw_Impl() override
 		{
-			toggle.label = "RGB";
-			xyzWidget.enabled = false;
-			rgbWidget.enabled = true;
+			const float rounding = ImGui::GetStyle().FrameRounding;
+			const float padX     = ImGui::GetStyle().FramePadding.x;
+			const float padY     = ImGui::GetStyle().FramePadding.y;
+			const float height   = ImGui::GetFrameHeight();
+			const float widthA   = ImGui::CalcTextSize(m_labelA.c_str()).x + padX * 2.0f;
+			const float widthB   = ImGui::CalcTextSize(m_labelB.c_str()).x + padX * 2.0f;
+			constexpr float kSep = 1.0f;
+
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetStyle().ItemSpacing.x);
+			const ImVec2 origin = ImGui::GetCursorScreenPos();
+			const ImVec2 posB   = { origin.x + widthA + kSep, origin.y };
+
+			// Single interaction area covering the entire pill
+			const bool clicked = ImGui::InvisibleButton(m_widgetID.c_str(), { widthA + kSep + widthB, height });
+			const bool hovered = ImGui::IsItemHovered();
+			const bool pressed = ImGui::IsItemActive();
+
+			// Color palette — fully self-contained, no theme bleed
+			static const ImVec4 kAmberIdle  = { 0.70f, 0.50f, 0.00f, 1.0f };
+			static const ImVec4 kAmberHover = { 0.80f, 0.60f, 0.00f, 1.0f };
+			static const ImVec4 kAmberPress = { 0.55f, 0.38f, 0.00f, 1.0f };
+			static const ImVec4 kDarkIdle   = { 0.18f, 0.18f, 0.18f, 1.0f };
+			static const ImVec4 kDarkHover  = { 0.26f, 0.26f, 0.26f, 1.0f };
+			static const ImVec4 kDarkPress  = { 0.12f, 0.12f, 0.12f, 1.0f };
+
+			auto resolveColor = [&](bool isActive) -> ImU32 {
+				const ImVec4& c = pressed ? (isActive ? kAmberPress : kDarkPress)
+				                : hovered ? (isActive ? kAmberHover : kDarkHover)
+				                :           (isActive ? kAmberIdle  : kDarkIdle);
+				return ImGui::ColorConvertFloat4ToU32(c);
+			};
+
+			ImDrawList* dl = ImGui::GetWindowDrawList();
+
+			// Left half — rounded left corners only
+			dl->AddRectFilled(
+				origin,
+				{ origin.x + widthA, origin.y + height },
+				resolveColor(!state),
+				rounding,
+				ImDrawFlags_RoundCornersLeft);
+
+			// Right half — rounded right corners only
+			dl->AddRectFilled(
+				posB,
+				{ posB.x + widthB, posB.y + height },
+				resolveColor(state),
+				rounding,
+				ImDrawFlags_RoundCornersRight);
+
+			// Labels (vertically centered)
+			const ImU32 textColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
+			dl->AddText({ origin.x + padX, origin.y + padY }, textColor, m_labelA.c_str());
+			dl->AddText({ posB.x   + padX, posB.y   + padY }, textColor, m_labelB.c_str());
+
+			if (clicked)
+			{
+				state = !state;
+				StateChangedEvent.Invoke(state);
+			}
+		}
+
+	private:
+		std::string m_labelA;
+		std::string m_labelB;
+	};
+
+	template <size_t N>
+	requires (N == 3 || N == 4)
+	void DrawHybridVecNImpl(
+		OvUI::Internal::WidgetContainer& p_root,
+		const std::string& p_name,
+		float* p_data,
+		float p_step,
+		float p_min,
+		float p_max)
+	{
+		using namespace OvUI::Widgets;
+		using namespace OvUI::Plugins;
+
+		constexpr auto kVecLabel   = "Vector";
+		constexpr auto kColorLabel = "Color";
+		constexpr bool kHasAlpha   = N == 4;
+
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, p_name);
+
+		auto& rightSide = p_root.CreateWidget<Layout::Group>();
+		rightSide.horizontal = true;
+		rightSide.stretchWidget = 0;
+
+		// Stretch column: holds the active input widget
+		auto& inputField = rightSide.CreateWidget<Layout::Group>();
+
+		auto& vecWidget = inputField.CreateWidget<Drags::DragMultipleScalars<float, N>>(
+			OvCore::Helpers::GUIDrawer::GetDataType<float>(), p_min, p_max, 0.f, p_step, "", OvCore::Helpers::GUIDrawer::GetFormat<float>());
+		vecWidget.template AddPlugin<DataDispatcher<std::array<float, N>>>()
+			.RegisterReference(reinterpret_cast<std::array<float, N>&>(*p_data));
+
+		OvUI::Types::Color initialColor;
+		if constexpr (N == 3)
+			initialColor = { p_data[0], p_data[1], p_data[2] };
+		else
+			initialColor = { p_data[0], p_data[1], p_data[2], p_data[3] };
+
+		auto& colorWidget = inputField.CreateWidget<Selection::ColorEdit>(kHasAlpha, initialColor);
+		auto& colorDispatcher = colorWidget.AddPlugin<DataDispatcher<OvUI::Types::Color>>();
+		if constexpr (N == 3)
+		{
+			colorDispatcher.RegisterGatherer([p_data]() -> OvUI::Types::Color { return { p_data[0], p_data[1], p_data[2] }; });
+			colorDispatcher.RegisterProvider([p_data](OvUI::Types::Color c) { p_data[0] = c.r; p_data[1] = c.g; p_data[2] = c.b; });
 		}
 		else
 		{
-			toggle.label = "XYZ";
-			xyzWidget.enabled = true;
-			rgbWidget.enabled = false;
+			colorDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(*p_data));
 		}
-	};
+		colorWidget.enabled = false;
+
+		// Fixed column: unified pill toggle
+		auto& toggle = rightSide.CreateWidget<HybridModeToggle>(kVecLabel, kColorLabel);
+		toggle.tooltip = "Toggle between vector and color display";
+		toggle.neverDisabled = true;
+		toggle.StateChangedEvent += [&vecWidget, &colorWidget](bool colorMode) {
+			vecWidget.enabled   = !colorMode;
+			colorWidget.enabled =  colorMode;
+		};
+	}
+}
+
+void OvCore::Helpers::GUIDrawer::DrawHybridVec3(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector3& p_data, float p_step, float p_min, float p_max)
+{
+	DrawHybridVecNImpl<3>(p_root, p_name, &p_data.x, p_step, p_min, p_max);
 }
 
 void OvCore::Helpers::GUIDrawer::DrawHybridVec4(OvUI::Internal::WidgetContainer& p_root, const std::string& p_name, OvMaths::FVector4& p_data, float p_step, float p_min, float p_max)
 {
-	CreateTitle(p_root, p_name);
-
-	auto& rightSide = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-	rightSide.horizontal = true;
-	rightSide.stretchWidget = 0;
-
-	auto& inputField = rightSide.CreateWidget<OvUI::Widgets::Layout::Group>();
-
-	auto& xyzwWidget = inputField.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 4>>(GetDataType<float>(), p_min, p_max, 0.f, p_step, "", GetFormat<float>());
-	auto& xyzwDispatcher = xyzwWidget.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 4>>>();
-	xyzwDispatcher.RegisterReference(reinterpret_cast<std::array<float, 4>&>(p_data));
-
-	auto& rgbaWidget = inputField.CreateWidget<OvUI::Widgets::Selection::ColorEdit>(true, OvUI::Types::Color{ p_data.x, p_data.y, p_data.z, p_data.w });
-	auto& rgbaDispatcher = rgbaWidget.AddPlugin<OvUI::Plugins::DataDispatcher<OvUI::Types::Color>>();
-	rgbaDispatcher.RegisterReference(reinterpret_cast<OvUI::Types::Color&>(p_data));
-	rgbaWidget.enabled = false;
-
-	auto& toggle = rightSide.CreateWidget<OvUI::Widgets::Buttons::Button>("XYZW");
-	toggle.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
-	toggle.ClickedEvent += [&] {
-		if (toggle.label == "XYZW")
-		{
-			toggle.label = "RGBA";
-			xyzwWidget.enabled = false;
-			rgbaWidget.enabled = true;
-		}
-		else
-		{
-			toggle.label = "XYZW";
-			xyzwWidget.enabled = true;
-			rgbaWidget.enabled = false;
-		}
-	};
+	DrawHybridVecNImpl<4>(p_root, p_name, &p_data.x, p_step, p_min, p_max);
 }
 
 void OvCore::Helpers::GUIDrawer::DrawQuat(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, OvMaths::FQuaternion & p_data, float p_step, float p_min, float p_max)

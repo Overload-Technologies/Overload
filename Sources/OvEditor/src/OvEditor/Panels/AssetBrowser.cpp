@@ -136,25 +136,13 @@ namespace
 		return !relativePath.empty() && *relativePath.begin() != "..";
 	}
 
-	bool ShowPathDeletedError(const std::string& p_actionName)
+	bool ValidateFolderPath(const std::filesystem::path& p_path, const std::string& p_actionName)
 	{
-		if (!std::filesystem::exists(std::filesystem::path(p_actionName)))
-		{
-			using namespace OvWindowing::Dialogs;
-			MessageBox errorMessage(
-				"Action failed",
-				"Cannot perform this action because the target folder was deleted externally",
-				MessageBox::EMessageType::ERROR,
-				MessageBox::EButtonLayout::OK
-			);
+		if (std::filesystem::exists(p_path) && std::filesystem::is_directory(p_path))
 			return true;
-		}
-		return false;
-	}
 
-	bool ValidateFolderPath(const std::filesystem::path& p_path)
-	{
-		return std::filesystem::exists(p_path) && std::filesystem::is_directory(p_path);
+		OVLOG_ERROR(std::format("Cannot perform '{}' because the target folder was deleted externally", p_actionName));
+		return false;
 	}
 
 	class TexturePreview : public OvUI::Plugins::IPlugin
@@ -210,13 +198,7 @@ namespace
 					// Check if the item still exists before allowing rename
 					if (!std::filesystem::exists(filePath))
 					{
-						using namespace OvWindowing::Dialogs;
-						MessageBox errorMessage(
-							"Rename failed",
-							"Cannot rename this item because it was deleted externally",
-							MessageBox::EMessageType::ERROR,
-							MessageBox::EButtonLayout::OK
-						);
+						OVLOG_ERROR("Cannot rename this item because it was deleted externally");
 						return;
 					}
 
@@ -233,6 +215,12 @@ namespace
 
 				nameEditor.EnterPressedEvent += [this](std::string p_newName)
 				{
+					if (!std::filesystem::exists(filePath))
+					{
+						OVLOG_ERROR("Cannot complete rename because the item was deleted externally");
+						return;
+					}
+
 					if (!std::filesystem::is_directory(filePath))
 					{
 						p_newName += filePath.extension().string();
@@ -292,11 +280,8 @@ namespace
 
 		void CreateNewShader(const std::string& p_shaderName, std::optional<const std::string_view> p_type)
 		{
-			if (!ValidateFolderPath(filePath))
-			{
-				ShowPathDeletedError("Create shader");
+			if (!ValidateFolderPath(filePath, "Create shader"))
 				return;
-			}
 
 			const auto finalPath = FindAvailableFilePath(filePath / (p_shaderName + ".ovfx"));
 
@@ -337,11 +322,8 @@ namespace
 			std::optional<std::function<void(OvCore::Resources::Material&)>> p_setupCallback
 		)
 		{
-			if (!ValidateFolderPath(filePath))
-			{
-				ShowPathDeletedError("Create material");
+			if (!ValidateFolderPath(filePath, "Create material"))
 				return;
-			}
 
 			OvCore::Resources::Material material;
 
@@ -389,11 +371,8 @@ namespace
 			auto& showInExplorer = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Show in explorer");
 			showInExplorer.ClickedEvent += [this]
 			{
-				if (!ValidateFolderPath(filePath))
-				{
-					ShowPathDeletedError("Show in explorer");
+				if (!ValidateFolderPath(filePath, "Show in explorer"))
 					return;
-				}
 				OvTools::Utils::SystemCalls::ShowInExplorer(filePath.string());
 			};
 
@@ -402,11 +381,8 @@ namespace
 				auto& importAssetHere = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Import Here...");
 				importAssetHere.ClickedEvent += [this]
 				{
-					if (!ValidateFolderPath(filePath))
-					{
-						ShowPathDeletedError("Import");
+					if (!ValidateFolderPath(filePath, "Import"))
 						return;
-					}
 
 					if (EDITOR_EXEC(ImportAssetAtLocation(filePath.string())))
 					{
@@ -470,11 +446,8 @@ namespace
 				createAtmosphereMaterialMenu.ClickedEvent += [&createAtmosphereMaterial] { createAtmosphereMaterial.content = ""; };
 
 				createFolder.EnterPressedEvent += [this](std::string newFolderName) {
-					if (!ValidateFolderPath(filePath))
-					{
-						ShowPathDeletedError("Create folder");
+					if (!ValidateFolderPath(filePath, "Create folder"))
 						return;
-					}
 					const auto finalPath = FindAvailableFilePath(filePath / newFolderName);
 					std::filesystem::create_directory(finalPath);
 					ItemAddedEvent.Invoke(finalPath);
@@ -482,11 +455,8 @@ namespace
 				};
 
 				createScene.EnterPressedEvent += [this](std::string newSceneName) {
-					if (!ValidateFolderPath(filePath))
-					{
-						ShowPathDeletedError("Create scene");
+					if (!ValidateFolderPath(filePath, "Create scene"))
 						return;
-					}
 					const auto finalPath = FindAvailableFilePath(filePath / (newSceneName + ".ovscene"));
 
 					auto emptyScene = OvCore::SceneSystem::Scene{};
@@ -500,11 +470,8 @@ namespace
 				};
 
 				createPartialShader.EnterPressedEvent += [this](std::string newShaderName) {
-					if (!ValidateFolderPath(filePath))
-					{
-						ShowPathDeletedError("Create shader");
+					if (!ValidateFolderPath(filePath, "Create shader"))
 						return;
-					}
 					const auto finalPath = FindAvailableFilePath(filePath / (newShaderName + ".ovfxh"));
 
 					{
@@ -516,11 +483,8 @@ namespace
 				};
 
 				createScript.EnterPressedEvent += [this](std::string p_newName) {
-					if (!ValidateFolderPath(filePath))
-					{
-						ShowPathDeletedError("Create script");
+					if (!ValidateFolderPath(filePath, "Create script"))
 						return;
-					}
 					std::erase_if(p_newName, [](char c) {
 						return std::find(kAllowedFilenameChars.begin(), kAllowedFilenameChars.end(), c) == kAllowedFilenameChars.end();
 					});
@@ -1125,14 +1089,9 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 			treeNode.RemoveAllWidgets();
 			std::filesystem::path updatedPath = std::filesystem::path{path}.parent_path() / treeNode.name;
 			
-			// Check if the directory still exists
 			if (!std::filesystem::exists(updatedPath) || !std::filesystem::is_directory(updatedPath))
 			{
-				// Show error message to the user
-				auto& errorText = treeNode.CreateWidget<Texts::TextColored>(
-					"[MISSING] Folder was deleted externally",
-					OvUI::Types::Color{1.0f, 0.3f, 0.3f, 1.0f}
-				);
+				OVLOG_ERROR("Folder was deleted externally: " + updatedPath.string());
 				return;
 			}
 			

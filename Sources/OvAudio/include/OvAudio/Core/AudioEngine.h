@@ -116,6 +116,10 @@ namespace OvAudio::Core
 		std::vector<std::reference_wrapper<Entities::AudioSource>> m_audioSources;
 		std::vector<std::reference_wrapper<Entities::AudioSource>> m_suspendedAudioSources;
 		std::vector<std::reference_wrapper<Entities::AudioListener>> m_audioListeners;
+		std::optional<OvTools::Eventing::ListenerID> m_audioSourceCreatedListenerID;
+		std::optional<OvTools::Eventing::ListenerID> m_audioSourceDestroyedListenerID;
+		std::optional<OvTools::Eventing::ListenerID> m_audioListenerCreatedListenerID;
+		std::optional<OvTools::Eventing::ListenerID> m_audioListenerDestroyedListenerID;
 
 		std::unique_ptr<SoLoud::Soloud> m_backend;
 	};

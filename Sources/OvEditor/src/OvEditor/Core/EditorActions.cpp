@@ -1168,7 +1168,52 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 	const auto targetPath = m_context.projectAssetsPath / "Scripts";
 
 	std::error_code err;
-	std::filesystem::rename(legacyScriptsPath, targetPath, err);
+
+	if (!std::filesystem::exists(targetPath))
+	{
+		std::filesystem::rename(legacyScriptsPath, targetPath, err);
+	}
+	else if (std::filesystem::is_directory(targetPath))
+	{
+		std::filesystem::create_directories(targetPath, err);
+
+		if (!err)
+		{
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(legacyScriptsPath))
+			{
+				const auto destination = targetPath / entry.path().lexically_relative(legacyScriptsPath);
+
+				if (entry.is_directory())
+				{
+					std::filesystem::create_directories(destination, err);
+				}
+				else
+				{
+					std::filesystem::create_directories(destination.parent_path(), err);
+
+					if (!err)
+					{
+						std::filesystem::copy_file(entry.path(), destination, std::filesystem::copy_options::overwrite_existing, err);
+					}
+				}
+
+				if (err)
+				{
+					break;
+				}
+			}
+		}
+
+		if (!err)
+		{
+			std::filesystem::remove_all(legacyScriptsPath, err);
+		}
+	}
+	else
+	{
+		OVLOG_ERROR("Failed to migrate Scripts/ folder: Assets/Scripts exists but is not a directory.");
+		return;
+	}
 
 	if (err)
 	{

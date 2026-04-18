@@ -7,14 +7,20 @@
 #include "OvEditor/Panels/ProjectSettings.h"
 #include "OvEditor/Core/EditorActions.h"
 
+#include <filesystem>
+
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
+#include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Plugins/DataDispatcher.h>
+#include <OvWindowing/Dialogs/OpenFileDialog.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -80,6 +86,55 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		GUIDrawer::DrawScalar<int>(columns, "Resolution Y", GenerateGatherer<int>("y_resolution"), GenerateProvider<int>("y_resolution"), 1, 0, 10000);
 		GUIDrawer::DrawBoolean(columns, "Fullscreen", GenerateGatherer<bool>("fullscreen"), GenerateProvider<bool>("fullscreen"));
 		GUIDrawer::DrawString(columns, "Executable name", GenerateGatherer<std::string>("executable_name"), GenerateProvider<std::string>("executable_name"));
+
+		GUIDrawer::CreateTitle(columns, "Application icon");
+		auto& iconPickerGroup = columns.CreateWidget<Layout::Group>();
+		iconPickerGroup.horizontal = true;
+		iconPickerGroup.stretchWidget = 0;
+
+		auto& iconPathField = iconPickerGroup.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+		iconPathField.disabled = true;
+		iconPathField.fullWidth = true;
+		auto& iconPathDispatcher = iconPathField.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
+		iconPathDispatcher.RegisterGatherer(GenerateGatherer<std::string>("executable_icon"));
+
+		auto& browseIconButton = iconPickerGroup.CreateWidget<Buttons::ButtonSmall>("...");
+		browseIconButton.tooltip = "Browse for an icon file";
+		browseIconButton.ClickedEvent += [this]
+		{
+			OvWindowing::Dialogs::OpenFileDialog dialog("Select Application Icon");
+			dialog.SetInitialDirectory(EDITOR_CONTEXT(projectFolder).string());
+			dialog.AddFileType("Image files", "*.png;*.jpg;*.jpeg;*.bmp;*.tga;");
+			dialog.AddFileType("PNG (.png)", "*.png;");
+			dialog.AddFileType("JPEG (.jpg, .jpeg)", "*.jpg;*.jpeg;");
+			dialog.AddFileType("All files", "*.*;");
+			dialog.Show();
+
+			if (dialog.HasSucceeded())
+			{
+				const auto selectedPath = std::filesystem::path(dialog.GetSelectedFilePath());
+				const auto projectFolder = EDITOR_CONTEXT(projectFolder);
+				std::error_code relativeError;
+				const auto relativePath = std::filesystem::relative(selectedPath, projectFolder, relativeError);
+				const std::string relativePathString = relativePath.generic_string();
+
+				if (!relativeError && !relativePathString.empty() && !relativePathString.starts_with(".."))
+				{
+					m_projectFile.Set<std::string>("executable_icon", relativePathString);
+				}
+				else
+				{
+					m_projectFile.Set<std::string>("executable_icon", selectedPath.generic_string());
+				}
+			}
+		};
+
+		auto& clearIconButton = iconPickerGroup.CreateWidget<Buttons::ButtonSmall>("x");
+		clearIconButton.tooltip = "Clear icon selection";
+		clearIconButton.ClickedEvent += [this]
+		{
+			m_projectFile.Set<std::string>("executable_icon", "");
+		};
 	}
 
 	{

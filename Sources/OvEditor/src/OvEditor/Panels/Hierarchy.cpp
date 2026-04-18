@@ -55,10 +55,22 @@ public:
 				EDITOR_EXEC(MoveToTarget(*m_target));
 			};
 
+			auto& copyButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Copy");
+			copyButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(CopyActor(*m_target));
+			};
+
 			auto& duplicateButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Duplicate");
 			duplicateButton.ClickedEvent += [this]
 			{
 				EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*m_target), nullptr, true), 0));
+			};
+
+			auto& pasteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Paste");
+			pasteButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(DelayAction(EDITOR_BIND(PasteActor, m_target), 0));
 			};
 
 			auto& deleteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
@@ -80,6 +92,14 @@ public:
 			nameEditor.EnterPressedEvent += [this](std::string p_newName)
 			{
 				m_target->SetName(p_newName);
+			};
+		}
+		else
+		{
+			auto& pasteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Paste");
+			pasteButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(DelayAction(EDITOR_BIND(PasteActor, nullptr), 0));
 			};
 		}
 

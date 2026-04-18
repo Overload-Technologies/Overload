@@ -229,6 +229,18 @@ namespace OvEditor::Core
 
 		#pragma region ACTOR_MANIPULATION
 		/**
+		* Copy the given actor in the editor copy buffer
+		* @param p_actor
+		*/
+		void CopyActor(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Paste the copied actor, optionally as a child of the given parent
+		* @param p_parent
+		*/
+		void PasteActor(OvCore::ECS::Actor* p_parent = nullptr);
+
+		/**
 		* Select an actor and show him in inspector
 		* @param p_target
 		*/

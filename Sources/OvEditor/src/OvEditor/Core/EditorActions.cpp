@@ -800,30 +800,69 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 	
 	newActor.SetID(idToUse);
 	newActor.SetGUID(guidToUse);
+	auto currentScene = m_context.sceneManager.GetCurrentScene();
 
 	if (p_forcedParent)
-		newActor.SetParent(*p_forcedParent);
-	else
 	{
-        auto currentScene = m_context.sceneManager.GetCurrentScene();
+		newActor.SetParent(*p_forcedParent);
+	}
+	else if (newActor.GetParentID() > 0)
+	{
+		if (auto found = currentScene->FindActorByID(newActor.GetParentID()); found)
+		{
+			newActor.SetParent(*found);
+		}
+	}
 
-        if (newActor.GetParentID() > 0)
-        {
-            if (auto found = currentScene->FindActorByID(newActor.GetParentID()); found)
-            {
-                newActor.SetParent(*found);
-            }
-        }
-
-        const auto uniqueName = FindDuplicatedActorUniqueName(p_toDuplicate, newActor, *currentScene);
-        newActor.SetName(uniqueName);
+	if (p_focus || !p_forcedParent)
+	{
+		const auto uniqueName = FindDuplicatedActorUniqueName(p_toDuplicate, newActor, *currentScene);
+		newActor.SetName(uniqueName);
 	}
 
 	if (p_focus)
+	{
 		SelectActor(newActor);
+	}
 
 	for (auto& child : p_toDuplicate.GetChildren())
 		DuplicateActor(*child, &newActor, false);
+}
+
+void OvEditor::Core::EditorActions::CopyActor(OvCore::ECS::Actor& p_actor)
+{
+	m_context.copyBuffer = Context::ActorCopyBuffer{
+		.guid = p_actor.GetGUID()
+	};
+}
+
+void OvEditor::Core::EditorActions::PasteActor(OvCore::ECS::Actor* p_parent)
+{
+	const auto actorCopyBuffer = std::get_if<Context::ActorCopyBuffer>(&m_context.copyBuffer);
+	if (!actorCopyBuffer)
+	{
+		return;
+	}
+
+	const auto currentScene = m_context.sceneManager.GetCurrentScene();
+	if (!currentScene)
+	{
+		return;
+	}
+
+	if (const auto copiedActor = currentScene->FindActorByGUID(actorCopyBuffer->guid))
+	{
+		auto* destinationParent = p_parent;
+
+		// Pasting on the copied actor itself falls back to its current parent,
+		// preserving the "duplicate-like" behavior by default.
+		if (destinationParent && destinationParent->GetGUID() == copiedActor->GetGUID())
+		{
+			destinationParent = copiedActor->GetParent();
+		}
+
+		DuplicateActor(*copiedActor, destinationParent, true);
+	}
 }
 
 void OvEditor::Core::EditorActions::SelectActor(OvCore::ECS::Actor& p_target)

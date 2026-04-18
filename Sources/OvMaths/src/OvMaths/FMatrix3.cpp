@@ -15,9 +15,12 @@ const OvMaths::FMatrix3 OvMaths::FMatrix3::Identity = OvMaths::FMatrix3(1.0f, 0.
 	0.0f, 1.0f, 0.0f,
 	0.0f, 0.0f, 1.0f);
 
-OvMaths::FMatrix3::FMatrix3()
+OvMaths::FMatrix3::FMatrix3() : FMatrix3(
+	1.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f,
+	0.0f, 0.0f, 1.0f
+)
 {
-	memcpy(data, Identity.data, 9 * sizeof(float));
 }
 
 OvMaths::FMatrix3::FMatrix3(float p_value)

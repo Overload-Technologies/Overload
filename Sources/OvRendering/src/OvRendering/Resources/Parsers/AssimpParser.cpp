@@ -46,7 +46,8 @@ namespace
 	};
 
 	constexpr std::array kRoughnessTextureTypes{
-		aiTextureType_DIFFUSE_ROUGHNESS
+		aiTextureType_DIFFUSE_ROUGHNESS,
+		aiTextureType_SHININESS
 	};
 
 	constexpr std::array kAmbientOcclusionTextureTypes{
@@ -530,7 +531,7 @@ namespace
 				embeddedMaterial.albedo.z = ToPerceptualColor(albedoColor.b);
 				embeddedMaterial.albedo.w = std::clamp(albedoColor.a, 0.0f, 1.0f);
 			}
-			else
+			else if (!embeddedMaterial.albedoTexture.has_value())
 			{
 				aiColor3D diffuseColor{};
 				if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)

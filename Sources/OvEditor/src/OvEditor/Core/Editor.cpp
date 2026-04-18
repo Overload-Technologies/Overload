@@ -206,10 +206,39 @@ void OvEditor::Core::Editor::Update(float p_deltaTime)
 
 void OvEditor::Core::Editor::HandleGlobalShortcuts()
 {
+	auto& sceneView = EDITOR_PANEL(SceneView, "Scene View");
+	auto& hierarchy = EDITOR_PANEL(Hierarchy, "Hierarchy");
+	const bool isSceneViewFocused = sceneView.IsFocused();
+	const bool isHierarchyFocused = hierarchy.IsFocused();
+
 	// If the [Del] key is pressed while an actor is selected and the Scene View or Hierarchy is focused
-	if (m_context.inputManager->IsKeyPressed(OvWindowing::Inputs::EKey::KEY_DELETE) && EDITOR_EXEC(IsAnyActorSelected()) && (EDITOR_PANEL(SceneView, "Scene View").IsFocused() || EDITOR_PANEL(Hierarchy, "Hierarchy").IsFocused()))
+	if (m_context.inputManager->IsKeyPressed(OvWindowing::Inputs::EKey::KEY_DELETE) && EDITOR_EXEC(IsAnyActorSelected()) && (isSceneViewFocused || isHierarchyFocused))
 	{
 		EDITOR_EXEC(DestroyActor(EDITOR_EXEC(GetSelectedActor())));
+	}
+
+	const bool isControlPressed =
+		m_context.inputManager->GetKeyState(OvWindowing::Inputs::EKey::KEY_LEFT_CONTROL) == OvWindowing::Inputs::EKeyState::KEY_DOWN ||
+		m_context.inputManager->GetKeyState(OvWindowing::Inputs::EKey::KEY_RIGHT_CONTROL) == OvWindowing::Inputs::EKeyState::KEY_DOWN;
+
+	if (isControlPressed && (isSceneViewFocused || isHierarchyFocused))
+	{
+		if (m_context.inputManager->IsKeyPressed(OvWindowing::Inputs::EKey::KEY_C) && EDITOR_EXEC(IsAnyActorSelected()))
+		{
+			EDITOR_EXEC(CopyActor(EDITOR_EXEC(GetSelectedActor())));
+		}
+
+		if (m_context.inputManager->IsKeyPressed(OvWindowing::Inputs::EKey::KEY_V))
+		{
+			OvCore::ECS::Actor* parent = nullptr;
+
+			if (EDITOR_EXEC(IsAnyActorSelected()))
+			{
+				parent = &EDITOR_EXEC(GetSelectedActor());
+			}
+
+			EDITOR_EXEC(PasteActor(parent));
+		}
 	}
 }
 

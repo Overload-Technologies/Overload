@@ -18,6 +18,18 @@ To create a pull request:
 3. Review your code before submitting (conduct build and quality checks).
 4. Create a pull request targeting the `main` branch.
 
+## Use of AI Coding Tools
+We allow the use of AI-assisted coding tools to support development. However, contributors are fully responsible for the quality, correctness, and originality of any generated code.
+
+If AI tools are used, this must be clearly disclosed in the pull request description.
+
+All AI-assisted contributions must:
+- Be thoroughly reviewed and understood by the contributor
+- Meet the project's coding standards and guidelines
+- Be properly tested before submission
+
+Submissions that appear to be unreviewed or low-quality AI-generated code may be rejected.
+
 ## Any contributions you make will be under the MIT Software License
 In short, when you submit code changes, your contributions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 

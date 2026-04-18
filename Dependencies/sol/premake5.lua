@@ -1,5 +1,9 @@
 project "sol"
-	kind "SharedItems"
+	kind "Utility"
+
+	filter "action:vs*"
+		kind "SharedItems"
+	filter {}
 
 	files {
 		"**.h",

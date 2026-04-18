@@ -794,34 +794,75 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 	p_toDuplicate.OnSerialize(doc, actorsRoot);
 	auto& newActor = CreateEmptyActor(false);
 	int64_t idToUse = newActor.GetID();
+	uint64_t guidToUse = newActor.GetGUID();
 	tinyxml2::XMLElement* currentActor = actorsRoot->FirstChildElement("actor");
 	newActor.OnDeserialize(doc, currentActor);
 	
 	newActor.SetID(idToUse);
+	newActor.SetGUID(guidToUse);
+	auto currentScene = m_context.sceneManager.GetCurrentScene();
 
 	if (p_forcedParent)
-		newActor.SetParent(*p_forcedParent);
-	else
 	{
-        auto currentScene = m_context.sceneManager.GetCurrentScene();
+		newActor.SetParent(*p_forcedParent);
+	}
+	else if (newActor.GetParentID() > 0)
+	{
+		if (auto found = currentScene->FindActorByID(newActor.GetParentID()); found)
+		{
+			newActor.SetParent(*found);
+		}
+	}
 
-        if (newActor.GetParentID() > 0)
-        {
-            if (auto found = currentScene->FindActorByID(newActor.GetParentID()); found)
-            {
-                newActor.SetParent(*found);
-            }
-        }
-
-        const auto uniqueName = FindDuplicatedActorUniqueName(p_toDuplicate, newActor, *currentScene);
-        newActor.SetName(uniqueName);
+	if (p_focus || !p_forcedParent)
+	{
+		const auto uniqueName = FindDuplicatedActorUniqueName(p_toDuplicate, newActor, *currentScene);
+		newActor.SetName(uniqueName);
 	}
 
 	if (p_focus)
+	{
 		SelectActor(newActor);
+	}
 
 	for (auto& child : p_toDuplicate.GetChildren())
 		DuplicateActor(*child, &newActor, false);
+}
+
+void OvEditor::Core::EditorActions::CopyActor(OvCore::ECS::Actor& p_actor)
+{
+	m_context.copyBuffer = Context::ActorCopyBuffer{
+		.guid = p_actor.GetGUID()
+	};
+}
+
+void OvEditor::Core::EditorActions::PasteActor(OvCore::ECS::Actor* p_parent)
+{
+	const auto actorCopyBuffer = std::get_if<Context::ActorCopyBuffer>(&m_context.copyBuffer);
+	if (!actorCopyBuffer)
+	{
+		return;
+	}
+
+	const auto currentScene = m_context.sceneManager.GetCurrentScene();
+	if (!currentScene)
+	{
+		return;
+	}
+
+	if (const auto copiedActor = currentScene->FindActorByGUID(actorCopyBuffer->guid))
+	{
+		auto* destinationParent = p_parent;
+
+		// Pasting on the copied actor itself falls back to its current parent,
+		// preserving the "duplicate-like" behavior by default.
+		if (destinationParent && destinationParent->GetGUID() == copiedActor->GetGUID())
+		{
+			destinationParent = copiedActor->GetParent();
+		}
+
+		DuplicateActor(*copiedActor, destinationParent, true);
+	}
 }
 
 void OvEditor::Core::EditorActions::SelectActor(OvCore::ECS::Actor& p_target)
@@ -1154,7 +1195,8 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 		"A \"Scripts/\" folder was found in your project directory.\n\n"
 		"Scripts are now stored inside \"Assets/\" and support subdirectories.\n\n"
 		"Would you like to migrate your scripts to \"Assets/Scripts/\"?\n"
-		"All scene files referencing these scripts will be updated automatically.",
+		"All scene files referencing these scripts will be updated automatically.\n\n"
+		"Note that any script already present in Assets/Scripts/ with the same name as a script in Scripts/ will be overridden.",
 		MessageBox::EMessageType::WARNING,
 		MessageBox::EButtonLayout::YES_NO,
 		true
@@ -1166,9 +1208,66 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 	}
 
 	const auto targetPath = m_context.projectAssetsPath / "Scripts";
+	std::vector<std::filesystem::path> migratedScriptNames;
+
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(legacyScriptsPath))
+	{
+		if (!entry.is_directory())
+		{
+			if (OvTools::Utils::PathParser::GetFileType(entry.path().string()) == OvTools::Utils::PathParser::EFileType::SCRIPT)
+			{
+				migratedScriptNames.push_back(entry.path().filename());
+			}
+		}
+	}
 
 	std::error_code err;
-	std::filesystem::rename(legacyScriptsPath, targetPath, err);
+
+	if (!std::filesystem::exists(targetPath))
+	{
+		std::filesystem::rename(legacyScriptsPath, targetPath, err);
+	}
+	else if (std::filesystem::is_directory(targetPath))
+	{
+		std::filesystem::create_directories(targetPath, err);
+
+		if (!err)
+		{
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(legacyScriptsPath))
+			{
+				const auto destination = targetPath / entry.path().lexically_relative(legacyScriptsPath);
+
+				if (entry.is_directory())
+				{
+					std::filesystem::create_directories(destination, err);
+				}
+				else
+				{
+					std::filesystem::create_directories(destination.parent_path(), err);
+
+					if (!err)
+					{
+						std::filesystem::copy_file(entry.path(), destination, std::filesystem::copy_options::overwrite_existing, err);
+					}
+				}
+
+				if (err)
+				{
+					break;
+				}
+			}
+		}
+
+		if (!err)
+		{
+			std::filesystem::remove_all(legacyScriptsPath, err);
+		}
+	}
+	else
+	{
+		OVLOG_ERROR("Failed to migrate Scripts/ folder: Assets/Scripts exists but is not a directory.");
+		return;
+	}
 
 	if (err)
 	{
@@ -1179,18 +1278,12 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 	OVLOG_INFO("Scripts/ folder migrated to Assets/Scripts/");
 
 	// Update all scene files: replace old behaviour type (just the stem) with the new relative path
-	for (const auto& entry : std::filesystem::recursive_directory_iterator(targetPath))
+	for (const auto& scriptName : migratedScriptNames)
 	{
-		if (!entry.is_directory())
-		{
-			if (OvTools::Utils::PathParser::GetFileType(entry.path().string()) == OvTools::Utils::PathParser::EFileType::SCRIPT)
-			{
-				const auto stem = entry.path().stem().string();
-				const auto newRelPath = (std::filesystem::path("Scripts") / entry.path().filename()).generic_string();
+		const auto stem = scriptName.stem().string();
+		const auto newRelPath = (std::filesystem::path("Scripts") / scriptName).generic_string();
 
-				PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
-			}
-		}
+		PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
 	}
 
 	OVLOG_INFO("Scene files updated with new script paths");

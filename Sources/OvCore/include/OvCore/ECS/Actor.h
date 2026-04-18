@@ -86,6 +86,13 @@ namespace OvCore::ECS
 		void SetID(int64_t p_id);
 
 		/**
+		* Defines a new GUID for the actor
+		* @note DO NOTE USE unless you know what you're doing!
+		* @param p_guid
+		*/
+		void SetGUID(uint64_t p_guid);
+
+		/**
 		* Returns the ID of the actor
 		*/
 		int64_t GetID() const;

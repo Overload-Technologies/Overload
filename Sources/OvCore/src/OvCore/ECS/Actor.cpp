@@ -125,6 +125,11 @@ void OvCore::ECS::Actor::SetID(int64_t p_id)
 	m_actorID = p_id;
 }
 
+void OvCore::ECS::Actor::SetGUID(uint64_t p_guid)
+{
+	m_guid = p_guid;
+}
+
 int64_t OvCore::ECS::Actor::GetID() const
 {
 	return m_actorID;

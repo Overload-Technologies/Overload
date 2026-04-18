@@ -23,9 +23,13 @@ const OvMaths::FMatrix4 OvMaths::FMatrix4::Identity{
 	0.f, 0.f, 0.f, 1.f
 };
 
-OvMaths::FMatrix4::FMatrix4()
+OvMaths::FMatrix4::FMatrix4() : FMatrix4(
+	1.f, 0.f, 0.f, 0.f,
+	0.f, 1.f, 0.f, 0.f,
+	0.f, 0.f, 1.f, 0.f,
+	0.f, 0.f, 0.f, 1.f
+)
 {
-	memcpy(this->data, Identity.data, 16 * sizeof(float)); // TODO: memcpy is not great (consider std::array)
 }
 
 OvMaths::FMatrix4::FMatrix4(float p_element1, float p_element2, float p_element3, float p_element4, float p_element5, float p_element6, float p_element7, float p_element8, float p_element9, float p_element10, float p_element11, float p_element12, float p_element13, float p_element14, float p_element15, float p_element16)

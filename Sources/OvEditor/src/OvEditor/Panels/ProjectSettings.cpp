@@ -11,7 +11,6 @@
 
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
-#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
@@ -98,7 +97,8 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		auto& iconPathDispatcher = iconPathField.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
 		iconPathDispatcher.RegisterGatherer(GenerateGatherer<std::string>("executable_icon"));
 
-		auto& browseIconButton = iconPickerGroup.CreateWidget<Buttons::ButtonSmall>("...");
+		auto& browseIconButton = iconPickerGroup.CreateWidget<Buttons::Button>("...");
+		browseIconButton.size.x = 22.0f;
 		browseIconButton.tooltip = "Browse for an icon file";
 		browseIconButton.ClickedEvent += [this]
 		{
@@ -129,7 +129,8 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 			}
 		};
 
-		auto& clearIconButton = iconPickerGroup.CreateWidget<Buttons::ButtonSmall>("x");
+		auto& clearIconButton = iconPickerGroup.CreateWidget<Buttons::Button>("x");
+		clearIconButton.size.x = 22.0f;
 		clearIconButton.tooltip = "Clear icon selection";
 		clearIconButton.ClickedEvent += [this]
 		{

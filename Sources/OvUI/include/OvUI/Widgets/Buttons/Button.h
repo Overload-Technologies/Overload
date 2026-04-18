@@ -6,12 +6,13 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include <OvMaths/FVector2.h>
 
-#include "OvUI/Widgets/Buttons/AButton.h"
-#include "OvUI/Types/Color.h"
+#include <OvUI/Widgets/Buttons/AButton.h>
+#include <OvUI/Types/Color.h>
 
 namespace OvUI::Widgets::Buttons
 {
@@ -37,10 +38,9 @@ namespace OvUI::Widgets::Buttons
 		OvMaths::FVector2 size;
 		bool disabled = false;
 
-		Types::Color idleBackgroundColor;
-		Types::Color hoveredBackgroundColor;
-		Types::Color clickedBackgroundColor;
-
-		Types::Color textColor;
+		std::optional<Types::Color> idleBackgroundColor;
+		std::optional<Types::Color> hoveredBackgroundColor;
+		std::optional<Types::Color> clickedBackgroundColor;
+		std::optional<Types::Color> textColor;
 	};
 }

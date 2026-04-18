@@ -22,7 +22,6 @@
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Buttons/Button.h>
-#include <OvUI/Widgets/Buttons/ButtonSmall.h>
 #include <OvUI/Widgets/Buttons/Toggle.h>
 #include <OvUI/Plugins/DDTarget.h>
 

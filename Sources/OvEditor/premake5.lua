@@ -18,6 +18,7 @@ project "OvEditor"
 		-- Dependencies
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
+		dependdir .. "stb_image/include",
 		dependdir .. "tinyxml2/include",
 		dependdir .. "tracy",
 

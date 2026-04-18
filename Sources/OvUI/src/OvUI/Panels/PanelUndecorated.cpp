@@ -32,7 +32,6 @@ void OvUI::Panels::PanelUndecorated::_Draw_Impl()
 int OvUI::Panels::PanelUndecorated::CollectFlags()
 {
 	ImGuiWindowFlags flags =
-		ImGuiWindowFlags_AlwaysUseWindowPadding |
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoScrollbar |

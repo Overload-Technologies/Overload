@@ -30,14 +30,38 @@ OvAudio::Core::AudioEngine::AudioEngine()
 	using AudioSourceReceiver = void(AudioEngine::*)(OvAudio::Entities::AudioSource&);
 	using AudioListenerReceiver = void(AudioEngine::*)(OvAudio::Entities::AudioListener&);
 
-	Entities::AudioSource::CreatedEvent += std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
-	Entities::AudioSource::DestroyedEvent += std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
-	Entities::AudioListener::CreatedEvent += std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
-	Entities::AudioListener::DestroyedEvent += std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
+	m_audioSourceCreatedListenerID = Entities::AudioSource::CreatedEvent +=
+		std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
+	m_audioSourceDestroyedListenerID = Entities::AudioSource::DestroyedEvent +=
+		std::bind(static_cast<AudioSourceReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
+	m_audioListenerCreatedListenerID = Entities::AudioListener::CreatedEvent +=
+		std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Consider), this, std::placeholders::_1);
+	m_audioListenerDestroyedListenerID = Entities::AudioListener::DestroyedEvent +=
+		std::bind(static_cast<AudioListenerReceiver>(&AudioEngine::Unconsider), this, std::placeholders::_1);
 }
 
 OvAudio::Core::AudioEngine::~AudioEngine()
 {
+	if (m_audioSourceCreatedListenerID.has_value())
+	{
+		Entities::AudioSource::CreatedEvent.RemoveListener(m_audioSourceCreatedListenerID.value());
+	}
+
+	if (m_audioSourceDestroyedListenerID.has_value())
+	{
+		Entities::AudioSource::DestroyedEvent.RemoveListener(m_audioSourceDestroyedListenerID.value());
+	}
+
+	if (m_audioListenerCreatedListenerID.has_value())
+	{
+		Entities::AudioListener::CreatedEvent.RemoveListener(m_audioListenerCreatedListenerID.value());
+	}
+
+	if (m_audioListenerDestroyedListenerID.has_value())
+	{
+		Entities::AudioListener::DestroyedEvent.RemoveListener(m_audioListenerDestroyedListenerID.value());
+	}
+
 	if (IsValid())
 	{
 		m_backend->deinit();

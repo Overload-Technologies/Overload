@@ -46,7 +46,8 @@ namespace
 	};
 
 	constexpr std::array kRoughnessTextureTypes{
-		aiTextureType_DIFFUSE_ROUGHNESS
+		aiTextureType_DIFFUSE_ROUGHNESS,
+		aiTextureType_SHININESS
 	};
 
 	constexpr std::array kAmbientOcclusionTextureTypes{

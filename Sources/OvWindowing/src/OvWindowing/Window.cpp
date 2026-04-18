@@ -65,15 +65,20 @@ void OvWindowing::Window::SetIcon(const std::string & p_filePath)
 {
 	GLFWimage images[1];
 	images[0].pixels = stbi_load(p_filePath.c_str(), &images[0].width, &images[0].height, 0, 4);
-	glfwSetWindowIcon(m_glfwWindow, 1, images);
+
+	if (images[0].pixels)
+	{
+		glfwSetWindowIcon(m_glfwWindow, 1, images);
+		stbi_image_free(images[0].pixels);
+	}
 }
 
 void OvWindowing::Window::SetIconFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height)
 {
 	GLFWimage images[1];
 	images[0].pixels = p_data;
-	images[0].height = p_width;
-	images[0].width = p_height;
+	images[0].width = static_cast<int>(p_width);
+	images[0].height = static_cast<int>(p_height);
 	glfwSetWindowIcon(m_glfwWindow, 1, images);
 }
 

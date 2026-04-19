@@ -770,6 +770,14 @@ namespace
 	public:
 		EmbeddedFileContextualMenu(std::string p_resourcePath) : m_resourcePath(std::move(p_resourcePath)) {}
 
+		void CreateList()
+		{
+			auto& openAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Open");
+			openAction.ClickedEvent += [this] {
+				OvCore::Helpers::GUIHelpers::Open(m_resourcePath);
+			};
+		}
+
 		virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
 		{
 			if (!m_widgets.empty())
@@ -779,55 +787,7 @@ namespace
 		}
 
 	protected:
-		void OpenInAssetView() const
-		{
-			OvCore::Helpers::GUIHelpers::Open(m_resourcePath);
-		}
-
-	protected:
 		std::string m_resourcePath;
-	};
-
-	class EmbeddedTextureContextualMenu : public EmbeddedFileContextualMenu
-	{
-	public:
-		EmbeddedTextureContextualMenu(const std::string& p_resourcePath) : EmbeddedFileContextualMenu(p_resourcePath) {}
-
-		void CreateList()
-		{
-			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
-			previewAction.ClickedEvent += [this] {
-				OpenInAssetView();
-			};
-		}
-	};
-
-	class EmbeddedMaterialContextualMenu : public EmbeddedFileContextualMenu
-	{
-	public:
-		EmbeddedMaterialContextualMenu(const std::string& p_resourcePath) : EmbeddedFileContextualMenu(p_resourcePath) {}
-
-		void CreateList()
-		{
-			auto& inspectAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Inspect");
-			inspectAction.ClickedEvent += [this] {
-				auto& materialManager = OVSERVICE(OvCore::ResourceManagement::MaterialManager);
-				if (auto* material = materialManager.GetResource(m_resourcePath))
-				{
-					auto& materialEditor = EDITOR_PANEL(OvEditor::Panels::MaterialEditor, "Material Editor");
-					EDITOR_EXEC(DelayAction([material, &materialEditor]() {
-						materialEditor.SetTarget(*material);
-						materialEditor.Open();
-						materialEditor.Focus();
-					}));
-				}
-			};
-
-			auto& previewAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Preview");
-			previewAction.ClickedEvent += [this] {
-				OpenInAssetView();
-			};
-		}
 	};
 
 	void CreateEmbeddedModelAssetEntry(
@@ -848,20 +808,21 @@ namespace
 		itemGroup.CreateWidget<Visual::Image>(iconTextureID, OvMaths::FVector2{ 16, 16 }).lineBreak = false;
 
 		auto& clickableText = itemGroup.CreateWidget<Texts::TextClickable>(itemName);
+		clickableText.AddPlugin<OvUI::Plugins::DDSource<std::pair<std::string, Layout::Group*>>>(
+			"File",
+			OvTools::Utils::PathParser::GetFriendlyPath(p_resourcePath),
+			std::make_pair(p_resourcePath, &itemGroup)
+		);
 
 		if (p_fileType == OvTools::Utils::PathParser::EFileType::TEXTURE)
 		{
 			auto& texturePreview = clickableText.AddPlugin<TexturePreview>();
 			texturePreview.SetPath(p_resourcePath);
+		}
 
-			auto& contextMenu = clickableText.AddPlugin<EmbeddedTextureContextualMenu>(p_resourcePath);
-			contextMenu.CreateList();
-		}
-		else if (p_fileType == OvTools::Utils::PathParser::EFileType::MATERIAL)
-		{
-			auto& contextMenu = clickableText.AddPlugin<EmbeddedMaterialContextualMenu>(p_resourcePath);
-			contextMenu.CreateList();
-		}
+		auto& contextMenu = clickableText.AddPlugin<EmbeddedFileContextualMenu>(p_resourcePath);
+		contextMenu.CreateList();
+
 		clickableText.DoubleClickedEvent += [resourcePath = p_resourcePath] {
 			OvCore::Helpers::GUIHelpers::Open(resourcePath);
 		};

@@ -89,7 +89,6 @@ void OvEditor::Core::Editor::SetupUI()
 			const auto path = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
 			const auto embeddedAssetPath = ParseEmbeddedAssetPath(path);
 			const bool isEmbeddedTexture = embeddedAssetPath && ParseEmbeddedTextureIndex(embeddedAssetPath->assetName).has_value();
-			const bool isEmbeddedMaterial = embeddedAssetPath && ParseEmbeddedMaterialIndex(embeddedAssetPath->assetName).has_value();
 
 			auto openInAssetView = [&](auto* p_resource)
 			{
@@ -108,11 +107,11 @@ void OvEditor::Core::Editor::SetupUI()
 			{
 				openInAssetView(OVSERVICE(ModelManager).GetResource(path));
 			}
-			else if (fileType == EFileType::MATERIAL || isEmbeddedMaterial)
+			else if (fileType == EFileType::MATERIAL)
 			{
 				auto* material = OVSERVICE(MaterialManager).GetResource(path);
 				openInAssetView(material);
-				if (material && !isEmbeddedMaterial)
+				if (material)
 				{
 					auto& materialEditor = EDITOR_PANEL(MaterialEditor, "Material Editor");
 					EDITOR_EXEC(DelayAction([material, &materialEditor]() {

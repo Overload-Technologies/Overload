@@ -203,6 +203,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<bool>("multisampling", false);
 	projectSettings.Add<int>("samples", 4);
 	projectSettings.Add<int>("build_type", 0);
+	projectSettings.Add<std::string>("window_icon", "");
 }
 
 bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
@@ -217,7 +218,8 @@ bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
 		projectSettings.IsKeyExisting("vsync") &&
 		projectSettings.IsKeyExisting("multisampling") &&
 		projectSettings.IsKeyExisting("samples") &&
-		projectSettings.IsKeyExisting("build_type");
+		projectSettings.IsKeyExisting("build_type") &&
+		projectSettings.IsKeyExisting("window_icon");
 }
 
 void OvEditor::Core::Context::ApplyProjectSettings()

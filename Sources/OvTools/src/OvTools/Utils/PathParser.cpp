@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <OvTools/Utils/PathParser.h>
+#include <filesystem>
 
 std::string OvTools::Utils::PathParser::MakeWindowsStyle(const std::string & p_path)
 {
@@ -135,3 +136,30 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 
 	return EFileType::UNKNOWN;
 }
+
+std::filesystem::path OvTools::Utils::PathParser::GetRealPath(
+	const std::filesystem::path& p_path,
+	const std::filesystem::path& p_enginePath,
+	const std::filesystem::path& p_projectPath
+)
+{
+	// Keep support for the engine prefix ':'
+	const std::string s = p_path.string();
+	std::filesystem::path path;
+	if (!s.empty() && s.front() == ':')
+	{
+		// Remove the ':' prefix and normalize separators
+		std::string sub = s.substr(1);
+		std::replace(sub.begin(), sub.end(), '\\', '/');
+		path = p_enginePath / std::filesystem::path{sub};
+	}
+	else
+	{
+		std::string sub = s;
+		std::replace(sub.begin(), sub.end(), '\\', '/');
+		path = p_projectPath / std::filesystem::path{sub};
+	}
+
+	return path.lexically_normal();
+}
+

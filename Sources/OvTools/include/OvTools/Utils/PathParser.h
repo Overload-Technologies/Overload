@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 
@@ -91,5 +92,16 @@ namespace OvTools::Utils
 		* @param p_path
 		*/
 		static EFileType GetFileType(const std::string& p_path);
+
+		/**
+		* Returns the actual path of a file, depending on its prefix: 
+		* - ":" prefix for engine assets
+		* - no prefix for project assets
+		*/
+		static std::filesystem::path GetRealPath(
+			const std::filesystem::path& p_path,
+			const std::filesystem::path& p_engineFolder,
+			const std::filesystem::path& p_projectFolder
+		);
 	};
 }

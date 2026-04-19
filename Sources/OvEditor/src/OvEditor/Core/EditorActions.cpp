@@ -1085,23 +1085,13 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	return false;
 }
 
-// Duplicate from AResourceManager.h
 std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
-	std::filesystem::path result;
-
-	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
-
-	if (normalizedPath.starts_with(':')) // The path is an engine path
-	{
-		result = m_context.engineAssetsPath / normalizedPath.substr(1);
-	}
-	else // The path is a project path
-	{
-		result = m_context.projectAssetsPath / normalizedPath;
-	}
-
-	return result.lexically_normal().string();
+	return OvTools::Utils::PathParser::GetRealPath(
+		std::filesystem::path(p_path),
+		m_context.engineAssetsPath,
+		m_context.projectAssetsPath
+	).string();
 }
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)

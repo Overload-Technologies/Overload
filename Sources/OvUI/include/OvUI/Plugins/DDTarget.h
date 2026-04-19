@@ -41,6 +41,10 @@ namespace OvUI::Plugins
 
 			if (p_context == EPluginExecutionContext::WIDGET)
 			{
+				// If the widget is disabled, don't accept drag-and-drop
+				if ((GImGui->CurrentItemFlags & ImGuiItemFlags_Disabled) != 0)
+					return;
+
 				const ImGuiID itemID = ImGui::GetItemID();
 				const ImGuiID targetSeed = itemID != 0 ? itemID : ImGui::GetID(this);
 				const ImGuiID targetID = ImHashStr(identifier.c_str(), 0, targetSeed);

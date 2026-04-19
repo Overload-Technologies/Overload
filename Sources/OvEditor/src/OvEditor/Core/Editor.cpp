@@ -7,6 +7,8 @@
 #include "OvEditor/Core/EditorActions.h"
 #include <tracy/Tracy.hpp>
 
+#include <filesystem>
+
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 
@@ -136,6 +138,14 @@ void OvEditor::Core::Editor::SetupUI()
 	// Provide the actor icon ID for ActorField widgets.
 	if (auto* actorTexture = m_context.editorResources->GetTexture("Actor"))
 		OvCore::Helpers::GUIHelpers::SetActorIconID(actorTexture->GetTexture().GetID());
+
+	// Provide asset existence checker so AssetFields show "(Missing Reference)" for invalid paths.
+	OvCore::Helpers::GUIHelpers::SetAssetExistsChecker(
+		[this](const std::string& p_path)
+		{
+			return std::filesystem::exists(m_editorActions.GetRealPath(p_path));
+		}
+	);
 
 	// Provide actor selection so double-clicking an ActorField selects it in the inspector.
 	OvCore::Helpers::GUIHelpers::SetActorSelectionProvider(

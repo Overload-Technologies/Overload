@@ -170,8 +170,13 @@ void OvCore::Helpers::GUIDrawer::DrawColor(OvUI::Internal::WidgetContainer & p_r
 
 std::string OvCore::Helpers::GUIDrawer::GetAssetDisplayName(const std::string& p_path)
 {
+	if (p_path.empty())
+		return "";
 	const std::string friendly = OvTools::Utils::PathParser::GetFriendlyPath(p_path);
-	return friendly.empty() ? "" : std::filesystem::path(friendly).stem().string();
+	const std::string stem = friendly.empty() ? "" : std::filesystem::path(friendly).stem().string();
+	if (!GUIHelpers::AssetExists(p_path))
+		return stem.empty() ? "(Missing Reference)" : stem + " (Missing Reference)";
+	return stem;
 }
 
 std::string OvCore::Helpers::GUIDrawer::GetAssetTooltip(const std::string& p_path)

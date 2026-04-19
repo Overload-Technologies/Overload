@@ -16,6 +16,7 @@ namespace
 	OvCore::Helpers::GUIHelpers::IconProviderCallback __ICON_PROVIDER;
 	OvCore::Helpers::GUIHelpers::OpenProviderCallback __OPEN_PROVIDER;
 	OvCore::Helpers::GUIHelpers::ActorSelectionProviderCallback __ACTOR_SELECTION_PROVIDER;
+	OvCore::Helpers::GUIHelpers::AssetExistsCallback __ASSET_EXISTS_CHECKER;
 	uint32_t __ACTOR_ICON_ID = 0;
 
 	std::string TitleFromFileType(OvTools::Utils::PathParser::EFileType p_type)
@@ -121,4 +122,14 @@ void OvCore::Helpers::GUIHelpers::SelectActor(uint64_t p_guid)
 {
 	if (__ACTOR_SELECTION_PROVIDER)
 		__ACTOR_SELECTION_PROVIDER(p_guid);
+}
+
+void OvCore::Helpers::GUIHelpers::SetAssetExistsChecker(AssetExistsCallback p_checker)
+{
+	__ASSET_EXISTS_CHECKER = std::move(p_checker);
+}
+
+bool OvCore::Helpers::GUIHelpers::AssetExists(const std::string& p_path)
+{
+	return __ASSET_EXISTS_CHECKER && __ASSET_EXISTS_CHECKER(p_path);
 }

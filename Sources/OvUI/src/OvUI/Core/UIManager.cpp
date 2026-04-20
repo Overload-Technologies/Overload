@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include "OvDebug/Logger.h"
 #include <OvDebug/Assertion.h>
 #include <OvUI/Core/UIManager.h>
 #include <OvUI/Styling/TStyle.h>
@@ -132,7 +133,11 @@ void OvUI::Core::UIManager::SetScale(std::optional<float> p_scale)
 		m_scale = p_scale.value();
 	}
 
-	OVASSERT(m_scale >= 1.0f, "UI scale cannot be less than 100%");
+	if (m_scale < 1.0f)
+	{
+		OVLOG_WARNING("UI scale values lower than 1.0f are not supported!");
+		m_scale = 1.0f;
+	}
 
 	ApplyStyle(m_currentStyle);
 }

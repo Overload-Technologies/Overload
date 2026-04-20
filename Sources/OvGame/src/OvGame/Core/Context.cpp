@@ -52,13 +52,6 @@ namespace
 			return resourcePath;
 		}
 
-		const auto fromCurrentDirectory = (std::filesystem::current_path() / iconPath).lexically_normal();
-
-		if (std::filesystem::exists(fromCurrentDirectory))
-		{
-			return fromCurrentDirectory;
-		}
-
 		return resourcePath;
 	}
 }

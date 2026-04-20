@@ -16,9 +16,9 @@
 #include <string_view>
 #include <vector>
 #include <tinyxml2.h>
-#include <stb_image/stb_image.h>
 
 #ifdef _WIN32
+#include <stb_image/stb_image.h>
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -768,18 +768,25 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 								OVLOG_INFO("Game executable renamed to " + executableName);
 
 #if defined(_WIN32)
-									if (!configuredIconPath.empty() && std::filesystem::exists(configuredIconPath))
+									if (!configuredIconPath.empty())
 									{
-										std::string iconError;
-										const auto executablePath = p_buildPath / executableName;
-
-										if (ApplyExecutableIcon(executablePath, configuredIconPath, iconError))
+										if (std::filesystem::exists(configuredIconPath))
 										{
-											OVLOG_INFO("Executable icon applied from: " + configuredIconPath.string());
+											std::string iconError;
+											const auto executablePath = p_buildPath / executableName;
+
+											if (ApplyExecutableIcon(executablePath, configuredIconPath, iconError))
+											{
+												OVLOG_INFO("Executable icon applied from: " + configuredIconPath.string());
+											}
+											else
+											{
+												OVLOG_WARNING("Failed to apply executable icon: " + iconError);
+											}
 										}
 										else
 										{
-											OVLOG_WARNING("Failed to apply executable icon: " + iconError);
+											OVLOG_WARNING("Configured icon file not found, keeping default executable icon: " + configuredIconPath.string());
 										}
 									}
 #endif
@@ -820,6 +827,17 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 						));
 						failed = true;
 					}
+				}
+				else
+				{
+					OVLOG_ERROR("Data/User directory failed to create");
+					failed = true;
+				}
+			}
+			else
+			{
+				OVLOG_ERROR("Data directory failed to create");
+				failed = true;
 			}
 		}
 	}

@@ -142,6 +142,11 @@ std::filesystem::path OvTools::Utils::PathParser::GetRealPath(
 	const std::filesystem::path& p_projectFolder
 )
 {
+	if (p_path.is_absolute())
+	{
+		return p_path.lexically_normal();
+	}
+
 	const std::string rawPath = p_path.string();
 	if (rawPath.empty())
 	{

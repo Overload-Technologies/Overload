@@ -15,6 +15,7 @@
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
+#include <OvUI/Plugins/DataDispatcher.h>
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;

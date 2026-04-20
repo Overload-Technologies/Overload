@@ -97,6 +97,7 @@ namespace OvTools::Utils
 		* Returns the actual path of a resource based on its prefix:
 		* - ":" prefix resolves from engine folder
 		* - no prefix resolves from project folder
+		* - absolute paths are returned as-is
 		* @param p_path
 		* @param p_engineFolder
 		* @param p_projectFolder

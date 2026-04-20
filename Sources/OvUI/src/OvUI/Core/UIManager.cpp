@@ -4,10 +4,11 @@
 * @licence: MIT
 */
 
-#include "imgui.h"
-#include "imgui_internal.h"
+#include <OvDebug/Assertion.h>
 #include <OvUI/Core/UIManager.h>
 #include <OvUI/Styling/TStyle.h>
+
+#include <imgui.h>
 
 namespace
 {
@@ -54,8 +55,8 @@ void OvUI::Core::UIManager::ApplyStyle(Styling::EStyle p_style)
 {
 	m_currentStyle = p_style;
 	auto style = GetStyle(p_style);
-	style.FontScaleMain = m_styleScale;
-	style.ScaleAllSizes(m_styleScale);
+	style.FontScaleMain = m_scale;
+	style.ScaleAllSizes(m_scale);
 	ImGui::GetStyle() = style;
 }
 
@@ -105,20 +106,13 @@ void OvUI::Core::UIManager::UseDefaultFont()
 	ImGui::GetIO().FontDefault = nullptr;
 }
 
-void OvUI::Core::UIManager::SetUIScale(float p_scale)
+void OvUI::Core::UIManager::SetScale(std::optional<float> p_scale)
 {
-	// FIXME: Explain that (through assert or error message?)
-	if (p_scale < 1.0f) return;
+	m_scale = p_scale.value_or(ImGui::GetWindowDpiScale());
 
-	m_styleScale = p_scale;
+	OVASSERT(m_scale >= 1.0f, "UI scale cannot be less than 100%");
+
 	ApplyStyle(m_currentStyle);
-}
-
-void OvUI::Core::UIManager::DpiScaleUI()
-{
-	SetUIScale(
-		ImGui::GetWindowDpiScale()
-	);
 }
 
 void OvUI::Core::UIManager::EnableEditorLayoutSave(bool p_value)
@@ -169,16 +163,9 @@ void OvUI::Core::UIManager::EnableDocking(bool p_value)
 		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_DockingEnable;
 }
 
-void OvUI::Core::UIManager::EnableDPIScaling(bool p_value)
-{
-	m_dpiScaling = p_value;
-
-	ImGui::GetIO().ConfigDpiScaleFonts = m_dpiScaling;
-}
-
 void OvUI::Core::UIManager::ResetLayout(const std::string& p_config) const
 {
-    ImGui::LoadIniSettingsFromDisk(p_config.c_str());
+	ImGui::LoadIniSettingsFromDisk(p_config.c_str());
 }
 
 bool OvUI::Core::UIManager::IsDockingEnabled() const
@@ -207,12 +194,3 @@ void OvUI::Core::UIManager::Render()
 	}
 }
 
-void OvUI::Core::UIManager::PushCurrentFont()
-{
-
-}
-
-void OvUI::Core::UIManager::PopCurrentFont()
-{
-
-}

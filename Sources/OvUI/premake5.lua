@@ -21,6 +21,7 @@ project "OvUI"
 		-- Overload SDK
 		"%{wks.location}/Sources/OvMaths/include",
 		"%{wks.location}/Sources/OvTools/include",
+		"%{wks.location}/Sources/OvDebug/include",
 
 		-- Current Project
 		"include"

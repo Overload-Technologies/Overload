@@ -15,6 +15,7 @@
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvRendering/Entities/Light.h>
 #include <OvTools/Utils/SystemCalls.h>
+#include <optional>
 
 using namespace OvCore::Global;
 using namespace OvCore::ResourceManagement;
@@ -130,17 +131,8 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	const auto fontPath = editorAssetsPath / "Fonts" / "Ruda-Bold.ttf";
 	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
 	uiManager->UseFont("Ruda-Bold");
-
 	const int uiScale = Settings::EditorSettings::UIScale.Get();
-	if (uiScale == 0)
-	{
-		uiManager->DpiScaleUI();
-	}
-	else
-	{
-		uiManager->SetUIScale(uiScale / 100.0f);
-	}
-
+	uiManager->SetScale(uiScale == 0 ? std::nullopt : std::make_optional(uiScale / 100.0f));
 	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());
 	uiManager->SetEditorLayoutAutosaveFrequency(60.0f);
 	uiManager->EnableEditorLayoutSave(true);

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -21,7 +22,7 @@ namespace OvUI::Core
 	{
 	public:
 		/**
-		* Create the UI manager. Will setup ImGui internally\
+		* Create the UI manager. Will setup ImGui internally
 		* @param p_glfwWindow
 		* @param p_style
 		* @param p_glslVersion (Ex: #version 450)
@@ -67,12 +68,7 @@ namespace OvUI::Core
 		* Set the UI scale
 		* @param p_scale
 		*/
-		void SetUIScale(float p_scale);
-
-		/**
-		* Set UI scaled based on window DPI
-		*/
-		void DpiScaleUI();
+		void SetScale(std::optional<float> p_scale = std::nullopt);
 
 		/**
 		* Allow the user to enable/disable .ini generation to save his editor layout
@@ -143,14 +139,10 @@ namespace OvUI::Core
 		void Render();
 
 	private:
-		void PushCurrentFont();
-		void PopCurrentFont();
-
-	private:
 		bool m_dockingState;
-		bool m_dpiScaling;
 		Styling::EStyle m_currentStyle;
-		float m_styleScale = 1.0f;
+		float m_scale;
+		bool m_refreshStyle = false;
 		Modules::Canvas* m_currentCanvas = nullptr;
 		std::unordered_map<std::string, ImFont*> m_fonts;
 		std::string m_layoutSaveFilename = "imgui.ini";

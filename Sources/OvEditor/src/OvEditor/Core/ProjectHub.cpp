@@ -289,17 +289,9 @@ void OvEditor::Core::ProjectHub::SetupContext()
 
 	m_uiManager->LoadFont("Ruda-Bold", fontPath.string(), 18);
 	m_uiManager->UseFont("Ruda-Bold");
-
 	const int uiScale = Settings::EditorSettings::UIScale.Get();
-	if (uiScale == 0)
-	{
-		m_uiManager->DpiScaleUI();
-	}
-	else
-	{
-		m_uiManager->SetUIScale(uiScale / 100.0f);
-	}
-
+	m_uiManager->SetScale(uiScale == 0 ? std::nullopt : std::make_optional(uiScale / 100.0f));
 	m_uiManager->EnableEditorLayoutSave(false);
 	m_uiManager->EnableDocking(false);
 }
+

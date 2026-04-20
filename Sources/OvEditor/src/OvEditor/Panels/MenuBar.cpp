@@ -26,6 +26,7 @@
 #include <OvUI/Widgets/Selection/ColorEdit.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <filesystem>
+#include <optional>
 
 #include "OvEditor/Core/EditorActions.h"
 #include "OvEditor/Panels/AssetView.h"
@@ -102,17 +103,7 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	};
 	uiScale.ValueChangedEvent += [this](int p_value) {
 		Settings::EditorSettings::UIScale = p_value;
-		if (p_value == 0)
-		{
-			EDITOR_CONTEXT(uiManager)->DpiScaleUI();
-		}
-		else
-		{
-			EDITOR_CONTEXT(uiManager)->SetUIScale(p_value / 100.0f);
-		}
-		// EDITOR_EXEC(DelayAction([p_value]() {
-			// EDITOR_CONTEXT(uiManager)->SetStyleScale(p_value / 100.0f);
-		// }));
+		EDITOR_CONTEXT(uiManager)->SetScale(p_value == 0 ? std::nullopt : std::make_optional(p_value / 100.0f));
 	};
 
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);

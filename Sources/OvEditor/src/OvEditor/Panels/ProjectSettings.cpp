@@ -47,7 +47,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Physics settings */
 		auto& root = CreateWidget<Layout::GroupCollapsable>("Physics");
 		auto& columns = root.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 125 * EDITOR_UI_SCALE;
 
 		GUIDrawer::DrawScalar<float>(columns, "Gravity", GenerateGatherer<float>("gravity"), GenerateProvider<float>("gravity"), 0.1f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
 	}
@@ -56,7 +56,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Build settings */
 		auto& generationRoot = CreateWidget<Layout::GroupCollapsable>("Build");
 		auto& columns = generationRoot.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 125 * EDITOR_UI_SCALE;
 
 		GUIDrawer::CreateTitle(columns, "Build Type");
 		auto& comboBox = columns.CreateWidget<OvUI::Widgets::Selection::ComboBox>(m_projectFile.Get<int>("build_type"));
@@ -74,7 +74,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Windowing settings */
 		auto& windowingRoot = CreateWidget<Layout::GroupCollapsable>("Windowing");
 		auto& columns = windowingRoot.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 125 * EDITOR_UI_SCALE;
 
 		GUIDrawer::DrawScalar<int>(columns, "Resolution X", GenerateGatherer<int>("x_resolution"), GenerateProvider<int>("x_resolution"), 1, 0, 10000);
 		GUIDrawer::DrawScalar<int>(columns, "Resolution Y", GenerateGatherer<int>("y_resolution"), GenerateProvider<int>("y_resolution"), 1, 0, 10000);
@@ -86,7 +86,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Rendering settings */
 		auto& renderingRoot = CreateWidget<Layout::GroupCollapsable>("Rendering");
 		auto& columns = renderingRoot.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 125 * EDITOR_UI_SCALE;
 
 		GUIDrawer::DrawBoolean(columns, "Vertical Sync.", GenerateGatherer<bool>("vsync"), GenerateProvider<bool>("vsync"));
 		GUIDrawer::DrawBoolean(columns, "Multi-sampling", GenerateGatherer<bool>("multisampling"), GenerateProvider<bool>("multisampling"));
@@ -97,7 +97,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		/* Scene Management settings */
 		auto& gameRoot = CreateWidget<Layout::GroupCollapsable>("Scene Management");
 		auto& columns = gameRoot.CreateWidget<Layout::Columns<2>>();
-		columns.widths[0] = 125;
+		columns.widths[0] = 125 * EDITOR_UI_SCALE;
 
 		GUIDrawer::DrawScene(columns, "Start scene", GenerateGatherer<std::string>("start_scene"), GenerateProvider<std::string>("start_scene"));
 	}

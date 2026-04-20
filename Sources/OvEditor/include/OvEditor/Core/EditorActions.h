@@ -19,6 +19,7 @@
 #define EDITOR_EVENT(target) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().target
 #define EDITOR_CONTEXT(instance) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetContext().instance
 #define EDITOR_PANEL(type, id) OvCore::Global::ServiceLocator::Get<OvEditor::Core::EditorActions>().GetPanelsManager().GetPanelAs<type>(id)
+#define EDITOR_UI_SCALE EDITOR_CONTEXT(uiManager)->GetScale()
 
 namespace tinyxml2
 {

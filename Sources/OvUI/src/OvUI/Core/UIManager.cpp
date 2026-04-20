@@ -142,6 +142,11 @@ void OvUI::Core::UIManager::SetScale(std::optional<float> p_scale)
 	ApplyStyle(m_currentStyle);
 }
 
+float OvUI::Core::UIManager::GetScale() const
+{
+	return m_scale;
+}
+
 void OvUI::Core::UIManager::EnableEditorLayoutSave(bool p_value)
 {
 	if (p_value)

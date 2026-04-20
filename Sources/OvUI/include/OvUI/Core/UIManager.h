@@ -77,6 +77,11 @@ namespace OvUI::Core
 		void SetScale(std::optional<float> p_scale = std::nullopt);
 
 		/**
+		* Returns the scale of the UI
+		*/
+		float GetScale() const;
+
+		/**
 		* Allow the user to enable/disable .ini generation to save his editor layout
 		* @param p_value
 		*/

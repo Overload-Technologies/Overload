@@ -56,12 +56,12 @@ OvEditor::Panels::AssetProperties::AssetProperties
 	m_settings = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Settings");
 	m_settings->neverDisabled = true;
 	m_settingsColumns = &m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_settingsColumns->widths[0] = 150;
+	m_settingsColumns->widths[0] = 150 * EDITOR_UI_SCALE;
 
 	m_info = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Info");
 	m_info->neverDisabled = true;
 	m_infoColumns = &m_info->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_infoColumns->widths[0] = 150;
+	m_infoColumns->widths[0] = 150 * EDITOR_UI_SCALE;
 
 	m_settings->enabled = m_info->enabled = false;
 }
@@ -178,7 +178,7 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 void OvEditor::Panels::AssetProperties::CreateAssetSelector()
 {
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150;
+	columns.widths[0] = 150 * EDITOR_UI_SCALE;
 	m_assetSelector = &OvCore::Helpers::GUIDrawer::DrawAsset(columns, "Target", m_resource, &m_targetChanged);
 	const auto& widgets = columns.GetWidgets();
 	widgets[widgets.size() - 1].first->neverDisabled = true;

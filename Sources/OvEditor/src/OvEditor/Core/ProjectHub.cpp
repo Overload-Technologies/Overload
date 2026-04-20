@@ -45,10 +45,14 @@ namespace OvEditor::Core
 			SetSize({ 1000, 580 });
 			SetPosition({ 0.f, 0.f });
 
-			auto& openProjectButton = CreateWidget<OvUI::Widgets::Buttons::Button>("Open Project");
-			auto& newProjectButton = CreateWidget<OvUI::Widgets::Buttons::Button>("New Project");
-			auto& pathField = CreateWidget<OvUI::Widgets::InputFields::InputText>("");
-			m_goButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("GO");
+			auto& actionBar = CreateWidget<OvUI::Widgets::Layout::Group>();
+			actionBar.horizontal = true;
+			actionBar.stretchWidget = 2;
+
+			auto& openProjectButton = actionBar.CreateWidget<OvUI::Widgets::Buttons::Button>("Open Project");
+			auto& newProjectButton = actionBar.CreateWidget<OvUI::Widgets::Buttons::Button>("New Project");
+			auto& pathField = actionBar.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+			m_goButton = &actionBar.CreateWidget<OvUI::Widgets::Buttons::Button>("GO");
 
 			pathField.ContentChangedEvent += [this, &pathField](std::string p_content) {
 				pathField.content = std::filesystem::path{
@@ -118,7 +122,7 @@ namespace OvEditor::Core
 
 			auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
 
-			columns.widths = { 750, 500 };
+			columns.widths = { -1, 0 };
 
 			// Sanitize the project registry before displaying it, so we avoid showing
 			// corrupted/deleted projects.
@@ -162,11 +166,8 @@ namespace OvEditor::Core
 		void Draw() override
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 50.f, 50.f });
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
-
 			OvUI::Panels::PanelWindow::Draw();
-
-			ImGui::PopStyleVar(2);
+			ImGui::PopStyleVar(1);
 		}
 
 	private:

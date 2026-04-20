@@ -130,8 +130,16 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	const auto fontPath = editorAssetsPath / "Fonts" / "Ruda-Bold.ttf";
 	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
 	uiManager->UseFont("Ruda-Bold");
-	uiManager->SetFontScale(Settings::EditorSettings::FontScale / 100.0f);
-	uiManager->EnableDPIScaling(Settings::EditorSettings::FontDpiScaling.Get());
+
+	const int uiScale = Settings::EditorSettings::UIScale.Get();
+	if (uiScale == 0)
+	{
+		uiManager->DpiScaleUI();
+	}
+	else
+	{
+		uiManager->SetUIScale(uiScale / 100.0f);
+	}
 
 	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());
 	uiManager->SetEditorLayoutAutosaveFrequency(60.0f);

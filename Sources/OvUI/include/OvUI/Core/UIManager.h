@@ -64,10 +64,15 @@ namespace OvUI::Core
 		void UseDefaultFont();
 
 		/**
-		* Set the font size
-		* @param p_size
+		* Set the UI scale
+		* @param p_scale
 		*/
-		void SetFontScale(float p_size);
+		void SetUIScale(float p_scale);
+
+		/**
+		* Set UI scaled based on window DPI
+		*/
+		void DpiScaleUI();
 
 		/**
 		* Allow the user to enable/disable .ini generation to save his editor layout
@@ -101,12 +106,6 @@ namespace OvUI::Core
 		* @param p_value
 		*/
 		void EnableDocking(bool p_value);
-
-		/**
-		* Enable DPI scaling
-		* @note Limited to fonts for now
-		*/
-		void EnableDPIScaling(bool p_value);
 
 		/**
 		* Reset the UI layout to the given configuration file
@@ -150,6 +149,8 @@ namespace OvUI::Core
 	private:
 		bool m_dockingState;
 		bool m_dpiScaling;
+		Styling::EStyle m_currentStyle;
+		float m_styleScale = 1.0f;
 		Modules::Canvas* m_currentCanvas = nullptr;
 		std::unordered_map<std::string, ImFont*> m_fonts;
 		std::string m_layoutSaveFilename = "imgui.ini";

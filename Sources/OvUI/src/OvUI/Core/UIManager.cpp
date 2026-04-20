@@ -52,7 +52,11 @@ OvUI::Core::UIManager::~UIManager()
 
 void OvUI::Core::UIManager::ApplyStyle(Styling::EStyle p_style)
 {
-	ImGui::GetStyle() = GetStyle(p_style);
+	m_currentStyle = p_style;
+	auto style = GetStyle(p_style);
+	style.FontScaleMain = m_styleScale;
+	style.ScaleAllSizes(m_styleScale);
+	ImGui::GetStyle() = style;
 }
 
 bool OvUI::Core::UIManager::LoadFont(const std::string& p_id, const std::string & p_path, float p_fontSize)
@@ -101,9 +105,20 @@ void OvUI::Core::UIManager::UseDefaultFont()
 	ImGui::GetIO().FontDefault = nullptr;
 }
 
-void OvUI::Core::UIManager::SetFontScale(float p_scale)
+void OvUI::Core::UIManager::SetUIScale(float p_scale)
 {
-	ImGui::GetIO().FontGlobalScale = p_scale;
+	// FIXME: Explain that (through assert or error message?)
+	if (p_scale < 1.0f) return;
+
+	m_styleScale = p_scale;
+	ApplyStyle(m_currentStyle);
+}
+
+void OvUI::Core::UIManager::DpiScaleUI()
+{
+	SetUIScale(
+		ImGui::GetWindowDpiScale()
+	);
 }
 
 void OvUI::Core::UIManager::EnableEditorLayoutSave(bool p_value)

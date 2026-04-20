@@ -45,7 +45,7 @@ void OvEditor::Settings::EditorSettings::Save()
 	iniFile.Add("scaling_snap_unit", ScalingSnapUnit.Get());
 	iniFile.Add("color_theme", ColorTheme.Get());
 	iniFile.Add("console_max_logs", ConsoleMaxLogs.Get());
-	iniFile.Add("font_size", FontSize.Get());
+	iniFile.Add("font_scale", FontScale.Get());
 	iniFile.Add("code_editor_command", CodeEditorCommand.Get());
 	iniFile.Add("always_regenerate_scripting_symbols", RegenerateScriptingProjectFilesOnStartup.Get());
 	iniFile.Rewrite();
@@ -66,7 +66,7 @@ void OvEditor::Settings::EditorSettings::Load()
 	LoadIniEntry<float>(iniFile, "scaling_snap_unit", ScalingSnapUnit);
 	LoadIniEntry<int>(iniFile, "color_theme", ColorTheme);
 	LoadIniEntry<int>(iniFile, "console_max_logs", ConsoleMaxLogs);
-	LoadIniEntry<int>(iniFile, "font_size", FontSize);
+	LoadIniEntry<int>(iniFile, "font_scale", FontScale);
 	LoadIniEntry<std::string>(iniFile, "code_editor_command", CodeEditorCommand);
 	LoadIniEntry<bool>(iniFile, "always_regenerate_scripting_symbols", RegenerateScriptingProjectFilesOnStartup);
 }

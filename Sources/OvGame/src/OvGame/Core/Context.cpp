@@ -117,10 +117,8 @@ OvGame::Core::Context::Context() :
 
 	const auto fontPath = engineAssetsPath / "Fonts" / "Ruda-Bold.ttf";
 
-	uiManager->LoadFont("Ruda_Big", fontPath.string(), 16);
-	uiManager->LoadFont("Ruda_Small", fontPath.string(), 12);
-	uiManager->LoadFont("Ruda_Medium", fontPath.string(), 14);
-	uiManager->UseFont("Ruda_Medium");
+	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
+	uiManager->UseFont("Ruda-Bold");
 	uiManager->EnableEditorLayoutSave(false);
 	uiManager->EnableDocking(false);
 

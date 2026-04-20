@@ -287,12 +287,9 @@ void OvEditor::Core::ProjectHub::SetupContext()
 
 	const auto fontPath = std::filesystem::current_path() / "Data" / "Editor" / "Fonts" / "Ruda-Bold.ttf";
 
-	m_uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::BIG) }, fontPath.string(), 20);
-	m_uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::MEDIUM) }, fontPath.string(), 18);
-	m_uiManager->LoadFont(std::string{ Settings::GetFontID(Settings::EFontSize::SMALL) }, fontPath.string(), 16);
-	m_uiManager->UseFont(std::string{ Settings::GetFontID(
-		static_cast<Settings::EFontSize>(Settings::EditorSettings::FontSize.Get())
-	) });
+	m_uiManager->LoadFont("Ruda-Bold", fontPath.string(), 18);
+	m_uiManager->UseFont("Ruda-Bold");
+	m_uiManager->SetFontScale(Settings::EditorSettings::FontScale / 100.0f);
 
 	m_uiManager->EnableEditorLayoutSave(false);
 	m_uiManager->EnableDocking(false);

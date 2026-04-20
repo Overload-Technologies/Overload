@@ -64,6 +64,12 @@ namespace OvUI::Core
 		void UseDefaultFont();
 
 		/**
+		* Set the font size
+		* @param p_size
+		*/
+		void SetFontScale(float p_size);
+
+		/**
 		* Allow the user to enable/disable .ini generation to save his editor layout
 		* @param p_value
 		*/
@@ -96,11 +102,11 @@ namespace OvUI::Core
 		*/
 		void EnableDocking(bool p_value);
 
-        /**
-        * Reset the UI layout to the given configuration file
-        * @param p_config
-        */
-        void ResetLayout(const std::string & p_config) const;
+		/**
+		* Reset the UI layout to the given configuration file
+		* @param p_config
+		*/
+		void ResetLayout(const std::string & p_config) const;
 
 		/**
 		* Enable or disable mouse input in ImGui.

@@ -92,17 +92,27 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 		EDITOR_CONTEXT(uiManager)->ApplyStyle(static_cast<OvUI::Styling::EStyle>(p_value));
 	};
 
+	enum class EFontScale : uint32_t
+	{
+		EXTRA_SMALL = 50,
+		SMALL = 75,
+		MEDIUM = 100,
+		BIG = 150,
+		EXTRA_BIG = 200
+	};
+
 	auto& fontSizeMenu = m_settingsMenu->CreateWidget<MenuList>("Font Size");
-	auto& fontSizeSelector = fontSizeMenu.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::FontSize.Get()));
+	auto& fontSizeSelector = fontSizeMenu.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::FontScale.Get()));
 	fontSizeSelector.choices = {
-		{ static_cast<int>(Settings::EFontSize::SMALL), "Small"},
-		{ static_cast<int>(Settings::EFontSize::MEDIUM), "Medium"},
-		{ static_cast<int>(Settings::EFontSize::BIG), "Big"}
+		{ static_cast<int>(EFontScale::EXTRA_SMALL), "Extra Small"},
+		{ static_cast<int>(EFontScale::SMALL), "Small"},
+		{ static_cast<int>(EFontScale::MEDIUM), "Medium"},
+		{ static_cast<int>(EFontScale::BIG), "Big"},
+		{ static_cast<int>(EFontScale::EXTRA_BIG), "Extra Big"},
 	};
 	fontSizeSelector.ValueChangedEvent += [this](int p_value) {
-		Settings::EditorSettings::FontSize = p_value;
-		const auto fontID = std::string{ Settings::GetFontID(static_cast<Settings::EFontSize>(p_value)) };
-		EDITOR_CONTEXT(uiManager)->UseFont(fontID);
+		Settings::EditorSettings::FontScale = p_value;
+		EDITOR_CONTEXT(uiManager)->SetFontScale(p_value / 100.0f);
 	};
 
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);

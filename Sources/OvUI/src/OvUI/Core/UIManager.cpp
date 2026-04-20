@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include "imgui.h"
+#include "imgui_internal.h"
 #include <OvUI/Core/UIManager.h>
 #include <OvUI/Styling/TStyle.h>
 
@@ -97,6 +99,11 @@ bool OvUI::Core::UIManager::UseFont(const std::string & p_id)
 void OvUI::Core::UIManager::UseDefaultFont()
 {
 	ImGui::GetIO().FontDefault = nullptr;
+}
+
+void OvUI::Core::UIManager::SetFontScale(float p_scale)
+{
+	ImGui::GetIO().FontGlobalScale = p_scale;
 }
 
 void OvUI::Core::UIManager::EnableEditorLayoutSave(bool p_value)

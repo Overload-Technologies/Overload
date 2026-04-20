@@ -56,7 +56,6 @@ OvEditor::Panels::Console::Console
 	allowHorizontalScrollbar = true;
 
 	auto& clearButton = CreateWidget<Buttons::Button>("Clear");
-	clearButton.size = { 50.f, 0.f };
 	clearButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
 	clearButton.ClickedEvent += std::bind(&Console::Clear, this);
 	clearButton.lineBreak = false;

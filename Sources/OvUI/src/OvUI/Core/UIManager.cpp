@@ -7,8 +7,10 @@
 #include <OvDebug/Assertion.h>
 #include <OvUI/Core/UIManager.h>
 #include <OvUI/Styling/TStyle.h>
+#include <OvWindowing/Window.h>
 
 #include <imgui.h>
+#include <optional>
 
 namespace
 {
@@ -31,7 +33,8 @@ namespace
 	}
 }
 
-OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_style, std::string_view p_glslVersion)
+OvUI::Core::UIManager::UIManager(OvWindowing::Window& p_window, Styling::EStyle p_style, std::string_view p_glslVersion) :
+	m_window(p_window)
 {
 	ImGui::CreateContext();
 
@@ -40,12 +43,21 @@ OvUI::Core::UIManager::UIManager(GLFWwindow* p_glfwWindow, Styling::EStyle p_sty
 
 	ApplyStyle(p_style);
 	
-	ImGui_ImplGlfw_InitForOpenGL(p_glfwWindow, true);
+	ImGui_ImplGlfw_InitForOpenGL(m_window.GetGlfwWindow(), true);
 	ImGui_ImplOpenGL3_Init(p_glslVersion.data());
+
+	m_contentScaleChangedListener = m_window.ContentScaleChangedEvent += [this](float x, float y) {
+		if (m_dpiAware)
+		{
+			SetScale(); // Recompute scale based on content scale
+		}
+	};
 }
 
 OvUI::Core::UIManager::~UIManager()
 {
+	m_window.ContentScaleChangedEvent -= m_contentScaleChangedListener;
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -108,7 +120,17 @@ void OvUI::Core::UIManager::UseDefaultFont()
 
 void OvUI::Core::UIManager::SetScale(std::optional<float> p_scale)
 {
-	m_scale = p_scale.value_or(ImGui::GetWindowDpiScale());
+	m_dpiAware = !p_scale.has_value();
+
+	if (m_dpiAware)
+	{
+		const auto contentScale = m_window.GetContentScale();
+		m_scale = std::max(contentScale.first, contentScale.second);
+	}
+	else
+	{
+		m_scale = p_scale.value();
+	}
 
 	OVASSERT(m_scale >= 1.0f, "UI scale cannot be less than 100%");
 

@@ -315,6 +315,13 @@ int32_t OvWindowing::Window::GetRefreshRate() const
 	return m_refreshRate;
 }
 
+std::pair<float, float> OvWindowing::Window::GetContentScale() const
+{
+	std::pair<float, float> scale;
+	glfwGetWindowContentScale(m_glfwWindow, &scale.first, &scale.second);
+	return scale;
+}
+
 GLFWwindow* OvWindowing::Window::GetGlfwWindow() const
 {
 	return m_glfwWindow;
@@ -432,6 +439,21 @@ void OvWindowing::Window::BindFramebufferResizeCallback() const
 	};
 
 	glfwSetFramebufferSizeCallback(m_glfwWindow, framebufferResizeCallback);
+}
+
+void OvWindowing::Window::BindContentScaleCallback() const
+{
+	auto contentScaleCallback = [](GLFWwindow* p_window, float p_x, float p_y)
+	{
+		Window* windowInstance = FindInstance(p_window);
+
+		if (windowInstance)
+		{
+			windowInstance->ContentScaleChangedEvent.Invoke(p_x, p_y);
+		}
+	};
+
+	glfwSetWindowContentScaleCallback(m_glfwWindow, contentScaleCallback);
 }
 
 void OvWindowing::Window::BindCursorMoveCallback() const

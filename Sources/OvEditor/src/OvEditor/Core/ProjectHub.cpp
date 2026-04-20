@@ -281,7 +281,8 @@ void OvEditor::Core::ProjectHub::SetupContext()
 	/* Graphics context creation */
 	m_driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ false });
 
-	m_uiManager = std::make_unique<OvUI::Core::UIManager>(m_window->GetGlfwWindow(),
+	m_uiManager = std::make_unique<OvUI::Core::UIManager>(
+		*m_window,
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
 

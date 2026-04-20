@@ -118,7 +118,8 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 
 	std::filesystem::create_directories(Utils::FileSystem::kEditorDataPath);
 
-	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(),
+	uiManager = std::make_unique<OvUI::Core::UIManager>(
+		*window,
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
 

@@ -113,7 +113,10 @@ OvGame::Core::Context::Context() :
 		basePSO
 	});
 
-	uiManager = std::make_unique<OvUI::Core::UIManager>(window->GetGlfwWindow(), OvUI::Styling::EStyle::DEFAULT_DARK);
+	uiManager = std::make_unique<OvUI::Core::UIManager>(
+		*window,
+		OvUI::Styling::EStyle::DEFAULT_DARK
+	);
 
 	const auto fontPath = engineAssetsPath / "Fonts" / "Ruda-Bold.ttf";
 

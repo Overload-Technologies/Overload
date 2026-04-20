@@ -11,6 +11,7 @@
 #include <OvCore/Scripting/ScriptEngine.h>
 
 #include <OvDebug/Logger.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 
 #include <OvGame/Core/Context.h>
@@ -33,33 +34,32 @@ namespace
 			return {};
 		}
 
-		std::filesystem::path iconPath = p_iconSetting;
+		const std::filesystem::path iconPath = p_iconSetting;
 
 		if (iconPath.is_absolute())
 		{
 			return iconPath;
 		}
 
-		if (p_iconSetting[0] == ':')
+		const auto resourcePath = OvTools::Utils::PathParser::GetRealPath(
+			iconPath,
+			p_engineAssetsPath,
+			p_projectAssetsPath
+		);
+
+		if (std::filesystem::exists(resourcePath))
 		{
-			return p_engineAssetsPath / p_iconSetting.substr(1);
+			return resourcePath;
 		}
 
-		const auto fromCurrentDirectory = std::filesystem::current_path() / iconPath;
+		const auto fromCurrentDirectory = (std::filesystem::current_path() / iconPath).lexically_normal();
 
 		if (std::filesystem::exists(fromCurrentDirectory))
 		{
 			return fromCurrentDirectory;
 		}
 
-		const auto fromProjectAssets = p_projectAssetsPath / iconPath;
-
-		if (std::filesystem::exists(fromProjectAssets))
-		{
-			return fromProjectAssets;
-		}
-
-		return fromCurrentDirectory;
+		return resourcePath;
 	}
 }
 
@@ -143,7 +143,17 @@ OvGame::Core::Context::Context() :
 	window->SetIconFromMemory(reinterpret_cast<uint8_t*>(iconRaw.data()), 16, 16);
 
 	{
-		const std::string iconSetting = projectSettings.GetOrDefault<std::string>("executable_icon", "");
+		std::string iconSetting;
+
+		if (projectSettings.IsKeyExisting("window_icon"))
+		{
+			iconSetting = projectSettings.GetOrDefault<std::string>("window_icon", "");
+		}
+		else
+		{
+			iconSetting = projectSettings.GetOrDefault<std::string>("executable_icon", "");
+		}
+
 		const auto applicationIconPath = ResolveApplicationIconPath(iconSetting, projectAssetsPath, engineAssetsPath);
 
 		if (!applicationIconPath.empty())

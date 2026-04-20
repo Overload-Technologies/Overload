@@ -5,7 +5,6 @@
 */
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include "OvDebug/Assertion.h"
 #include "OvTools/Utils/OptRef.h"
@@ -612,9 +611,20 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 #endif
 
 	const std::string executableName = m_context.projectSettings.Get<std::string>("executable_name") + extension;
+#if defined(_WIN32)
 	const auto resolveConfiguredIconPath = [this]() -> std::filesystem::path
 	{
-		std::string iconSetting = m_context.projectSettings.GetOrDefault<std::string>("executable_icon", "");
+		std::string iconSetting;
+
+		if (m_context.projectSettings.IsKeyExisting("window_icon"))
+		{
+			iconSetting = m_context.projectSettings.GetOrDefault<std::string>("window_icon", "");
+		}
+		else
+		{
+			iconSetting = m_context.projectSettings.GetOrDefault<std::string>("executable_icon", "");
+		}
+
 		OvTools::Utils::String::Trim(iconSetting);
 
 		if (iconSetting.empty())
@@ -624,239 +634,192 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 
 		std::filesystem::path iconPath = iconSetting;
 
-		if (!iconPath.is_absolute())
+		if (iconPath.is_absolute())
 		{
-			const auto resourcePath = std::filesystem::path(GetRealPath(iconSetting));
-			iconPath = std::filesystem::exists(resourcePath)
-				? resourcePath
-				: (m_context.projectFolder / iconSetting);
+			return iconPath;
 		}
 
-		return iconPath;
+		const auto resourcePath = OvTools::Utils::PathParser::GetRealPath(
+			iconPath,
+			m_context.engineAssetsPath,
+			m_context.projectAssetsPath
+		);
+
+		if (std::filesystem::exists(resourcePath))
+		{
+			return resourcePath;
+		}
+
+		const auto projectRelativePath = (m_context.projectFolder / iconPath).lexically_normal();
+
+		if (std::filesystem::exists(projectRelativePath))
+		{
+			return projectRelativePath;
+		}
+
+		return resourcePath;
 	};
 	const auto configuredIconPath = resolveConfiguredIconPath();
+#endif
 
 	bool failed = false;
 
 	OVLOG_INFO(std::format("Preparing to build at location: \"{}\"", p_buildPath.string()));
 
-	std::filesystem::remove_all(p_buildPath);
+		std::filesystem::remove_all(p_buildPath);
 
-	if (std::filesystem::create_directory(p_buildPath))
-	{
-		OVLOG_INFO("Build directory created");
-
-		if (std::filesystem::create_directory(p_buildPath / "Data"))
+		if (std::filesystem::create_directory(p_buildPath))
 		{
-			OVLOG_INFO("Data directory created");
+			OVLOG_INFO("Build directory created");
 
-			if (std::filesystem::create_directory(p_buildPath / "Data" / "User"))
+			if (std::filesystem::create_directory(p_buildPath / "Data"))
 			{
-				OVLOG_INFO("Data/User directory created");
+				OVLOG_INFO("Data directory created");
 
-				std::error_code err;
-
-				std::filesystem::copy(m_context.projectFile, p_buildPath / "Data" / "User" / "Game.ini", err);
-
-				if (!err)
+				if (std::filesystem::create_directory(p_buildPath / "Data" / "User"))
 				{
-					OVLOG_INFO("Data/User/Game.ini file generated");
+					OVLOG_INFO("Data/User directory created");
 
-					const auto builtGameSettingsPath = p_buildPath / "Data" / "User" / "Game.ini";
-					OvTools::Filesystem::IniFile builtGameSettings(builtGameSettingsPath.string());
-					auto clearBuiltExecutableIconSetting = [&builtGameSettings]()
-					{
-						if (!builtGameSettings.Set<std::string>("executable_icon", ""))
-						{
-							builtGameSettings.Add<std::string>("executable_icon", "");
-						}
-						builtGameSettings.Rewrite();
-					};
+					std::error_code err;
 
-					if (!configuredIconPath.empty())
-					{
-						if (std::filesystem::exists(configuredIconPath))
-						{
-							std::string iconExtension = configuredIconPath.extension().string();
-							if (!iconExtension.empty() && iconExtension.front() == '.')
-							{
-								iconExtension.erase(iconExtension.begin());
-							}
-
-							std::transform(iconExtension.begin(), iconExtension.end(), iconExtension.begin(), [](unsigned char p_character)
-							{
-								return static_cast<char>(std::tolower(p_character));
-							});
-
-							if (iconExtension.empty())
-							{
-								iconExtension = "png";
-							}
-
-							const auto packagedIconRelativePath = std::filesystem::path("Data") / "User" / ("BuildIcon." + iconExtension);
-							const auto packagedIconAbsolutePath = p_buildPath / packagedIconRelativePath;
-							std::error_code iconCopyError;
-							std::filesystem::copy_file(configuredIconPath, packagedIconAbsolutePath, std::filesystem::copy_options::overwrite_existing, iconCopyError);
-
-							if (!iconCopyError)
-							{
-								const std::string packagedIconPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(packagedIconRelativePath.string());
-								if (!builtGameSettings.Set<std::string>("executable_icon", packagedIconPath))
-								{
-									builtGameSettings.Add<std::string>("executable_icon", packagedIconPath);
-								}
-								builtGameSettings.Rewrite();
-								OVLOG_INFO("Application icon copied for runtime process icon");
-							}
-							else
-							{
-								OVLOG_WARNING("Failed to copy application icon for runtime: " + iconCopyError.message());
-								clearBuiltExecutableIconSetting();
-							}
-						}
-						else
-						{
-							OVLOG_WARNING("Application icon file not found while packaging build: " + configuredIconPath.string());
-							clearBuiltExecutableIconSetting();
-						}
-					}
-					else
-					{
-						clearBuiltExecutableIconSetting();
-					}
-		
-					std::filesystem::copy(
-						m_context.projectAssetsPath,
-						p_buildPath / "Data" / "User" / "Assets",
-						std::filesystem::copy_options::recursive,
-						err
-					);
-
-					auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
-					sceneFileName = OvTools::Utils::PathParser::MakeNonWindowsStyle(sceneFileName);
-
-					if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
-					{
-						OVLOG_ERROR("Failed to find Start Scene at expected path. Verify your Project Setings.");
-
-						OvWindowing::Dialogs::MessageBox message(
-							"Build Failure",
-							"An error occured during the building of your game.\nCheck the console for more information",
-							OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
-							OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
-							true
-						);
-
-						std::filesystem::remove_all(p_buildPath);
-						return;						
-					}
+					std::filesystem::copy(m_context.projectFile, p_buildPath / "Data" / "User" / "Game.ini", err);
 
 					if (!err)
 					{
-						OVLOG_INFO("Data/User/Assets/ directory copied");
+						OVLOG_INFO("Data/User/Game.ini file generated");
 
 						std::filesystem::copy(
-							m_context.engineAssetsPath,
-							p_buildPath / "Data" / "Engine",
+							m_context.projectAssetsPath,
+							p_buildPath / "Data" / "User" / "Assets",
 							std::filesystem::copy_options::recursive,
 							err
 						);
 
+						auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
+						sceneFileName = OvTools::Utils::PathParser::MakeNonWindowsStyle(sceneFileName);
+
+						if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
+						{
+							OVLOG_ERROR("Failed to find Start Scene at expected path. Verify your Project Setings.");
+
+							OvWindowing::Dialogs::MessageBox message(
+								"Build Failure",
+								"An error occured during the building of your game.\nCheck the console for more information",
+								OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+								OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+								true
+							);
+
+							std::filesystem::remove_all(p_buildPath);
+							return;
+						}
+
 						if (!err)
 						{
-							OVLOG_INFO("Data/Engine/ directory copied");
+							OVLOG_INFO("Data/User/Assets/ directory copied");
+
+							std::filesystem::copy(
+								m_context.engineAssetsPath,
+								p_buildPath / "Data" / "Engine",
+								std::filesystem::copy_options::recursive,
+								err
+							);
+
+							if (!err)
+							{
+								OVLOG_INFO("Data/Engine/ directory copied");
+							}
+							else
+							{
+								OVLOG_ERROR("Data/Engine/ directory failed to copy");
+								failed = true;
+							}
 						}
 						else
 						{
-							OVLOG_ERROR("Data/Engine/ directory failed to copy");
+							OVLOG_ERROR("Data/User/Assets/ directory failed to copy");
 							failed = true;
 						}
 					}
 					else
 					{
-						OVLOG_ERROR("Data/User/Assets/ directory failed to copy");
+						OVLOG_ERROR("Data/User/Game.ini file failed to generate");
 						failed = true;
 					}
-				}
-				else
-				{
-					OVLOG_ERROR("Data/User/Game.ini file failed to generate");
-					failed = true;
-				}
 
-				const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
+					const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
 
-				const std::string initialExecutableName = "OvGame" + extension;
+					const std::string initialExecutableName = "OvGame" + extension;
 
-				if (std::filesystem::exists(builderFolder) && std::filesystem::exists(builderFolder / initialExecutableName))
-				{
-					std::error_code err;
-
-					std::filesystem::copy(builderFolder, p_buildPath, err);
-
-					if (!err)
+					if (std::filesystem::exists(builderFolder) && std::filesystem::exists(builderFolder / initialExecutableName))
 					{
-						OVLOG_INFO("Builder data (Dlls and executable) copied");
-							
-						std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
+						std::error_code err;
+
+						std::filesystem::copy(builderFolder, p_buildPath, err);
 
 						if (!err)
 						{
-							OVLOG_INFO("Game executable renamed to " + executableName);
+							OVLOG_INFO("Builder data (Dlls and executable) copied");
+							
+							std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
+
+							if (!err)
+							{
+								OVLOG_INFO("Game executable renamed to " + executableName);
 
 #if defined(_WIN32)
-							if (!configuredIconPath.empty() && std::filesystem::exists(configuredIconPath))
-							{
-								std::string iconError;
-								const auto executablePath = p_buildPath / executableName;
+									if (!configuredIconPath.empty() && std::filesystem::exists(configuredIconPath))
+									{
+										std::string iconError;
+										const auto executablePath = p_buildPath / executableName;
 
-								if (ApplyExecutableIcon(executablePath, configuredIconPath, iconError))
-								{
-									OVLOG_INFO("Executable icon applied from: " + configuredIconPath.string());
-								}
-								else
-								{
-									OVLOG_WARNING("Failed to apply executable icon: " + iconError);
-								}
-							}
+										if (ApplyExecutableIcon(executablePath, configuredIconPath, iconError))
+										{
+											OVLOG_INFO("Executable icon applied from: " + configuredIconPath.string());
+										}
+										else
+										{
+											OVLOG_WARNING("Failed to apply executable icon: " + iconError);
+										}
+									}
 #endif
 
-							if (p_autoRun)
-							{
-								const auto exePath = p_buildPath / executableName;
-								OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
+								if (p_autoRun)
+								{
+									const auto exePath = p_buildPath / executableName;
+									OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
 
-								if (std::filesystem::exists(exePath))
-								{
-									OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
+									if (std::filesystem::exists(exePath))
+									{
+										OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
+									}
+									else
+									{
+										OVLOG_ERROR("Failed to start the game: Executable not found");
+										failed = true;
+									}
 								}
-								else
-								{
-									OVLOG_ERROR("Failed to start the game: Executable not found");
-									failed = true;
-								}
+							}
+							else
+							{
+								OVLOG_ERROR("Game executable failed to rename");
+								failed = true;
 							}
 						}
 						else
 						{
-							OVLOG_ERROR("Game executable failed to rename");
+							OVLOG_ERROR("Builder data (Dlls and executatble) failed to copy");
 							failed = true;
 						}
 					}
 					else
 					{
-						OVLOG_ERROR("Builder data (Dlls and executatble) failed to copy");
+						OVLOG_ERROR(std::format(
+							"OvGame executable not found for \"{}\" configuration. Build OvGame and OvEditor in that configuration first, then try again.",
+							GetBuildTypeName(p_buildType)
+						));
 						failed = true;
 					}
-				}
-				else
-				{
-					OVLOG_ERROR(std::format(
-						"OvGame executable not found for \"{}\" configuration. Build OvGame and OvEditor in that configuration first, then try again.",
-						GetBuildTypeName(p_buildType)
-					));
-					failed = true;
-				}
 			}
 		}
 	}
@@ -1434,23 +1397,13 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	return false;
 }
 
-// Duplicate from AResourceManager.h
 std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
-	std::filesystem::path result;
-
-	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
-
-	if (normalizedPath.starts_with(':')) // The path is an engine path
-	{
-		result = m_context.engineAssetsPath / normalizedPath.substr(1);
-	}
-	else // The path is a project path
-	{
-		result = m_context.projectAssetsPath / normalizedPath;
-	}
-
-	return result.lexically_normal().string();
+	return OvTools::Utils::PathParser::GetRealPath(
+		std::filesystem::path{ p_path },
+		m_context.engineAssetsPath,
+		m_context.projectAssetsPath
+	).string();
 }
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)

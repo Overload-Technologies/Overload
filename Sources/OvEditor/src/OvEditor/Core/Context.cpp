@@ -80,9 +80,10 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 		projectSettings.Rewrite();
 	}
 
-	if (!projectSettings.IsKeyExisting("executable_icon"))
+	if (!projectSettings.IsKeyExisting("window_icon"))
 	{
-		projectSettings.Add<std::string>("executable_icon", "");
+		const auto legacyExecutableIcon = projectSettings.GetOrDefault<std::string>("executable_icon", "");
+		projectSettings.Add<std::string>("window_icon", legacyExecutableIcon);
 		projectSettings.Rewrite();
 	}
 
@@ -204,7 +205,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<int>("y_resolution", 720);
 	projectSettings.Add<bool>("fullscreen", false);
 	projectSettings.Add<std::string>("executable_name", "Game");
-	projectSettings.Add<std::string>("executable_icon", "");
+	projectSettings.Add<std::string>("window_icon", "");
 	projectSettings.Add<std::string>("start_scene", "Scene.ovscene");
 	projectSettings.Add<bool>("vsync", true);
 	projectSettings.Add<bool>("multisampling", false);

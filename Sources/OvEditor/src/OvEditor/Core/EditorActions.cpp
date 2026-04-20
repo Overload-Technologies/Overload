@@ -49,11 +49,6 @@
 #include <OvWindowing/Dialogs/MessageBox.h>
 #include <OvWindowing/Dialogs/SaveFileDialog.h>
 
-namespace OvTools::Utils
-{
-	bool SetWindowsExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath);
-}
-
 namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";

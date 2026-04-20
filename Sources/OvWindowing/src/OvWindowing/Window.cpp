@@ -48,6 +48,7 @@ OvWindowing::Window::Window(const Context::Device& p_device, const Settings::Win
 	BindResizeCallback();
 	BindCursorMoveCallback();
 	BindFramebufferResizeCallback();
+	BindContentScaleCallback();
 	BindMoveCallback();
 	BindFocusCallback();
 

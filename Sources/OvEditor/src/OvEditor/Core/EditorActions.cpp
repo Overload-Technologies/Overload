@@ -840,7 +840,6 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 				failed = true;
 			}
 		}
-	}
 	else
 	{
 		OVLOG_ERROR("Build directory failed to create");

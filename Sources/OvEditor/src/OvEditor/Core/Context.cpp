@@ -131,6 +131,7 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
 	uiManager->UseFont("Ruda-Bold");
 	uiManager->SetFontScale(Settings::EditorSettings::FontScale / 100.0f);
+	uiManager->EnableDPIScaling(Settings::EditorSettings::FontDpiScaling.Get());
 
 	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());
 	uiManager->SetEditorLayoutAutosaveFrequency(60.0f);

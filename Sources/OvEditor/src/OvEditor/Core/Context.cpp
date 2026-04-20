@@ -82,8 +82,7 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 
 	if (!projectSettings.IsKeyExisting("window_icon"))
 	{
-		const auto legacyExecutableIcon = projectSettings.GetOrDefault<std::string>("executable_icon", "");
-		projectSettings.Add<std::string>("window_icon", legacyExecutableIcon);
+		projectSettings.Add<std::string>("window_icon", "");
 		projectSettings.Rewrite();
 	}
 

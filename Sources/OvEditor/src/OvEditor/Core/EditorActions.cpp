@@ -5,28 +5,15 @@
 */
 
 #include <algorithm>
-#include <cstdint>
 #include "OvDebug/Assertion.h"
 #include "OvTools/Utils/OptRef.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <limits>
 #include <ranges>
 #include <string_view>
 #include <vector>
 #include <tinyxml2.h>
-
-#ifdef _WIN32
-#include <stb_image/stb_image.h>
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <Windows.h>
-#endif
 
 #include <OvDebug/Logger.h>
 
@@ -54,6 +41,7 @@
 #include <OvEditor/Utils/FileSystem.h>
 
 #include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/ExecutableIcon.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
@@ -65,238 +53,6 @@
 namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
-
-#ifdef _WIN32
-	constexpr WORD kApplicationIconResourceID = 101;
-	constexpr WORD kApplicationIconImageID = 1;
-	constexpr WORD kIconResourceTypeID = 3;
-	constexpr WORD kGroupIconResourceTypeID = 14;
-
-	void WriteUint16(std::vector<uint8_t>& p_data, size_t p_offset, uint16_t p_value)
-	{
-		p_data[p_offset] = static_cast<uint8_t>(p_value & 0xFF);
-		p_data[p_offset + 1] = static_cast<uint8_t>((p_value >> 8) & 0xFF);
-	}
-
-	void WriteUint32(std::vector<uint8_t>& p_data, size_t p_offset, uint32_t p_value)
-	{
-		p_data[p_offset] = static_cast<uint8_t>(p_value & 0xFF);
-		p_data[p_offset + 1] = static_cast<uint8_t>((p_value >> 8) & 0xFF);
-		p_data[p_offset + 2] = static_cast<uint8_t>((p_value >> 16) & 0xFF);
-		p_data[p_offset + 3] = static_cast<uint8_t>((p_value >> 24) & 0xFF);
-	}
-
-	void WriteInt32(std::vector<uint8_t>& p_data, size_t p_offset, int32_t p_value)
-	{
-		WriteUint32(p_data, p_offset, static_cast<uint32_t>(p_value));
-	}
-
-	std::string GetSystemErrorMessage(DWORD p_errorCode)
-	{
-		if (p_errorCode == 0)
-		{
-			return "Unknown error";
-		}
-
-		LPSTR buffer = nullptr;
-		const DWORD size = FormatMessageA(
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			nullptr,
-			p_errorCode,
-			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			reinterpret_cast<LPSTR>(&buffer),
-			0,
-			nullptr
-		);
-
-		if (size == 0 || buffer == nullptr)
-		{
-			return "Win32 error code: " + std::to_string(p_errorCode);
-		}
-
-		std::string message(buffer, size);
-		LocalFree(buffer);
-
-		while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))
-		{
-			message.pop_back();
-		}
-
-		return message;
-	}
-
-	bool BuildIconResources(const std::filesystem::path& p_iconPath, std::vector<uint8_t>& p_iconData, std::vector<uint8_t>& p_groupIconData, std::string& p_error)
-	{
-		int width = 0;
-		int height = 0;
-
-		std::ifstream iconFile(p_iconPath, std::ios::binary | std::ios::ate);
-		if (!iconFile)
-		{
-			p_error = "Failed to open icon image file: " + p_iconPath.string();
-			return false;
-		}
-
-		const auto iconFileSize = iconFile.tellg();
-		if (iconFileSize <= 0)
-		{
-			p_error = "Icon image file is empty: " + p_iconPath.string();
-			return false;
-		}
-
-		std::vector<uint8_t> iconFileData(static_cast<size_t>(iconFileSize));
-		iconFile.seekg(0, std::ios::beg);
-
-		if (!iconFile.read(reinterpret_cast<char*>(iconFileData.data()), static_cast<std::streamsize>(iconFileData.size())))
-		{
-			p_error = "Failed to read icon image file: " + p_iconPath.string();
-			return false;
-		}
-
-		if (iconFileData.size() > static_cast<size_t>(std::numeric_limits<int>::max()))
-		{
-			p_error = "Icon image file is too large: " + p_iconPath.string();
-			return false;
-		}
-
-		unsigned char* pixels = stbi_load_from_memory(
-			iconFileData.data(),
-			static_cast<int>(iconFileData.size()),
-			&width,
-			&height,
-			nullptr,
-			4
-		);
-
-		if (!pixels)
-		{
-			p_error = "Failed to load icon image file: " + p_iconPath.string();
-			return false;
-		}
-
-		if (width <= 0 || height <= 0 || width > 256 || height > 256)
-		{
-			stbi_image_free(pixels);
-			p_error = "Icon image dimensions must be between 1 and 256 pixels: " + p_iconPath.string();
-			return false;
-		}
-
-		const uint8_t iconWidth = static_cast<uint8_t>(width == 256 ? 0 : width);
-		const uint8_t iconHeight = static_cast<uint8_t>(height == 256 ? 0 : height);
-		constexpr size_t kBitmapInfoHeaderSize = 40;
-		constexpr size_t kGroupIconHeaderSize = 6;
-		constexpr size_t kGroupIconEntrySize = 14;
-		const size_t xorMaskBytes = static_cast<size_t>(width) * static_cast<size_t>(height) * sizeof(uint32_t);
-		const size_t andMaskStride = static_cast<size_t>(((width + 31) / 32) * 4);
-		const size_t andMaskBytes = andMaskStride * static_cast<size_t>(height);
-		const size_t totalSize = kBitmapInfoHeaderSize + xorMaskBytes + andMaskBytes;
-
-		p_iconData.assign(totalSize, 0);
-		WriteUint32(p_iconData, 0, static_cast<uint32_t>(kBitmapInfoHeaderSize));
-		WriteInt32(p_iconData, 4, width);
-		WriteInt32(p_iconData, 8, height * 2); // Includes XOR + AND masks
-		WriteUint16(p_iconData, 12, 1);
-		WriteUint16(p_iconData, 14, 32);
-		WriteUint32(p_iconData, 16, 0); // BI_RGB
-		WriteUint32(p_iconData, 20, static_cast<uint32_t>(xorMaskBytes));
-
-		for (int y = 0; y < height; ++y)
-		{
-			const int sourceY = height - 1 - y; // DIB is bottom-up
-
-			for (int x = 0; x < width; ++x)
-			{
-				const size_t sourceIndex = (static_cast<size_t>(sourceY) * static_cast<size_t>(width) + static_cast<size_t>(x)) * 4;
-				const size_t destinationIndex = kBitmapInfoHeaderSize + (static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)) * 4;
-
-				const uint8_t r = pixels[sourceIndex + 0];
-				const uint8_t g = pixels[sourceIndex + 1];
-				const uint8_t b = pixels[sourceIndex + 2];
-				const uint8_t a = pixels[sourceIndex + 3];
-
-				p_iconData[destinationIndex + 0] = b;
-				p_iconData[destinationIndex + 1] = g;
-				p_iconData[destinationIndex + 2] = r;
-				p_iconData[destinationIndex + 3] = a;
-			}
-		}
-
-		stbi_image_free(pixels);
-
-		p_groupIconData.assign(kGroupIconHeaderSize + kGroupIconEntrySize, 0);
-		WriteUint16(p_groupIconData, 0, 0);
-		WriteUint16(p_groupIconData, 2, 1);
-		WriteUint16(p_groupIconData, 4, 1);
-		p_groupIconData[6] = iconWidth;
-		p_groupIconData[7] = iconHeight;
-		p_groupIconData[8] = 0;
-		p_groupIconData[9] = 0;
-		WriteUint16(p_groupIconData, 10, 1);
-		WriteUint16(p_groupIconData, 12, 32);
-		WriteUint32(p_groupIconData, 14, static_cast<uint32_t>(p_iconData.size()));
-		WriteUint16(p_groupIconData, 18, kApplicationIconImageID);
-
-		return true;
-	}
-
-	bool ApplyExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath, std::string& p_error)
-	{
-		std::vector<uint8_t> iconData;
-		std::vector<uint8_t> groupIconData;
-
-		if (!BuildIconResources(p_iconPath, iconData, groupIconData, p_error))
-		{
-			return false;
-		}
-
-		const std::wstring executablePath = p_executablePath.wstring();
-		HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
-
-		if (updateHandle == nullptr)
-		{
-			p_error = "BeginUpdateResource failed: " + GetSystemErrorMessage(GetLastError());
-			return false;
-		}
-
-		const WORD language = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL);
-
-		if (!UpdateResourceW(
-			updateHandle,
-			MAKEINTRESOURCEW(kIconResourceTypeID),
-			MAKEINTRESOURCEW(kApplicationIconImageID),
-			language,
-			iconData.data(),
-			static_cast<DWORD>(iconData.size())
-		))
-		{
-			p_error = "UpdateResource (RT_ICON) failed: " + GetSystemErrorMessage(GetLastError());
-			EndUpdateResourceW(updateHandle, TRUE);
-			return false;
-		}
-
-		if (!UpdateResourceW(
-			updateHandle,
-			MAKEINTRESOURCEW(kGroupIconResourceTypeID),
-			MAKEINTRESOURCEW(kApplicationIconResourceID),
-			language,
-			groupIconData.data(),
-			static_cast<DWORD>(groupIconData.size())
-		))
-		{
-			p_error = "UpdateResource (RT_GROUP_ICON) failed: " + GetSystemErrorMessage(GetLastError());
-			EndUpdateResourceW(updateHandle, TRUE);
-			return false;
-		}
-
-		if (!EndUpdateResourceW(updateHandle, FALSE))
-		{
-			p_error = "EndUpdateResource failed: " + GetSystemErrorMessage(GetLastError());
-			return false;
-		}
-
-		return true;
-	}
-#endif
 
 	void RefreshMaterialsUsingShader(
 		OvCore::ResourceManagement::MaterialManager& p_materialManager,
@@ -611,235 +367,193 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 #endif
 
 	const std::string executableName = m_context.projectSettings.Get<std::string>("executable_name") + extension;
-#if defined(_WIN32)
-	const auto resolveConfiguredIconPath = [this]() -> std::filesystem::path
-	{
-		std::string iconSetting;
-
-		if (m_context.projectSettings.IsKeyExisting("window_icon"))
-		{
-			iconSetting = m_context.projectSettings.GetOrDefault<std::string>("window_icon", "");
-		}
-		else
-		{
-			iconSetting = m_context.projectSettings.GetOrDefault<std::string>("executable_icon", "");
-		}
-
-		OvTools::Utils::String::Trim(iconSetting);
-
-		if (iconSetting.empty())
-		{
-			return {};
-		}
-
-		std::filesystem::path iconPath = iconSetting;
-
-		if (iconPath.is_absolute())
-		{
-			return iconPath;
-		}
-
-		const auto resourcePath = OvTools::Utils::PathParser::GetRealPath(
-			iconPath,
-			m_context.engineAssetsPath,
-			m_context.projectAssetsPath
-		);
-
-		if (std::filesystem::exists(resourcePath))
-		{
-			return resourcePath;
-		}
-
-		const auto projectRelativePath = (m_context.projectFolder / iconPath).lexically_normal();
-
-		if (std::filesystem::exists(projectRelativePath))
-		{
-			return projectRelativePath;
-		}
-
-		return resourcePath;
-	};
-	const auto configuredIconPath = resolveConfiguredIconPath();
-#endif
 
 	bool failed = false;
 
 	OVLOG_INFO(std::format("Preparing to build at location: \"{}\"", p_buildPath.string()));
 
-		std::filesystem::remove_all(p_buildPath);
+	std::filesystem::remove_all(p_buildPath);
 
-		if (std::filesystem::create_directory(p_buildPath))
+	if (std::filesystem::create_directory(p_buildPath))
+	{
+		OVLOG_INFO("Build directory created");
+
+		if (std::filesystem::create_directory(p_buildPath / "Data"))
 		{
-			OVLOG_INFO("Build directory created");
+			OVLOG_INFO("Data directory created");
 
-			if (std::filesystem::create_directory(p_buildPath / "Data"))
+			if (std::filesystem::create_directory(p_buildPath / "Data" / "User"))
 			{
-				OVLOG_INFO("Data directory created");
+				OVLOG_INFO("Data/User directory created");
 
-				if (std::filesystem::create_directory(p_buildPath / "Data" / "User"))
+				std::error_code err;
+
+				std::filesystem::copy(m_context.projectFile, p_buildPath / "Data" / "User" / "Game.ini", err);
+
+				if (!err)
 				{
-					OVLOG_INFO("Data/User directory created");
+					OVLOG_INFO("Data/User/Game.ini file generated");
 
-					std::error_code err;
+					std::filesystem::copy(
+						m_context.projectAssetsPath,
+						p_buildPath / "Data" / "User" / "Assets",
+						std::filesystem::copy_options::recursive,
+						err
+					);
 
-					std::filesystem::copy(m_context.projectFile, p_buildPath / "Data" / "User" / "Game.ini", err);
+					auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
+					sceneFileName = OvTools::Utils::PathParser::MakeNonWindowsStyle(sceneFileName);
+
+					if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
+					{
+						OVLOG_ERROR("Failed to find Start Scene at expected path. Verify your Project Setings.");
+
+						OvWindowing::Dialogs::MessageBox message(
+							"Build Failure",
+							"An error occured during the building of your game.\nCheck the console for more information",
+							OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+							OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
+							true
+						);
+
+						std::filesystem::remove_all(p_buildPath);
+						return;
+					}
 
 					if (!err)
 					{
-						OVLOG_INFO("Data/User/Game.ini file generated");
+						OVLOG_INFO("Data/User/Assets/ directory copied");
 
 						std::filesystem::copy(
-							m_context.projectAssetsPath,
-							p_buildPath / "Data" / "User" / "Assets",
+							m_context.engineAssetsPath,
+							p_buildPath / "Data" / "Engine",
 							std::filesystem::copy_options::recursive,
 							err
 						);
 
-						auto sceneFileName = m_context.projectSettings.Get<std::string>("start_scene");
-						sceneFileName = OvTools::Utils::PathParser::MakeNonWindowsStyle(sceneFileName);
-
-						if (!std::filesystem::exists(p_buildPath / "Data" / "User" / "Assets" / sceneFileName))
-						{
-							OVLOG_ERROR("Failed to find Start Scene at expected path. Verify your Project Setings.");
-
-							OvWindowing::Dialogs::MessageBox message(
-								"Build Failure",
-								"An error occured during the building of your game.\nCheck the console for more information",
-								OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
-								OvWindowing::Dialogs::MessageBox::EButtonLayout::OK,
-								true
-							);
-
-							std::filesystem::remove_all(p_buildPath);
-							return;
-						}
-
 						if (!err)
 						{
-							OVLOG_INFO("Data/User/Assets/ directory copied");
-
-							std::filesystem::copy(
-								m_context.engineAssetsPath,
-								p_buildPath / "Data" / "Engine",
-								std::filesystem::copy_options::recursive,
-								err
-							);
-
-							if (!err)
-							{
-								OVLOG_INFO("Data/Engine/ directory copied");
-							}
-							else
-							{
-								OVLOG_ERROR("Data/Engine/ directory failed to copy");
-								failed = true;
-							}
+							OVLOG_INFO("Data/Engine/ directory copied");
 						}
 						else
 						{
-							OVLOG_ERROR("Data/User/Assets/ directory failed to copy");
+							OVLOG_ERROR("Data/Engine/ directory failed to copy");
 							failed = true;
 						}
 					}
 					else
 					{
-						OVLOG_ERROR("Data/User/Game.ini file failed to generate");
-						failed = true;
-					}
-
-					const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
-
-					const std::string initialExecutableName = "OvGame" + extension;
-
-					if (std::filesystem::exists(builderFolder) && std::filesystem::exists(builderFolder / initialExecutableName))
-					{
-						std::error_code err;
-
-						std::filesystem::copy(builderFolder, p_buildPath, err);
-
-						if (!err)
-						{
-							OVLOG_INFO("Builder data (Dlls and executable) copied");
-							
-							std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
-
-							if (!err)
-							{
-								OVLOG_INFO("Game executable renamed to " + executableName);
-
-#if defined(_WIN32)
-									if (!configuredIconPath.empty())
-									{
-										if (std::filesystem::exists(configuredIconPath))
-										{
-											std::string iconError;
-											const auto executablePath = p_buildPath / executableName;
-
-											if (ApplyExecutableIcon(executablePath, configuredIconPath, iconError))
-											{
-												OVLOG_INFO("Executable icon applied from: " + configuredIconPath.string());
-											}
-											else
-											{
-												OVLOG_WARNING("Failed to apply executable icon: " + iconError);
-											}
-										}
-										else
-										{
-											OVLOG_WARNING("Configured icon file not found, keeping default executable icon: " + configuredIconPath.string());
-										}
-									}
-#endif
-
-								if (p_autoRun)
-								{
-									const auto exePath = p_buildPath / executableName;
-									OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
-
-									if (std::filesystem::exists(exePath))
-									{
-										OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
-									}
-									else
-									{
-										OVLOG_ERROR("Failed to start the game: Executable not found");
-										failed = true;
-									}
-								}
-							}
-							else
-							{
-								OVLOG_ERROR("Game executable failed to rename");
-								failed = true;
-							}
-						}
-						else
-						{
-							OVLOG_ERROR("Builder data (Dlls and executatble) failed to copy");
-							failed = true;
-						}
-					}
-					else
-					{
-						OVLOG_ERROR(std::format(
-							"OvGame executable not found for \"{}\" configuration. Build OvGame and OvEditor in that configuration first, then try again.",
-							GetBuildTypeName(p_buildType)
-						));
+						OVLOG_ERROR("Data/User/Assets/ directory failed to copy");
 						failed = true;
 					}
 				}
 				else
 				{
-					OVLOG_ERROR("Data/User directory failed to create");
+					OVLOG_ERROR("Data/User/Game.ini file failed to generate");
+					failed = true;
+				}
+
+				const auto builderFolder = std::filesystem::current_path() / "Builder" / GetBuildTypeName(p_buildType);
+
+				const std::string initialExecutableName = "OvGame" + extension;
+
+				if (std::filesystem::exists(builderFolder) && std::filesystem::exists(builderFolder / initialExecutableName))
+				{
+					std::error_code err;
+
+					std::filesystem::copy(builderFolder, p_buildPath, err);
+
+					if (!err)
+					{
+						OVLOG_INFO("Builder data (Dlls and executable) copied");
+
+						std::filesystem::rename(p_buildPath / initialExecutableName, p_buildPath / executableName, err);
+
+						if (!err)
+						{
+							OVLOG_INFO("Game executable renamed to " + executableName);
+
+#if defined(_WIN32)
+							std::string windowIconSetting = m_context.projectSettings.GetOrDefault<std::string>("window_icon", "");
+
+							if (!windowIconSetting.empty())
+							{
+								const auto windowIconPath = OvTools::Utils::PathParser::GetRealPath(
+									std::filesystem::path{ windowIconSetting },
+									m_context.engineAssetsPath,
+									m_context.projectAssetsPath
+								);
+
+								if (std::filesystem::exists(windowIconPath))
+								{
+									std::string iconError;
+									const auto executablePath = p_buildPath / executableName;
+
+									if (OvTools::Utils::ChangeExecutableIcon(executablePath, windowIconPath, iconError))
+									{
+										OVLOG_INFO("Executable icon applied from: " + windowIconPath.string());
+									}
+									else
+									{
+										OVLOG_WARNING("Failed to apply executable icon: " + iconError);
+									}
+								}
+								else
+								{
+									OVLOG_WARNING("Application icon file not found: " + windowIconPath.string());
+								}
+							}
+#endif
+
+							if (p_autoRun)
+							{
+								const auto exePath = p_buildPath / executableName;
+								OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
+
+								if (std::filesystem::exists(exePath))
+								{
+									OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
+								}
+								else
+								{
+									OVLOG_ERROR("Failed to start the game: Executable not found");
+									failed = true;
+								}
+							}
+						}
+						else
+						{
+							OVLOG_ERROR("Game executable failed to rename");
+							failed = true;
+						}
+					}
+					else
+					{
+						OVLOG_ERROR("Builder data (Dlls and executatble) failed to copy");
+						failed = true;
+					}
+				}
+				else
+				{
+					OVLOG_ERROR(std::format(
+						"OvGame executable not found for \"{}\" configuration. Build OvGame and OvEditor in that configuration first, then try again.",
+						GetBuildTypeName(p_buildType)
+					));
 					failed = true;
 				}
 			}
 			else
 			{
-				OVLOG_ERROR("Data directory failed to create");
+				OVLOG_ERROR("Data/User directory failed to create");
 				failed = true;
 			}
 		}
+		else
+		{
+			OVLOG_ERROR("Data directory failed to create");
+			failed = true;
+		}
+	}
 	else
 	{
 		OVLOG_ERROR("Build directory failed to create");

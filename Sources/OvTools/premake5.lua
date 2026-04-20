@@ -24,6 +24,9 @@ project "OvTools"
 
 	filter { "system:windows" }
 		characterset ("MBCS")
+		includedirs {
+			dependdir .. "stb_image/include",
+		}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG", "_DEBUG" }

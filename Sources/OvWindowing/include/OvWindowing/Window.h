@@ -56,8 +56,9 @@ namespace OvWindowing
 		/**
 		* Set Icon
 		* @param p_filePath
+		* @return true if the icon was loaded and applied
 		*/
-		void SetIcon(const std::string& p_filePath);
+		bool SetIcon(const std::string& p_filePath);
 
 		/**
 		* Set Icon from memory

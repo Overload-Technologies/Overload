@@ -21,3 +21,5 @@ namespace OvTools::Utils
 		const std::filesystem::path& p_iconPath
 	);
 }
+
+#include <OvTools/Utils/ExecutableIcon.inl>

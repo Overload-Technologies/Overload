@@ -16,7 +16,7 @@
 #pragma comment(lib, "gdiplus.lib")
 #endif
 
-bool OvTools::Utils::SetWindowsExecutableIcon(
+inline bool OvTools::Utils::SetWindowsExecutableIcon(
 	const std::filesystem::path& p_executablePath,
 	const std::filesystem::path& p_iconPath
 )

@@ -4,5 +4,6 @@
 * @licence: MIT
 */
 
-// Implementation lives in <OvTools/Utils/ExecutableIcon.inl> and is compiled
-// through SystemCalls.cpp to avoid relying on generated project file updates.
+#include <OvTools/Utils/ExecutableIcon.h>
+
+// Keep this translation unit so generated IDE project files can reference it.

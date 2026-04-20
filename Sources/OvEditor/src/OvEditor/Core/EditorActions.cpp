@@ -477,11 +477,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 							const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{});
 							if (!windowIconPath.empty())
 							{
-								const std::filesystem::path windowIconRealPath = OvTools::Utils::PathParser::GetRealPath(
-									std::filesystem::path{windowIconPath},
-									m_context.engineAssetsPath,
-									m_context.projectAssetsPath
-								);
+								const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) };
 
 								if (std::filesystem::exists(windowIconRealPath))
 								{
@@ -1105,11 +1101,20 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 
 std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
-	return OvTools::Utils::PathParser::GetRealPath(
-		std::filesystem::path(p_path),
-		m_context.engineAssetsPath,
-		m_context.projectAssetsPath
-	).string();
+	std::filesystem::path result;
+
+	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
+
+	if (normalizedPath.starts_with(':'))
+	{
+		result = m_context.engineAssetsPath / normalizedPath.substr(1);
+	}
+	else
+	{
+		result = m_context.projectAssetsPath / normalizedPath;
+	}
+
+	return result.lexically_normal().string();
 }
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)

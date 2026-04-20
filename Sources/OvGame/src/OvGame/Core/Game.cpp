@@ -65,7 +65,7 @@ void RenderCurrentScene(
 	{
 		if (auto camera = currentScene->FindMainCamera())
 		{
-			auto [windowWidth, windowHeight] = p_context.window->GetFramebufferSize();
+			auto [windowWidth, windowHeight] = p_context.window->GetSize();
 
 			p_renderer.AddDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>({
 				*currentScene,

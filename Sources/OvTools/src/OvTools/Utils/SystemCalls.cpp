@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <OvTools/Utils/ExecutableIcon.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SystemCalls.h>
 
@@ -22,8 +21,6 @@
 #include <cassert>
 #include <format>
 #include <memory>
-
-#include <OvTools/Utils/ExecutableIcon.inl>
 
 namespace
 {

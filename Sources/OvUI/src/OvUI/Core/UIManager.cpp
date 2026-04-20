@@ -154,6 +154,13 @@ void OvUI::Core::UIManager::EnableDocking(bool p_value)
 		ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_DockingEnable;
 }
 
+void OvUI::Core::UIManager::EnableDPIScaling(bool p_value)
+{
+	m_dpiScaling = p_value;
+
+	ImGui::GetIO().ConfigDpiScaleFonts = m_dpiScaling;
+}
+
 void OvUI::Core::UIManager::ResetLayout(const std::string& p_config) const
 {
     ImGui::LoadIniSettingsFromDisk(p_config.c_str());

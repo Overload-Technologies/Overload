@@ -103,6 +103,12 @@ namespace OvUI::Core
 		void EnableDocking(bool p_value);
 
 		/**
+		* Enable DPI scaling
+		* @note Limited to fonts for now
+		*/
+		void EnableDPIScaling(bool p_value);
+
+		/**
 		* Reset the UI layout to the given configuration file
 		* @param p_config
 		*/
@@ -143,6 +149,7 @@ namespace OvUI::Core
 
 	private:
 		bool m_dockingState;
+		bool m_dpiScaling;
 		Modules::Canvas* m_currentCanvas = nullptr;
 		std::unordered_map<std::string, ImFont*> m_fonts;
 		std::string m_layoutSaveFilename = "imgui.ini";

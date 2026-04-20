@@ -34,6 +34,7 @@
 #include "OvEditor/Panels/SceneView.h"
 #include "OvEditor/Settings/EditorSettings.h"
 #include "OvEditor/Utils/ActorCreationMenu.h"
+#include "OvUI/Widgets/Selection/CheckBox.h"
 
 using namespace OvUI::Panels;
 using namespace OvUI::Widgets;
@@ -113,6 +114,11 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	fontSizeSelector.ValueChangedEvent += [this](int p_value) {
 		Settings::EditorSettings::FontScale = p_value;
 		EDITOR_CONTEXT(uiManager)->SetFontScale(p_value / 100.0f);
+	};
+	auto& fontDpiScaling = fontSizeMenu.CreateWidget<OvUI::Widgets::Selection::CheckBox>(Settings::EditorSettings::FontDpiScaling, "Scale with DPI");
+	fontDpiScaling.ValueChangedEvent += [this](bool p_value) {
+		Settings::EditorSettings::FontDpiScaling = p_value;
+		EDITOR_CONTEXT(uiManager)->EnableDPIScaling(p_value);
 	};
 
 	m_settingsMenu->CreateWidget<MenuItem>("Spawn actors at origin", "", true, true).ValueChangedEvent += EDITOR_BIND(SetActorSpawnAtOrigin, std::placeholders::_1);

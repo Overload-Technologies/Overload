@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <cstdint>
 #include <fstream>
 #include <limits>

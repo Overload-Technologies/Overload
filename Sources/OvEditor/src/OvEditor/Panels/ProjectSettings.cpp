@@ -6,10 +6,10 @@
 
 #include "OvEditor/Panels/ProjectSettings.h"
 #include "OvEditor/Core/EditorActions.h"
-#include <OvTools/Utils/PathParser.h>
 
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Visual/Separator.h>

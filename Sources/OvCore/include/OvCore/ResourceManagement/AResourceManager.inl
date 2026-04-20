@@ -9,7 +9,6 @@
 #include <algorithm>
 
 #include "OvCore/ResourceManagement/AResourceManager.h"
-#include "OvTools/Utils/PathParser.h"
 
 namespace
 {
@@ -152,10 +151,23 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline std::filesystem::path AResourceManager<T>::GetRealPath(const std::filesystem::path& p_path) const
 	{
-		return OvTools::Utils::PathParser::GetRealPath(
-			p_path,
-			__ENGINE_ASSETS_PATH,
-			__PROJECT_ASSETS_PATH
-		);
+		// Keep support for the engine prefix ':'
+		const std::string s = p_path.string();
+		std::filesystem::path path;
+		if (!s.empty() && s.front() == ':')
+		{
+			// Remove the ':' prefix and normalize separators
+			std::string sub = s.substr(1);
+			std::replace(sub.begin(), sub.end(), '\\', '/');
+			path = __ENGINE_ASSETS_PATH / std::filesystem::path{sub};
+		}
+		else
+		{
+			std::string sub = s;
+			std::replace(sub.begin(), sub.end(), '\\', '/');
+			path = __PROJECT_ASSETS_PATH / std::filesystem::path{sub};
+		}
+
+		return path.lexically_normal();
 	}
 }

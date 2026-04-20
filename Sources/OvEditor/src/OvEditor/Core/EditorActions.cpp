@@ -40,8 +40,8 @@
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
 
-#include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/ExecutableIcon.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>

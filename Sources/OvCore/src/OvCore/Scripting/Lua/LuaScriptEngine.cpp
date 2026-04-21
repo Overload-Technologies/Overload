@@ -112,12 +112,13 @@ namespace
 			"  \"runtime.builtin\": {{\n"
 			"    \"basic\": \"enable\",\n"
 			"    \"math\": \"enable\",\n"
-			"    \"string\": \"disable\",\n"
-			"    \"table\": \"disable\",\n"
-			"    \"io\": \"disable\",\n"
-			"    \"os\": \"disable\",\n"
-			"    \"package\": \"disable\",\n"
-			"    \"coroutine\": \"disable\"\n"
+			"    \"string\": \"enable\",\n"
+			"    \"table\": \"enable\",\n"
+			"    \"io\": \"enable\",\n"
+			"    \"os\": \"enable\",\n"
+			"    \"package\": \"enable\",\n"
+			"    \"debug\": \"enable\",\n"
+			"    \"coroutine\": \"enable\"\n"
 			"  }}\n"
 			"}}\n",
 			absolutePath.string(),
@@ -342,7 +343,17 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 	OVASSERT(m_context.luaState == nullptr, "A Lua context already exists!");
 
 	m_context.luaState = std::make_unique<sol::state>();
-	m_context.luaState->open_libraries(sol::lib::base, sol::lib::math);
+	m_context.luaState->open_libraries(
+		sol::lib::base,
+		sol::lib::math,
+		sol::lib::coroutine,
+		sol::lib::io,
+		sol::lib::os,
+		sol::lib::package,
+		sol::lib::string,
+		sol::lib::table,
+		sol::lib::debug
+	);
 
 	for (auto& callback : luaBindings)
 	{

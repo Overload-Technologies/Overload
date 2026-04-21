@@ -11,14 +11,14 @@
 void OvUI::Panels::PanelUndecorated::_Draw_Impl()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, { 0, 0 });
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, { 1.0f, 1.0f });
 
 	if (ImGui::Begin(m_panelID.c_str(), nullptr, CollectFlags()))
 	{
 		ImGui::PopStyleVar(2);
 
 		Update();
-			
+
 		DrawWidgets();
 
 		ImGui::End();

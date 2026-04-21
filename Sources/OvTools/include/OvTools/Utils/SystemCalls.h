@@ -41,11 +41,15 @@ namespace OvTools::Utils
 		static void RunProgram(const std::string& p_file, const std::string& p_workingDir = "");
 
 		/**
-		* On Windows, apply the given icon image to an executable icon resource.
+		* Apply the given icon image to an executable icon resource.
+		* @note No-op on Linux, as executable files don't embed icons.
 		* @param p_executablePath
 		* @param p_iconPath
 		*/
-		static bool SetWindowsExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath);
+		static bool SetExecutableIcon(
+			[[maybe_unused]] const std::filesystem::path& p_executablePath,
+			[[maybe_unused]] const std::filesystem::path& p_iconPath
+		);
 
 		/**
 		* Open the given file for edition with the default application

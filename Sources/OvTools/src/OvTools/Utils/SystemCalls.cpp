@@ -12,8 +12,6 @@
 #include <ShlObj.h>
 #include <gdiplus.h>
 #include <objidl.h>
-#pragma comment(lib, "gdiplus.lib")
-#pragma comment(lib, "ole32.lib")
 #else
 #include <cstdlib>
 #include <unistd.h>
@@ -23,6 +21,7 @@
 #endif
 
 #include <cassert>
+#include <cstring>
 #include <format>
 #include <memory>
 #include <vector>
@@ -85,13 +84,20 @@ void OvTools::Utils::SystemCalls::RunProgram(const std::string& p_file, const st
 #endif
 }
 
-bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath)
+bool OvTools::Utils::SystemCalls::SetExecutableIcon(
+	[[maybe_unused]] const std::filesystem::path& p_executablePath,
+	[[maybe_unused]] const std::filesystem::path& p_iconPath
+)
 {
 #if defined(_WIN32)
 	constexpr WORD kGroupResourceId = 101;
 	constexpr WORD kImageResourceId = 65000;
 	constexpr UINT kMaxIconSize = 256;
-	constexpr CLSID kPngEncoder = { 0x557cf406, 0x1a04, 0x11d3, { 0x9a, 0x73, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e } };
+	constexpr WORD kLanguageIds[] = {
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
+	};
 	auto writeWord = [](std::vector<BYTE>& p_data, const size_t p_offset, const WORD p_value)
 	{
 		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
@@ -118,6 +124,7 @@ bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem
 		{
 			return false;
 		}
+
 		const UINT iconWidth = sourceBitmap.GetWidth() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetWidth();
 		const UINT iconHeight = sourceBitmap.GetHeight() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetHeight();
 		if (iconWidth == 0u || iconHeight == 0u)
@@ -131,39 +138,43 @@ bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem
 		{
 			return false;
 		}
-		IStream* stream = nullptr;
-		if (CreateStreamOnHGlobal(nullptr, TRUE, &stream) != S_OK)
+
+		Gdiplus::Rect lockRect(0, 0, static_cast<INT>(iconWidth), static_cast<INT>(iconHeight));
+		Gdiplus::BitmapData bitmapData{};
+		if (iconBitmap.LockBits(&lockRect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData) != Gdiplus::Ok)
 		{
 			return false;
 		}
 
-		if (iconBitmap.Save(stream, &kPngEncoder, nullptr) != Gdiplus::Ok)
+		const int stride = bitmapData.Stride < 0 ? -bitmapData.Stride : bitmapData.Stride;
+		const size_t rowBytes = static_cast<size_t>(iconWidth) * 4u;
+		std::vector<BYTE> xorBitmapData(rowBytes * static_cast<size_t>(iconHeight));
+
+		for (UINT y = 0u; y < iconHeight; ++y)
 		{
-			stream->Release();
-			return false;
+			const size_t dstOffset = static_cast<size_t>(iconHeight - 1u - y) * rowBytes;
+			const auto src = static_cast<const BYTE*>(bitmapData.Scan0) + static_cast<size_t>(y) * static_cast<size_t>(stride);
+			std::memcpy(xorBitmapData.data() + dstOffset, src, rowBytes);
 		}
 
-		STATSTG streamStats{};
-		if (stream->Stat(&streamStats, STATFLAG_NONAME) != S_OK)
-		{
-			stream->Release();
-			return false;
-		}
-		const size_t iconSize = static_cast<size_t>(streamStats.cbSize.QuadPart);
-		std::vector<BYTE> iconResourceData(iconSize);
-		LARGE_INTEGER seekZero{};
-		if (stream->Seek(seekZero, STREAM_SEEK_SET, nullptr) != S_OK)
-		{
-			stream->Release();
-			return false;
-		}
-		ULONG bytesRead = 0;
-		const HRESULT readResult = stream->Read(iconResourceData.data(), static_cast<ULONG>(iconSize), &bytesRead);
-		stream->Release();
-		if (readResult != S_OK || static_cast<size_t>(bytesRead) != iconSize)
-		{
-			return false;
-		}
+		iconBitmap.UnlockBits(&bitmapData);
+
+		const size_t andMaskRowBytes = static_cast<size_t>((iconWidth + 31u) / 32u) * 4u;
+		std::vector<BYTE> andMaskData(andMaskRowBytes * static_cast<size_t>(iconHeight), 0u);
+		BITMAPINFOHEADER iconHeader{};
+		iconHeader.biSize = sizeof(BITMAPINFOHEADER);
+		iconHeader.biWidth = static_cast<LONG>(iconWidth);
+		iconHeader.biHeight = static_cast<LONG>(iconHeight * 2u);
+		iconHeader.biPlanes = 1;
+		iconHeader.biBitCount = 32;
+		iconHeader.biCompression = BI_RGB;
+		iconHeader.biSizeImage = static_cast<DWORD>(xorBitmapData.size());
+
+		std::vector<BYTE> iconResourceData(sizeof(BITMAPINFOHEADER) + xorBitmapData.size() + andMaskData.size());
+		std::memcpy(iconResourceData.data(), &iconHeader, sizeof(BITMAPINFOHEADER));
+		std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER), xorBitmapData.data(), xorBitmapData.size());
+		std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER) + xorBitmapData.size(), andMaskData.data(), andMaskData.size());
+
 		std::vector<BYTE> groupResourceData(20u, 0u);
 		writeWord(groupResourceData, 2u, 1u);
 		writeWord(groupResourceData, 4u, 1u);
@@ -180,9 +191,34 @@ bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem
 		{
 			return false;
 		}
-		const WORD languageId = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN);
-		if (!UpdateResourceW(updateHandle, MAKEINTRESOURCEW(3), MAKEINTRESOURCEW(kImageResourceId), languageId, iconResourceData.data(), static_cast<DWORD>(iconResourceData.size()))
-			|| !UpdateResourceW(updateHandle, MAKEINTRESOURCEW(14), MAKEINTRESOURCEW(kGroupResourceId), languageId, groupResourceData.data(), static_cast<DWORD>(groupResourceData.size())))
+
+		bool updated = false;
+		for (const WORD languageId : kLanguageIds)
+		{
+			const bool iconUpdated = UpdateResourceW(
+				updateHandle,
+				MAKEINTRESOURCEW(3),
+				MAKEINTRESOURCEW(kImageResourceId),
+				languageId,
+				iconResourceData.data(),
+				static_cast<DWORD>(iconResourceData.size())
+			) != FALSE;
+			const bool groupUpdated = UpdateResourceW(
+				updateHandle,
+				MAKEINTRESOURCEW(14),
+				MAKEINTRESOURCEW(kGroupResourceId),
+				languageId,
+				groupResourceData.data(),
+				static_cast<DWORD>(groupResourceData.size())
+			) != FALSE;
+
+			if (iconUpdated && groupUpdated)
+			{
+				updated = true;
+			}
+		}
+
+		if (!updated)
 		{
 			EndUpdateResourceW(updateHandle, TRUE);
 			return false;
@@ -194,8 +230,6 @@ bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem
 	Gdiplus::GdiplusShutdown(gdiplusToken);
 	return success;
 #else
-	(void)p_executablePath;
-	(void)p_iconPath;
 	return false;
 #endif
 }

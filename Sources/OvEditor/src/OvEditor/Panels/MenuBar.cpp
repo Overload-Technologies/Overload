@@ -76,10 +76,10 @@ void OvEditor::Panels::MenuBar::HandleShortcuts(float p_deltaTime)
 
 void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 {
-	auto& themeButton = m_settingsMenu->CreateWidget<MenuList>("Editor Theme");
-	themeButton.CreateWidget<Texts::Text>("Some themes may require a restart");
+	auto& appearanceButton = m_settingsMenu->CreateWidget<MenuList>("Appearance");
+	appearanceButton.CreateWidget<Texts::Text>("Some themes may require a restart");
 
-	auto& colorTheme = themeButton.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::ColorTheme.Get()));
+	auto& colorTheme = appearanceButton.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::ColorTheme.Get()));
 	colorTheme.choices = {
 		{ static_cast<int>(OvUI::Styling::EStyle::IM_CLASSIC_STYLE), "ImGui Classic"},
 		{ static_cast<int>(OvUI::Styling::EStyle::IM_DARK_STYLE), "ImGui Dark"},
@@ -94,9 +94,9 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 		EDITOR_CONTEXT(uiManager)->ApplyStyle(static_cast<OvUI::Styling::EStyle>(p_value));
 	};
 
-	auto& uiScale = themeButton.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::UIScale.Get()));
+	auto& uiScale = appearanceButton.CreateWidget<Selection::ComboBox>(static_cast<int>(Settings::EditorSettings::UIScale.Get()));
 	uiScale.choices = {
-		{ 0, "Automatic (DPI Aware)"},
+		{ 0, "[BETA] Automatic (DPI Aware)"},
 		{ 100, "100%"},
 		{ 150, "150%"},
 		{ 200, "200%"},
@@ -205,7 +205,6 @@ void OvEditor::Panels::MenuBar::InitializeSettingsMenu()
 	{
 		Settings::EditorSettings::CodeEditorCommand = p_value;
 	};
-
 }
 
 void OvEditor::Panels::MenuBar::CreateFileMenu()

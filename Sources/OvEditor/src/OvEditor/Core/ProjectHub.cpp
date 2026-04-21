@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <asm-generic/errno.h>
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <filesystem>
@@ -281,6 +282,31 @@ void OvEditor::Core::ProjectHub::SetupContext()
 
 	/* Graphics context creation */
 	m_driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ false });
+
+	// DPI awareness BETA option
+	const auto windowContentScale = m_window->GetContentScale();
+	const auto unifiedWindowContentScale = std::max(windowContentScale.first, windowContentScale.second);
+
+	if (!Settings::EditorSettings::BetaDpiAwarenessDialogPresented.Get() && unifiedWindowContentScale > 1.0f)
+	{
+		Settings::EditorSettings::BetaDpiAwarenessDialogPresented.Set(true);
+		const auto dpiAwarenessDialog = OvWindowing::Dialogs::MessageBox(
+			"High DPI Monitor Detected",
+			"Overload has detected that you might be running the editor from a high DPI monitor.\n\n"
+			"Support for automatic DPI-scaling is currently in BETA and might result in weird spacings, "
+			"icon sizes, layouts, and window sizes.\n\n"
+			"Do you want to enable automatic DPI scaling anyway?\n\n"
+			"(You can change this setting anytime from the menu bar: Settings > Appearance)",
+			OvWindowing::Dialogs::MessageBox::EMessageType::QUESTION,
+			OvWindowing::Dialogs::MessageBox::EButtonLayout::YES_NO
+		);
+		switch (dpiAwarenessDialog.GetUserAction())
+		{
+			case OvWindowing::Dialogs::MessageBox::EUserAction::YES:
+				Settings::EditorSettings::UIScale.Set(0);
+			default: break;
+		}
+	}
 
 	m_uiManager = std::make_unique<OvUI::Core::UIManager>(
 		*m_window,

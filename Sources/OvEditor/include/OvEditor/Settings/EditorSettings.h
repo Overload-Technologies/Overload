@@ -98,7 +98,8 @@ namespace OvEditor::Settings
 		inline static Property<float> ScalingSnapUnit = { 1.0f };
 		inline static Property<int> ColorTheme = { static_cast<int>(OvUI::Styling::EStyle::DEFAULT_DARK) };
 		inline static Property<int> ConsoleMaxLogs = { 500 };
-		inline static Property<int> UIScale = { 0 };
+		inline static Property<int> UIScale = { 100 };
+		inline static Property<bool> BetaDpiAwarenessDialogPresented = { false };
 		inline static Property<std::string> CodeEditorCommand = { "code {workdir} --goto {path}" };
 		inline static Property<bool> RegenerateScriptingProjectFilesOnStartup = { true };
 	};

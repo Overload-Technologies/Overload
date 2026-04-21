@@ -62,11 +62,19 @@ OvWindowing::Window::~Window()
 	glfwDestroyWindow(m_glfwWindow);
 }
 
-void OvWindowing::Window::SetIcon(const std::string & p_filePath)
+bool OvWindowing::Window::SetIcon(const std::string& p_filePath)
 {
-	GLFWimage images[1];
-	images[0].pixels = stbi_load(p_filePath.c_str(), &images[0].width, &images[0].height, 0, 4);
-	glfwSetWindowIcon(m_glfwWindow, 1, images);
+	GLFWimage image{};
+	image.pixels = stbi_load(p_filePath.c_str(), &image.width, &image.height, 0, 4);
+
+	if (!image.pixels)
+	{
+		return false;
+	}
+
+	glfwSetWindowIcon(m_glfwWindow, 1, &image);
+	stbi_image_free(image.pixels);
+	return true;
 }
 
 void OvWindowing::Window::SetIconFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height)

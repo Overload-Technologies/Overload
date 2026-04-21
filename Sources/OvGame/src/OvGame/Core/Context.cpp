@@ -106,8 +106,7 @@ OvGame::Core::Context::Context() :
 
 		if (std::filesystem::exists(realPath))
 		{
-			window->SetIcon(realPath.string());
-			useFallbackWindowIcon = false;
+			useFallbackWindowIcon = !window->SetIcon(realPath.string());
 		}
 	}
 

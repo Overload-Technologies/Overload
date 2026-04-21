@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 
@@ -38,6 +39,13 @@ namespace OvTools::Utils
 		* @param p_workingDir
 		*/
 		static void RunProgram(const std::string& p_file, const std::string& p_workingDir = "");
+
+		/**
+		* On Windows, apply the given icon image to an executable icon resource.
+		* @param p_executablePath
+		* @param p_iconPath
+		*/
+		static bool SetWindowsExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath);
 
 		/**
 		* Open the given file for edition with the default application

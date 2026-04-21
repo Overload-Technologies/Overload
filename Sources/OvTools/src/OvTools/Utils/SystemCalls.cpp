@@ -10,6 +10,10 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <ShlObj.h>
+#include <gdiplus.h>
+#include <objidl.h>
+#pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "ole32.lib")
 #else
 #include <cstdlib>
 #include <unistd.h>
@@ -21,6 +25,7 @@
 #include <cassert>
 #include <format>
 #include <memory>
+#include <vector>
 
 namespace
 {
@@ -77,6 +82,121 @@ void OvTools::Utils::SystemCalls::RunProgram(const std::string& p_file, const st
 		command = "cd \"" + p_workingDir + "\" && " + command;
 	}
 	std::system(command.c_str());
+#endif
+}
+
+bool OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(const std::filesystem::path& p_executablePath, const std::filesystem::path& p_iconPath)
+{
+#if defined(_WIN32)
+	constexpr WORD kGroupResourceId = 101;
+	constexpr WORD kImageResourceId = 65000;
+	constexpr UINT kMaxIconSize = 256;
+	constexpr CLSID kPngEncoder = { 0x557cf406, 0x1a04, 0x11d3, { 0x9a, 0x73, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e } };
+	auto writeWord = [](std::vector<BYTE>& p_data, const size_t p_offset, const WORD p_value)
+	{
+		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
+		p_data[p_offset + 1u] = static_cast<BYTE>((p_value >> 8u) & 0xFFu);
+	};
+	auto writeDword = [](std::vector<BYTE>& p_data, const size_t p_offset, const DWORD p_value)
+	{
+		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
+		p_data[p_offset + 1u] = static_cast<BYTE>((p_value >> 8u) & 0xFFu);
+		p_data[p_offset + 2u] = static_cast<BYTE>((p_value >> 16u) & 0xFFu);
+		p_data[p_offset + 3u] = static_cast<BYTE>((p_value >> 24u) & 0xFFu);
+	};
+	ULONG_PTR gdiplusToken = 0;
+	Gdiplus::GdiplusStartupInput startupInput;
+	if (Gdiplus::GdiplusStartup(&gdiplusToken, &startupInput, nullptr) != Gdiplus::Ok)
+	{
+		return false;
+	}
+
+	const bool success = [&]() -> bool
+	{
+		Gdiplus::Bitmap sourceBitmap(p_iconPath.wstring().c_str());
+		if (sourceBitmap.GetLastStatus() != Gdiplus::Ok)
+		{
+			return false;
+		}
+		const UINT iconWidth = sourceBitmap.GetWidth() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetWidth();
+		const UINT iconHeight = sourceBitmap.GetHeight() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetHeight();
+		if (iconWidth == 0u || iconHeight == 0u)
+		{
+			return false;
+		}
+
+		Gdiplus::Bitmap iconBitmap(iconWidth, iconHeight, PixelFormat32bppARGB);
+		Gdiplus::Graphics graphics(&iconBitmap);
+		if (iconBitmap.GetLastStatus() != Gdiplus::Ok || graphics.DrawImage(&sourceBitmap, 0, 0, iconWidth, iconHeight) != Gdiplus::Ok)
+		{
+			return false;
+		}
+		IStream* stream = nullptr;
+		if (CreateStreamOnHGlobal(nullptr, TRUE, &stream) != S_OK)
+		{
+			return false;
+		}
+
+		if (iconBitmap.Save(stream, &kPngEncoder, nullptr) != Gdiplus::Ok)
+		{
+			stream->Release();
+			return false;
+		}
+
+		STATSTG streamStats{};
+		if (stream->Stat(&streamStats, STATFLAG_NONAME) != S_OK)
+		{
+			stream->Release();
+			return false;
+		}
+		const size_t iconSize = static_cast<size_t>(streamStats.cbSize.QuadPart);
+		std::vector<BYTE> iconResourceData(iconSize);
+		LARGE_INTEGER seekZero{};
+		if (stream->Seek(seekZero, STREAM_SEEK_SET, nullptr) != S_OK)
+		{
+			stream->Release();
+			return false;
+		}
+		ULONG bytesRead = 0;
+		const HRESULT readResult = stream->Read(iconResourceData.data(), static_cast<ULONG>(iconSize), &bytesRead);
+		stream->Release();
+		if (readResult != S_OK || static_cast<size_t>(bytesRead) != iconSize)
+		{
+			return false;
+		}
+		std::vector<BYTE> groupResourceData(20u, 0u);
+		writeWord(groupResourceData, 2u, 1u);
+		writeWord(groupResourceData, 4u, 1u);
+		groupResourceData[6u] = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
+		groupResourceData[7u] = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
+		writeWord(groupResourceData, 10u, 1u);
+		writeWord(groupResourceData, 12u, 32u);
+		writeDword(groupResourceData, 14u, static_cast<DWORD>(iconResourceData.size()));
+		writeWord(groupResourceData, 18u, kImageResourceId);
+
+		const std::wstring executablePath = p_executablePath.wstring();
+		HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
+		if (!updateHandle)
+		{
+			return false;
+		}
+		const WORD languageId = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN);
+		if (!UpdateResourceW(updateHandle, MAKEINTRESOURCEW(3), MAKEINTRESOURCEW(kImageResourceId), languageId, iconResourceData.data(), static_cast<DWORD>(iconResourceData.size()))
+			|| !UpdateResourceW(updateHandle, MAKEINTRESOURCEW(14), MAKEINTRESOURCEW(kGroupResourceId), languageId, groupResourceData.data(), static_cast<DWORD>(groupResourceData.size())))
+		{
+			EndUpdateResourceW(updateHandle, TRUE);
+			return false;
+		}
+
+		return EndUpdateResourceW(updateHandle, FALSE) != FALSE;
+	}();
+
+	Gdiplus::GdiplusShutdown(gdiplusToken);
+	return success;
+#else
+	(void)p_executablePath;
+	(void)p_iconPath;
+	return false;
 #endif
 }
 

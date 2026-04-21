@@ -40,7 +40,6 @@
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
 
-#include <OvTools/Utils/ExecutableIcon.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
@@ -481,19 +480,19 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 
 								if (std::filesystem::exists(windowIconRealPath))
 								{
-									OvTools::Utils::SetWindowsExecutableIcon(p_buildPath / executableName, windowIconRealPath);
+									OvTools::Utils::SystemCalls::SetWindowsExecutableIcon(p_buildPath / executableName, windowIconRealPath);
 								}
 							}
 #endif
 
 							if (p_autoRun)
 							{
-								const auto executablePath = p_buildPath / executableName;
-								OVLOG_INFO(std::format("Launching the game at location: \"{}\"", executablePath.string()));
+								const auto exePath = p_buildPath / executableName;
+								OVLOG_INFO(std::format("Launching the game at location: \"{}\"", exePath.string()));
 
-								if (std::filesystem::exists(executablePath))
+								if (std::filesystem::exists(exePath))
 								{
-									OvTools::Utils::SystemCalls::RunProgram(executablePath.string(), p_buildPath.string());
+									OvTools::Utils::SystemCalls::RunProgram(exePath.string(), p_buildPath.string());
 								}
 								else
 								{
@@ -1099,17 +1098,18 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	return false;
 }
 
+// Duplicate from AResourceManager.h
 std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
 	std::filesystem::path result;
 
 	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
 
-	if (normalizedPath.starts_with(':'))
+	if (normalizedPath.starts_with(':')) // The path is an engine path
 	{
 		result = m_context.engineAssetsPath / normalizedPath.substr(1);
 	}
-	else
+	else // The path is a project path
 	{
 		result = m_context.projectAssetsPath / normalizedPath;
 	}

@@ -20,8 +20,8 @@ void OvUI::Panels::PanelUndecorated::_Draw_Impl()
 		DrawWidgets();
 	}
 
-	ImGui::PopStyleVar(2);
 	ImGui::End();
+	ImGui::PopStyleVar(2);
 }
 
 int OvUI::Panels::PanelUndecorated::CollectFlags()

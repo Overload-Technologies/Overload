@@ -24,10 +24,6 @@ project "OvTools"
 
 	filter { "system:windows" }
 		characterset ("MBCS")
-		links {
-			"gdiplus.lib",
-			"ole32.lib",
-		}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG", "_DEBUG" }

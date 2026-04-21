@@ -10,8 +10,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <ShlObj.h>
-#include <gdiplus.h>
-#include <objidl.h>
 #else
 #include <cstdlib>
 #include <unistd.h>
@@ -23,6 +21,7 @@
 #include <cassert>
 #include <cstring>
 #include <format>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -86,7 +85,9 @@ void OvTools::Utils::SystemCalls::RunProgram(const std::string& p_file, const st
 
 bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 	[[maybe_unused]] const std::filesystem::path& p_executablePath,
-	[[maybe_unused]] const std::filesystem::path& p_iconPath
+	[[maybe_unused]] const std::span<const uint8_t> p_iconData,
+	[[maybe_unused]] const uint32_t p_iconWidth,
+	[[maybe_unused]] const uint32_t p_iconHeight
 )
 {
 #if defined(_WIN32)
@@ -98,6 +99,29 @@ bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
 	};
+
+	if (p_iconWidth == 0u || p_iconHeight == 0u || p_iconData.empty())
+	{
+		return false;
+	}
+
+	if (p_iconWidth > (std::numeric_limits<size_t>::max)() / 4u)
+	{
+		return false;
+	}
+
+	const size_t sourceRowBytes = static_cast<size_t>(p_iconWidth) * 4u;
+	if (p_iconHeight > (std::numeric_limits<size_t>::max)() / sourceRowBytes)
+	{
+		return false;
+	}
+
+	const size_t sourceBytes = sourceRowBytes * static_cast<size_t>(p_iconHeight);
+	if (p_iconData.size() < sourceBytes)
+	{
+		return false;
+	}
+
 	auto writeWord = [](std::vector<BYTE>& p_data, const size_t p_offset, const WORD p_value)
 	{
 		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
@@ -110,125 +134,102 @@ bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 		p_data[p_offset + 2u] = static_cast<BYTE>((p_value >> 16u) & 0xFFu);
 		p_data[p_offset + 3u] = static_cast<BYTE>((p_value >> 24u) & 0xFFu);
 	};
-	ULONG_PTR gdiplusToken = 0;
-	Gdiplus::GdiplusStartupInput startupInput;
-	if (Gdiplus::GdiplusStartup(&gdiplusToken, &startupInput, nullptr) != Gdiplus::Ok)
+
+	const UINT iconWidth = p_iconWidth > kMaxIconSize ? kMaxIconSize : p_iconWidth;
+	const UINT iconHeight = p_iconHeight > kMaxIconSize ? kMaxIconSize : p_iconHeight;
+	if (iconWidth == 0u || iconHeight == 0u)
 	{
 		return false;
 	}
 
-	const bool success = [&]() -> bool
+	const size_t rowBytes = static_cast<size_t>(iconWidth) * 4u;
+	std::vector<BYTE> xorBitmapData(rowBytes * static_cast<size_t>(iconHeight));
+
+	// OvRendering::Data::Image loads pixels in bottom-up order, which matches ICO DIB expectations.
+	for (UINT y = 0u; y < iconHeight; ++y)
 	{
-		Gdiplus::Bitmap sourceBitmap(p_iconPath.wstring().c_str());
-		if (sourceBitmap.GetLastStatus() != Gdiplus::Ok)
+		const UINT sourceY = static_cast<UINT>((static_cast<uint64_t>(y) * p_iconHeight) / iconHeight);
+		const size_t dstOffset = static_cast<size_t>(y) * rowBytes;
+
+		for (UINT x = 0u; x < iconWidth; ++x)
 		{
-			return false;
-		}
+			const UINT sourceX = static_cast<UINT>((static_cast<uint64_t>(x) * p_iconWidth) / iconWidth);
+			const size_t sourceOffset = (static_cast<size_t>(sourceY) * p_iconWidth + sourceX) * 4u;
+			const size_t dstPixelOffset = dstOffset + static_cast<size_t>(x) * 4u;
 
-		const UINT iconWidth = sourceBitmap.GetWidth() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetWidth();
-		const UINT iconHeight = sourceBitmap.GetHeight() > kMaxIconSize ? kMaxIconSize : sourceBitmap.GetHeight();
-		if (iconWidth == 0u || iconHeight == 0u)
+			xorBitmapData[dstPixelOffset + 0u] = p_iconData[sourceOffset + 2u];
+			xorBitmapData[dstPixelOffset + 1u] = p_iconData[sourceOffset + 1u];
+			xorBitmapData[dstPixelOffset + 2u] = p_iconData[sourceOffset + 0u];
+			xorBitmapData[dstPixelOffset + 3u] = p_iconData[sourceOffset + 3u];
+		}
+	}
+
+	const size_t andMaskRowBytes = static_cast<size_t>((iconWidth + 31u) / 32u) * 4u;
+	std::vector<BYTE> andMaskData(andMaskRowBytes * static_cast<size_t>(iconHeight), 0u);
+	BITMAPINFOHEADER iconHeader{};
+	iconHeader.biSize = sizeof(BITMAPINFOHEADER);
+	iconHeader.biWidth = static_cast<LONG>(iconWidth);
+	iconHeader.biHeight = static_cast<LONG>(iconHeight * 2u);
+	iconHeader.biPlanes = 1;
+	iconHeader.biBitCount = 32;
+	iconHeader.biCompression = BI_RGB;
+	iconHeader.biSizeImage = static_cast<DWORD>(xorBitmapData.size());
+
+	std::vector<BYTE> iconResourceData(sizeof(BITMAPINFOHEADER) + xorBitmapData.size() + andMaskData.size());
+	std::memcpy(iconResourceData.data(), &iconHeader, sizeof(BITMAPINFOHEADER));
+	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER), xorBitmapData.data(), xorBitmapData.size());
+	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER) + xorBitmapData.size(), andMaskData.data(), andMaskData.size());
+
+	std::vector<BYTE> groupResourceData(20u, 0u);
+	writeWord(groupResourceData, 2u, 1u);
+	writeWord(groupResourceData, 4u, 1u);
+	groupResourceData[6u] = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
+	groupResourceData[7u] = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
+	writeWord(groupResourceData, 10u, 1u);
+	writeWord(groupResourceData, 12u, 32u);
+	writeDword(groupResourceData, 14u, static_cast<DWORD>(iconResourceData.size()));
+	writeWord(groupResourceData, 18u, kImageResourceId);
+
+	const std::wstring executablePath = p_executablePath.wstring();
+	HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
+	if (!updateHandle)
+	{
+		return false;
+	}
+
+	bool updated = false;
+	for (const WORD languageId : kLanguageIds)
+	{
+		const bool iconUpdated = UpdateResourceW(
+			updateHandle,
+			MAKEINTRESOURCEW(3),
+			MAKEINTRESOURCEW(kImageResourceId),
+			languageId,
+			iconResourceData.data(),
+			static_cast<DWORD>(iconResourceData.size())
+		) != FALSE;
+		const bool groupUpdated = UpdateResourceW(
+			updateHandle,
+			MAKEINTRESOURCEW(14),
+			MAKEINTRESOURCEW(kGroupResourceId),
+			languageId,
+			groupResourceData.data(),
+			static_cast<DWORD>(groupResourceData.size())
+		) != FALSE;
+
+		if (iconUpdated && groupUpdated)
 		{
-			return false;
+			updated = true;
 		}
+	}
 
-		Gdiplus::Bitmap iconBitmap(iconWidth, iconHeight, PixelFormat32bppARGB);
-		Gdiplus::Graphics graphics(&iconBitmap);
-		if (iconBitmap.GetLastStatus() != Gdiplus::Ok || graphics.DrawImage(&sourceBitmap, 0, 0, iconWidth, iconHeight) != Gdiplus::Ok)
-		{
-			return false;
-		}
+	if (!updated)
+	{
+		EndUpdateResourceW(updateHandle, TRUE);
+		return false;
+	}
 
-		Gdiplus::Rect lockRect(0, 0, static_cast<INT>(iconWidth), static_cast<INT>(iconHeight));
-		Gdiplus::BitmapData bitmapData{};
-		if (iconBitmap.LockBits(&lockRect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, &bitmapData) != Gdiplus::Ok)
-		{
-			return false;
-		}
-
-		const int stride = bitmapData.Stride < 0 ? -bitmapData.Stride : bitmapData.Stride;
-		const size_t rowBytes = static_cast<size_t>(iconWidth) * 4u;
-		std::vector<BYTE> xorBitmapData(rowBytes * static_cast<size_t>(iconHeight));
-
-		for (UINT y = 0u; y < iconHeight; ++y)
-		{
-			const size_t dstOffset = static_cast<size_t>(iconHeight - 1u - y) * rowBytes;
-			const auto src = static_cast<const BYTE*>(bitmapData.Scan0) + static_cast<size_t>(y) * static_cast<size_t>(stride);
-			std::memcpy(xorBitmapData.data() + dstOffset, src, rowBytes);
-		}
-
-		iconBitmap.UnlockBits(&bitmapData);
-
-		const size_t andMaskRowBytes = static_cast<size_t>((iconWidth + 31u) / 32u) * 4u;
-		std::vector<BYTE> andMaskData(andMaskRowBytes * static_cast<size_t>(iconHeight), 0u);
-		BITMAPINFOHEADER iconHeader{};
-		iconHeader.biSize = sizeof(BITMAPINFOHEADER);
-		iconHeader.biWidth = static_cast<LONG>(iconWidth);
-		iconHeader.biHeight = static_cast<LONG>(iconHeight * 2u);
-		iconHeader.biPlanes = 1;
-		iconHeader.biBitCount = 32;
-		iconHeader.biCompression = BI_RGB;
-		iconHeader.biSizeImage = static_cast<DWORD>(xorBitmapData.size());
-
-		std::vector<BYTE> iconResourceData(sizeof(BITMAPINFOHEADER) + xorBitmapData.size() + andMaskData.size());
-		std::memcpy(iconResourceData.data(), &iconHeader, sizeof(BITMAPINFOHEADER));
-		std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER), xorBitmapData.data(), xorBitmapData.size());
-		std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER) + xorBitmapData.size(), andMaskData.data(), andMaskData.size());
-
-		std::vector<BYTE> groupResourceData(20u, 0u);
-		writeWord(groupResourceData, 2u, 1u);
-		writeWord(groupResourceData, 4u, 1u);
-		groupResourceData[6u] = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
-		groupResourceData[7u] = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
-		writeWord(groupResourceData, 10u, 1u);
-		writeWord(groupResourceData, 12u, 32u);
-		writeDword(groupResourceData, 14u, static_cast<DWORD>(iconResourceData.size()));
-		writeWord(groupResourceData, 18u, kImageResourceId);
-
-		const std::wstring executablePath = p_executablePath.wstring();
-		HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
-		if (!updateHandle)
-		{
-			return false;
-		}
-
-		bool updated = false;
-		for (const WORD languageId : kLanguageIds)
-		{
-			const bool iconUpdated = UpdateResourceW(
-				updateHandle,
-				MAKEINTRESOURCEW(3),
-				MAKEINTRESOURCEW(kImageResourceId),
-				languageId,
-				iconResourceData.data(),
-				static_cast<DWORD>(iconResourceData.size())
-			) != FALSE;
-			const bool groupUpdated = UpdateResourceW(
-				updateHandle,
-				MAKEINTRESOURCEW(14),
-				MAKEINTRESOURCEW(kGroupResourceId),
-				languageId,
-				groupResourceData.data(),
-				static_cast<DWORD>(groupResourceData.size())
-			) != FALSE;
-
-			if (iconUpdated && groupUpdated)
-			{
-				updated = true;
-			}
-		}
-
-		if (!updated)
-		{
-			EndUpdateResourceW(updateHandle, TRUE);
-			return false;
-		}
-
-		return EndUpdateResourceW(updateHandle, FALSE) != FALSE;
-	}();
-
-	Gdiplus::GdiplusShutdown(gdiplusToken);
-	return success;
+	return EndUpdateResourceW(updateHandle, FALSE) != FALSE;
 #else
 	return false;
 #endif

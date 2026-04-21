@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
+#include <span>
 #include <string>
 
 
@@ -44,11 +46,15 @@ namespace OvTools::Utils
 		* Apply the given icon image to an executable icon resource.
 		* @note No-op on Linux, as executable files don't embed icons.
 		* @param p_executablePath
-		* @param p_iconPath
+		* @param p_iconData
+		* @param p_iconWidth
+		* @param p_iconHeight
 		*/
 		static bool SetExecutableIcon(
-			[[maybe_unused]] const std::filesystem::path& p_executablePath,
-			[[maybe_unused]] const std::filesystem::path& p_iconPath
+			const std::filesystem::path& p_executablePath,
+			std::span<const uint8_t> p_iconData,
+			uint32_t p_iconWidth,
+			uint32_t p_iconHeight
 		);
 
 		/**

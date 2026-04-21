@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include "OvTools/Eventing/Event.h"
 #include <string>
 #include <optional>
+
+#include <OvTools/Eventing/Event.h>
 
 #include <OvWindowing/Context/Device.h>
 #include <OvWindowing/Cursor/ECursorShape.h>

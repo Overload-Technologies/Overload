@@ -473,12 +473,9 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 						{
 							OVLOG_INFO("Game executable renamed to " + executableName);
 
-							const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{});
-							if (!windowIconPath.empty())
+							if (const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{}); !windowIconPath.empty())
 							{
-								const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) };
-
-								if (std::filesystem::exists(windowIconRealPath))
+								if (const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) }; std::filesystem::exists(windowIconRealPath))
 								{
 									if (OvRendering::Data::Image iconImage{ windowIconRealPath }; iconImage && !iconImage.isHDR)
 									{

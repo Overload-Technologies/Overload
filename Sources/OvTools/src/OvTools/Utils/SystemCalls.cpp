@@ -21,7 +21,6 @@
 #include <cassert>
 #include <cstring>
 #include <format>
-#include <limits>
 #include <memory>
 #include <vector>
 
@@ -99,41 +98,34 @@ bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN),
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
 	};
+#pragma pack(push, 1)
+	struct GroupIconResource
+	{
+		WORD reserved = 0;
+		WORD type = 1;
+		WORD count = 1;
+		BYTE width = 0;
+		BYTE height = 0;
+		BYTE colorCount = 0;
+		BYTE reserved2 = 0;
+		WORD planes = 1;
+		WORD bitCount = 32;
+		DWORD bytesInRes = 0;
+		WORD resourceId = kImageResourceId;
+	};
+#pragma pack(pop)
+	static_assert(sizeof(GroupIconResource) == 20u);
 
 	if (p_iconWidth == 0u || p_iconHeight == 0u || p_iconData.empty())
 	{
 		return false;
 	}
 
-	if (p_iconWidth > (std::numeric_limits<size_t>::max)() / 4u)
+	const size_t requiredBytes = static_cast<size_t>(p_iconWidth) * static_cast<size_t>(p_iconHeight) * 4u;
+	if (p_iconData.size() < requiredBytes)
 	{
 		return false;
 	}
-
-	const size_t sourceRowBytes = static_cast<size_t>(p_iconWidth) * 4u;
-	if (p_iconHeight > (std::numeric_limits<size_t>::max)() / sourceRowBytes)
-	{
-		return false;
-	}
-
-	const size_t sourceBytes = sourceRowBytes * static_cast<size_t>(p_iconHeight);
-	if (p_iconData.size() < sourceBytes)
-	{
-		return false;
-	}
-
-	auto writeWord = [](std::vector<BYTE>& p_data, const size_t p_offset, const WORD p_value)
-	{
-		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
-		p_data[p_offset + 1u] = static_cast<BYTE>((p_value >> 8u) & 0xFFu);
-	};
-	auto writeDword = [](std::vector<BYTE>& p_data, const size_t p_offset, const DWORD p_value)
-	{
-		p_data[p_offset] = static_cast<BYTE>(p_value & 0xFFu);
-		p_data[p_offset + 1u] = static_cast<BYTE>((p_value >> 8u) & 0xFFu);
-		p_data[p_offset + 2u] = static_cast<BYTE>((p_value >> 16u) & 0xFFu);
-		p_data[p_offset + 3u] = static_cast<BYTE>((p_value >> 24u) & 0xFFu);
-	};
 
 	const UINT iconWidth = p_iconWidth > kMaxIconSize ? kMaxIconSize : p_iconWidth;
 	const UINT iconHeight = p_iconHeight > kMaxIconSize ? kMaxIconSize : p_iconHeight;
@@ -180,15 +172,10 @@ bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER), xorBitmapData.data(), xorBitmapData.size());
 	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER) + xorBitmapData.size(), andMaskData.data(), andMaskData.size());
 
-	std::vector<BYTE> groupResourceData(20u, 0u);
-	writeWord(groupResourceData, 2u, 1u);
-	writeWord(groupResourceData, 4u, 1u);
-	groupResourceData[6u] = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
-	groupResourceData[7u] = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
-	writeWord(groupResourceData, 10u, 1u);
-	writeWord(groupResourceData, 12u, 32u);
-	writeDword(groupResourceData, 14u, static_cast<DWORD>(iconResourceData.size()));
-	writeWord(groupResourceData, 18u, kImageResourceId);
+	GroupIconResource groupResourceData{};
+	groupResourceData.width = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
+	groupResourceData.height = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
+	groupResourceData.bytesInRes = static_cast<DWORD>(iconResourceData.size());
 
 	const std::wstring executablePath = p_executablePath.wstring();
 	HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
@@ -213,8 +200,8 @@ bool OvTools::Utils::SystemCalls::SetExecutableIcon(
 			MAKEINTRESOURCEW(14),
 			MAKEINTRESOURCEW(kGroupResourceId),
 			languageId,
-			groupResourceData.data(),
-			static_cast<DWORD>(groupResourceData.size())
+			&groupResourceData,
+			static_cast<DWORD>(sizeof(groupResourceData))
 		) != FALSE;
 
 		if (iconUpdated && groupUpdated)

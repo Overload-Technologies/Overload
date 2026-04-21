@@ -15,18 +15,13 @@ void OvUI::Panels::PanelUndecorated::_Draw_Impl()
 
 	if (ImGui::Begin(m_panelID.c_str(), nullptr, CollectFlags()))
 	{
-		ImGui::PopStyleVar(2);
-
 		Update();
 
 		DrawWidgets();
+	}
 
-		ImGui::End();
-	}
-	else
-	{
-		ImGui::PopStyleVar(2);
-	}
+	ImGui::PopStyleVar(2);
+	ImGui::End();
 }
 
 int OvUI::Panels::PanelUndecorated::CollectFlags()

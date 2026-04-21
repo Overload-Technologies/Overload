@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <asm-generic/errno.h>
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <filesystem>

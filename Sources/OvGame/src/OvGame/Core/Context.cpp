@@ -98,10 +98,11 @@ OvGame::Core::Context::Context() :
 	const std::string windowIconPath = projectSettings.GetOrDefault("window_icon", std::string{});
 	if (!windowIconPath.empty())
 	{
-		const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(windowIconPath);
-		const std::filesystem::path realPath = normalizedPath.starts_with(':') ?
-			(engineAssetsPath / normalizedPath.substr(1)).lexically_normal() :
-			(projectAssetsPath / normalizedPath).lexically_normal();
+		const std::filesystem::path realPath = OvTools::Utils::PathParser::GetRealPath(
+			std::filesystem::path{ windowIconPath },
+			engineAssetsPath,
+			projectAssetsPath
+		);
 
 		if (std::filesystem::exists(realPath))
 		{

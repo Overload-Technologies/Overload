@@ -43,6 +43,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
+#include <OvRendering/Data/Image.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvWindowing/Dialogs/OpenFileDialog.h>
@@ -479,7 +480,17 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 
 								if (std::filesystem::exists(windowIconRealPath))
 								{
-									OvTools::Utils::SystemCalls::SetExecutableIcon(p_buildPath / executableName, windowIconRealPath);
+									if (OvRendering::Data::Image iconImage{ windowIconRealPath }; iconImage && !iconImage.isHDR)
+									{
+										const size_t iconByteCount = static_cast<size_t>(iconImage.width) * static_cast<size_t>(iconImage.height) * 4u;
+										const auto iconBytes = std::span<const uint8_t>{ static_cast<const uint8_t*>(iconImage.data), iconByteCount };
+										OvTools::Utils::SystemCalls::SetExecutableIcon(
+											p_buildPath / executableName,
+											iconBytes,
+											static_cast<uint32_t>(iconImage.width),
+											static_cast<uint32_t>(iconImage.height)
+										);
+									}
 								}
 							}
 

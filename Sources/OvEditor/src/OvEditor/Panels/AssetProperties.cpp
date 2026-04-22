@@ -21,6 +21,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SizeConverter.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
@@ -56,12 +57,12 @@ OvEditor::Panels::AssetProperties::AssetProperties
 	m_settings = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Settings");
 	m_settings->neverDisabled = true;
 	m_settingsColumns = &m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_settingsColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_settingsColumns->widths[0] = 150 * OVUI_SCALE;
 
 	m_info = &CreateWidget<OvUI::Widgets::Layout::GroupCollapsable>("Info");
 	m_info->neverDisabled = true;
 	m_infoColumns = &m_info->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_infoColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_infoColumns->widths[0] = 150 * OVUI_SCALE;
 
 	m_settings->enabled = m_info->enabled = false;
 }
@@ -142,7 +143,9 @@ void OvEditor::Panels::AssetProperties::Preview()
 void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 {
 	m_applyButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Apply");
-	m_applyButton->idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	m_applyButton->backgroundColor = OVUI_STYLE(Success);
+	m_applyButton->hoveredBackgroundColor = OVUI_STYLE(SuccessHovered);
+	m_applyButton->clickedBackgroundColor = OVUI_STYLE(SuccessActive);
 	m_applyButton->tooltip = "Save changes and reimport the asset with the new settings";
 	m_applyButton->enabled = false;
 	m_applyButton->lineBreak = false;
@@ -163,7 +166,9 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 
 	m_resetButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Reset");
 	m_resetButton->tooltip = "Reset all settings to default values";
-	m_resetButton->idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	m_resetButton->backgroundColor = OVUI_STYLE(Danger);
+	m_resetButton->hoveredBackgroundColor = OVUI_STYLE(DangerHovered);
+	m_resetButton->clickedBackgroundColor = OVUI_STYLE(DangerActive);
 	m_resetButton->enabled = false;
 	m_resetButton->lineBreak = false;
 	m_resetButton->ClickedEvent += [this] {
@@ -178,7 +183,7 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 void OvEditor::Panels::AssetProperties::CreateAssetSelector()
 {
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150 * EDITOR_UI_SCALE;
+	columns.widths[0] = 150 * OVUI_SCALE;
 	m_assetSelector = &OvCore::Helpers::GUIDrawer::DrawAsset(columns, "Target", m_resource, &m_targetChanged);
 	const auto& widgets = columns.GetWidgets();
 	widgets[widgets.size() - 1].first->neverDisabled = true;

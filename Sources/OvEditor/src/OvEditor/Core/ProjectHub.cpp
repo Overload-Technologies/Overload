@@ -17,6 +17,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SystemCalls.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Columns.h>
@@ -64,8 +65,12 @@ namespace OvEditor::Core
 
 			_UpdateGoButton({});
 
-			openProjectButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
-			newProjectButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
+			openProjectButton.backgroundColor = OVUI_STYLE(Warning);
+			openProjectButton.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
+			openProjectButton.clickedBackgroundColor = OVUI_STYLE(WarningActive);
+			newProjectButton.backgroundColor = OVUI_STYLE(Success);
+			newProjectButton.hoveredBackgroundColor = OVUI_STYLE(SuccessHovered);
+			newProjectButton.clickedBackgroundColor = OVUI_STYLE(SuccessActive);
 
 			openProjectButton.ClickedEvent += [this] {
 				OvWindowing::Dialogs::OpenFileDialog dialog("Open project");
@@ -136,8 +141,12 @@ namespace OvEditor::Core
 				auto& openButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Open");
 				auto& deleteButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Delete");
 
-				openButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
-				deleteButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
+				openButton.backgroundColor = OVUI_STYLE(Warning);
+				openButton.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
+				openButton.clickedBackgroundColor = OVUI_STYLE(WarningActive);
+				deleteButton.backgroundColor = OVUI_STYLE(Danger);
+				deleteButton.hoveredBackgroundColor = OVUI_STYLE(DangerHovered);
+				deleteButton.clickedBackgroundColor = OVUI_STYLE(DangerActive);
 
 				openButton.ClickedEvent += [this, &text, &actions, project] {
 					if (!_TryFinish({ project }))
@@ -174,7 +183,9 @@ namespace OvEditor::Core
 		void _UpdateGoButton(const std::string& p_path)
 		{
 			const bool validPath = !p_path.empty();
-			m_goButton->idleBackgroundColor = validPath ? OvUI::Types::Color{ 0.f, 0.5f, 0.0f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
+			m_goButton->backgroundColor = validPath ? OVUI_STYLE(Success) : OVUI_STYLE(Button);
+			m_goButton->hoveredBackgroundColor = validPath ? OVUI_STYLE(SuccessHovered) : OVUI_STYLE(ButtonHovered);
+			m_goButton->clickedBackgroundColor = validPath ? OVUI_STYLE(SuccessActive) : OVUI_STYLE(ButtonActive);
 			m_goButton->disabled = !validPath;
 		}
 

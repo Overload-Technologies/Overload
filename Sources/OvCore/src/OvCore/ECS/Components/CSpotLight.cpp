@@ -7,6 +7,7 @@
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Layout/Group.h>
@@ -120,16 +121,22 @@ void OvCore::ECS::Components::CSpotLight::OnInspector(OvUI::Internal::WidgetCont
 	auto& constantPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Constant");
 	constantPreset.ClickedEvent += [this] { m_data.constant = 1.f, m_data.linear = m_data.quadratic = 0.f; };
 	constantPreset.lineBreak = false;
-	constantPreset.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
+	constantPreset.backgroundColor = OVUI_STYLE(Warning);
+	constantPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
+	constantPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 
 	auto& linearPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Linear");
 	linearPreset.ClickedEvent += [this] { m_data.linear = 1.f, m_data.constant = m_data.quadratic = 0.f; };
 	linearPreset.lineBreak = false;
-	linearPreset.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
+	linearPreset.backgroundColor = OVUI_STYLE(Warning);
+	linearPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
+	linearPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 
 	auto& quadraticPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Quadratic");
 	quadraticPreset.ClickedEvent += [this] { m_data.quadratic = 1.f, m_data.constant = m_data.linear = 0.f; };
-	quadraticPreset.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
+	quadraticPreset.backgroundColor = OVUI_STYLE(Warning);
+	quadraticPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
+	quadraticPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 
 	GUIDrawer::DrawScalar<float>(p_root, "Constant", m_data.constant, 0.005f, 0.f);
 	GUIDrawer::DrawScalar<float>(p_root, "Linear", m_data.linear, 0.005f, 0.f);

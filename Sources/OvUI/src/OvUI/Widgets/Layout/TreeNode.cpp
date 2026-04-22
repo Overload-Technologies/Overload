@@ -6,6 +6,7 @@
 
 #include <imgui.h>
 
+#include <OvUI/Internal/Converter.h>
 #include <OvUI/Widgets/Layout/TreeNode.h>
 
 OvUI::Widgets::Layout::TreeNode::TreeNode(const std::string & p_name, bool p_arrowClickToOpen) :
@@ -53,8 +54,7 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 	if (selected)			flags |= ImGuiTreeNodeFlags_Selected;
 	if (leaf)				flags |= ImGuiTreeNodeFlags_Leaf;
 
-	if (overrideLabelColor)
-		ImGui::PushStyleColor(ImGuiCol_Text, {labelColor.r, labelColor.g, labelColor.b, labelColor.a});
+	ImGui::PushStyleColor(ImGuiCol_Text, Internal::Converter::ToImVec4(labelColor.Resolve()));
 
 	const bool hasIcon = iconTextureID != 0;
 	bool opened;
@@ -70,18 +70,13 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 		const float startX = ImGui::GetItemRectMin().x + ImGui::GetTreeNodeToLabelSpacing();
 		const float centerY = (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) * 0.5f;
 
-		const ImU32 tintCol = overrideLabelColor
-			? ImGui::ColorConvertFloat4ToU32({labelColor.r, labelColor.g, labelColor.b, labelColor.a})
-			: IM_COL32_WHITE;
+		const ImU32 tintCol = ImGui::ColorConvertFloat4ToU32(Internal::Converter::ToImVec4(labelColor.Resolve()));
 		const ImVec2 iconMin(startX, centerY - iconSize * 0.5f);
 		const ImVec2 iconMax(startX + iconSize, centerY + iconSize * 0.5f);
 		drawList->AddImage(iconTextureID, iconMin, iconMax, ImVec2(0.f, 1.f), ImVec2(1.f, 0.f), tintCol);
 
 		const float textX = startX + iconSize + ImGui::GetStyle().ItemSpacing.x;
-		const ImU32 textCol = overrideLabelColor
-			? tintCol
-			: ImGui::GetColorU32(ImGuiCol_Text);
-		drawList->AddText(ImVec2(textX, ImGui::GetItemRectMin().y), textCol, name.c_str());
+		drawList->AddText(ImVec2(textX, ImGui::GetItemRectMin().y), tintCol, name.c_str());
 	}
 	else
 	{
@@ -103,8 +98,7 @@ void OvUI::Widgets::Layout::TreeNode::_Draw_Impl()
 		ClickedEvent.Invoke();
 	}
 
-	if (overrideLabelColor)
-		ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
 
 	if (opened)
 	{

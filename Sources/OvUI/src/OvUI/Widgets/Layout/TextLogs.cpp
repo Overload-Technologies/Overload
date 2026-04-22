@@ -14,7 +14,11 @@
 
 void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 {
-	if (!ImGui::BeginChild(("text_logs" + m_widgetID).c_str(), ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar))
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	const bool childVisible = ImGui::BeginChild(("text_logs" + m_widgetID).c_str(), ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::PopStyleVar();
+
+	if (!childVisible)
 	{
 		ImGui::EndChild();
 		return;
@@ -30,7 +34,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 	}
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2.0f, 2.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2.0f, 0.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2.0f, 1.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.0f, 2.0f));
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
@@ -67,7 +71,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 			ImGui::TextUnformatted(entry.header.c_str());
 			ImGui::PopStyleColor();
 
-			ImGui::PushStyleColor(ImGuiCol_Text, Internal::Converter::ToImVec4(entry.contentColor));
+			ImGui::PushStyleColor(ImGuiCol_Text, Internal::Converter::ToImVec4(entry.contentColor.Resolve()));
 			ImGui::SetNextItemWidth(-FLT_MIN);
 			ImGui::InputTextMultiline(
 				"##log-line",
@@ -115,17 +119,12 @@ void OvUI::Widgets::Layout::TextLogs::ProcessScrollRequest()
 
 unsigned int OvUI::Widgets::Layout::TextLogs::GetRowBackgroundColor(int p_index)
 {
-	const ImVec4 base = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
-	const float brightnessOffset = p_index % 2 == 0 ? 0.03f : 0.08f;
-	const ImVec4 tinted
-	{
-		std::min(base.x + brightnessOffset, 1.0f),
-		std::min(base.y + brightnessOffset, 1.0f),
-		std::min(base.z + brightnessOffset, 1.0f),
-		0.35f
-	};
+	const ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
 
-	return ImGui::GetColorU32(tinted);
+	if (p_index % 2 == 0)
+		return ImGui::GetColorU32(bg);
+
+	return ImGui::GetColorU32(ImVec4(bg.x * 0.82f, bg.y * 0.82f, bg.z * 0.82f, bg.w));
 }
 
 float OvUI::Widgets::Layout::TextLogs::CalculateRowHeight(const std::string& p_message)

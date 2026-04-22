@@ -35,6 +35,8 @@
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Texts/TextColored.h>
 
+#include <OvUI/Styling/Style.h>
+
 OvCore::ECS::Components::Behaviour::Behaviour(ECS::Actor& p_owner, const std::string& p_name) :
 	name(p_name), AComponent(p_owner)
 {
@@ -268,13 +270,13 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 
 	if (!m_script)
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("No scripting context", OvUI::Types::Color::White);
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("No scripting context", OVUI_STYLE(TextDisabled));
 		p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>();
 	}
 	else if (m_script->IsValid())
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Ready", OvUI::Types::Color::Green);
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Script properties will appear below", OvUI::Types::Color::White);
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Ready", OVUI_STYLE(Success));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Script properties will appear below", OVUI_STYLE(TextDisabled));
 
 		for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 		{
@@ -297,7 +299,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 				auto& labelGroup = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
 				auto& unlockBox = labelGroup.CreateWidget<OvUI::Widgets::Selection::CheckBox>(unlocked);
 				unlockBox.lineBreak = false;
-				labelGroup.CreateWidget<OvUI::Widgets::Texts::TextColored>(key, GUIDrawer::TitleColor);
+				labelGroup.CreateWidget<OvUI::Widgets::Texts::TextColored>(key, OVUI_STYLE(InspectorTitle));
 
 				// Input widget on the row below
 				OvUI::Widgets::AWidget* inputPtr = nullptr;
@@ -489,7 +491,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 	}
 	else
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Invalid Script", OvUI::Types::Color::Red);
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Check the console for more information.", OvUI::Types::Color::White);
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Invalid Script", OVUI_STYLE(Danger));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Check the console for more information.", OVUI_STYLE(TextDisabled));
 	}
 }

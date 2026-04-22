@@ -9,7 +9,7 @@
 #include <OvMaths/FVector2.h>
 
 #include "OvUI/Internal/TextureID.h"
-#include "OvUI/Types/Color.h"
+#include "OvUI/Types/ColorEffector.h"
 #include "OvUI/Widgets/Buttons/AButton.h"
 
 namespace OvUI::Widgets::Buttons
@@ -33,8 +33,8 @@ namespace OvUI::Widgets::Buttons
 	public:
 		bool disabled = false;
 
-		OvUI::Types::Color background = { 0, 0, 0, 0 };
-		OvUI::Types::Color tint = { 1, 1, 1, 1 };
+		OvUI::Types::ColorEffector background = OvUI::Types::Color{ 0, 0, 0, 0 };
+		OvUI::Types::ColorEffector tint = OvUI::Types::Color{ 1, 1, 1, 1 };
 
 		Internal::TextureID textureID;
 		OvMaths::FVector2 size;

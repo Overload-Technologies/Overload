@@ -15,6 +15,7 @@
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 #include <OvTools/Utils/SystemCalls.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
@@ -195,7 +196,9 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Save");
-	saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	saveButton.backgroundColor = OVUI_STYLE(Success);
+	saveButton.hoveredBackgroundColor = OVUI_STYLE(SuccessHovered);
+	saveButton.clickedBackgroundColor = OVUI_STYLE(SuccessActive);
 	saveButton.tooltip = "Save the current material to file";
 	saveButton.lineBreak = false;
 	saveButton.ClickedEvent += [this] {
@@ -255,7 +258,9 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	resetButton.backgroundColor = OVUI_STYLE(Danger);
+	resetButton.hoveredBackgroundColor = OVUI_STYLE(DangerHovered);
+	resetButton.clickedBackgroundColor = OVUI_STYLE(DangerActive);
 	resetButton.tooltip = "Reset the current material to its default state";
 	resetButton.ClickedEvent += std::bind(&MaterialEditor::Reset, this);
 }
@@ -263,7 +268,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 void OvEditor::Panels::MaterialEditor::CreateMaterialSelector()
 {
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150 * EDITOR_UI_SCALE;
+	columns.widths[0] = 150 * OVUI_SCALE;
 	m_targetMaterialText = &GUIDrawer::DrawMaterial(columns, "Material", m_target, &m_materialDroppedEvent);
 	const auto& widgets = columns.GetWidgets();
 	widgets[widgets.size() - 1].first->neverDisabled = true;
@@ -273,7 +278,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSelector()
 void OvEditor::Panels::MaterialEditor::CreateShaderSelector()
 {
 	auto& columns = m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150 * EDITOR_UI_SCALE;
+	columns.widths[0] = 150 * OVUI_SCALE;
 	m_shaderText = &GUIDrawer::DrawShader(columns, "Shader", m_shader, &m_shaderDroppedEvent);
 }
 
@@ -282,12 +287,12 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 	m_materialPipelineState = &m_settings->CreateWidget<Layout::GroupCollapsable>("Pipeline State");
 	m_materialPipelineState->neverDisabled = true;
 	m_materialPipelineStateColumns = &m_materialPipelineState->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialPipelineStateColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialPipelineStateColumns->widths[0] = 150 * OVUI_SCALE;
 
 	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Settings");
 	m_materialSettings->neverDisabled = true;
 	m_materialSettingsColumns = &m_materialSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialSettingsColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialSettingsColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
@@ -295,7 +300,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
 	m_materialFeatures = &m_settings->CreateWidget<Layout::GroupCollapsable>("Features");
 	m_materialFeatures->neverDisabled = true;
 	m_materialFeaturesColumns = &m_materialFeatures->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialFeaturesColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialFeaturesColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
@@ -303,7 +308,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
 	m_materialProperties = &m_settings->CreateWidget<Layout::GroupCollapsable>("Properties");
 	m_materialProperties->neverDisabled = true;
 	m_materialPropertiesColumns = &m_materialProperties->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialPropertiesColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialPropertiesColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()

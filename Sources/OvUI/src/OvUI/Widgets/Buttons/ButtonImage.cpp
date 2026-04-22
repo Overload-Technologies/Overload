@@ -17,8 +17,8 @@ OvUI::Widgets::Buttons::ButtonImage::ButtonImage(uint32_t p_textureID, const OvM
 
 void OvUI::Widgets::Buttons::ButtonImage::_Draw_Impl()
 {
-	ImVec4 bg = Internal::Converter::ToImVec4(background);
-	ImVec4 tn = Internal::Converter::ToImVec4(tint);
+	ImVec4 bg = Internal::Converter::ToImVec4(background.Resolve());
+	ImVec4 tn = Internal::Converter::ToImVec4(tint.Resolve());
 
 	// Instead of using disabled directly, as its value can change if some
 	// callback is bound to the ClickedEvent.

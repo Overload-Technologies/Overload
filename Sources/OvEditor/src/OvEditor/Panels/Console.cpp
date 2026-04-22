@@ -16,6 +16,7 @@
 #include <OvEditor/Panels/Console.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Types/Color.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
@@ -60,17 +61,17 @@ namespace
 		return result;
 	}
 
-	OvUI::Types::Color GetLogLevelColor(OvDebug::ELogLevel p_logLevel)
+	OvUI::Types::ColorEffector GetLogLevelColor(OvDebug::ELogLevel p_logLevel)
 	{
 		switch (p_logLevel)
 		{
-		case OvDebug::ELogLevel::LOG_DEFAULT: return { 0.90f, 0.90f, 0.90f, 1.0f };
-		case OvDebug::ELogLevel::LOG_INFO: return { 0.30f, 0.85f, 1.0f, 1.0f };
-		case OvDebug::ELogLevel::LOG_WARNING: return { 1.00f, 0.85f, 0.20f, 1.0f };
-		case OvDebug::ELogLevel::LOG_ERROR: return { 1.00f, 0.35f, 0.35f, 1.0f };
+		case OvDebug::ELogLevel::LOG_DEFAULT: return OVUI_STYLE(Text);
+		case OvDebug::ELogLevel::LOG_INFO:    return OVUI_STYLE(Info);
+		case OvDebug::ELogLevel::LOG_WARNING: return OVUI_STYLE(Warning);
+		case OvDebug::ELogLevel::LOG_ERROR:   return OVUI_STYLE(Danger);
 		}
 
-		return OvUI::Types::Color::White;
+		return OVUI_STYLE(Text);
 	}
 }
 
@@ -90,7 +91,9 @@ OvEditor::Panels::Console::Console
 	toolbar.horizontal = true;
 
 	auto& clearButton = toolbar.CreateWidget<Buttons::Button>("Clear");
-	clearButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
+	clearButton.backgroundColor = OVUI_STYLE(Danger);
+	clearButton.hoveredBackgroundColor = OVUI_STYLE(DangerHovered);
+	clearButton.clickedBackgroundColor = OVUI_STYLE(DangerActive);
 	clearButton.ClickedEvent += [this]
 	{
 		Clear();

@@ -49,8 +49,6 @@ namespace OvCore::Helpers
 	class GUIDrawer
 	{
 	public:
-		static const OvUI::Types::Color TitleColor;
-
 		static const float _MIN_FLOAT;
 		static const float _MAX_FLOAT;
 

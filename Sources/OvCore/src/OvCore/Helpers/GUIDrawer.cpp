@@ -24,6 +24,7 @@
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Buttons/Toggle.h>
 #include <OvUI/Plugins/DDTarget.h>
+#include <OvUI/Styling/Style.h>
 
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
@@ -34,13 +35,12 @@
 
 #include "OvCore/Helpers/GUIDrawer.h"
 
-const OvUI::Types::Color OvCore::Helpers::GUIDrawer::TitleColor = { 0.85f, 0.65f, 0.0f };
 const float OvCore::Helpers::GUIDrawer::_MIN_FLOAT = -999999999.f;
 const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
 {
-	p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, TitleColor);
+	p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, OVUI_STYLE(InspectorTitle));
 }
 
 void OvCore::Helpers::GUIDrawer::DrawBoolean(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, bool & p_data)

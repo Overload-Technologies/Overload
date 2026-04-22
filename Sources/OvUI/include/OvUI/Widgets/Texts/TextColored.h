@@ -1,13 +1,8 @@
-/**
-* @project: Overload
-* @author: Overload Tech.
-* @licence: MIT
-*/
-
 #pragma once
 
 #include "OvUI/Widgets/Texts/Text.h"
-#include "OvUI/Types/Color.h"
+#include "OvUI/Types/ColorEffector.h"
+#include "OvUI/Styling/Style.h"
 
 namespace OvUI::Widgets::Texts
 {
@@ -20,12 +15,12 @@ namespace OvUI::Widgets::Texts
 		/**
 		* Constructor
 		* @param p_content
-		* @param p_color
+		* @param p_color   When omitted, defaults to the style's Text color.
 		*/
-		TextColored(const std::string& p_content = "", const Types::Color& p_color = Types::Color(1.0f, 1.0f, 1.0f, 1.0f));
+		TextColored(const std::string& p_content = "", const Types::ColorEffector& p_color = OVUI_STYLE(Text));
 
 	public:
-		Types::Color color;
+		Types::ColorEffector color = OVUI_STYLE(Text);
 
 	protected:
 		virtual void _Draw_Impl() override;

@@ -10,12 +10,6 @@
 
 OvUI::Widgets::Buttons::Toggle::Toggle(const std::string& p_labelA, const std::string& p_labelB, bool p_state)
 	: labelA(p_labelA), labelB(p_labelB), state(p_state)
-	, activeColor          { 0.70f, 0.50f, 0.00f, 1.0f }
-	, activeHoveredColor   { 0.80f, 0.60f, 0.00f, 1.0f }
-	, activePressedColor   { 0.55f, 0.38f, 0.00f, 1.0f }
-	, inactiveColor        { 0.18f, 0.18f, 0.18f, 1.0f }
-	, inactiveHoveredColor { 0.26f, 0.26f, 0.26f, 1.0f }
-	, inactivePressedColor { 0.12f, 0.12f, 0.12f, 1.0f }
 {}
 
 void OvUI::Widgets::Buttons::Toggle::_Draw_Impl()
@@ -37,9 +31,10 @@ void OvUI::Widgets::Buttons::Toggle::_Draw_Impl()
 	const bool pressed = ImGui::IsItemActive();
 
 	auto pickColor = [&](bool isActive) -> ImU32 {
-		const Types::Color& c = pressed ? (isActive ? activePressedColor   : inactivePressedColor)
-		                      : hovered ? (isActive ? activeHoveredColor   : inactiveHoveredColor)
-		                      :           (isActive ? activeColor          : inactiveColor);
+		const Types::ColorEffector& effector = pressed ? (isActive ? activePressedColor   : inactivePressedColor)
+		                                     : hovered ? (isActive ? activeHoveredColor   : inactiveHoveredColor)
+		                                     :           (isActive ? activeColor          : inactiveColor);
+		const Types::Color c = effector.Resolve();
 		return ImGui::ColorConvertFloat4ToU32({ c.r, c.g, c.b, c.a });
 	};
 

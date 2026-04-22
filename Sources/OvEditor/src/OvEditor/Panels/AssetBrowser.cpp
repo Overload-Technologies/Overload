@@ -873,11 +873,15 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	auto& refreshButton = CreateWidget<Buttons::Button>("Refresh");
 	refreshButton.ClickedEvent += std::bind(&AssetBrowser::Refresh, this);
 	refreshButton.lineBreak = false;
-	refreshButton.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
+	refreshButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
+	refreshButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessHovered));
+	refreshButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessActive));
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import Asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
-	importButton.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	importButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	importButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered));
+	importButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(WarningActive));
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");

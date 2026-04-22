@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <optional>
 #include <string>
 
 #include <OvTools/Eventing/Event.h>
@@ -40,12 +39,12 @@ namespace OvUI::Widgets::Buttons
 		std::string labelB;
 		bool state = false;
 
-		Types::ColorEffector activeColor                              = Types::ColorEffector::Ref(OVUI_STYLE(Warning));
-		std::optional<Types::ColorEffector> activeHoveredColor       = Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered));
-		std::optional<Types::ColorEffector> activePressedColor       = Types::ColorEffector::Ref(OVUI_STYLE(WarningActive));
-		Types::ColorEffector inactiveColor                           = Types::ColorEffector::Ref(OVUI_STYLE(Button));
-		std::optional<Types::ColorEffector> inactiveHoveredColor     = Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered));
-		std::optional<Types::ColorEffector> inactivePressedColor     = Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive));
+		Types::ColorEffector activeColor         = Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+		Types::ColorEffector activeHoveredColor  = Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered));
+		Types::ColorEffector activePressedColor  = Types::ColorEffector::Ref(OVUI_STYLE(WarningActive));
+		Types::ColorEffector inactiveColor       = Types::ColorEffector::Ref(OVUI_STYLE(Button));
+		Types::ColorEffector inactiveHoveredColor = Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered));
+		Types::ColorEffector inactivePressedColor = Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive));
 
 		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B active
 	};

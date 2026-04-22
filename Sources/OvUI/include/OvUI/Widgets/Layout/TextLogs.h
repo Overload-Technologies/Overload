@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <OvUI/Types/ColorEffector.h>
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/AWidget.h>
 
 namespace OvUI::Widgets::Layout
@@ -25,7 +26,7 @@ namespace OvUI::Widgets::Layout
 		{
 			std::string header;
 			std::string content;
-			Types::ColorEffector contentColor = Types::Color::White;
+			Types::ColorEffector contentColor = Types::ColorEffector::Ref(OVUI_STYLE(Text));
 			uint32_t count = 1;
 		};
 

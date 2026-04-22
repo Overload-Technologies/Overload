@@ -12,6 +12,7 @@
 
 #include "OvUI/Internal/WidgetContainer.h"
 #include "OvUI/Types/ColorEffector.h"
+#include "OvUI/Styling/Style.h"
 #include "OvUI/Widgets/DataWidget.h"
 
 namespace OvUI::Widgets::Layout
@@ -54,7 +55,7 @@ namespace OvUI::Widgets::Layout
 
 		uint32_t iconTextureID = 0;
 		float iconSize = 16.f;
-		Types::ColorEffector labelColor;
+		Types::ColorEffector labelColor = Types::ColorEffector::Ref(OVUI_STYLE(Text));
 
 		OvTools::Eventing::Event<> ClickedEvent;
 		OvTools::Eventing::Event<> DoubleClickedEvent;

@@ -8,17 +8,10 @@
 
 #include <imgui.h>
 
-#include "OvUI/Styling/Style.h"
 #include "OvUI/Widgets/Buttons/Toggle.h"
 
 OvUI::Widgets::Buttons::Toggle::Toggle(const std::string& p_labelA, const std::string& p_labelB, bool p_state)
 	: labelA(p_labelA), labelB(p_labelB), state(p_state)
-	, activeColor         { Types::ColorEffector::Ref(OVUI_STYLE(Warning)) }
-	, activeHoveredColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered)) }
-	, activePressedColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningActive)) }
-	, inactiveColor       { Types::ColorEffector::Ref(OVUI_STYLE(Button)) }
-	, inactiveHoveredColor{ Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered)) }
-	, inactivePressedColor{ Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive)) }
 {}
 
 void OvUI::Widgets::Buttons::Toggle::_Draw_Impl()

@@ -53,10 +53,10 @@ project "OvGame"
 		"OvDebug",
 		"OvMaths",
 		"OvPhysics",
-		"OvUI",
-		"OvWindowing",
 		"OvRendering",
-		"OvTools"
+		"OvTools",
+		"OvUI",
+		"OvWindowing"
     }
 
 	filter { "configurations:Debug" }

@@ -115,17 +115,12 @@ void OvUI::Widgets::Layout::TextLogs::ProcessScrollRequest()
 
 unsigned int OvUI::Widgets::Layout::TextLogs::GetRowBackgroundColor(int p_index)
 {
-	const ImVec4 base = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
-	const float brightnessOffset = p_index % 2 == 0 ? 0.03f : 0.08f;
-	const ImVec4 tinted
-	{
-		std::min(base.x + brightnessOffset, 1.0f),
-		std::min(base.y + brightnessOffset, 1.0f),
-		std::min(base.z + brightnessOffset, 1.0f),
-		0.35f
-	};
+	const ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
 
-	return ImGui::GetColorU32(tinted);
+	if (p_index % 2 == 0)
+		return ImGui::GetColorU32(bg);
+
+	return ImGui::GetColorU32(ImVec4(bg.x * 0.82f, bg.y * 0.82f, bg.z * 0.82f, bg.w));
 }
 
 float OvUI::Widgets::Layout::TextLogs::CalculateRowHeight(const std::string& p_message)

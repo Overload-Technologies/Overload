@@ -156,6 +156,12 @@ namespace OvUI::Styling
 		Types::Color LogWarning;
 		Types::Color LogError;
 
+		// ---- Inspector / script-status colors ----
+		Types::Color InspectorTitle;
+		Types::Color StatusDefault;
+		Types::Color StatusReady;
+		Types::Color StatusError;
+
 	private:
 		Style();
 
@@ -163,7 +169,10 @@ namespace OvUI::Styling
 		// Does NOT set semantic colors — call SetSemanticDefaults() after this.
 		void PopulateFromImGuiStyle(const struct ImGuiStyle& p_style);
 
-		// Sets the semantic colors to values that work across all themes.
+		// Sets semantic colors for dark-background themes.
 		void SetSemanticDefaults();
+
+		// Overrides semantic colors for light-background themes.
+		void SetSemanticLightTheme();
 	};
 }

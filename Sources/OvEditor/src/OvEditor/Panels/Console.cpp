@@ -71,7 +71,7 @@ namespace
 		case OvDebug::ELogLevel::LOG_ERROR:   return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogError));
 		}
 
-		return OvUI::Types::Color::White;
+		return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogDefault));
 	}
 }
 

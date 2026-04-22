@@ -123,22 +123,22 @@ namespace OvUI::Styling
 
 		// ---- ImGuiStyle dimensions ----
 		OvMaths::FVector2 WindowPadding;
-		float WindowRounding           = 0.0f;
-		float WindowBorderSize         = 1.0f;
+		float WindowRounding = 0.0f;
+		float WindowBorderSize = 1.0f;
 		OvMaths::FVector2 FramePadding;
-		float FrameRounding            = 0.0f;
-		float FrameBorderSize          = 0.0f;
+		float FrameRounding = 0.0f;
+		float FrameBorderSize = 0.0f;
 		OvMaths::FVector2 ItemSpacing;
 		OvMaths::FVector2 ItemInnerSpacing;
-		float IndentSpacing            = 21.0f;
-		float ScrollbarSize            = 14.0f;
-		float ScrollbarRounding        = 9.0f;
-		float GrabMinSize              = 4.0f;
-		float GrabRounding             = 0.0f;
-		float TabRounding              = 4.0f;
-		float ChildRounding            = 0.0f;
-		float PopupRounding            = 0.0f;
-		float PopupBorderSize          = 1.0f;
+		float IndentSpacing = 21.0f;
+		float ScrollbarSize = 14.0f;
+		float ScrollbarRounding = 9.0f;
+		float GrabMinSize = 4.0f;
+		float GrabRounding = 0.0f;
+		float TabRounding = 4.0f;
+		float ChildRounding = 0.0f;
+		float PopupRounding = 0.0f;
+		float PopupBorderSize = 1.0f;
 
 		// ---- Semantic colors ----
 		// Reuse ImGui built-in fields (e.g. Text, TextDisabled, Button) wherever possible.

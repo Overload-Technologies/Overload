@@ -121,20 +121,20 @@ void OvCore::ECS::Components::CSpotLight::OnInspector(OvUI::Internal::WidgetCont
 	auto& constantPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Constant");
 	constantPreset.ClickedEvent += [this] { m_data.constant = 1.f, m_data.linear = m_data.quadratic = 0.f; };
 	constantPreset.lineBreak = false;
-	constantPreset.backgroundColor       = OVUI_STYLE(Warning);
+	constantPreset.backgroundColor = OVUI_STYLE(Warning);
 	constantPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
 	constantPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 
 	auto& linearPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Linear");
 	linearPreset.ClickedEvent += [this] { m_data.linear = 1.f, m_data.constant = m_data.quadratic = 0.f; };
 	linearPreset.lineBreak = false;
-	linearPreset.backgroundColor       = OVUI_STYLE(Warning);
+	linearPreset.backgroundColor = OVUI_STYLE(Warning);
 	linearPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
 	linearPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 
 	auto& quadraticPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Quadratic");
 	quadraticPreset.ClickedEvent += [this] { m_data.quadratic = 1.f, m_data.constant = m_data.linear = 0.f; };
-	quadraticPreset.backgroundColor       = OVUI_STYLE(Warning);
+	quadraticPreset.backgroundColor = OVUI_STYLE(Warning);
 	quadraticPreset.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
 	quadraticPreset.clickedBackgroundColor = OVUI_STYLE(WarningActive);
 

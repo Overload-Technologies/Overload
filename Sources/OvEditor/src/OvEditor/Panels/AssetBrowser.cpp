@@ -873,11 +873,11 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	auto& refreshButton = CreateWidget<Buttons::Button>("Refresh");
 	refreshButton.ClickedEvent += std::bind(&AssetBrowser::Refresh, this);
 	refreshButton.lineBreak = false;
-	refreshButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
+	refreshButton.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import Asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
-	importButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	importButton.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");

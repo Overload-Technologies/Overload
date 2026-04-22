@@ -121,16 +121,16 @@ void OvCore::ECS::Components::CSpotLight::OnInspector(OvUI::Internal::WidgetCont
 	auto& constantPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Constant");
 	constantPreset.ClickedEvent += [this] { m_data.constant = 1.f, m_data.linear = m_data.quadratic = 0.f; };
 	constantPreset.lineBreak = false;
-	constantPreset.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	constantPreset.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
 
 	auto& linearPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Linear");
 	linearPreset.ClickedEvent += [this] { m_data.linear = 1.f, m_data.constant = m_data.quadratic = 0.f; };
 	linearPreset.lineBreak = false;
-	linearPreset.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	linearPreset.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
 
 	auto& quadraticPreset = presetsRoot.CreateWidget<OvUI::Widgets::Buttons::Button>("Quadratic");
 	quadraticPreset.ClickedEvent += [this] { m_data.quadratic = 1.f, m_data.constant = m_data.linear = 0.f; };
-	quadraticPreset.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+	quadraticPreset.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
 
 	GUIDrawer::DrawScalar<float>(p_root, "Constant", m_data.constant, 0.005f, 0.f);
 	GUIDrawer::DrawScalar<float>(p_root, "Linear", m_data.linear, 0.005f, 0.f);

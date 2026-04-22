@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include <OvTools/Eventing/Event.h>
@@ -39,11 +40,11 @@ namespace OvUI::Widgets::Buttons
 		bool state = false;
 
 		Types::ColorEffector activeColor;
-		Types::ColorEffector activeHoveredColor;
-		Types::ColorEffector activePressedColor;
+		std::optional<Types::ColorEffector> activeHoveredColor;
+		std::optional<Types::ColorEffector> activePressedColor;
 		Types::ColorEffector inactiveColor;
-		Types::ColorEffector inactiveHoveredColor;
-		Types::ColorEffector inactivePressedColor;
+		std::optional<Types::ColorEffector> inactiveHoveredColor;
+		std::optional<Types::ColorEffector> inactivePressedColor;
 
 		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B active
 	};

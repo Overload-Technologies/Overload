@@ -91,7 +91,7 @@ OvEditor::Panels::Console::Console
 	toolbar.horizontal = true;
 
 	auto& clearButton = toolbar.CreateWidget<Buttons::Button>("Clear");
-	clearButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
+	clearButton.backgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
 	clearButton.ClickedEvent += [this]
 	{
 		Clear();

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+
 #include <imgui.h>
 
 #include "OvUI/Styling/Style.h"
@@ -38,10 +40,17 @@ void OvUI::Widgets::Buttons::Toggle::_Draw_Impl()
 	const bool pressed = ImGui::IsItemActive();
 
 	auto pickColor = [&](bool isActive) -> ImU32 {
-		const Types::ColorEffector& effector = pressed ? (isActive ? activePressedColor   : inactivePressedColor)
-		                                     : hovered ? (isActive ? activeHoveredColor   : inactiveHoveredColor)
-		                                     :           (isActive ? activeColor          : inactiveColor);
-		const Types::Color c = effector.Resolve();
+		const Types::ColorEffector& base = isActive ? activeColor : inactiveColor;
+		const auto& optHovered = isActive ? activeHoveredColor : inactiveHoveredColor;
+		const auto& optPressed = isActive ? activePressedColor : inactivePressedColor;
+
+		auto deriveColor = [](const Types::Color& c, float f) {
+			return Types::Color{ std::clamp(c.r*f,0.f,1.f), std::clamp(c.g*f,0.f,1.f), std::clamp(c.b*f,0.f,1.f), c.a };
+		};
+
+		const Types::Color c = pressed ? (optPressed ? optPressed->Resolve() : deriveColor(base.Resolve(), 0.75f))
+		                     : hovered ? (optHovered ? optHovered->Resolve() : deriveColor(base.Resolve(), 1.3f))
+		                     :           base.Resolve();
 		return ImGui::ColorConvertFloat4ToU32({ c.r, c.g, c.b, c.a });
 	};
 

@@ -38,9 +38,11 @@ namespace OvUI::Widgets::Buttons
 		OvMaths::FVector2 size;
 		bool disabled = false;
 
-		Types::ColorEffector idleBackgroundColor;
-		Types::ColorEffector hoveredBackgroundColor;
-		Types::ColorEffector clickedBackgroundColor;
+		// Base background color. Hovered and clicked states are derived automatically
+		// (×1.3 and ×0.75 on RGB) unless explicitly overridden via their optional fields.
+		Types::ColorEffector backgroundColor;
+		std::optional<Types::ColorEffector> hoveredBackgroundColor;
+		std::optional<Types::ColorEffector> clickedBackgroundColor;
 		Types::ColorEffector textColor;
 	};
 }

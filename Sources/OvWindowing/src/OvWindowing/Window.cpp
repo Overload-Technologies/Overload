@@ -6,9 +6,7 @@
 
 #include "OvWindowing/Window.h"
 
-// #define STB_IMAGE_IMPLEMENTATION
-
-#include <stb_image/stb_image.h>
+#include <OvRendering/Data/Image.h>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -62,20 +60,34 @@ OvWindowing::Window::~Window()
 	glfwDestroyWindow(m_glfwWindow);
 }
 
-void OvWindowing::Window::SetIcon(const std::string & p_filePath)
+bool OvWindowing::Window::SetIcon(const std::string& p_filePath)
 {
-	GLFWimage images[1];
-	images[0].pixels = stbi_load(p_filePath.c_str(), &images[0].width, &images[0].height, 0, 4);
-	glfwSetWindowIcon(m_glfwWindow, 1, images);
+	if (OvRendering::Data::Image image{ p_filePath, false }; image && !image.isHDR)
+	{
+		SetIconFromMemory(
+			static_cast<uint8_t*>(image.data),
+			static_cast<uint32_t>(image.width),
+			static_cast<uint32_t>(image.height)
+		);
+		return true;
+	}
+
+	return false;
 }
 
 void OvWindowing::Window::SetIconFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height)
 {
-	GLFWimage images[1];
-	images[0].pixels = p_data;
-	images[0].height = p_width;
-	images[0].width = p_height;
-	glfwSetWindowIcon(m_glfwWindow, 1, images);
+	if (!p_data || p_width == 0u || p_height == 0u)
+	{
+		return;
+	}
+
+	GLFWimage image{
+		.width = static_cast<int>(p_width),
+		.height = static_cast<int>(p_height),
+		.pixels = p_data
+	};
+	glfwSetWindowIcon(m_glfwWindow, 1, &image);
 }
 
 OvWindowing::Window* OvWindowing::Window::FindInstance(GLFWwindow* p_glfwWindow)

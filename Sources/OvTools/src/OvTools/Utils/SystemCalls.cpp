@@ -19,8 +19,10 @@
 #endif
 
 #include <cassert>
+#include <cstring>
 #include <format>
 #include <memory>
+#include <vector>
 
 namespace
 {
@@ -77,6 +79,146 @@ void OvTools::Utils::SystemCalls::RunProgram(const std::string& p_file, const st
 		command = "cd \"" + p_workingDir + "\" && " + command;
 	}
 	std::system(command.c_str());
+#endif
+}
+
+bool OvTools::Utils::SystemCalls::SetExecutableIcon(
+	[[maybe_unused]] const std::filesystem::path& p_executablePath,
+	[[maybe_unused]] const std::span<const uint8_t> p_iconData,
+	[[maybe_unused]] const uint32_t p_iconWidth,
+	[[maybe_unused]] const uint32_t p_iconHeight
+)
+{
+#if defined(_WIN32)
+	constexpr WORD kGroupResourceId = 101;
+	constexpr WORD kImageResourceId = 65000;
+	constexpr UINT kMaxIconSize = 256;
+	constexpr WORD kLanguageIds[] = {
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_CAN),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
+	};
+#pragma pack(push, 1)
+	struct GroupIconResource
+	{
+		WORD reserved = 0;
+		WORD type = 1;
+		WORD count = 1;
+		BYTE width = 0;
+		BYTE height = 0;
+		BYTE colorCount = 0;
+		BYTE reserved2 = 0;
+		WORD planes = 1;
+		WORD bitCount = 32;
+		DWORD bytesInRes = 0;
+		WORD resourceId = kImageResourceId;
+	};
+#pragma pack(pop)
+	static_assert(sizeof(GroupIconResource) == 20u);
+
+	if (p_iconWidth == 0u || p_iconHeight == 0u || p_iconData.empty())
+	{
+		return false;
+	}
+
+	const size_t requiredBytes = static_cast<size_t>(p_iconWidth) * static_cast<size_t>(p_iconHeight) * 4u;
+	if (p_iconData.size() < requiredBytes)
+	{
+		return false;
+	}
+
+	const UINT iconWidth = p_iconWidth > kMaxIconSize ? kMaxIconSize : p_iconWidth;
+	const UINT iconHeight = p_iconHeight > kMaxIconSize ? kMaxIconSize : p_iconHeight;
+	if (iconWidth == 0u || iconHeight == 0u)
+	{
+		return false;
+	}
+
+	const size_t rowBytes = static_cast<size_t>(iconWidth) * 4u;
+	std::vector<BYTE> xorBitmapData(rowBytes * static_cast<size_t>(iconHeight));
+
+	// OvRendering::Data::Image loads pixels in bottom-up order, which matches ICO DIB expectations.
+	for (UINT y = 0u; y < iconHeight; ++y)
+	{
+		const UINT sourceY = static_cast<UINT>((static_cast<uint64_t>(y) * p_iconHeight) / iconHeight);
+		const size_t dstOffset = static_cast<size_t>(y) * rowBytes;
+
+		for (UINT x = 0u; x < iconWidth; ++x)
+		{
+			const UINT sourceX = static_cast<UINT>((static_cast<uint64_t>(x) * p_iconWidth) / iconWidth);
+			const size_t sourceOffset = (static_cast<size_t>(sourceY) * p_iconWidth + sourceX) * 4u;
+			const size_t dstPixelOffset = dstOffset + static_cast<size_t>(x) * 4u;
+
+			xorBitmapData[dstPixelOffset + 0u] = p_iconData[sourceOffset + 2u];
+			xorBitmapData[dstPixelOffset + 1u] = p_iconData[sourceOffset + 1u];
+			xorBitmapData[dstPixelOffset + 2u] = p_iconData[sourceOffset + 0u];
+			xorBitmapData[dstPixelOffset + 3u] = p_iconData[sourceOffset + 3u];
+		}
+	}
+
+	const size_t andMaskRowBytes = static_cast<size_t>((iconWidth + 31u) / 32u) * 4u;
+	std::vector<BYTE> andMaskData(andMaskRowBytes * static_cast<size_t>(iconHeight), 0u);
+	BITMAPINFOHEADER iconHeader{};
+	iconHeader.biSize = sizeof(BITMAPINFOHEADER);
+	iconHeader.biWidth = static_cast<LONG>(iconWidth);
+	iconHeader.biHeight = static_cast<LONG>(iconHeight * 2u);
+	iconHeader.biPlanes = 1;
+	iconHeader.biBitCount = 32;
+	iconHeader.biCompression = BI_RGB;
+	iconHeader.biSizeImage = static_cast<DWORD>(xorBitmapData.size());
+
+	std::vector<BYTE> iconResourceData(sizeof(BITMAPINFOHEADER) + xorBitmapData.size() + andMaskData.size());
+	std::memcpy(iconResourceData.data(), &iconHeader, sizeof(BITMAPINFOHEADER));
+	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER), xorBitmapData.data(), xorBitmapData.size());
+	std::memcpy(iconResourceData.data() + sizeof(BITMAPINFOHEADER) + xorBitmapData.size(), andMaskData.data(), andMaskData.size());
+
+	GroupIconResource groupResourceData{};
+	groupResourceData.width = iconWidth >= kMaxIconSize ? 0u : static_cast<BYTE>(iconWidth);
+	groupResourceData.height = iconHeight >= kMaxIconSize ? 0u : static_cast<BYTE>(iconHeight);
+	groupResourceData.bytesInRes = static_cast<DWORD>(iconResourceData.size());
+
+	const std::wstring executablePath = p_executablePath.wstring();
+	HANDLE updateHandle = BeginUpdateResourceW(executablePath.c_str(), FALSE);
+	if (!updateHandle)
+	{
+		return false;
+	}
+
+	bool updated = false;
+	for (const WORD languageId : kLanguageIds)
+	{
+		const bool iconUpdated = UpdateResourceW(
+			updateHandle,
+			MAKEINTRESOURCEW(3),
+			MAKEINTRESOURCEW(kImageResourceId),
+			languageId,
+			iconResourceData.data(),
+			static_cast<DWORD>(iconResourceData.size())
+		) != FALSE;
+		const bool groupUpdated = UpdateResourceW(
+			updateHandle,
+			MAKEINTRESOURCEW(14),
+			MAKEINTRESOURCEW(kGroupResourceId),
+			languageId,
+			&groupResourceData,
+			static_cast<DWORD>(sizeof(groupResourceData))
+		) != FALSE;
+
+		if (iconUpdated && groupUpdated)
+		{
+			updated = true;
+		}
+	}
+
+	if (!updated)
+	{
+		EndUpdateResourceW(updateHandle, TRUE);
+		return false;
+	}
+
+	return EndUpdateResourceW(updateHandle, FALSE) != FALSE;
+#else
+	return false;
 #endif
 }
 

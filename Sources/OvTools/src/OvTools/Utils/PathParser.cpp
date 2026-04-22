@@ -135,3 +135,19 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 
 	return EFileType::UNKNOWN;
 }
+
+std::filesystem::path OvTools::Utils::PathParser::GetRealPath(
+	const std::filesystem::path& p_path,
+	const std::filesystem::path& p_enginePath,
+	const std::filesystem::path& p_projectPath
+)
+{
+	const std::string normalizedPath = MakeNonWindowsStyle(p_path.string());
+
+	if (!normalizedPath.empty() && normalizedPath[0] == ':')
+	{
+		return (p_enginePath / normalizedPath.substr(1)).lexically_normal();
+	}
+
+	return (p_projectPath / normalizedPath).lexically_normal();
+}

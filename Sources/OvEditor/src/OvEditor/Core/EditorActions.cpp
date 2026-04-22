@@ -43,6 +43,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
 #include <OvTools/Utils/SystemCalls.h>
+#include <OvRendering/Data/Image.h>
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 
 #include <OvWindowing/Dialogs/OpenFileDialog.h>
@@ -471,6 +472,60 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 						if (!err)
 						{
 							OVLOG_INFO("Game executable renamed to " + executableName);
+
+#if defined(_WIN32)
+							if (const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{}); !windowIconPath.empty())
+							{
+								const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) };
+
+								if (!std::filesystem::exists(windowIconRealPath))
+								{
+									OVLOG_WARNING(
+										std::format(
+											"Window icon \"{}\" was not found. Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else if (OvRendering::Data::Image iconImage{ windowIconRealPath }; !iconImage)
+								{
+									OVLOG_WARNING(
+										std::format(
+											"Failed to load window icon \"{}\". Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else if (iconImage.isHDR)
+								{
+									OVLOG_WARNING(
+										std::format(
+											"Window icon \"{}\" is HDR and cannot be used for executable icons. Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else
+								{
+									const size_t iconByteCount = static_cast<size_t>(iconImage.width) * static_cast<size_t>(iconImage.height) * 4u;
+									const auto iconBytes = std::span<const uint8_t>{ static_cast<const uint8_t*>(iconImage.data), iconByteCount };
+									if (!OvTools::Utils::SystemCalls::SetExecutableIcon(
+										p_buildPath / executableName,
+										iconBytes,
+										static_cast<uint32_t>(iconImage.width),
+										static_cast<uint32_t>(iconImage.height)
+									))
+									{
+										OVLOG_WARNING(
+											std::format(
+												"Failed to apply executable icon from \"{}\". Keeping default executable icon.",
+												windowIconRealPath.string()
+											)
+										);
+									}
+								}
+							}
+#endif
 
 							if (p_autoRun)
 							{
@@ -1085,23 +1140,13 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	return false;
 }
 
-// Duplicate from AResourceManager.h
 std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path)
 {
-	std::filesystem::path result;
-
-	const std::string normalizedPath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
-
-	if (normalizedPath.starts_with(':')) // The path is an engine path
-	{
-		result = m_context.engineAssetsPath / normalizedPath.substr(1);
-	}
-	else // The path is a project path
-	{
-		result = m_context.projectAssetsPath / normalizedPath;
-	}
-
-	return result.lexically_normal().string();
+	return OvTools::Utils::PathParser::GetRealPath(
+		std::filesystem::path{ p_path },
+		m_context.engineAssetsPath,
+		m_context.projectAssetsPath
+	).string();
 }
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)

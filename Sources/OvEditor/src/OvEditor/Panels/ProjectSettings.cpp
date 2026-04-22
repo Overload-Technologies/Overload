@@ -6,6 +6,7 @@
 
 #include "OvEditor/Panels/ProjectSettings.h"
 #include "OvEditor/Core/EditorActions.h"
+#include "OvTools/Utils/PathParser.h"
 
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -80,6 +81,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		GUIDrawer::DrawScalar<int>(columns, "Resolution Y", GenerateGatherer<int>("y_resolution"), GenerateProvider<int>("y_resolution"), 1, 0, 10000);
 		GUIDrawer::DrawBoolean(columns, "Fullscreen", GenerateGatherer<bool>("fullscreen"), GenerateProvider<bool>("fullscreen"));
 		GUIDrawer::DrawString(columns, "Executable name", GenerateGatherer<std::string>("executable_name"), GenerateProvider<std::string>("executable_name"));
+		GUIDrawer::DrawAsset(columns, "Window Icon", GenerateGatherer<std::string>("window_icon"), GenerateProvider<std::string>("window_icon"), OvTools::Utils::PathParser::EFileType::TEXTURE);
 	}
 
 	{

@@ -14,9 +14,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <cstring>
 #include <stdexcept>
-#include <vector>
 
 std::unordered_map<GLFWwindow*, OvWindowing::Window*> OvWindowing::Window::__WINDOWS_MAP;
 
@@ -64,7 +62,7 @@ OvWindowing::Window::~Window()
 
 bool OvWindowing::Window::SetIcon(const std::string& p_filePath)
 {
-	if (OvRendering::Data::Image image{ p_filePath }; image && !image.isHDR)
+	if (OvRendering::Data::Image image{ p_filePath, false }; image && !image.isHDR)
 	{
 		SetIconFromMemory(
 			static_cast<uint8_t*>(image.data),
@@ -84,22 +82,10 @@ void OvWindowing::Window::SetIconFromMemory(uint8_t* p_data, uint32_t p_width, u
 		return;
 	}
 
-	const size_t rowSize = static_cast<size_t>(p_width) * 4u;
-	std::vector<uint8_t> flippedPixels(rowSize * static_cast<size_t>(p_height));
-
-	// OvRendering::Data::Image (and bundled icon data) are stored bottom-up.
-	// GLFW expects top-down pixel rows for window icons.
-	for (uint32_t y = 0u; y < p_height; ++y)
-	{
-		const size_t srcOffset = static_cast<size_t>(p_height - 1u - y) * rowSize;
-		const size_t dstOffset = static_cast<size_t>(y) * rowSize;
-		std::memcpy(flippedPixels.data() + dstOffset, p_data + srcOffset, rowSize);
-	}
-
 	GLFWimage image{
 		.width = static_cast<int>(p_width),
 		.height = static_cast<int>(p_height),
-		.pixels = flippedPixels.data()
+		.pixels = p_data
 	};
 	glfwSetWindowIcon(m_glfwWindow, 1, &image);
 }

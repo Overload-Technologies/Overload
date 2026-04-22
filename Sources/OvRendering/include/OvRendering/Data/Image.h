@@ -23,13 +23,15 @@ namespace OvRendering::Data
 		/**
 		* Creates an image from a file on disk
 		* @param p_filepath
+		* @param p_flipVertically
 		*/
-		Image(const std::filesystem::path& p_filepath);
+		Image(const std::filesystem::path& p_filepath, bool p_flipVertically = true);
 
 		/**
 		* Creates an image from encoded image data in memory
+		* @param p_flipVertically
 		*/
-		Image(const uint8_t* p_data, const size_t p_size);
+		Image(const uint8_t* p_data, const size_t p_size, bool p_flipVertically = true);
 
 		/**
 		* Destructor of the image

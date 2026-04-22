@@ -10,9 +10,9 @@
 
 #include <stb_image/stb_image.h>
 
-OvRendering::Data::Image::Image(const std::filesystem::path& p_filepath)
+OvRendering::Data::Image::Image(const std::filesystem::path& p_filepath, const bool p_flipVertically)
 {
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(p_flipVertically ? 1 : 0);
 
 	isHDR = stbi_is_hdr(p_filepath.string().c_str());
 
@@ -21,7 +21,7 @@ OvRendering::Data::Image::Image(const std::filesystem::path& p_filepath)
 		static_cast<void*>(stbi_load(p_filepath.string().c_str(), &width, &height, &bpp, 4));
 }
 
-OvRendering::Data::Image::Image(const uint8_t* p_data, const size_t p_size)
+OvRendering::Data::Image::Image(const uint8_t* p_data, const size_t p_size, const bool p_flipVertically)
 {
 	if (!p_data || p_size == 0 || p_size > static_cast<size_t>(std::numeric_limits<int>::max()))
 	{
@@ -29,7 +29,7 @@ OvRendering::Data::Image::Image(const uint8_t* p_data, const size_t p_size)
 	}
 
 	const int encodedSize = static_cast<int>(p_size);
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(p_flipVertically ? 1 : 0);
 	isHDR = stbi_is_hdr_from_memory(p_data, encodedSize) != 0;
 
 	data = isHDR ?

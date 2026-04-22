@@ -473,6 +473,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 						{
 							OVLOG_INFO("Game executable renamed to " + executableName);
 
+#if defined(_WIN32)
 							if (const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{}); !windowIconPath.empty())
 							{
 								const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) };
@@ -524,6 +525,7 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 									}
 								}
 							}
+#endif
 
 							if (p_autoRun)
 							{

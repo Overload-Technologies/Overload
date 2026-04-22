@@ -107,7 +107,6 @@ void OvEditor::Panels::MaterialEditor::SetTarget(OvCore::Resources::Material & p
 {
 	m_target = &p_newTarget;
 	m_targetMaterialText->content = m_target->path;
-	disabled = IsReadyOnlyMaterial(*m_target);
 	OnMaterialDropped();
 }
 
@@ -146,6 +145,7 @@ void OvEditor::Panels::MaterialEditor::Reset()
 
 void OvEditor::Panels::MaterialEditor::OnMaterialDropped()
 {
+	disabled = m_target && IsReadyOnlyMaterial(*m_target);
 	m_settings->enabled = m_target; // Enable m_settings group if the target material is non-null
 
 	if (m_settings->enabled)

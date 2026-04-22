@@ -392,6 +392,7 @@ void OvUI::Styling::Style::ApplyEvenDarkerStyle()
 
 void OvUI::Styling::Style::ApplyToImGui(float p_scale)
 {
+	scale = p_scale;
 	ImGuiStyle style;
 
 	style.Colors[ImGuiCol_Text]                     = ToImVec4(Text);

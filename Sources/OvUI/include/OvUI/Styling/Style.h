@@ -15,6 +15,11 @@
 */
 #define OVUI_STYLE(field) (OvUI::Styling::Style::Get().field)
 
+/**
+* Returns the current UI scale factor (set by UIManager on DPI changes).
+*/
+#define OVUI_SCALE (OvUI::Styling::Style::Get().scale)
+
 namespace OvUI::Styling
 {
 	/**
@@ -48,6 +53,9 @@ namespace OvUI::Styling
 		* Must only be called when an ImGui context exists.
 		*/
 		void ApplyToImGui(float p_scale = 1.0f);
+
+		// Current UI scale — updated by ApplyToImGui(); read via OVUI_SCALE.
+		float scale = 1.0f;
 
 		// ---- ImGui colors — 1:1 with ImGuiCol_* ----
 		Types::Color Text;

@@ -264,7 +264,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 void OvEditor::Panels::MaterialEditor::CreateMaterialSelector()
 {
 	auto& columns = CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150 * EDITOR_UI_SCALE;
+	columns.widths[0] = 150 * OVUI_SCALE;
 	m_targetMaterialText = &GUIDrawer::DrawMaterial(columns, "Material", m_target, &m_materialDroppedEvent);
 	const auto& widgets = columns.GetWidgets();
 	widgets[widgets.size() - 1].first->neverDisabled = true;
@@ -274,7 +274,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSelector()
 void OvEditor::Panels::MaterialEditor::CreateShaderSelector()
 {
 	auto& columns = m_settings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	columns.widths[0] = 150 * EDITOR_UI_SCALE;
+	columns.widths[0] = 150 * OVUI_SCALE;
 	m_shaderText = &GUIDrawer::DrawShader(columns, "Shader", m_shader, &m_shaderDroppedEvent);
 }
 
@@ -283,12 +283,12 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialSettings()
 	m_materialPipelineState = &m_settings->CreateWidget<Layout::GroupCollapsable>("Pipeline State");
 	m_materialPipelineState->neverDisabled = true;
 	m_materialPipelineStateColumns = &m_materialPipelineState->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialPipelineStateColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialPipelineStateColumns->widths[0] = 150 * OVUI_SCALE;
 
 	m_materialSettings = &m_settings->CreateWidget<Layout::GroupCollapsable>("Settings");
 	m_materialSettings->neverDisabled = true;
 	m_materialSettingsColumns = &m_materialSettings->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialSettingsColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialSettingsColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
@@ -296,7 +296,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialFeatures()
 	m_materialFeatures = &m_settings->CreateWidget<Layout::GroupCollapsable>("Features");
 	m_materialFeatures->neverDisabled = true;
 	m_materialFeaturesColumns = &m_materialFeatures->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialFeaturesColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialFeaturesColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
@@ -304,7 +304,7 @@ void OvEditor::Panels::MaterialEditor::CreateMaterialProperties()
 	m_materialProperties = &m_settings->CreateWidget<Layout::GroupCollapsable>("Properties");
 	m_materialProperties->neverDisabled = true;
 	m_materialPropertiesColumns = &m_materialProperties->CreateWidget<OvUI::Widgets::Layout::Columns<2>>();
-	m_materialPropertiesColumns->widths[0] = 150 * EDITOR_UI_SCALE;
+	m_materialPropertiesColumns->widths[0] = 150 * OVUI_SCALE;
 }
 
 void OvEditor::Panels::MaterialEditor::GenerateMaterialSettingsContent()

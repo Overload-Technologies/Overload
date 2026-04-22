@@ -143,10 +143,10 @@ void OvRendering::HAL::GLTexture::Upload(const void* p_data, Settings::EFormat p
 					0,
 					0,
 					0,
-					0,
+					i,
 					m_textureContext.desc.width,
 					m_textureContext.desc.height,
-					i,
+					1,
 					EnumToValue<GLenum>(p_format),
 					EnumToValue<GLenum>(p_type),
 					p_data

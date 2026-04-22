@@ -93,7 +93,7 @@ OvEditor::Panels::Console::Console
 	clearButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
 	clearButton.ClickedEvent += std::bind(&Console::Clear, this);
 
-	auto& clearOnPlay = toolbar.CreateWidget<Selection::CheckBox>(m_clearOnPlay, "Auto clear on play");
+	auto& clearOnPlay = toolbar.CreateWidget<Selection::CheckBox>(m_clearOnPlay, "Clear on play");
 	auto& collapseIdentical = toolbar.CreateWidget<Selection::CheckBox>(m_collapseIdenticalLogs, "Collapse");
 	auto& enableDefault = toolbar.CreateWidget<Selection::CheckBox>(m_showDefaultLog, "Default");
 	auto& enableInfo = toolbar.CreateWidget<Selection::CheckBox>(m_showInfoLog, "Info");

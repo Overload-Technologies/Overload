@@ -24,6 +24,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 	{
 		ImGui::TextDisabled("%s", emptyText.c_str());
 		ProcessScrollRequest();
+		m_wasScrolledToBottom = ImGui::GetScrollY() >= ImGui::GetScrollMaxY();
 		ImGui::EndChild();
 		return;
 	}
@@ -95,6 +96,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 	}
 
 	ProcessScrollRequest();
+	m_wasScrolledToBottom = ImGui::GetScrollY() >= ImGui::GetScrollMaxY();
 
 	ImGui::PopStyleColor(4);
 	ImGui::PopStyleVar(4);
@@ -144,5 +146,6 @@ float OvUI::Widgets::Layout::TextLogs::CalculateRowHeight(const std::string& p_m
 
 void OvUI::Widgets::Layout::TextLogs::RequestScrollToBottom(uint8_t p_frames)
 {
-	m_scrollToBottomFrames = std::max(m_scrollToBottomFrames, p_frames);
+	if (m_wasScrolledToBottom)
+		m_scrollToBottomFrames = std::max(m_scrollToBottomFrames, p_frames);
 }

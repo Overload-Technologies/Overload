@@ -43,5 +43,6 @@ namespace OvUI::Widgets::Layout
 
 	private:
 		uint8_t m_scrollToBottomFrames = 0;
+		bool m_wasScrolledToBottom = true;
 	};
 }

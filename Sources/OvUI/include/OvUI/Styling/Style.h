@@ -11,7 +11,7 @@
 
 /**
 * Retrieve a live const-reference to a style color field.
-* Example: ColorEffector::Ref(OVUI_STYLE(DangerButton))
+* Example: ColorEffector::Ref(OVUI_STYLE(Danger))
 */
 #define OVUI_STYLE(field) (OvUI::Styling::Style::Get().field)
 
@@ -132,35 +132,23 @@ namespace OvUI::Styling
 		float PopupRounding            = 0.0f;
 		float PopupBorderSize          = 1.0f;
 
-		// ---- Semantic colors (Bootstrap-style) ----
-		// These remain consistent across all theme presets.
-		Types::Color PrimaryButton;
-		Types::Color PrimaryButtonHovered;
-		Types::Color PrimaryButtonActive;
+		// ---- Semantic colors ----
+		// Reuse ImGui built-in fields (e.g. Text, TextDisabled, Button) wherever possible.
+		// These are for cases that need intent-specific colors beyond what ImGui provides.
+		Types::Color Success;
+		Types::Color SuccessHovered;
+		Types::Color SuccessActive;
 
-		Types::Color SuccessButton;
-		Types::Color SuccessButtonHovered;
-		Types::Color SuccessButtonActive;
+		Types::Color Danger;
+		Types::Color DangerHovered;
+		Types::Color DangerActive;
 
-		Types::Color DangerButton;
-		Types::Color DangerButtonHovered;
-		Types::Color DangerButtonActive;
+		Types::Color Warning;
+		Types::Color WarningHovered;
+		Types::Color WarningActive;
 
-		Types::Color WarningButton;
-		Types::Color WarningButtonHovered;
-		Types::Color WarningButtonActive;
-
-		// ---- Log level colors ----
-		Types::Color LogDefault;
-		Types::Color LogInfo;
-		Types::Color LogWarning;
-		Types::Color LogError;
-
-		// ---- Inspector / script-status colors ----
+		Types::Color Info;
 		Types::Color InspectorTitle;
-		Types::Color StatusDefault;
-		Types::Color StatusReady;
-		Types::Color StatusError;
 
 	private:
 		Style();
@@ -169,10 +157,7 @@ namespace OvUI::Styling
 		// Does NOT set semantic colors — call SetSemanticDefaults() after this.
 		void PopulateFromImGuiStyle(const struct ImGuiStyle& p_style);
 
-		// Sets semantic colors for dark-background themes.
-		void SetSemanticDefaults();
-
-		// Overrides semantic colors for light-background themes.
-		void SetSemanticLightTheme();
+		// Sets semantic colors. Pass darkTheme=true for dark backgrounds, false for light.
+		void SetSemanticDefaults(bool darkTheme);
 	};
 }

@@ -196,7 +196,7 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Save");
-	saveButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
+	saveButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
 	saveButton.tooltip = "Save the current material to file";
 	saveButton.lineBreak = false;
 	saveButton.ClickedEvent += [this] {
@@ -256,7 +256,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
+	resetButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
 	resetButton.tooltip = "Reset the current material to its default state";
 	resetButton.ClickedEvent += std::bind(&MaterialEditor::Reset, this);
 }

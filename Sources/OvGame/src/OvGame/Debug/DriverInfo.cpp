@@ -21,10 +21,10 @@ OvGame::Debug::DriverInfo::DriverInfo(OvRendering::Context::Driver& p_driver, Ov
 	const std::string version(p_driver.GetVersion());
 	const std::string shadingVersion(p_driver.GetShadingLanguageVersion());
 
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("Vendor: "	+ vendor, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("Hardware: " + hardware, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("OpenGL Version: " + version, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("GLSL Version: " + shadingVersion, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("Vendor: "	+ vendor, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning)));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("Hardware: " + hardware, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning)));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("OpenGL Version: " + version, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning)));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("GLSL Version: " + shadingVersion, OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning)));
 }
 
 #endif

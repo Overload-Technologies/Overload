@@ -114,68 +114,25 @@ void OvUI::Styling::Style::PopulateFromImGuiStyle(const ImGuiStyle& p_style)
 	PopupBorderSize  = p_style.PopupBorderSize;
 }
 
-void OvUI::Styling::Style::SetSemanticDefaults()
+void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme)
 {
-	// --- Semantic buttons (dark themes) ---
-	PrimaryButton         = { 0.26f, 0.59f, 0.98f, 0.80f };
-	PrimaryButtonHovered  = { 0.26f, 0.59f, 0.98f, 1.00f };
-	PrimaryButtonActive   = { 0.06f, 0.53f, 0.98f, 1.00f };
+	using Types::Color;
 
-	SuccessButton         = { 0.15f, 0.49f, 0.15f, 1.00f };
-	SuccessButtonHovered  = { 0.20f, 0.64f, 0.20f, 1.00f };
-	SuccessButtonActive   = { 0.11f, 0.37f, 0.11f, 1.00f };
+	Success        = darkTheme ? Color{0.15f, 0.49f, 0.15f, 1.00f} : Color{0.22f, 0.75f, 0.22f, 1.00f};
+	SuccessHovered = darkTheme ? Color{0.20f, 0.64f, 0.20f, 1.00f} : Color{0.32f, 0.85f, 0.32f, 1.00f};
+	SuccessActive  = darkTheme ? Color{0.11f, 0.37f, 0.11f, 1.00f} : Color{0.15f, 0.62f, 0.15f, 1.00f};
 
-	DangerButton          = { 0.50f, 0.08f, 0.08f, 1.00f };
-	DangerButtonHovered   = { 0.65f, 0.11f, 0.11f, 1.00f };
-	DangerButtonActive    = { 0.38f, 0.06f, 0.06f, 1.00f };
+	Danger         = darkTheme ? Color{0.50f, 0.08f, 0.08f, 1.00f} : Color{0.85f, 0.22f, 0.22f, 1.00f};
+	DangerHovered  = darkTheme ? Color{0.65f, 0.11f, 0.11f, 1.00f} : Color{0.92f, 0.35f, 0.35f, 1.00f};
+	DangerActive   = darkTheme ? Color{0.38f, 0.06f, 0.06f, 1.00f} : Color{0.72f, 0.15f, 0.15f, 1.00f};
 
-	WarningButton         = { 0.70f, 0.50f, 0.00f, 1.00f };
-	WarningButtonHovered  = { 0.80f, 0.60f, 0.00f, 1.00f };
-	WarningButtonActive   = { 0.55f, 0.38f, 0.00f, 1.00f };
+	Warning        = darkTheme ? Color{0.70f, 0.50f, 0.00f, 1.00f} : Color{0.90f, 0.65f, 0.08f, 1.00f};
+	WarningHovered = darkTheme ? Color{0.80f, 0.60f, 0.00f, 1.00f} : Color{1.00f, 0.75f, 0.18f, 1.00f};
+	WarningActive  = darkTheme ? Color{0.55f, 0.38f, 0.00f, 1.00f} : Color{0.78f, 0.54f, 0.04f, 1.00f};
 
-	// --- Log colors (dark themes) ---
-	LogDefault            = { 0.90f, 0.90f, 0.90f, 1.00f };
-	LogInfo               = { 0.30f, 0.85f, 1.00f, 1.00f };
-	LogWarning            = { 1.00f, 0.85f, 0.20f, 1.00f };
-	LogError              = { 1.00f, 0.35f, 0.35f, 1.00f };
+	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
 
-	// --- Inspector / script-status (dark themes) ---
-	InspectorTitle        = { 0.85f, 0.65f, 0.00f, 1.00f };
-	StatusDefault         = { 0.75f, 0.75f, 0.75f, 1.00f };
-	StatusReady           = { 0.20f, 0.80f, 0.20f, 1.00f };
-	StatusError           = { 1.00f, 0.30f, 0.30f, 1.00f };
-}
-
-void OvUI::Styling::Style::SetSemanticLightTheme()
-{
-	// --- Semantic buttons (light theme — brighter hues, readable with dark text) ---
-	PrimaryButton         = { 0.29f, 0.62f, 0.98f, 1.00f };
-	PrimaryButtonHovered  = { 0.40f, 0.70f, 1.00f, 1.00f };
-	PrimaryButtonActive   = { 0.20f, 0.50f, 0.90f, 1.00f };
-
-	SuccessButton         = { 0.22f, 0.75f, 0.22f, 1.00f };
-	SuccessButtonHovered  = { 0.32f, 0.85f, 0.32f, 1.00f };
-	SuccessButtonActive   = { 0.15f, 0.62f, 0.15f, 1.00f };
-
-	DangerButton          = { 0.85f, 0.22f, 0.22f, 1.00f };
-	DangerButtonHovered   = { 0.92f, 0.35f, 0.35f, 1.00f };
-	DangerButtonActive    = { 0.72f, 0.15f, 0.15f, 1.00f };
-
-	WarningButton         = { 0.90f, 0.65f, 0.08f, 1.00f };
-	WarningButtonHovered  = { 1.00f, 0.75f, 0.18f, 1.00f };
-	WarningButtonActive   = { 0.78f, 0.54f, 0.04f, 1.00f };
-
-	// --- Log colors (light theme — darker tones readable on light bg) ---
-	LogDefault            = { 0.15f, 0.15f, 0.15f, 1.00f };
-	LogInfo               = { 0.00f, 0.40f, 0.75f, 1.00f };
-	LogWarning            = { 0.70f, 0.45f, 0.00f, 1.00f };
-	LogError              = { 0.75f, 0.05f, 0.05f, 1.00f };
-
-	// --- Inspector / script-status (light theme) ---
-	InspectorTitle        = { 0.55f, 0.35f, 0.00f, 1.00f };
-	StatusDefault         = { 0.25f, 0.25f, 0.25f, 1.00f };
-	StatusReady           = { 0.05f, 0.55f, 0.05f, 1.00f };
-	StatusError           = { 0.72f, 0.05f, 0.05f, 1.00f };
+	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
 }
 
 void OvUI::Styling::Style::ApplyImClassicStyle()
@@ -183,7 +140,7 @@ void OvUI::Styling::Style::ApplyImClassicStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsClassic(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults();
+	SetSemanticDefaults(true);
 }
 
 void OvUI::Styling::Style::ApplyImDarkStyle()
@@ -191,7 +148,7 @@ void OvUI::Styling::Style::ApplyImDarkStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsDark(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults();
+	SetSemanticDefaults(true);
 }
 
 void OvUI::Styling::Style::ApplyImLightStyle()
@@ -199,8 +156,7 @@ void OvUI::Styling::Style::ApplyImLightStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsLight(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults();
-	SetSemanticLightTheme(); // override with light-theme-appropriate values
+	SetSemanticDefaults(false);
 }
 
 void OvUI::Styling::Style::ApplyDuneDarkStyle()
@@ -345,7 +301,7 @@ void OvUI::Styling::Style::ApplyDefaultDarkStyle()
 	PopupRounding    = 0.0f;
 	PopupBorderSize  = 1.0f;
 
-	SetSemanticDefaults();
+	SetSemanticDefaults(true);
 }
 
 void OvUI::Styling::Style::ApplyEvenDarkerStyle()
@@ -431,7 +387,7 @@ void OvUI::Styling::Style::ApplyEvenDarkerStyle()
 	PopupRounding    = 0.0f;
 	PopupBorderSize  = 1.0f;
 
-	SetSemanticDefaults();
+	SetSemanticDefaults(true);
 }
 
 void OvUI::Styling::Style::ApplyToImGui(float p_scale)

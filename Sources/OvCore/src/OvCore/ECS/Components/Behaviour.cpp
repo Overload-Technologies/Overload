@@ -270,13 +270,13 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 
 	if (!m_script)
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("No scripting context", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(StatusDefault)));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("No scripting context", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(TextDisabled)));
 		p_root.CreateWidget<OvUI::Widgets::Layout::Dummy>();
 	}
 	else if (m_script->IsValid())
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Ready", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(StatusReady)));
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Script properties will appear below", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(StatusDefault)));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Ready", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success)));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Script properties will appear below", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(TextDisabled)));
 
 		for (const auto& [fieldKey, fieldValue] : m_scriptProperties)
 		{
@@ -491,7 +491,7 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 	}
 	else
 	{
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Invalid Script", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(StatusError)));
-		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Check the console for more information.", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(StatusDefault)));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Invalid Script", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger)));
+		p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>("Check the console for more information.", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(TextDisabled)));
 	}
 }

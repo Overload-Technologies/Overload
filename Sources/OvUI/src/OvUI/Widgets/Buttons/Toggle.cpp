@@ -11,9 +11,9 @@
 
 OvUI::Widgets::Buttons::Toggle::Toggle(const std::string& p_labelA, const std::string& p_labelB, bool p_state)
 	: labelA(p_labelA), labelB(p_labelB), state(p_state)
-	, activeColor         { Types::ColorEffector::Ref(OVUI_STYLE(WarningButton)) }
-	, activeHoveredColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningButtonHovered)) }
-	, activePressedColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningButtonActive)) }
+	, activeColor         { Types::ColorEffector::Ref(OVUI_STYLE(Warning)) }
+	, activeHoveredColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered)) }
+	, activePressedColor  { Types::ColorEffector::Ref(OVUI_STYLE(WarningActive)) }
 	, inactiveColor       { Types::ColorEffector::Ref(OVUI_STYLE(Button)) }
 	, inactiveHoveredColor{ Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered)) }
 	, inactivePressedColor{ Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive)) }

@@ -65,13 +65,13 @@ namespace
 	{
 		switch (p_logLevel)
 		{
-		case OvDebug::ELogLevel::LOG_DEFAULT: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogDefault));
-		case OvDebug::ELogLevel::LOG_INFO:    return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogInfo));
-		case OvDebug::ELogLevel::LOG_WARNING: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning));
-		case OvDebug::ELogLevel::LOG_ERROR:   return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogError));
+		case OvDebug::ELogLevel::LOG_DEFAULT: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Text));
+		case OvDebug::ELogLevel::LOG_INFO:    return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Info));
+		case OvDebug::ELogLevel::LOG_WARNING: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
+		case OvDebug::ELogLevel::LOG_ERROR:   return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
 		}
 
-		return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogDefault));
+		return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Text));
 	}
 }
 
@@ -91,7 +91,7 @@ OvEditor::Panels::Console::Console
 	toolbar.horizontal = true;
 
 	auto& clearButton = toolbar.CreateWidget<Buttons::Button>("Clear");
-	clearButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
+	clearButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
 	clearButton.ClickedEvent += [this]
 	{
 		Clear();

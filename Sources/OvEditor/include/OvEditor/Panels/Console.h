@@ -29,6 +29,12 @@ namespace OvEditor::Panels
 	class Console : public OvUI::Panels::PanelWindow
 	{
 	public:
+		/**
+		* Constructor
+		* @param p_title
+		* @param p_opened
+		* @param p_windowSettings
+		*/
 		Console
 		(
 			const std::string& p_title,
@@ -36,11 +42,36 @@ namespace OvEditor::Panels
 			const OvUI::Settings::PanelWindowSettings& p_windowSettings
 		);
 
+		/**
+		* Method called when a log event occured
+		* @param p_logData
+		*/
 		void OnLogIntercepted(const OvDebug::LogData& p_logData);
+
+		/**
+		* Called when the scene plays. It will clear the console if the "Clear on play" settings is on
+		*/
 		void ClearOnPlay();
+
+		/**
+		* Clear the console
+		*/
 		void Clear();
+
+		/**
+		* Filter logs using defined filters
+		*/
 		void FilterLogs();
+
+		/**
+		* Verify if a given log level is allowed by the current filter
+		* @param p_logLevel
+		*/
 		bool IsAllowedByFilter(OvDebug::ELogLevel p_logLevel) const;
+
+		/**
+		* Truncate the logs if the number of logs is greater than the max logs
+		*/
 		void TruncateLogs();
 
 	private:

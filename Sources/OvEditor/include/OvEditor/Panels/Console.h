@@ -6,23 +6,28 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 #include <OvDebug/Logger.h>
 
 #include <OvUI/Panels/PanelWindow.h>
-#include <OvUI/Widgets/Layout/Group.h>
-#include <OvUI/Widgets/Texts/TextColored.h>
+
+namespace OvUI::Widgets::InputFields
+{
+	class InputText;
+}
 
 namespace OvEditor::Panels
 {
+	class ConsoleContentWidget;
+
 	class Console : public OvUI::Panels::PanelWindow
 	{
+		friend class ConsoleContentWidget;
+
 	public:
-		/**
-		* Constructor
-		* @param p_title
-		* @param p_opened
-		* @param p_windowSettings
-		*/
 		Console
 		(
 			const std::string& p_title,
@@ -30,52 +35,49 @@ namespace OvEditor::Panels
 			const OvUI::Settings::PanelWindowSettings& p_windowSettings
 		);
 
-		/**
-		* Method called when a log event occured
-		* @param p_logData
-		*/
 		void OnLogIntercepted(const OvDebug::LogData& p_logData);
-
-		/**
-		* Called when the scene plays. It will clear the console if the "Clear on play" settings is on
-		*/
 		void ClearOnPlay();
-
-		/**
-		* Clear the console
-		*/
 		void Clear();
-
-		/**
-		* Filter logs using defined filters
-		*/
 		void FilterLogs();
-
-		/**
-		* Verify if a given log level is allowed by the current filter
-		* @param p_logLevel
-		*/
-		bool IsAllowedByFilter(OvDebug::ELogLevel p_logLevel);
-
-		/**
-		* Truncate the logs if the number of logs is greater than the max logs
-		*/
+		bool IsAllowedByFilter(OvDebug::ELogLevel p_logLevel) const;
 		void TruncateLogs();
+
+	private:
+		struct LogEntry
+		{
+			OvDebug::LogData data;
+		};
+
+		struct VisibleLogEntry
+		{
+			size_t latestRawIndex = 0;
+			uint32_t count = 0;
+		};
 
 	private:
 		void SetShowDefaultLogs(bool p_value);
 		void SetShowInfoLogs(bool p_value);
 		void SetShowWarningLogs(bool p_value);
 		void SetShowErrorLogs(bool p_value);
+		void SetCollapseIdenticalLogs(bool p_value);
+		void RebuildVisibleLogs();
+		void DrawContent();
+		void DrawLogList();
+		bool MatchesSearch(const LogEntry& p_logEntry) const;
+		float CalculateLogHeight(const std::string& p_message) const;
 
 	private:
-		OvUI::Widgets::Layout::Group* m_logGroup;
-		std::unordered_map<OvUI::Widgets::Texts::TextColored*, OvDebug::ELogLevel> m_logTextWidgets;
+		std::vector<LogEntry> m_logs;
+		std::vector<VisibleLogEntry> m_visibleLogs;
+
+		OvUI::Widgets::InputFields::InputText* m_searchField = nullptr;
 
 		bool m_clearOnPlay = true;
 		bool m_showDefaultLog = true;
 		bool m_showInfoLog = true;
 		bool m_showWarningLog = true;
 		bool m_showErrorLog = true;
+		bool m_collapseIdenticalLogs = true;
+		bool m_requestScrollToBottom = false;
 	};
 }

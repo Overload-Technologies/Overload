@@ -26,9 +26,9 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 	m_projectFile(EDITOR_CONTEXT(projectSettings))
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Apply");
-	saveButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
-	saveButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessHovered));
-	saveButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessActive));
+	saveButton.backgroundColor        = OVUI_STYLE_REF(Success);
+	saveButton.hoveredBackgroundColor  = OVUI_STYLE_REF(SuccessHovered);
+	saveButton.clickedBackgroundColor  = OVUI_STYLE_REF(SuccessActive);
 	saveButton.ClickedEvent += [this]
 	{
 		EDITOR_CONTEXT(ApplyProjectSettings());
@@ -38,9 +38,9 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 	saveButton.lineBreak = false;
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
-	resetButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerHovered));
-	resetButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerActive));
+	resetButton.backgroundColor        = OVUI_STYLE_REF(Danger);
+	resetButton.hoveredBackgroundColor  = OVUI_STYLE_REF(DangerHovered);
+	resetButton.clickedBackgroundColor  = OVUI_STYLE_REF(DangerActive);
 	resetButton.ClickedEvent += [this]
 	{
 		EDITOR_CONTEXT(ResetProjectSettings());

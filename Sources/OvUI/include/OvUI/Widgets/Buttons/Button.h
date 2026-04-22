@@ -38,9 +38,9 @@ namespace OvUI::Widgets::Buttons
 		OvMaths::FVector2 size;
 		bool disabled = false;
 
-		Types::ColorEffector backgroundColor        = Types::ColorEffector::Ref(OVUI_STYLE(Button));
-		Types::ColorEffector hoveredBackgroundColor  = Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered));
-		Types::ColorEffector clickedBackgroundColor  = Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive));
-		Types::ColorEffector textColor               = Types::ColorEffector::Ref(OVUI_STYLE(Text));
+		Types::ColorEffector backgroundColor        = OVUI_STYLE_REF(Button);
+		Types::ColorEffector hoveredBackgroundColor  = OVUI_STYLE_REF(ButtonHovered);
+		Types::ColorEffector clickedBackgroundColor  = OVUI_STYLE_REF(ButtonActive);
+		Types::ColorEffector textColor               = OVUI_STYLE_REF(Text);
 	};
 }

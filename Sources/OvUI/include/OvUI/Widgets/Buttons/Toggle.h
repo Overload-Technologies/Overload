@@ -39,12 +39,12 @@ namespace OvUI::Widgets::Buttons
 		std::string labelB;
 		bool state = false;
 
-		Types::ColorEffector activeColor         = Types::ColorEffector::Ref(OVUI_STYLE(Warning));
-		Types::ColorEffector activeHoveredColor  = Types::ColorEffector::Ref(OVUI_STYLE(WarningHovered));
-		Types::ColorEffector activePressedColor  = Types::ColorEffector::Ref(OVUI_STYLE(WarningActive));
-		Types::ColorEffector inactiveColor       = Types::ColorEffector::Ref(OVUI_STYLE(Button));
-		Types::ColorEffector inactiveHoveredColor = Types::ColorEffector::Ref(OVUI_STYLE(ButtonHovered));
-		Types::ColorEffector inactivePressedColor = Types::ColorEffector::Ref(OVUI_STYLE(ButtonActive));
+		Types::ColorEffector activeColor         = OVUI_STYLE_REF(Warning);
+		Types::ColorEffector activeHoveredColor  = OVUI_STYLE_REF(WarningHovered);
+		Types::ColorEffector activePressedColor  = OVUI_STYLE_REF(WarningActive);
+		Types::ColorEffector inactiveColor       = OVUI_STYLE_REF(Button);
+		Types::ColorEffector inactiveHoveredColor = OVUI_STYLE_REF(ButtonHovered);
+		Types::ColorEffector inactivePressedColor = OVUI_STYLE_REF(ButtonActive);
 
 		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B active
 	};

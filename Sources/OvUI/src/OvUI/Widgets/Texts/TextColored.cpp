@@ -10,8 +10,7 @@
 OvUI::Widgets::Texts::TextColored::TextColored(const std::string& p_content, const Types::ColorEffector& p_color) :
 	Text(p_content)
 {
-	if (p_color.HasSource())
-		color = p_color;
+	color = p_color;
 }
 
 void OvUI::Widgets::Texts::TextColored::_Draw_Impl()

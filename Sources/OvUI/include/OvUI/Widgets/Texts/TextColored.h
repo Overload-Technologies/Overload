@@ -17,10 +17,10 @@ namespace OvUI::Widgets::Texts
 		* @param p_content
 		* @param p_color   When omitted, defaults to the style's Text color.
 		*/
-		TextColored(const std::string& p_content = "", const Types::ColorEffector& p_color = {});
+		TextColored(const std::string& p_content = "", const Types::ColorEffector& p_color = OVUI_STYLE_REF(Text));
 
 	public:
-		Types::ColorEffector color = Types::ColorEffector::Ref(OVUI_STYLE(Text));
+		Types::ColorEffector color = OVUI_STYLE_REF(Text);
 
 	protected:
 		virtual void _Draw_Impl() override;

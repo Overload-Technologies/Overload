@@ -143,9 +143,9 @@ void OvEditor::Panels::AssetProperties::Preview()
 void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 {
 	m_applyButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Apply");
-	m_applyButton->backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
-	m_applyButton->hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessHovered));
-	m_applyButton->clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessActive));
+	m_applyButton->backgroundColor        = OVUI_STYLE_REF(Success);
+	m_applyButton->hoveredBackgroundColor  = OVUI_STYLE_REF(SuccessHovered);
+	m_applyButton->clickedBackgroundColor  = OVUI_STYLE_REF(SuccessActive);
 	m_applyButton->tooltip = "Save changes and reimport the asset with the new settings";
 	m_applyButton->enabled = false;
 	m_applyButton->lineBreak = false;
@@ -166,9 +166,9 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 
 	m_resetButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Reset");
 	m_resetButton->tooltip = "Reset all settings to default values";
-	m_resetButton->backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
-	m_resetButton->hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerHovered));
-	m_resetButton->clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerActive));
+	m_resetButton->backgroundColor        = OVUI_STYLE_REF(Danger);
+	m_resetButton->hoveredBackgroundColor  = OVUI_STYLE_REF(DangerHovered);
+	m_resetButton->clickedBackgroundColor  = OVUI_STYLE_REF(DangerActive);
 	m_resetButton->enabled = false;
 	m_resetButton->lineBreak = false;
 	m_resetButton->ClickedEvent += [this] {

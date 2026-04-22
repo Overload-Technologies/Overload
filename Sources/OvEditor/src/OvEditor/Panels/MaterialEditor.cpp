@@ -196,9 +196,9 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Save");
-	saveButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Success));
-	saveButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessHovered));
-	saveButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessActive));
+	saveButton.backgroundColor        = OVUI_STYLE_REF(Success);
+	saveButton.hoveredBackgroundColor  = OVUI_STYLE_REF(SuccessHovered);
+	saveButton.clickedBackgroundColor  = OVUI_STYLE_REF(SuccessActive);
 	saveButton.tooltip = "Save the current material to file";
 	saveButton.lineBreak = false;
 	saveButton.ClickedEvent += [this] {
@@ -258,9 +258,9 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
-	resetButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerHovered));
-	resetButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerActive));
+	resetButton.backgroundColor        = OVUI_STYLE_REF(Danger);
+	resetButton.hoveredBackgroundColor  = OVUI_STYLE_REF(DangerHovered);
+	resetButton.clickedBackgroundColor  = OVUI_STYLE_REF(DangerActive);
 	resetButton.tooltip = "Reset the current material to its default state";
 	resetButton.ClickedEvent += std::bind(&MaterialEditor::Reset, this);
 }

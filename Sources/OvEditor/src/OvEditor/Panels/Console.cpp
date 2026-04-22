@@ -65,13 +65,13 @@ namespace
 	{
 		switch (p_logLevel)
 		{
-		case OvDebug::ELogLevel::LOG_DEFAULT: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Text));
-		case OvDebug::ELogLevel::LOG_INFO:    return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Info));
-		case OvDebug::ELogLevel::LOG_WARNING: return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning));
-		case OvDebug::ELogLevel::LOG_ERROR:   return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
+		case OvDebug::ELogLevel::LOG_DEFAULT: return OVUI_STYLE_REF(Text);
+		case OvDebug::ELogLevel::LOG_INFO:    return OVUI_STYLE_REF(Info);
+		case OvDebug::ELogLevel::LOG_WARNING: return OVUI_STYLE_REF(Warning);
+		case OvDebug::ELogLevel::LOG_ERROR:   return OVUI_STYLE_REF(Danger);
 		}
 
-		return OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Text));
+		return OVUI_STYLE_REF(Text);
 	}
 }
 
@@ -91,9 +91,9 @@ OvEditor::Panels::Console::Console
 	toolbar.horizontal = true;
 
 	auto& clearButton = toolbar.CreateWidget<Buttons::Button>("Clear");
-	clearButton.backgroundColor        = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Danger));
-	clearButton.hoveredBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerHovered));
-	clearButton.clickedBackgroundColor  = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerActive));
+	clearButton.backgroundColor        = OVUI_STYLE_REF(Danger);
+	clearButton.hoveredBackgroundColor  = OVUI_STYLE_REF(DangerHovered);
+	clearButton.clickedBackgroundColor  = OVUI_STYLE_REF(DangerActive);
 	clearButton.ClickedEvent += [this]
 	{
 		Clear();

@@ -19,34 +19,11 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 {
 	using namespace OvUI::Internal;
 
-	uint32_t styleOverrides = 0;
+	ImGui::PushStyleColor(ImGuiCol_Button,        Converter::ToImVec4(backgroundColor.Resolve()));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Converter::ToImVec4(hoveredBackgroundColor.Resolve()));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive,  Converter::ToImVec4(clickedBackgroundColor.Resolve()));
+	ImGui::PushStyleColor(ImGuiCol_Text,          Converter::ToImVec4(textColor.Resolve()));
 
-	if (backgroundColor.HasSource())
-	{
-		ImGui::PushStyleColor(ImGuiCol_Button, Converter::ToImVec4(backgroundColor.Resolve()));
-		++styleOverrides;
-	}
-
-	if (hoveredBackgroundColor.HasSource())
-	{
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Converter::ToImVec4(hoveredBackgroundColor.Resolve()));
-		++styleOverrides;
-	}
-
-	if (clickedBackgroundColor.HasSource())
-	{
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, Converter::ToImVec4(clickedBackgroundColor.Resolve()));
-		++styleOverrides;
-	}
-
-	if (textColor.HasSource())
-	{
-		ImGui::PushStyleColor(ImGuiCol_Text, Converter::ToImVec4(textColor.Resolve()));
-		++styleOverrides;
-	}
-
-	// Instead of using disabled directly, as its value can change if some
-	// callback is bound to the ClickedEvent.
 	const bool isDisabled = disabled;
 
 	if (isDisabled)
@@ -64,6 +41,6 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 		ImGui::EndDisabled();
 	}
 
-	ImGui::PopStyleColor(styleOverrides);
+	ImGui::PopStyleColor(4);
 }
 

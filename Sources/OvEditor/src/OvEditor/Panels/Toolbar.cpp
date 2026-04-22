@@ -19,8 +19,8 @@ namespace
 	OvUI::Types::ColorEffector GetButtonTint(bool p_selected)
 	{
 		return p_selected
-			? OvUI::Types::ColorEffector::Ref(OVUI_STYLE(Warning))
-			: OvUI::Types::ColorEffector{};
+			? OVUI_STYLE_REF(Warning)
+			: OvUI::Types::ColorEffector{OvUI::Types::Color{1.0f, 1.0f, 1.0f, 1.0f}};
 	}
 }
 

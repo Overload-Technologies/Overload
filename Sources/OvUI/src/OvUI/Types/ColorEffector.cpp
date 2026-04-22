@@ -16,24 +16,21 @@ OvUI::Types::ColorEffector::ColorEffector(float p_r, float p_g, float p_b, float
 {
 }
 
+OvUI::Types::ColorEffector::ColorEffector(std::reference_wrapper<const Color> p_ref)
+	: m_source(p_ref)
+{
+}
+
 OvUI::Types::ColorEffector OvUI::Types::ColorEffector::Ref(const Color& p_styleColor)
 {
-	ColorEffector effector;
-	effector.m_source = &p_styleColor;
-	return effector;
+	return ColorEffector(std::ref(p_styleColor));
 }
 
 OvUI::Types::ColorEffector OvUI::Types::ColorEffector::Ref(const Color& p_styleColor, const Color& p_tint)
 {
-	ColorEffector effector;
-	effector.m_source = &p_styleColor;
+	ColorEffector effector(std::ref(p_styleColor));
 	effector.tint = p_tint;
 	return effector;
-}
-
-bool OvUI::Types::ColorEffector::HasSource() const
-{
-	return !std::holds_alternative<std::monostate>(m_source);
 }
 
 OvUI::Types::Color OvUI::Types::ColorEffector::Resolve() const
@@ -42,10 +39,8 @@ OvUI::Types::Color OvUI::Types::ColorEffector::Resolve() const
 
 	if (std::holds_alternative<Color>(m_source))
 		source = &std::get<Color>(m_source);
-	else if (std::holds_alternative<const Color*>(m_source))
-		source = std::get<const Color*>(m_source);
 	else
-		return tint; // fallback: no source set
+		source = &std::get<std::reference_wrapper<const Color>>(m_source).get();
 
 	return Color{
 		source->r * tint.r,

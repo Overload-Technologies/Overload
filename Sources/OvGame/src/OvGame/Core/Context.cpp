@@ -107,7 +107,7 @@ OvGame::Core::Context::Context() :
 	}
 	if (useFallbackWindowIcon)
 	{
-		const auto fallbackWindowIconPath = engineAssetsPath / "Textures" / "WindowIcon.png";
+		const auto fallbackWindowIconPath = engineAssetsPath / "Textures" / "Overload.png";
 		if (!window->SetIcon(fallbackWindowIconPath.string()))
 		{
 			OVLOG_WARNING("Fallback window icon could not be loaded from: " + fallbackWindowIconPath.string());

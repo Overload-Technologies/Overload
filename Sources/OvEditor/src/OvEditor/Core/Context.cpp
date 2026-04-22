@@ -106,7 +106,7 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	windowSettings.width = bestFitWindowSizeAndPosition[2];
 	windowSettings.height = bestFitWindowSizeAndPosition[3];
 	window = std::make_unique<OvWindowing::Window>(*device, windowSettings);
-	const auto fallbackWindowIconPath = engineAssetsPath / "Textures" / "WindowIcon.png";
+	const auto fallbackWindowIconPath = engineAssetsPath / "Textures" / "Overload.png";
 	window->SetIcon(fallbackWindowIconPath.string());
 	inputManager = std::make_unique<OvWindowing::Inputs::InputManager>(*window);
 	window->MakeCurrentContext();

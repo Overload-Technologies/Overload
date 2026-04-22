@@ -82,7 +82,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
 			if (entry.count > 1)
 			{
-				const std::string badge = '(' + std::to_string(entry.count) + ')';
+				const std::string badge = "(" + std::to_string(entry.count) + ")";
 				const float badgeWidth = ImGui::CalcTextSize(badge.c_str()).x;
 				const float cursorX = ImGui::GetCursorPosX() + std::max(0.0f, ImGui::GetColumnWidth() - badgeWidth - ImGui::GetStyle().CellPadding.x * 2.0f);
 				ImGui::SetCursorPosX(cursorX);

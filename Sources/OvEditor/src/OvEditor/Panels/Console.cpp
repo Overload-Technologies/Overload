@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
-#include <functional>
+#include <cstddef>
 #include <string>
 #include <unordered_map>
 
@@ -91,7 +91,10 @@ OvEditor::Panels::Console::Console
 
 	auto& clearButton = toolbar.CreateWidget<Buttons::Button>("Clear");
 	clearButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
-	clearButton.ClickedEvent += std::bind(&Console::Clear, this);
+	clearButton.ClickedEvent += [this]
+	{
+		Clear();
+	};
 
 	auto& clearOnPlay = toolbar.CreateWidget<Selection::CheckBox>(m_clearOnPlay, "Clear on play");
 	auto& collapseIdentical = toolbar.CreateWidget<Selection::CheckBox>(m_collapseIdenticalLogs, "Collapse");
@@ -101,11 +104,11 @@ OvEditor::Panels::Console::Console
 	auto& enableError = toolbar.CreateWidget<Selection::CheckBox>(m_showErrorLog, "Error");
 
 	clearOnPlay.ValueChangedEvent += [this](bool p_value) { m_clearOnPlay = p_value; };
-	collapseIdentical.ValueChangedEvent += std::bind(&Console::SetCollapseIdenticalLogs, this, std::placeholders::_1);
-	enableDefault.ValueChangedEvent += std::bind(&Console::SetShowDefaultLogs, this, std::placeholders::_1);
-	enableInfo.ValueChangedEvent += std::bind(&Console::SetShowInfoLogs, this, std::placeholders::_1);
-	enableWarning.ValueChangedEvent += std::bind(&Console::SetShowWarningLogs, this, std::placeholders::_1);
-	enableError.ValueChangedEvent += std::bind(&Console::SetShowErrorLogs, this, std::placeholders::_1);
+	collapseIdentical.ValueChangedEvent += [this](bool p_value) { SetCollapseIdenticalLogs(p_value); };
+	enableDefault.ValueChangedEvent += [this](bool p_value) { SetShowDefaultLogs(p_value); };
+	enableInfo.ValueChangedEvent += [this](bool p_value) { SetShowInfoLogs(p_value); };
+	enableWarning.ValueChangedEvent += [this](bool p_value) { SetShowWarningLogs(p_value); };
+	enableError.ValueChangedEvent += [this](bool p_value) { SetShowErrorLogs(p_value); };
 
 	const uint32_t searchIconID = []{
 		if (auto* tex = EDITOR_CONTEXT(editorResources)->GetTexture("Search"))
@@ -124,8 +127,14 @@ OvEditor::Panels::Console::Console
 	m_logsWidget = &CreateWidget<Layout::TextLogs>();
 	m_logsWidget->SetID("console-log-list");
 
-	EDITOR_EVENT(PlayEvent) += std::bind(&Console::ClearOnPlay, this);
-	OvDebug::Logger::LogEvent += std::bind(&Console::OnLogIntercepted, this, std::placeholders::_1);
+	EDITOR_EVENT(PlayEvent) += [this]
+	{
+		ClearOnPlay();
+	};
+	OvDebug::Logger::LogEvent += [this](const OvDebug::LogData& p_logData)
+	{
+		OnLogIntercepted(p_logData);
+	};
 }
 
 void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData& p_logData)
@@ -169,8 +178,12 @@ bool OvEditor::Panels::Console::IsAllowedByFilter(OvDebug::ELogLevel p_logLevel)
 
 void OvEditor::Panels::Console::TruncateLogs()
 {
-	while (m_logs.size() > static_cast<size_t>(Settings::EditorSettings::ConsoleMaxLogs.Get()))
-		m_logs.erase(m_logs.begin());
+	const auto maxLogs = static_cast<size_t>(Settings::EditorSettings::ConsoleMaxLogs.Get());
+	if (m_logs.size() > maxLogs)
+	{
+		const auto excessLogs = m_logs.size() - maxLogs;
+		m_logs.erase(m_logs.begin(), m_logs.begin() + static_cast<std::ptrdiff_t>(excessLogs));
+	}
 
 	RebuildVisibleLogs();
 	RefreshDisplayedLogs();
@@ -210,16 +223,24 @@ void OvEditor::Panels::Console::RebuildVisibleLogs()
 {
 	m_visibleLogs.clear();
 
+	std::vector<size_t> filteredIndices;
+	filteredIndices.reserve(m_logs.size());
+
+	for (size_t index = 0; index < m_logs.size(); ++index)
+	{
+		const auto& logEntry = m_logs[index];
+		if (IsAllowedByFilter(logEntry.data.logLevel) && MatchesSearch(logEntry))
+			filteredIndices.push_back(index);
+	}
+
 	if (m_collapseIdenticalLogs)
 	{
 		std::unordered_map<std::string, size_t> collapsedByMessage;
+		m_visibleLogs.reserve(filteredIndices.size());
 
-		for (size_t index = 0; index < m_logs.size(); ++index)
+		for (const auto index : filteredIndices)
 		{
 			const auto& logEntry = m_logs[index];
-			if (!IsAllowedByFilter(logEntry.data.logLevel) || !MatchesSearch(logEntry))
-				continue;
-
 			const auto [iterator, inserted] = collapsedByMessage.emplace(logEntry.data.message, m_visibleLogs.size());
 			if (inserted)
 			{
@@ -233,21 +254,13 @@ void OvEditor::Panels::Console::RebuildVisibleLogs()
 			}
 		}
 
-		std::sort(m_visibleLogs.begin(), m_visibleLogs.end(), [](const VisibleLogEntry& p_left, const VisibleLogEntry& p_right)
-		{
-			return p_left.latestRawIndex < p_right.latestRawIndex;
-		});
+		std::ranges::sort(m_visibleLogs, {}, &VisibleLogEntry::latestRawIndex);
 	}
 	else
 	{
-		for (size_t index = 0; index < m_logs.size(); ++index)
-		{
-			const auto& logEntry = m_logs[index];
-			if (!IsAllowedByFilter(logEntry.data.logLevel) || !MatchesSearch(logEntry))
-				continue;
-
+		m_visibleLogs.reserve(filteredIndices.size());
+		for (const auto index : filteredIndices)
 			m_visibleLogs.push_back({ index, 1 });
-		}
 	}
 }
 

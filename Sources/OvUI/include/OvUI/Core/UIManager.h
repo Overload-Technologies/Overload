@@ -152,10 +152,10 @@ namespace OvUI::Core
 	private:
 		OvWindowing::Window& m_window;
 		OvTools::Eventing::ListenerID m_contentScaleChangedListener;
-		bool m_dockingState;
+		bool m_dockingState = false;
 		Styling::EStyle m_currentStyle;
-		float m_scale;
-		bool m_dpiAware;
+		float m_scale = 1.0f;
+		bool m_dpiAware = false;
 		bool m_refreshStyle = false;
 		Modules::Canvas* m_currentCanvas = nullptr;
 		std::unordered_map<std::string, ImFont*> m_fonts;

@@ -155,7 +155,7 @@ namespace OvUI::Core
 		bool m_dockingState = false;
 		Styling::EStyle m_currentStyle;
 		float m_scale = 1.0f;
-		bool m_dpiAware = true;
+		bool m_dpiAware = false;
 		bool m_refreshStyle = false;
 		Modules::Canvas* m_currentCanvas = nullptr;
 		std::unordered_map<std::string, ImFont*> m_fonts;

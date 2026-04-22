@@ -19,7 +19,7 @@ namespace
 	OvUI::Types::ColorEffector GetButtonTint(bool p_selected)
 	{
 		return p_selected
-			? OVUI_STYLE_REF(Warning)
+			? OVUI_STYLE_REF(Highlight)
 			: OvUI::Types::ColorEffector{OvUI::Types::Color{1.0f, 1.0f, 1.0f, 1.0f}};
 	}
 }

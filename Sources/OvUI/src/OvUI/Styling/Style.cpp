@@ -133,6 +133,8 @@ void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme)
 	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
 
 	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
+
+	Highlight      = darkTheme ? Color{1.00f, 1.00f, 0.00f, 1.00f} : Color{1.00f, 1.00f, 0.00f, 1.00f};
 }
 
 void OvUI::Styling::Style::ApplyImClassicStyle()

@@ -164,6 +164,7 @@ namespace OvUI::Styling
 
 		Types::Color Info;
 		Types::Color InspectorTitle;
+		Types::Color Highlight;
 
 	private:
 		Style();

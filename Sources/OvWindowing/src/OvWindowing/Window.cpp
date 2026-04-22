@@ -77,10 +77,11 @@ bool OvWindowing::Window::SetIcon(const std::string& p_filePath)
 
 void OvWindowing::Window::SetIconFromMemory(uint8_t* p_data, uint32_t p_width, uint32_t p_height)
 {
-	GLFWimage image{};
-	image.pixels = p_data;
-	image.width = static_cast<int>(p_width);
-	image.height = static_cast<int>(p_height);
+	GLFWimage image{
+		.width = static_cast<int>(p_width),
+		.height = static_cast<int>(p_height),
+		.pixels = p_data
+	};
 	glfwSetWindowIcon(m_glfwWindow, 1, &image);
 }
 

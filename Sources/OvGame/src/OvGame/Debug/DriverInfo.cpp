@@ -21,10 +21,10 @@ OvGame::Debug::DriverInfo::DriverInfo(OvRendering::Context::Driver& p_driver, Ov
 	const std::string version(p_driver.GetVersion());
 	const std::string shadingVersion(p_driver.GetShadingLanguageVersion());
 
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("Vendor: "	+ vendor, OVUI_STYLE_REF(Warning));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("Hardware: " + hardware, OVUI_STYLE_REF(Warning));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("OpenGL Version: " + version, OVUI_STYLE_REF(Warning));
-	CreateWidget<OvUI::Widgets::Texts::TextColored>("GLSL Version: " + shadingVersion, OVUI_STYLE_REF(Warning));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("Vendor: "	+ vendor, OVUI_STYLE(Warning));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("Hardware: " + hardware, OVUI_STYLE(Warning));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("OpenGL Version: " + version, OVUI_STYLE(Warning));
+	CreateWidget<OvUI::Widgets::Texts::TextColored>("GLSL Version: " + shadingVersion, OVUI_STYLE(Warning));
 }
 
 #endif

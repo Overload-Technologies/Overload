@@ -40,7 +40,7 @@ const float OvCore::Helpers::GUIDrawer::_MAX_FLOAT = +999999999.f;
 
 void OvCore::Helpers::GUIDrawer::CreateTitle(OvUI::Internal::WidgetContainer& p_root, const std::string & p_name)
 {
-	p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, OVUI_STYLE_REF(InspectorTitle));
+	p_root.CreateWidget<OvUI::Widgets::Texts::TextColored>(p_name, OVUI_STYLE(InspectorTitle));
 }
 
 void OvCore::Helpers::GUIDrawer::DrawBoolean(OvUI::Internal::WidgetContainer & p_root, const std::string & p_name, bool & p_data)

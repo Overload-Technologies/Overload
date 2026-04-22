@@ -55,7 +55,7 @@ namespace OvUI::Widgets::Layout
 
 		uint32_t iconTextureID = 0;
 		float iconSize = 16.f;
-		Types::ColorEffector labelColor = OVUI_STYLE_REF(Text);
+		Types::ColorEffector labelColor = OVUI_STYLE(Text);
 
 		OvTools::Eventing::Event<> ClickedEvent;
 		OvTools::Eventing::Event<> DoubleClickedEvent;

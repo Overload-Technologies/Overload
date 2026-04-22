@@ -11,16 +11,9 @@
 #include <OvUI/Types/ColorEffector.h>
 
 /**
-* Retrieve a live const-reference to a style color field.
-* Example: OVUI_STYLE_REF(Danger)
-*/
-#define OVUI_STYLE(field) (OvUI::Styling::Style::Get().field)
-
-/**
 * Create a ColorEffector bound to a live style color reference.
-* Shorthand for: OvUI::Types::ColorEffector::Ref(OVUI_STYLE(field))
 */
-#define OVUI_STYLE_REF(field) OvUI::Types::ColorEffector::Ref(OVUI_STYLE(field))
+#define OVUI_STYLE(field) (OvUI::Types::ColorEffector::Ref(OvUI::Styling::Style::Get().field))
 
 /**
 * Returns the current UI scale factor (set by UIManager on DPI changes).

@@ -9,7 +9,7 @@
 
 OvGame::Utils::FPSCounter::FPSCounter(OvWindowing::Window& p_window) : m_window(p_window)
 {
-	m_text.color = OVUI_STYLE_REF(Warning);
+	m_text.color = OVUI_STYLE(Warning);
 	m_defaultHorizontalAlignment = OvUI::Settings::EHorizontalAlignment::RIGHT;
 	m_defaultPosition = { static_cast<float>(m_window.GetSize().first) - 10.0f , 10.0f };
 	m_text.content = "999 FPS";

@@ -391,8 +391,8 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	{
 		const bool isActive = targetPtr->IsActive();
 		textSelectable.labelColor = isActive
-			? OVUI_STYLE_REF(Text)
-			: OVUI_STYLE_REF(TextDisabled);
+			? OVUI_STYLE(Text)
+			: OVUI_STYLE(TextDisabled);
 
 		return targetPtr->GetName();
 	});

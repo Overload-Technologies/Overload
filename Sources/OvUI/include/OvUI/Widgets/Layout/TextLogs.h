@@ -26,7 +26,7 @@ namespace OvUI::Widgets::Layout
 		{
 			std::string header;
 			std::string content;
-			Types::ColorEffector contentColor = OVUI_STYLE_REF(Text);
+			Types::ColorEffector contentColor = OVUI_STYLE(Text);
 			uint32_t count = 1;
 		};
 

@@ -17,6 +17,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SystemCalls.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Columns.h>
@@ -64,8 +65,8 @@ namespace OvEditor::Core
 
 			_UpdateGoButton({});
 
-			openProjectButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
-			newProjectButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
+			openProjectButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(WarningButton));
+			newProjectButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
 
 			openProjectButton.ClickedEvent += [this] {
 				OvWindowing::Dialogs::OpenFileDialog dialog("Open project");
@@ -136,8 +137,8 @@ namespace OvEditor::Core
 				auto& openButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Open");
 				auto& deleteButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Delete");
 
-				openButton.idleBackgroundColor = { 0.7f, 0.5f, 0.f };
-				deleteButton.idleBackgroundColor = { 0.5f, 0.f, 0.f };
+				openButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(WarningButton));
+				deleteButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
 
 				openButton.ClickedEvent += [this, &text, &actions, project] {
 					if (!_TryFinish({ project }))
@@ -174,7 +175,9 @@ namespace OvEditor::Core
 		void _UpdateGoButton(const std::string& p_path)
 		{
 			const bool validPath = !p_path.empty();
-			m_goButton->idleBackgroundColor = validPath ? OvUI::Types::Color{ 0.f, 0.5f, 0.0f } : OvUI::Types::Color{ 0.1f, 0.1f, 0.1f };
+			m_goButton->idleBackgroundColor = validPath
+				? OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton))
+				: OvUI::Types::ColorEffector{};
 			m_goButton->disabled = !validPath;
 		}
 

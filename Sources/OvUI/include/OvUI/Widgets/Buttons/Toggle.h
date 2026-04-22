@@ -10,7 +10,7 @@
 
 #include <OvTools/Eventing/Event.h>
 
-#include <OvUI/Types/Color.h>
+#include <OvUI/Types/ColorEffector.h>
 #include <OvUI/Widgets/AWidget.h>
 
 namespace OvUI::Widgets::Buttons
@@ -38,12 +38,12 @@ namespace OvUI::Widgets::Buttons
 		std::string labelB;
 		bool state = false;
 
-		Types::Color activeColor;
-		Types::Color activeHoveredColor;
-		Types::Color activePressedColor;
-		Types::Color inactiveColor;
-		Types::Color inactiveHoveredColor;
-		Types::Color inactivePressedColor;
+		Types::ColorEffector activeColor;
+		Types::ColorEffector activeHoveredColor;
+		Types::ColorEffector activePressedColor;
+		Types::ColorEffector inactiveColor;
+		Types::ColorEffector inactiveHoveredColor;
+		Types::ColorEffector inactivePressedColor;
 
 		OvTools::Eventing::Event<bool> StateChangedEvent; // true = B active
 	};

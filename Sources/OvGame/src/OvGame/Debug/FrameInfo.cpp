@@ -8,14 +8,15 @@
 
 #include <format>
 
+#include <OvUI/Styling/Style.h>
 #include <OvGame/Debug/FrameInfo.h>
 
 OvGame::Debug::FrameInfo::FrameInfo(OvWindowing::Window& p_window) :
 	m_window(p_window),
-	m_batchText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::Color::Yellow)),
-	m_instanceText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::Color::Yellow)),
-	m_polyText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::Color::Yellow)),
-	m_vertexText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::Color::Yellow))
+	m_batchText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)))),
+	m_instanceText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)))),
+	m_polyText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning)))),
+	m_vertexText(CreateWidget<OvUI::Widgets::Texts::TextColored>("", OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning))))
 {
 	m_defaultHorizontalAlignment = OvUI::Settings::EHorizontalAlignment::LEFT;
 	m_defaultVerticalAlignment = OvUI::Settings::EVerticalAlignment::BOTTOM;

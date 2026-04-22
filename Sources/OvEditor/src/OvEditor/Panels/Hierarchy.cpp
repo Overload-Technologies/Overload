@@ -7,6 +7,7 @@
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Core/EditorActions.h"
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Visual/Separator.h>
@@ -389,9 +390,9 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
 	{
 		const bool isActive = targetPtr->IsActive();
-		textSelectable.overrideLabelColor = !isActive;
-		if (!isActive)
-			textSelectable.labelColor = {0.5f, 0.5f, 0.5f, 1.0f};
+		textSelectable.labelColor = isActive
+			? OvUI::Types::ColorEffector{}
+			: OvUI::Types::ColorEffector::Ref(OVUI_STYLE(TextDisabled));
 
 		return targetPtr->GetName();
 	});

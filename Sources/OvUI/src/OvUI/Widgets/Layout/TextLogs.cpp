@@ -67,7 +67,7 @@ void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 			ImGui::TextUnformatted(entry.header.c_str());
 			ImGui::PopStyleColor();
 
-			ImGui::PushStyleColor(ImGuiCol_Text, Internal::Converter::ToImVec4(entry.contentColor));
+			ImGui::PushStyleColor(ImGuiCol_Text, Internal::Converter::ToImVec4(entry.contentColor.Resolve()));
 			ImGui::SetNextItemWidth(-FLT_MIN);
 			ImGui::InputTextMultiline(
 				"##log-line",

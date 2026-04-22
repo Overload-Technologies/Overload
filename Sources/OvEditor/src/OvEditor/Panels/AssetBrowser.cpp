@@ -40,6 +40,7 @@
 #include <OvUI/Plugins/ContextualMenu.h>
 #include <OvUI/Plugins/DDSource.h>
 #include <OvUI/Plugins/DDTarget.h>
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/TextClickable.h>
@@ -872,16 +873,16 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	auto& refreshButton = CreateWidget<Buttons::Button>("Refresh");
 	refreshButton.ClickedEvent += std::bind(&AssetBrowser::Refresh, this);
 	refreshButton.lineBreak = false;
-	refreshButton.idleBackgroundColor = { 0.f, 0.5f, 0.0f };
+	refreshButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import Asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
-	importButton.idleBackgroundColor = { 0.7f, 0.5f, 0.0f };
+	importButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(WarningButton));
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");
 	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
-	codeEditorButton.idleBackgroundColor = { 0.1f, 0.3f, 0.7f };
+	codeEditorButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(PrimaryButton));
 
 	m_assetList = &CreateWidget<Layout::Group>();
 

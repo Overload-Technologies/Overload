@@ -11,15 +11,16 @@
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Panels/Toolbar.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Layout/Spacing.h>
 
 namespace
 {
-	OvUI::Types::Color GetButtonTint(bool p_selected)
+	OvUI::Types::ColorEffector GetButtonTint(bool p_selected)
 	{
-		return p_selected ?
-			OvUI::Types::Color::Yellow :
-			OvUI::Types::Color::White;
+		return p_selected
+			? OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning))
+			: OvUI::Types::ColorEffector{};
 	}
 }
 

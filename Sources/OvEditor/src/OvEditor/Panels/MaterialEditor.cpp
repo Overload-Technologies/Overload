@@ -15,6 +15,7 @@
 #include <OvRendering/Resources/Parsers/EmbeddedAssetPath.h>
 #include <OvTools/Utils/SystemCalls.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
@@ -195,7 +196,7 @@ void OvEditor::Panels::MaterialEditor::OnShaderDropped()
 void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Save");
-	saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	saveButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
 	saveButton.tooltip = "Save the current material to file";
 	saveButton.lineBreak = false;
 	saveButton.ClickedEvent += [this] {
@@ -255,7 +256,7 @@ void OvEditor::Panels::MaterialEditor::CreateHeaderButtons()
 	previewButton.ClickedEvent += std::bind(&MaterialEditor::Preview, this);
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	resetButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
 	resetButton.tooltip = "Reset the current material to its default state";
 	resetButton.ClickedEvent += std::bind(&MaterialEditor::Reset, this);
 }

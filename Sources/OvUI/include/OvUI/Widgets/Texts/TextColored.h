@@ -7,7 +7,7 @@
 #pragma once
 
 #include "OvUI/Widgets/Texts/Text.h"
-#include "OvUI/Types/Color.h"
+#include "OvUI/Types/ColorEffector.h"
 
 namespace OvUI::Widgets::Texts
 {
@@ -22,10 +22,10 @@ namespace OvUI::Widgets::Texts
 		* @param p_content
 		* @param p_color
 		*/
-		TextColored(const std::string& p_content = "", const Types::Color& p_color = Types::Color(1.0f, 1.0f, 1.0f, 1.0f));
+		TextColored(const std::string& p_content = "", const Types::ColorEffector& p_color = Types::Color(1.0f, 1.0f, 1.0f, 1.0f));
 
 	public:
-		Types::Color color;
+		Types::ColorEffector color;
 
 	protected:
 		virtual void _Draw_Impl() override;

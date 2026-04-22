@@ -9,6 +9,7 @@
 
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 #include <OvCore/Helpers/GUIDrawer.h>
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
 #include <OvUI/Widgets/Visual/Separator.h>
@@ -25,7 +26,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 	m_projectFile(EDITOR_CONTEXT(projectSettings))
 {
 	auto& saveButton = CreateWidget<Buttons::Button>("Apply");
-	saveButton.idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	saveButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
 	saveButton.ClickedEvent += [this]
 	{
 		EDITOR_CONTEXT(ApplyProjectSettings());
@@ -35,7 +36,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 	saveButton.lineBreak = false;
 
 	auto& resetButton = CreateWidget<Buttons::Button>("Reset");
-	resetButton.idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	resetButton.idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
 	resetButton.ClickedEvent += [this]
 	{
 		EDITOR_CONTEXT(ResetProjectSettings());

@@ -21,6 +21,7 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/SizeConverter.h>
 
+#include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
@@ -142,7 +143,7 @@ void OvEditor::Panels::AssetProperties::Preview()
 void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 {
 	m_applyButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Apply");
-	m_applyButton->idleBackgroundColor = { 0.0f, 0.5f, 0.0f };
+	m_applyButton->idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(SuccessButton));
 	m_applyButton->tooltip = "Save changes and reimport the asset with the new settings";
 	m_applyButton->enabled = false;
 	m_applyButton->lineBreak = false;
@@ -163,7 +164,7 @@ void OvEditor::Panels::AssetProperties::CreateHeaderButtons()
 
 	m_resetButton = &CreateWidget<OvUI::Widgets::Buttons::Button>("Reset");
 	m_resetButton->tooltip = "Reset all settings to default values";
-	m_resetButton->idleBackgroundColor = { 0.5f, 0.0f, 0.0f };
+	m_resetButton->idleBackgroundColor = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(DangerButton));
 	m_resetButton->enabled = false;
 	m_resetButton->lineBreak = false;
 	m_resetButton->ClickedEvent += [this] {

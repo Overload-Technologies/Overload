@@ -4,11 +4,12 @@
 * @licence: MIT
 */
 
+#include <OvUI/Styling/Style.h>
 #include "OvGame/Utils/FPSCounter.h"
 
 OvGame::Utils::FPSCounter::FPSCounter(OvWindowing::Window& p_window) : m_window(p_window)
 {
-	m_text.color = OvUI::Types::Color::Yellow;
+	m_text.color = OvUI::Types::ColorEffector::Ref(OVUI_STYLE(LogWarning));
 	m_defaultHorizontalAlignment = OvUI::Settings::EHorizontalAlignment::RIGHT;
 	m_defaultPosition = { static_cast<float>(m_window.GetSize().first) - 10.0f , 10.0f };
 	m_text.content = "999 FPS";

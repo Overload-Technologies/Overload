@@ -21,27 +21,27 @@ void OvUI::Widgets::Buttons::Button::_Draw_Impl()
 
 	uint32_t styleOverrides = 0;
 
-	if (idleBackgroundColor.has_value())
+	if (idleBackgroundColor.HasSource())
 	{
-		ImGui::PushStyleColor(ImGuiCol_Button, Converter::ToImVec4(idleBackgroundColor.value()));
+		ImGui::PushStyleColor(ImGuiCol_Button, Converter::ToImVec4(idleBackgroundColor.Resolve()));
 		++styleOverrides;
 	}
 
-	if (hoveredBackgroundColor.has_value())
+	if (hoveredBackgroundColor.HasSource())
 	{
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Converter::ToImVec4(hoveredBackgroundColor.value()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Converter::ToImVec4(hoveredBackgroundColor.Resolve()));
 		++styleOverrides;
 	}
 
-	if (clickedBackgroundColor.has_value())
+	if (clickedBackgroundColor.HasSource())
 	{
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, Converter::ToImVec4(clickedBackgroundColor.value()));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, Converter::ToImVec4(clickedBackgroundColor.Resolve()));
 		++styleOverrides;
 	}
 
-	if (textColor.has_value())
+	if (textColor.HasSource())
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, Converter::ToImVec4(textColor.value()));
+		ImGui::PushStyleColor(ImGuiCol_Text, Converter::ToImVec4(textColor.Resolve()));
 		++styleOverrides;
 	}
 

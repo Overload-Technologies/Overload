@@ -7,32 +7,11 @@
 #include "OvDebug/Logger.h"
 #include <OvDebug/Assertion.h>
 #include <OvUI/Core/UIManager.h>
-#include <OvUI/Styling/TStyle.h>
+#include <OvUI/Styling/Style.h>
 #include <OvWindowing/Window.h>
 
 #include <imgui.h>
 #include <optional>
-
-namespace
-{
-	ImGuiStyle GetStyle(OvUI::Styling::EStyle p_style)
-	{
-		using namespace OvUI::Styling;
-		using enum OvUI::Styling::EStyle;
-
-		switch (p_style)
-		{
-		case IM_CLASSIC_STYLE: return TStyle<IM_CLASSIC_STYLE>::GetStyle();
-		case IM_DARK_STYLE: return TStyle<IM_DARK_STYLE>::GetStyle();
-		case IM_LIGHT_STYLE: return TStyle<IM_LIGHT_STYLE>::GetStyle();
-		case DUNE_DARK: return TStyle<DUNE_DARK>::GetStyle();
-		case DEFAULT_DARK: return TStyle<DEFAULT_DARK>::GetStyle();
-		case EVEN_DARKER: return TStyle<EVEN_DARKER>::GetStyle();
-		}
-
-		return ImGuiStyle();
-	}
-}
 
 OvUI::Core::UIManager::UIManager(OvWindowing::Window& p_window, Styling::EStyle p_style, std::string_view p_glslVersion) :
 	m_window(p_window)
@@ -67,10 +46,20 @@ OvUI::Core::UIManager::~UIManager()
 void OvUI::Core::UIManager::ApplyStyle(Styling::EStyle p_style)
 {
 	m_currentStyle = p_style;
-	auto style = GetStyle(p_style);
-	style.FontScaleMain = m_scale;
-	style.ScaleAllSizes(m_scale);
-	ImGui::GetStyle() = style;
+
+	auto& style = Styling::Style::Get();
+	using enum Styling::EStyle;
+	switch (p_style)
+	{
+	case IM_CLASSIC_STYLE: style.ApplyImClassicStyle();   break;
+	case IM_DARK_STYLE:    style.ApplyImDarkStyle();      break;
+	case IM_LIGHT_STYLE:   style.ApplyImLightStyle();     break;
+	case DUNE_DARK:        style.ApplyDuneDarkStyle();    break;
+	case DEFAULT_DARK:     style.ApplyDefaultDarkStyle(); break;
+	case EVEN_DARKER:      style.ApplyEvenDarkerStyle();  break;
+	}
+
+	style.ApplyToImGui(m_scale);
 }
 
 bool OvUI::Core::UIManager::LoadFont(const std::string& p_id, const std::string & p_path, float p_fontSize)

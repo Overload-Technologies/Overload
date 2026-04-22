@@ -11,7 +11,7 @@
 #include <OvTools/Eventing/Event.h>
 
 #include "OvUI/Internal/WidgetContainer.h"
-#include "OvUI/Types/Color.h"
+#include "OvUI/Types/ColorEffector.h"
 #include "OvUI/Widgets/DataWidget.h"
 
 namespace OvUI::Widgets::Layout
@@ -54,8 +54,7 @@ namespace OvUI::Widgets::Layout
 
 		uint32_t iconTextureID = 0;
 		float iconSize = 16.f;
-		bool overrideLabelColor = false;
-		Types::Color labelColor{1.0f, 1.0f, 1.0f, 1.0f};
+		Types::ColorEffector labelColor;
 
 		OvTools::Eventing::Event<> ClickedEvent;
 		OvTools::Eventing::Event<> DoubleClickedEvent;

@@ -886,6 +886,9 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");
 	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
+	codeEditorButton.backgroundColor = OVUI_STYLE(Accent);
+	codeEditorButton.hoveredBackgroundColor = OVUI_STYLE(AccentHovered);
+	codeEditorButton.clickedBackgroundColor = OVUI_STYLE(AccentActive);
 
 	m_assetList = &CreateWidget<Layout::Group>();
 

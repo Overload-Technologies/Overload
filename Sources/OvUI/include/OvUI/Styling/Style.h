@@ -155,6 +155,10 @@ namespace OvUI::Styling
 		Types::Color WarningHovered;
 		Types::Color WarningActive;
 
+		Types::Color Accent;
+		Types::Color AccentHovered;
+		Types::Color AccentActive;
+
 		Types::Color Info;
 		Types::Color InspectorTitle;
 		Types::Color Highlight;

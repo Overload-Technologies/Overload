@@ -132,6 +132,10 @@ void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme)
 
 	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
 
+	Accent        = darkTheme ? Color{0.10f, 0.30f, 0.70f, 1.00f} : Color{0.15f, 0.45f, 0.90f, 1.00f};
+	AccentHovered = darkTheme ? Color{0.15f, 0.40f, 0.85f, 1.00f} : Color{0.25f, 0.55f, 1.00f, 1.00f};
+	AccentActive  = darkTheme ? Color{0.07f, 0.22f, 0.55f, 1.00f} : Color{0.10f, 0.35f, 0.75f, 1.00f};
+
 	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
 
 	Highlight      = darkTheme ? Color{1.00f, 1.00f, 0.00f, 1.00f} : Color{1.00f, 1.00f, 0.00f, 1.00f};

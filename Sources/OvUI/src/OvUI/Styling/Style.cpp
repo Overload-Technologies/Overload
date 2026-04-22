@@ -114,27 +114,37 @@ void OvUI::Styling::Style::PopulateFromImGuiStyle(const ImGuiStyle& p_style)
 	PopupBorderSize  = p_style.PopupBorderSize;
 }
 
-void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme)
+void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme, bool lighterOnActive)
 {
 	using Types::Color;
 
 	Success        = darkTheme ? Color{0.15f, 0.49f, 0.15f, 1.00f} : Color{0.22f, 0.75f, 0.22f, 1.00f};
 	SuccessHovered = darkTheme ? Color{0.20f, 0.64f, 0.20f, 1.00f} : Color{0.32f, 0.85f, 0.32f, 1.00f};
-	SuccessActive  = darkTheme ? Color{0.11f, 0.37f, 0.11f, 1.00f} : Color{0.15f, 0.62f, 0.15f, 1.00f};
+	// lighter: step up from hovered (ImGui built-in style behavior)
+	// darker:  step down from base   (custom style behavior)
+	SuccessActive  = lighterOnActive
+		? (darkTheme ? Color{0.26f, 0.76f, 0.26f, 1.00f} : Color{0.42f, 0.95f, 0.42f, 1.00f})
+		: (darkTheme ? Color{0.11f, 0.37f, 0.11f, 1.00f} : Color{0.15f, 0.62f, 0.15f, 1.00f});
 
 	Danger         = darkTheme ? Color{0.50f, 0.08f, 0.08f, 1.00f} : Color{0.85f, 0.22f, 0.22f, 1.00f};
 	DangerHovered  = darkTheme ? Color{0.65f, 0.11f, 0.11f, 1.00f} : Color{0.92f, 0.35f, 0.35f, 1.00f};
-	DangerActive   = darkTheme ? Color{0.38f, 0.06f, 0.06f, 1.00f} : Color{0.72f, 0.15f, 0.15f, 1.00f};
+	DangerActive   = lighterOnActive
+		? (darkTheme ? Color{0.78f, 0.15f, 0.15f, 1.00f} : Color{1.00f, 0.48f, 0.48f, 1.00f})
+		: (darkTheme ? Color{0.38f, 0.06f, 0.06f, 1.00f} : Color{0.72f, 0.15f, 0.15f, 1.00f});
 
 	Warning        = darkTheme ? Color{0.70f, 0.50f, 0.00f, 1.00f} : Color{0.90f, 0.65f, 0.08f, 1.00f};
 	WarningHovered = darkTheme ? Color{0.80f, 0.60f, 0.00f, 1.00f} : Color{1.00f, 0.75f, 0.18f, 1.00f};
-	WarningActive  = darkTheme ? Color{0.55f, 0.38f, 0.00f, 1.00f} : Color{0.78f, 0.54f, 0.04f, 1.00f};
+	WarningActive  = lighterOnActive
+		? (darkTheme ? Color{0.92f, 0.72f, 0.04f, 1.00f} : Color{1.00f, 0.86f, 0.30f, 1.00f})
+		: (darkTheme ? Color{0.55f, 0.38f, 0.00f, 1.00f} : Color{0.78f, 0.54f, 0.04f, 1.00f});
 
 	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
 
 	Accent        = darkTheme ? Color{0.10f, 0.30f, 0.70f, 1.00f} : Color{0.15f, 0.45f, 0.90f, 1.00f};
 	AccentHovered = darkTheme ? Color{0.15f, 0.40f, 0.85f, 1.00f} : Color{0.25f, 0.55f, 1.00f, 1.00f};
-	AccentActive  = darkTheme ? Color{0.07f, 0.22f, 0.55f, 1.00f} : Color{0.10f, 0.35f, 0.75f, 1.00f};
+	AccentActive  = lighterOnActive
+		? (darkTheme ? Color{0.20f, 0.52f, 1.00f, 1.00f} : Color{0.36f, 0.67f, 1.00f, 1.00f})
+		: (darkTheme ? Color{0.07f, 0.22f, 0.55f, 1.00f} : Color{0.10f, 0.35f, 0.75f, 1.00f});
 
 	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
 
@@ -146,7 +156,7 @@ void OvUI::Styling::Style::ApplyImClassicStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsClassic(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults(true);
+	SetSemanticDefaults(true, true);
 }
 
 void OvUI::Styling::Style::ApplyImDarkStyle()
@@ -154,7 +164,7 @@ void OvUI::Styling::Style::ApplyImDarkStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsDark(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults(true);
+	SetSemanticDefaults(true, true);
 }
 
 void OvUI::Styling::Style::ApplyImLightStyle()
@@ -162,7 +172,7 @@ void OvUI::Styling::Style::ApplyImLightStyle()
 	ImGuiStyle tmp;
 	ImGui::StyleColorsLight(&tmp);
 	PopulateFromImGuiStyle(tmp);
-	SetSemanticDefaults(false);
+	SetSemanticDefaults(false, true);
 }
 
 void OvUI::Styling::Style::ApplyDuneDarkStyle()
@@ -179,7 +189,7 @@ void OvUI::Styling::Style::ApplyDuneDarkStyle()
 	BorderShadow         = { 0.92f, 0.91f, 0.88f, 0.00f };
 	FrameBg              = { 0.10f, 0.09f, 0.12f, 1.00f };
 	FrameBgHovered       = { 0.24f, 0.23f, 0.29f, 1.00f };
-	FrameBgActive        = { 0.56f, 0.56f, 0.58f, 1.00f };
+	FrameBgActive        = { 0.07f, 0.06f, 0.09f, 1.00f };
 	TitleBg              = { 0.10f, 0.09f, 0.12f, 1.00f };
 	TitleBgCollapsed     = { 0.30f, 0.30f, 0.30f, 0.75f };
 	TitleBgActive        = { 0.07f, 0.07f, 0.09f, 1.00f };
@@ -193,7 +203,7 @@ void OvUI::Styling::Style::ApplyDuneDarkStyle()
 	SliderGrabActive     = { 0.06f, 0.05f, 0.07f, 1.00f };
 	Button               = { 0.10f, 0.09f, 0.12f, 1.00f };
 	ButtonHovered        = { 0.24f, 0.23f, 0.29f, 1.00f };
-	ButtonActive         = { 0.56f, 0.56f, 0.58f, 1.00f };
+	ButtonActive         = { 0.07f, 0.06f, 0.09f, 1.00f };
 	Header               = { 0.10f, 0.09f, 0.12f, 1.00f };
 	HeaderHovered        = { 0.56f, 0.56f, 0.58f, 1.00f };
 	HeaderActive         = { 0.06f, 0.05f, 0.07f, 1.00f };
@@ -222,6 +232,9 @@ void OvUI::Styling::Style::ApplyDuneDarkStyle()
 	ScrollbarRounding= 9.0f;
 	GrabMinSize      = 5.0f;
 	GrabRounding     = 3.0f;
+
+	// Override semantics inherited from ApplyImDarkStyle() — this is a custom style.
+	SetSemanticDefaults(true, false);
 }
 
 void OvUI::Styling::Style::ApplyDefaultDarkStyle()
@@ -235,7 +248,7 @@ void OvUI::Styling::Style::ApplyDefaultDarkStyle()
 	BorderShadow                = { 0.00f, 0.00f, 0.00f, 0.00f };
 	FrameBg                     = { 0.12f, 0.12f, 0.13f, 1.00f };
 	FrameBgHovered              = { 0.20f, 0.20f, 0.22f, 1.00f };
-	FrameBgActive               = { 0.27f, 0.27f, 0.29f, 1.00f };
+	FrameBgActive               = { 0.08f, 0.08f, 0.09f, 1.00f };
 	TitleBg                     = { 0.07f, 0.07f, 0.07f, 1.00f };
 	TitleBgActive               = { 0.07f, 0.07f, 0.07f, 1.00f };
 	TitleBgCollapsed            = { 0.07f, 0.07f, 0.07f, 1.00f };
@@ -249,10 +262,10 @@ void OvUI::Styling::Style::ApplyDefaultDarkStyle()
 	SliderGrabActive            = { 0.59f, 0.59f, 0.61f, 1.00f };
 	Button                      = { 0.20f, 0.20f, 0.22f, 1.00f };
 	ButtonHovered               = { 0.44f, 0.44f, 0.47f, 1.00f };
-	ButtonActive                = { 0.59f, 0.59f, 0.61f, 1.00f };
+	ButtonActive                = { 0.13f, 0.13f, 0.14f, 1.00f };
 	Header                      = { 0.20f, 0.20f, 0.22f, 1.00f };
 	HeaderHovered               = { 0.44f, 0.44f, 0.47f, 1.00f };
-	HeaderActive                = { 0.59f, 0.59f, 0.61f, 1.00f };
+	HeaderActive                = { 0.13f, 0.13f, 0.14f, 1.00f };
 	Separator                   = { 1.00f, 1.00f, 1.00f, 0.20f };
 	SeparatorHovered            = { 0.44f, 0.44f, 0.47f, 0.39f };
 	SeparatorActive             = { 0.44f, 0.44f, 0.47f, 0.59f };
@@ -320,8 +333,8 @@ void OvUI::Styling::Style::ApplyEvenDarkerStyle()
 	Border                      = { 0.06f, 0.07f, 0.08f, 1.00f };
 	BorderShadow                = { 0.00f, 0.00f, 0.00f, 0.00f };
 	FrameBg                     = { 0.12f, 0.12f, 0.13f, 1.00f };
-	FrameBgHovered              = { 0.12f, 0.12f, 0.13f, 1.00f };
-	FrameBgActive               = { 0.12f, 0.12f, 0.13f, 1.00f };
+	FrameBgHovered              = { 0.20f, 0.20f, 0.22f, 1.00f };
+	FrameBgActive               = { 0.08f, 0.08f, 0.09f, 1.00f };
 	TitleBg                     = { 0.01f, 0.02f, 0.03f, 1.00f };
 	TitleBgActive               = { 0.01f, 0.02f, 0.03f, 1.00f };
 	TitleBgCollapsed            = { 0.01f, 0.02f, 0.03f, 1.00f };
@@ -335,10 +348,10 @@ void OvUI::Styling::Style::ApplyEvenDarkerStyle()
 	SliderGrabActive            = { 0.59f, 0.59f, 0.61f, 1.00f };
 	Button                      = { 0.20f, 0.20f, 0.22f, 1.00f };
 	ButtonHovered               = { 0.44f, 0.44f, 0.47f, 1.00f };
-	ButtonActive                = { 0.59f, 0.59f, 0.61f, 1.00f };
+	ButtonActive                = { 0.13f, 0.13f, 0.14f, 1.00f };
 	Header                      = { 0.10f, 0.10f, 0.11f, 1.00f };
 	HeaderHovered               = { 0.15f, 0.15f, 0.17f, 1.00f };
-	HeaderActive                = { 0.20f, 0.20f, 0.22f, 1.00f };
+	HeaderActive                = { 0.06f, 0.06f, 0.07f, 1.00f };
 	Separator                   = { 1.00f, 1.00f, 1.00f, 0.20f };
 	SeparatorHovered            = { 0.44f, 0.44f, 0.47f, 0.39f };
 	SeparatorActive             = { 0.44f, 0.44f, 0.47f, 0.59f };

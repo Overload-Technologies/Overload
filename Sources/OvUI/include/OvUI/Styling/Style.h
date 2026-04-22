@@ -171,6 +171,8 @@ namespace OvUI::Styling
 		void PopulateFromImGuiStyle(const struct ImGuiStyle& p_style);
 
 		// Sets semantic colors. Pass darkTheme=true for dark backgrounds, false for light.
-		void SetSemanticDefaults(bool darkTheme);
+		// Pass lighterOnActive=true to match ImGui built-in styles (active brighter than hover),
+		// or false (default) for custom styles (active darker than base).
+		void SetSemanticDefaults(bool darkTheme, bool lighterOnActive = false);
 	};
 }

@@ -19,14 +19,15 @@ namespace OvUI::Widgets::InputFields
 	class InputText;
 }
 
+namespace OvUI::Widgets::Layout
+{
+	class TextLogs;
+}
+
 namespace OvEditor::Panels
 {
-	class ConsoleContentWidget;
-
 	class Console : public OvUI::Panels::PanelWindow
 	{
-		friend class ConsoleContentWidget;
-
 	public:
 		Console
 		(
@@ -61,23 +62,21 @@ namespace OvEditor::Panels
 		void SetShowErrorLogs(bool p_value);
 		void SetCollapseIdenticalLogs(bool p_value);
 		void RebuildVisibleLogs();
-		void DrawContent();
-		void DrawLogList();
+		void RefreshDisplayedLogs();
 		bool MatchesSearch(const LogEntry& p_logEntry) const;
-		float CalculateLogHeight(const std::string& p_message) const;
 
 	private:
 		std::vector<LogEntry> m_logs;
 		std::vector<VisibleLogEntry> m_visibleLogs;
 
 		OvUI::Widgets::InputFields::InputText* m_searchField = nullptr;
+		OvUI::Widgets::Layout::TextLogs* m_logsWidget = nullptr;
 
 		bool m_clearOnPlay = true;
 		bool m_showDefaultLog = true;
 		bool m_showInfoLog = true;
 		bool m_showWarningLog = true;
 		bool m_showErrorLog = true;
-		bool m_collapseIdenticalLogs = true;
-		bool m_requestScrollToBottom = false;
+		bool m_collapseIdenticalLogs = false;
 	};
 }

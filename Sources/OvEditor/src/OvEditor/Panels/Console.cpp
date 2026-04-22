@@ -6,12 +6,9 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cfloat>
 #include <functional>
 #include <string>
 #include <unordered_map>
-
-#include <imgui.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -19,10 +16,11 @@
 #include <OvEditor/Panels/Console.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
-#include <OvUI/Widgets/AWidget.h>
+#include <OvUI/Types/Color.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Layout/Group.h>
+#include <OvUI/Widgets/Layout/TextLogs.h>
 #include <OvUI/Widgets/Selection/CheckBox.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 
@@ -62,7 +60,7 @@ namespace
 		return result;
 	}
 
-	ImVec4 GetLogLevelColor(OvDebug::ELogLevel p_logLevel)
+	OvUI::Types::Color GetLogLevelColor(OvDebug::ELogLevel p_logLevel)
 	{
 		switch (p_logLevel)
 		{
@@ -72,44 +70,8 @@ namespace
 		case OvDebug::ELogLevel::LOG_ERROR: return { 1.00f, 0.35f, 0.35f, 1.0f };
 		}
 
-		return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+		return OvUI::Types::Color::White;
 	}
-
-	ImU32 GetRowBackgroundColor(int p_index)
-	{
-		const ImVec4 base = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
-		const float brightnessOffset = p_index % 2 == 0 ? 0.03f : 0.08f;
-		const ImVec4 tinted
-		{
-			std::min(base.x + brightnessOffset, 1.0f),
-			std::min(base.y + brightnessOffset, 1.0f),
-			std::min(base.z + brightnessOffset, 1.0f),
-			0.35f
-		};
-
-		return ImGui::GetColorU32(tinted);
-	}
-
-}
-
-namespace OvEditor::Panels
-{
-	class ConsoleContentWidget : public OvUI::Widgets::AWidget
-	{
-	public:
-		explicit ConsoleContentWidget(Console& p_console) : m_console(p_console)
-		{
-		}
-
-	private:
-		void _Draw_Impl() override
-		{
-			m_console.DrawContent();
-		}
-
-	private:
-		Console& m_console;
-	};
 }
 
 using namespace OvUI::Widgets;
@@ -151,14 +113,16 @@ OvEditor::Panels::Console::Console
 		return 0u;
 	}();
 
-	m_searchField = &OvCore::Helpers::GUIDrawer::DrawSearchBar(*this, searchIconID);
+	m_searchField = &OvCore::Helpers::GUIDrawer::DrawSearchBar(toolbar, searchIconID);
+	toolbar.stretchWidget = 7;
 	m_searchField->ContentChangedEvent += [this](const std::string&)
 	{
 		FilterLogs();
 	};
 
 	CreateWidget<Visual::Separator>();
-	CreateWidget<ConsoleContentWidget>(*this).SetID("console-content");
+	m_logsWidget = &CreateWidget<Layout::TextLogs>();
+	m_logsWidget->SetID("console-log-list");
 
 	EDITOR_EVENT(PlayEvent) += std::bind(&Console::ClearOnPlay, this);
 	OvDebug::Logger::LogEvent += std::bind(&Console::OnLogIntercepted, this, std::placeholders::_1);
@@ -167,10 +131,8 @@ OvEditor::Panels::Console::Console
 void OvEditor::Panels::Console::OnLogIntercepted(const OvDebug::LogData& p_logData)
 {
 	m_logs.push_back({ p_logData });
-
+	m_logsWidget->RequestScrollToBottom();
 	TruncateLogs();
-	RebuildVisibleLogs();
-	m_requestScrollToBottom = true;
 }
 
 void OvEditor::Panels::Console::ClearOnPlay()
@@ -183,12 +145,13 @@ void OvEditor::Panels::Console::Clear()
 {
 	m_logs.clear();
 	m_visibleLogs.clear();
-	m_requestScrollToBottom = false;
+	RefreshDisplayedLogs();
 }
 
 void OvEditor::Panels::Console::FilterLogs()
 {
 	RebuildVisibleLogs();
+	RefreshDisplayedLogs();
 }
 
 bool OvEditor::Panels::Console::IsAllowedByFilter(OvDebug::ELogLevel p_logLevel) const
@@ -208,6 +171,9 @@ void OvEditor::Panels::Console::TruncateLogs()
 {
 	while (m_logs.size() > static_cast<size_t>(Settings::EditorSettings::ConsoleMaxLogs.Get()))
 		m_logs.erase(m_logs.begin());
+
+	RebuildVisibleLogs();
+	RefreshDisplayedLogs();
 }
 
 void OvEditor::Panels::Console::SetShowDefaultLogs(bool p_value)
@@ -285,123 +251,25 @@ void OvEditor::Panels::Console::RebuildVisibleLogs()
 	}
 }
 
-void OvEditor::Panels::Console::DrawContent()
+void OvEditor::Panels::Console::RefreshDisplayedLogs()
 {
-	DrawLogList();
-}
+	m_logsWidget->entries.clear();
+	m_logsWidget->entries.reserve(m_visibleLogs.size());
+	m_logsWidget->emptyText = m_logs.empty() ? "No logs yet." : "No logs match the current filters.";
 
-void OvEditor::Panels::Console::DrawLogList()
-{
-	if (!ImGui::BeginChild("##console-log-list", ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar))
+	for (const auto& visibleEntry : m_visibleLogs)
 	{
-		ImGui::EndChild();
-		return;
+		const auto& logEntry = m_logs[visibleEntry.latestRawIndex];
+		m_logsWidget->entries.push_back({
+			FormatLogDate(logEntry.data.date),
+			logEntry.data.message,
+			GetLogLevelColor(logEntry.data.logLevel),
+			visibleEntry.count
+		});
 	}
-
-	if (m_visibleLogs.empty())
-	{
-		ImGui::TextDisabled("%s", m_logs.empty() ? "No logs yet." : "No logs match the current filters.");
-		ImGui::EndChild();
-		return;
-	}
-
-	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(2.0f, 2.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2.0f, 1.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.0f, 2.0f));
-	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(0, 0, 0, 0));
-	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(0, 0, 0, 0));
-	ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
-
-	constexpr ImGuiTableFlags tableFlags =
-		ImGuiTableFlags_SizingStretchProp |
-		ImGuiTableFlags_NoSavedSettings |
-		ImGuiTableFlags_NoPadOuterX |
-		ImGuiTableFlags_NoPadInnerX;
-
-	if (ImGui::BeginTable("##console-table", 2, tableFlags))
-	{
-		ImGui::TableSetupColumn("Log", ImGuiTableColumnFlags_WidthStretch);
-		ImGui::TableSetupColumn("Count", ImGuiTableColumnFlags_WidthFixed, 40.0f);
-
-		for (size_t index = 0; index < m_visibleLogs.size(); ++index)
-		{
-			const auto& visibleEntry = m_visibleLogs[index];
-			const auto& logEntry = m_logs[visibleEntry.latestRawIndex];
-			const std::string timestamp = FormatLogDate(logEntry.data.date);
-			const float rowHeight = CalculateLogHeight(logEntry.data.message);
-
-			ImGui::TableNextRow(ImGuiTableRowFlags_None, rowHeight);
-			ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, GetRowBackgroundColor(static_cast<int>(index)));
-
-			ImGui::TableSetColumnIndex(0);
-
-			std::string rowBuffer = logEntry.data.message;
-			rowBuffer.push_back('\0');
-
-			ImGui::PushID(static_cast<int>(visibleEntry.latestRawIndex));
-			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-			ImGui::TextUnformatted(timestamp.c_str());
-			ImGui::PopStyleColor();
-
-			ImGui::PushStyleColor(ImGuiCol_Text, GetLogLevelColor(logEntry.data.logLevel));
-			ImGui::SetNextItemWidth(-FLT_MIN);
-			ImGui::InputTextMultiline(
-				"##log-line",
-				rowBuffer.data(),
-				static_cast<int>(rowBuffer.size()),
-				ImVec2(-FLT_MIN, rowHeight - ImGui::GetTextLineHeightWithSpacing() + 2.0f),
-				ImGuiInputTextFlags_ReadOnly
-			);
-			ImGui::PopStyleColor();
-
-			ImGui::TableSetColumnIndex(1);
-			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 1.0f);
-			if (visibleEntry.count > 1)
-			{
-				const std::string badge = '(' + std::to_string(visibleEntry.count) + ')';
-				const float badgeWidth = ImGui::CalcTextSize(badge.c_str()).x;
-				const float cursorX = ImGui::GetCursorPosX() + std::max(0.0f, ImGui::GetColumnWidth() - badgeWidth - ImGui::GetStyle().CellPadding.x * 2.0f);
-				ImGui::SetCursorPosX(cursorX);
-				ImGui::TextDisabled("%s", badge.c_str());
-			}
-
-			ImGui::PopID();
-		}
-
-		ImGui::EndTable();
-	}
-
-	if (m_requestScrollToBottom)
-	{
-		ImGui::SetScrollY(ImGui::GetScrollMaxY());
-		m_requestScrollToBottom = false;
-	}
-
-	ImGui::PopStyleColor(4);
-	ImGui::PopStyleVar(4);
-
-	ImGui::EndChild();
 }
 
 bool OvEditor::Panels::Console::MatchesSearch(const LogEntry& p_logEntry) const
 {
 	return !m_searchField || ContainsCaseInsensitive(p_logEntry.data.message, m_searchField->content);
-}
-
-float OvEditor::Panels::Console::CalculateLogHeight(const std::string& p_message) const
-{
-	size_t lineCount = 1;
-	for (char character : p_message)
-	{
-		if (character == '\n')
-			++lineCount;
-	}
-
-	const float lineHeight = ImGui::GetTextLineHeight();
-	const float verticalPadding = ImGui::GetStyle().FramePadding.y * 2.0f;
-	const float timestampHeight = ImGui::GetTextLineHeightWithSpacing();
-	const float messageHeight = lineCount * lineHeight + verticalPadding + 2.0f;
-	return std::max(timestampHeight + lineHeight + verticalPadding, timestampHeight + messageHeight);
 }

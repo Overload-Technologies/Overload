@@ -14,7 +14,11 @@
 
 void OvUI::Widgets::Layout::TextLogs::_Draw_Impl()
 {
-	if (!ImGui::BeginChild(("text_logs" + m_widgetID).c_str(), ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar))
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	const bool childVisible = ImGui::BeginChild(("text_logs" + m_widgetID).c_str(), ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::PopStyleVar();
+
+	if (!childVisible)
 	{
 		ImGui::EndChild();
 		return;

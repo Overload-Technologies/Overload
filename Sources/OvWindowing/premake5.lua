@@ -17,9 +17,9 @@ project "OvWindowing"
 	includedirs {
 		-- Dependencies
 		dependdir .. "glfw/include",
-		dependdir .. "stb_image/include",
 
 		-- Overload SDK
+		"%{wks.location}/Sources/OvRendering/include",
 		"%{wks.location}/Sources/OvTools/include",
 
 		-- Current Project

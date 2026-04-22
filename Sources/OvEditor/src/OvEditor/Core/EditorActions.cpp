@@ -475,17 +475,51 @@ void OvEditor::Core::EditorActions::BuildAtLocation(
 
 							if (const std::string windowIconPath = m_context.projectSettings.GetOrDefault("window_icon", std::string{}); !windowIconPath.empty())
 							{
-								if (const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) }; std::filesystem::exists(windowIconRealPath))
+								const std::filesystem::path windowIconRealPath{ GetRealPath(windowIconPath) };
+
+								if (!std::filesystem::exists(windowIconRealPath))
 								{
-									if (OvRendering::Data::Image iconImage{ windowIconRealPath }; iconImage && !iconImage.isHDR)
+									OVLOG_WARNING(
+										std::format(
+											"Window icon \"{}\" was not found. Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else if (OvRendering::Data::Image iconImage{ windowIconRealPath }; !iconImage)
+								{
+									OVLOG_WARNING(
+										std::format(
+											"Failed to load window icon \"{}\". Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else if (iconImage.isHDR)
+								{
+									OVLOG_WARNING(
+										std::format(
+											"Window icon \"{}\" is HDR and cannot be used for executable icons. Keeping default executable icon.",
+											windowIconRealPath.string()
+										)
+									);
+								}
+								else
+								{
+									const size_t iconByteCount = static_cast<size_t>(iconImage.width) * static_cast<size_t>(iconImage.height) * 4u;
+									const auto iconBytes = std::span<const uint8_t>{ static_cast<const uint8_t*>(iconImage.data), iconByteCount };
+									if (!OvTools::Utils::SystemCalls::SetExecutableIcon(
+										p_buildPath / executableName,
+										iconBytes,
+										static_cast<uint32_t>(iconImage.width),
+										static_cast<uint32_t>(iconImage.height)
+									))
 									{
-										const size_t iconByteCount = static_cast<size_t>(iconImage.width) * static_cast<size_t>(iconImage.height) * 4u;
-										const auto iconBytes = std::span<const uint8_t>{ static_cast<const uint8_t*>(iconImage.data), iconByteCount };
-										OvTools::Utils::SystemCalls::SetExecutableIcon(
-											p_buildPath / executableName,
-											iconBytes,
-											static_cast<uint32_t>(iconImage.width),
-											static_cast<uint32_t>(iconImage.height)
+										OVLOG_WARNING(
+											std::format(
+												"Failed to apply executable icon from \"{}\". Keeping default executable icon.",
+												windowIconRealPath.string()
+											)
 										);
 									}
 								}

@@ -53,10 +53,10 @@ project "OvEditor"
 		"OvGame", -- Necessary to be built before the editor to allow building
 		"OvMaths",
 		"OvPhysics",
-		"OvRendering",
-		"OvTools",
 		"OvUI",
 		"OvWindowing",
+		"OvRendering",
+		"OvTools",
 
 		-- Dependencies that others depend on - must come after
 		"assimp",

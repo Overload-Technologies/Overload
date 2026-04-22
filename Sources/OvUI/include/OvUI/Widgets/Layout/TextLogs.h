@@ -15,6 +15,9 @@
 
 namespace OvUI::Widgets::Layout
 {
+	/**
+	* Widget used to display a scrollable list of selectable text logs
+	*/
 	class TextLogs : public AWidget
 	{
 	public:
@@ -35,6 +38,10 @@ namespace OvUI::Widgets::Layout
 		static float CalculateRowHeight(const std::string& p_message);
 
 	public:
+		/**
+		* Request a scroll-to-bottom over a few frames to handle the first overflow frame correctly
+		* @param p_frames
+		*/
 		void RequestScrollToBottom(uint8_t p_frames = 2);
 
 		std::vector<Entry> entries;

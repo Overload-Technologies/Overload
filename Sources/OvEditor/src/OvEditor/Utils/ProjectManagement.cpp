@@ -174,11 +174,6 @@ namespace OvEditor::Utils::ProjectManagement
 				return false;
 			}
 
-			if (!std::filesystem::create_directory(p_projectPath / "Scripts"))
-			{
-				return false;
-			}
-
 			const auto projectFile = p_projectPath / std::format("{}.ovproject", p_projectPath.stem().string());
 
 			std::ofstream{ projectFile };

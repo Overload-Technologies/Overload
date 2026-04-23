@@ -308,7 +308,11 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 
 				m_targetActor->AddBehaviour(scriptPath);
 			},
-			true, false
+			true, false,
+			[this](const std::string& p_resourcePath) {
+				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(p_resourcePath));
+				return !m_targetActor->GetBehaviour(scriptPath);
+			}
 		);
 
 		items.Add({

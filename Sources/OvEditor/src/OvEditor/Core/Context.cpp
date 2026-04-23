@@ -196,7 +196,7 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<int>("y_resolution", 720);
 	projectSettings.Add<bool>("fullscreen", false);
 	projectSettings.Add<std::string>("executable_name", "Game");
-	projectSettings.Add<std::string>("start_scene", "Scene.ovscene");
+	projectSettings.Add<std::string>("start_scene", "");
 	projectSettings.Add<bool>("vsync", true);
 	projectSettings.Add<bool>("multisampling", false);
 	projectSettings.Add<int>("samples", 4);

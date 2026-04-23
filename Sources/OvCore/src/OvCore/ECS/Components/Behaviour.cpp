@@ -64,9 +64,7 @@ void OvCore::ECS::Components::Behaviour::SetScript(std::unique_ptr<Scripting::Sc
 
 	if (!m_script || !m_script->IsValid())
 	{
-		m_scriptProperties.clear();
 		m_scriptDefaults.clear();
-		m_unlockedProperties.clear();
 		return;
 	}
 
@@ -180,6 +178,7 @@ void OvCore::ECS::Components::Behaviour::OnTriggerExit(Components::CPhysicalObje
 void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
 	if (m_unlockedProperties.empty()) return;
+	if (!m_script->IsValid()) return;
 
 	tinyxml2::XMLNode* propsNode = p_doc.NewElement("script_properties");
 	p_node->InsertEndChild(propsNode);

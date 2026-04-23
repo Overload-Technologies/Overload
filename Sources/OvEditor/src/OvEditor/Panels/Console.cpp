@@ -129,6 +129,8 @@ OvEditor::Panels::Console::Console
 	CreateWidget<Visual::Separator>();
 	m_logsWidget = &CreateWidget<Layout::TextLogs>();
 	m_logsWidget->SetID("console-log-list");
+	m_logsWidget->emptyText = "No logs yet.";
+	m_defaultLogEmptyText = m_logsWidget->emptyText;
 
 	EDITOR_EVENT(PlayEvent) += [this]
 	{
@@ -271,7 +273,7 @@ void OvEditor::Panels::Console::RefreshDisplayedLogs()
 {
 	m_logsWidget->entries.clear();
 	m_logsWidget->entries.reserve(m_visibleLogs.size());
-	m_logsWidget->emptyText = m_logs.empty() ? "No logs yet." : "No logs match the current filters.";
+	m_logsWidget->emptyText = m_logs.empty() ? m_defaultLogEmptyText : "No logs match the current filters.";
 
 	for (const auto& visibleEntry : m_visibleLogs)
 	{

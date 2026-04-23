@@ -109,5 +109,7 @@ namespace OvEditor::Panels
 		bool m_showWarningLog = true;
 		bool m_showErrorLog = true;
 		bool m_collapseIdenticalLogs = false;
+
+		std::string m_defaultLogEmptyText;
 	};
 }

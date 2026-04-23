@@ -64,6 +64,7 @@ namespace OvEditor::Panels
 		void OnSceneDropped(const std::string& p_path);
 		void OnModelDropped(const std::string& p_path);
 		void OnMaterialDropped(const std::string& p_path);
+		void OnPrefabDropped(const std::string& p_path);
 
 	private:
 		OvCore::SceneSystem::SceneManager& m_sceneManager;

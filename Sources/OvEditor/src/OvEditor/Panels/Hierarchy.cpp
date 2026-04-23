@@ -32,6 +32,8 @@
 #include <OvCore/ECS/Components/CAudioListener.h>
 
 #include <OvUI/Plugins/ContextualMenu.h>
+#include <OvWindowing/Dialogs/MessageBox.h>
+#include <OvWindowing/Dialogs/SaveFileDialog.h>
 
 #include "OvEditor/Core/EditorResources.h"
 #include "OvEditor/Utils/ActorCreationMenu.h"
@@ -72,6 +74,39 @@ public:
 			pasteButton.ClickedEvent += [this]
 			{
 				EDITOR_EXEC(DelayAction(EDITOR_BIND(PasteActor, m_target), 0));
+			};
+			
+			auto& saveAsPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Save as Prefab...");
+			saveAsPrefabButton.ClickedEvent += [this]
+			{
+				OvWindowing::Dialogs::SaveFileDialog dialog("Save Prefab");
+				const auto initialPath = EDITOR_CONTEXT(projectAssetsPath) / m_target->GetName();
+				dialog.SetInitialDirectory(initialPath.string());
+				dialog.DefineExtension("Overload Prefab", ".ovprefab");
+				dialog.Show();
+
+				if (!dialog.HasSucceeded())
+				{
+					return;
+				}
+
+				if (dialog.IsFileExisting())
+				{
+					OvWindowing::Dialogs::MessageBox message(
+						"File already exists!",
+						"The file \"" + dialog.GetSelectedFileName() + "\" already exists.\n\nOverwriting this file will replace the previous prefab content.\n\nAre you ok with that?",
+						OvWindowing::Dialogs::MessageBox::EMessageType::WARNING,
+						OvWindowing::Dialogs::MessageBox::EButtonLayout::YES_NO,
+						true
+					);
+
+					if (message.GetUserAction() != OvWindowing::Dialogs::MessageBox::EUserAction::YES)
+					{
+						return;
+					}
+				}
+
+				EDITOR_EXEC(SaveActorAsPrefab(*m_target, dialog.GetSelectedFilePath()));
 			};
 
 			auto& deleteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");

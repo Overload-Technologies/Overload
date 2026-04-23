@@ -40,6 +40,7 @@
 #include <OvEditor/Panels/SceneView.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
+#include <OvEditor/Utils/PrefabOperations.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -143,6 +144,7 @@ namespace
 			}
 		);
 	}
+
 }
 
 std::string OvEditor::Core::GetBuildTypeName(OvEditor::Core::EBuildType p_buildType)
@@ -882,6 +884,46 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 		DuplicateActor(*child, &newActor, false);
 }
 
+void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor, const std::string& p_path)
+{
+	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
+	{
+		OVLOG_ERROR("Failed to save prefab to: " + p_path);
+		return;
+	}
+
+	OVLOG_INFO("Prefab saved to: " + p_path);
+}
+
+OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::string& p_path)
+{
+	if (!m_context.sceneManager.GetCurrentScene())
+	{
+		return nullptr;
+	}
+
+	const std::filesystem::path realPath = GetRealPath(p_path);
+
+	auto* instantiatedRoot = OvEditor::Utils::PrefabOperations::InstantiateFromFile(
+		realPath,
+		[this]() -> OvCore::ECS::Actor&
+		{
+			return CreateEmptyActor(false);
+		}
+	);
+
+	if (instantiatedRoot)
+	{
+		OVLOG_INFO("Prefab instantiated: " + realPath.string());
+	}
+	else
+	{
+		OVLOG_ERROR("Failed to instantiate prefab from: " + realPath.string());
+	}
+
+	return instantiatedRoot;
+}
+
 void OvEditor::Core::EditorActions::CopyActor(OvCore::ECS::Actor& p_actor)
 {
 	m_context.copyBuffer = Context::ActorCopyBuffer{
@@ -1366,6 +1408,7 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 		const auto newRelPath = (std::filesystem::path("Scripts") / scriptName).generic_string();
 
 		PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::PREFAB);
 	}
 
 	OVLOG_INFO("Scene files updated with new script paths");
@@ -1525,6 +1568,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		if (next != "?")
 		{
 			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::SCENE);
+			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::PREFAB);
 		}
 
 		EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
@@ -1532,9 +1576,11 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	}
 	case OvTools::Utils::PathParser::EFileType::MATERIAL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	case OvTools::Utils::PathParser::EFileType::MODEL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SHADER:
@@ -1545,6 +1591,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	default:
 		break;

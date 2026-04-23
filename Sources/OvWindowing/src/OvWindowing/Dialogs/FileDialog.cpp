@@ -40,9 +40,6 @@ void OvWindowing::Dialogs::FileDialog::Show(EExplorerFlags p_flags)
 #ifdef _WIN32
 	OPENFILENAME ofn;
 
-	if (!m_initialDirectory.empty())
-		m_filepath = m_initialDirectory;
-
 	if (!m_initialFilename.empty())
 		m_filepath = (std::filesystem::path{ m_initialDirectory } / m_initialFilename).string();
 

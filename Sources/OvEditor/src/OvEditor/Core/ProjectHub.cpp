@@ -65,12 +65,12 @@ namespace OvEditor::Core
 
 			_UpdateGoButton({});
 
-			openProjectButton.backgroundColor = OVUI_STYLE(Warning);
-			openProjectButton.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
-			openProjectButton.clickedBackgroundColor = OVUI_STYLE(WarningActive);
-			newProjectButton.backgroundColor = OVUI_STYLE(Success);
-			newProjectButton.hoveredBackgroundColor = OVUI_STYLE(SuccessHovered);
-			newProjectButton.clickedBackgroundColor = OVUI_STYLE(SuccessActive);
+			openProjectButton.backgroundColor = OVUI_STYLE(WarningButton);
+			openProjectButton.hoveredBackgroundColor = OVUI_STYLE(WarningButtonHovered);
+			openProjectButton.clickedBackgroundColor = OVUI_STYLE(WarningButtonActive);
+			newProjectButton.backgroundColor = OVUI_STYLE(SuccessButton);
+			newProjectButton.hoveredBackgroundColor = OVUI_STYLE(SuccessButtonHovered);
+			newProjectButton.clickedBackgroundColor = OVUI_STYLE(SuccessButtonActive);
 
 			openProjectButton.ClickedEvent += [this] {
 				OvWindowing::Dialogs::OpenFileDialog dialog("Open project");
@@ -141,12 +141,12 @@ namespace OvEditor::Core
 				auto& openButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Open");
 				auto& deleteButton = actions.CreateWidget<OvUI::Widgets::Buttons::Button>("Delete");
 
-				openButton.backgroundColor = OVUI_STYLE(Warning);
-				openButton.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
-				openButton.clickedBackgroundColor = OVUI_STYLE(WarningActive);
-				deleteButton.backgroundColor = OVUI_STYLE(Danger);
-				deleteButton.hoveredBackgroundColor = OVUI_STYLE(DangerHovered);
-				deleteButton.clickedBackgroundColor = OVUI_STYLE(DangerActive);
+				openButton.backgroundColor = OVUI_STYLE(WarningButton);
+				openButton.hoveredBackgroundColor = OVUI_STYLE(WarningButtonHovered);
+				openButton.clickedBackgroundColor = OVUI_STYLE(WarningButtonActive);
+				deleteButton.backgroundColor = OVUI_STYLE(DangerButton);
+				deleteButton.hoveredBackgroundColor = OVUI_STYLE(DangerButtonHovered);
+				deleteButton.clickedBackgroundColor = OVUI_STYLE(DangerButtonActive);
 
 				openButton.ClickedEvent += [this, &text, &actions, project] {
 					if (!_TryFinish({ project }))
@@ -183,9 +183,9 @@ namespace OvEditor::Core
 		void _UpdateGoButton(const std::string& p_path)
 		{
 			const bool validPath = !p_path.empty();
-			m_goButton->backgroundColor = validPath ? OVUI_STYLE(Success) : OVUI_STYLE(Button);
-			m_goButton->hoveredBackgroundColor = validPath ? OVUI_STYLE(SuccessHovered) : OVUI_STYLE(ButtonHovered);
-			m_goButton->clickedBackgroundColor = validPath ? OVUI_STYLE(SuccessActive) : OVUI_STYLE(ButtonActive);
+			m_goButton->backgroundColor = validPath ? OVUI_STYLE(SuccessButton) : OVUI_STYLE(Button);
+			m_goButton->hoveredBackgroundColor = validPath ? OVUI_STYLE(SuccessButtonHovered) : OVUI_STYLE(ButtonHovered);
+			m_goButton->clickedBackgroundColor = validPath ? OVUI_STYLE(SuccessButtonActive) : OVUI_STYLE(ButtonActive);
 			m_goButton->disabled = !validPath;
 		}
 

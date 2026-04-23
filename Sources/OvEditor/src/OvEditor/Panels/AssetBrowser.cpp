@@ -915,22 +915,22 @@ OvEditor::Panels::AssetBrowser::AssetBrowser
 	auto& refreshButton = CreateWidget<Buttons::Button>("Refresh");
 	refreshButton.ClickedEvent += std::bind(&AssetBrowser::Refresh, this);
 	refreshButton.lineBreak = false;
-	refreshButton.backgroundColor = OVUI_STYLE(Success);
-	refreshButton.hoveredBackgroundColor = OVUI_STYLE(SuccessHovered);
-	refreshButton.clickedBackgroundColor = OVUI_STYLE(SuccessActive);
+	refreshButton.backgroundColor = OVUI_STYLE(SuccessButton);
+	refreshButton.hoveredBackgroundColor = OVUI_STYLE(SuccessButtonHovered);
+	refreshButton.clickedBackgroundColor = OVUI_STYLE(SuccessButtonActive);
 
 	auto& importButton = CreateWidget<Buttons::Button>("Import Asset");
 	importButton.ClickedEvent += EDITOR_BIND(ImportAsset, EDITOR_CONTEXT(projectAssetsPath).string());
-	importButton.backgroundColor = OVUI_STYLE(Warning);
-	importButton.hoveredBackgroundColor = OVUI_STYLE(WarningHovered);
-	importButton.clickedBackgroundColor = OVUI_STYLE(WarningActive);
+	importButton.backgroundColor = OVUI_STYLE(WarningButton);
+	importButton.hoveredBackgroundColor = OVUI_STYLE(WarningButtonHovered);
+	importButton.clickedBackgroundColor = OVUI_STYLE(WarningButtonActive);
 	importButton.lineBreak = false;
 
 	auto& codeEditorButton = CreateWidget<Buttons::Button>("Open Code Editor");
 	codeEditorButton.ClickedEvent += [this] { EDITOR_EXEC(OpenInCodeEditor(EDITOR_CONTEXT(projectFolder))); };
-	codeEditorButton.backgroundColor = OVUI_STYLE(Accent);
-	codeEditorButton.hoveredBackgroundColor = OVUI_STYLE(AccentHovered);
-	codeEditorButton.clickedBackgroundColor = OVUI_STYLE(AccentActive);
+	codeEditorButton.backgroundColor = OVUI_STYLE(AccentButton);
+	codeEditorButton.hoveredBackgroundColor = OVUI_STYLE(AccentButtonHovered);
+	codeEditorButton.clickedBackgroundColor = OVUI_STYLE(AccentButtonActive);
 
 	m_assetList = &CreateWidget<Layout::Group>();
 

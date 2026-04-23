@@ -143,25 +143,32 @@ namespace OvUI::Styling
 		// ---- Semantic colors ----
 		// Reuse ImGui built-in fields (e.g. Text, TextDisabled, Button) wherever possible.
 		// These are for cases that need intent-specific colors beyond what ImGui provides.
+
+		// Text/label foreground colors — bright and readable as foreground text.
 		Types::Color Success;
-		Types::Color SuccessHovered;
-		Types::Color SuccessActive;
-
 		Types::Color Danger;
-		Types::Color DangerHovered;
-		Types::Color DangerActive;
-
 		Types::Color Warning;
-		Types::Color WarningHovered;
-		Types::Color WarningActive;
-
 		Types::Color Accent;
-		Types::Color AccentHovered;
-		Types::Color AccentActive;
-
 		Types::Color Info;
 		Types::Color InspectorTitle;
 		Types::Color Highlight;
+
+		// Button background colors — muted enough to work as interactive backgrounds.
+		Types::Color SuccessButton;
+		Types::Color SuccessButtonHovered;
+		Types::Color SuccessButtonActive;
+
+		Types::Color DangerButton;
+		Types::Color DangerButtonHovered;
+		Types::Color DangerButtonActive;
+
+		Types::Color WarningButton;
+		Types::Color WarningButtonHovered;
+		Types::Color WarningButtonActive;
+
+		Types::Color AccentButton;
+		Types::Color AccentButtonHovered;
+		Types::Color AccentButtonActive;
 
 	private:
 		Style();

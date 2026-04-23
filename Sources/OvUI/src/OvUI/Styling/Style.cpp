@@ -118,37 +118,42 @@ void OvUI::Styling::Style::SetSemanticDefaults(bool darkTheme, bool lighterOnAct
 {
 	using Types::Color;
 
-	Success        = darkTheme ? Color{0.15f, 0.49f, 0.15f, 1.00f} : Color{0.22f, 0.75f, 0.22f, 1.00f};
-	SuccessHovered = darkTheme ? Color{0.20f, 0.64f, 0.20f, 1.00f} : Color{0.32f, 0.85f, 0.32f, 1.00f};
+	// Text/label foreground colors — bright on dark themes, saturated on light themes.
+	Success = darkTheme ? Color{0.35f, 0.92f, 0.35f, 1.00f} : Color{0.08f, 0.50f, 0.08f, 1.00f};
+	Danger  = darkTheme ? Color{0.95f, 0.42f, 0.42f, 1.00f} : Color{0.72f, 0.10f, 0.10f, 1.00f};
+	Warning = darkTheme ? Color{1.00f, 0.78f, 0.20f, 1.00f} : Color{0.58f, 0.38f, 0.00f, 1.00f};
+	Accent  = darkTheme ? Color{0.45f, 0.70f, 1.00f, 1.00f} : Color{0.08f, 0.32f, 0.82f, 1.00f};
+
+	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
+	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
+	Highlight      = darkTheme ? Color{1.00f, 1.00f, 0.00f, 1.00f} : Color{1.00f, 1.00f, 0.00f, 1.00f};
+
+	// Button background colors — muted enough to work as interactive backgrounds.
+	SuccessButton        = darkTheme ? Color{0.15f, 0.49f, 0.15f, 1.00f} : Color{0.22f, 0.75f, 0.22f, 1.00f};
+	SuccessButtonHovered = darkTheme ? Color{0.20f, 0.64f, 0.20f, 1.00f} : Color{0.32f, 0.85f, 0.32f, 1.00f};
 	// lighter: step up from hovered (ImGui built-in style behavior)
 	// darker:  step down from base   (custom style behavior)
-	SuccessActive  = lighterOnActive
+	SuccessButtonActive  = lighterOnActive
 		? (darkTheme ? Color{0.26f, 0.76f, 0.26f, 1.00f} : Color{0.42f, 0.95f, 0.42f, 1.00f})
 		: (darkTheme ? Color{0.11f, 0.37f, 0.11f, 1.00f} : Color{0.15f, 0.62f, 0.15f, 1.00f});
 
-	Danger         = darkTheme ? Color{0.50f, 0.08f, 0.08f, 1.00f} : Color{0.85f, 0.22f, 0.22f, 1.00f};
-	DangerHovered  = darkTheme ? Color{0.65f, 0.11f, 0.11f, 1.00f} : Color{0.92f, 0.35f, 0.35f, 1.00f};
-	DangerActive   = lighterOnActive
+	DangerButton        = darkTheme ? Color{0.50f, 0.08f, 0.08f, 1.00f} : Color{0.85f, 0.22f, 0.22f, 1.00f};
+	DangerButtonHovered = darkTheme ? Color{0.65f, 0.11f, 0.11f, 1.00f} : Color{0.92f, 0.35f, 0.35f, 1.00f};
+	DangerButtonActive  = lighterOnActive
 		? (darkTheme ? Color{0.78f, 0.15f, 0.15f, 1.00f} : Color{1.00f, 0.48f, 0.48f, 1.00f})
 		: (darkTheme ? Color{0.38f, 0.06f, 0.06f, 1.00f} : Color{0.72f, 0.15f, 0.15f, 1.00f});
 
-	Warning        = darkTheme ? Color{0.70f, 0.50f, 0.00f, 1.00f} : Color{0.90f, 0.65f, 0.08f, 1.00f};
-	WarningHovered = darkTheme ? Color{0.80f, 0.60f, 0.00f, 1.00f} : Color{1.00f, 0.75f, 0.18f, 1.00f};
-	WarningActive  = lighterOnActive
+	WarningButton        = darkTheme ? Color{0.70f, 0.50f, 0.00f, 1.00f} : Color{0.90f, 0.65f, 0.08f, 1.00f};
+	WarningButtonHovered = darkTheme ? Color{0.80f, 0.60f, 0.00f, 1.00f} : Color{1.00f, 0.75f, 0.18f, 1.00f};
+	WarningButtonActive  = lighterOnActive
 		? (darkTheme ? Color{0.92f, 0.72f, 0.04f, 1.00f} : Color{1.00f, 0.86f, 0.30f, 1.00f})
 		: (darkTheme ? Color{0.55f, 0.38f, 0.00f, 1.00f} : Color{0.78f, 0.54f, 0.04f, 1.00f});
 
-	Info           = darkTheme ? Color{0.30f, 0.85f, 1.00f, 1.00f} : Color{0.00f, 0.40f, 0.75f, 1.00f};
-
-	Accent        = darkTheme ? Color{0.10f, 0.30f, 0.70f, 1.00f} : Color{0.15f, 0.45f, 0.90f, 1.00f};
-	AccentHovered = darkTheme ? Color{0.15f, 0.40f, 0.85f, 1.00f} : Color{0.25f, 0.55f, 1.00f, 1.00f};
-	AccentActive  = lighterOnActive
+	AccentButton        = darkTheme ? Color{0.10f, 0.30f, 0.70f, 1.00f} : Color{0.15f, 0.45f, 0.90f, 1.00f};
+	AccentButtonHovered = darkTheme ? Color{0.15f, 0.40f, 0.85f, 1.00f} : Color{0.25f, 0.55f, 1.00f, 1.00f};
+	AccentButtonActive  = lighterOnActive
 		? (darkTheme ? Color{0.20f, 0.52f, 1.00f, 1.00f} : Color{0.36f, 0.67f, 1.00f, 1.00f})
 		: (darkTheme ? Color{0.07f, 0.22f, 0.55f, 1.00f} : Color{0.10f, 0.35f, 0.75f, 1.00f});
-
-	InspectorTitle = darkTheme ? Color{0.85f, 0.65f, 0.00f, 1.00f} : Color{0.55f, 0.35f, 0.00f, 1.00f};
-
-	Highlight      = darkTheme ? Color{1.00f, 1.00f, 0.00f, 1.00f} : Color{1.00f, 1.00f, 0.00f, 1.00f};
 }
 
 void OvUI::Styling::Style::ApplyImClassicStyle()

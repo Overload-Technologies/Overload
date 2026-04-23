@@ -1254,7 +1254,7 @@ void OvEditor::Core::EditorActions::PropagateFolderDestruction(std::string p_fol
 	{
 		if (!p.is_directory())
 		{
-			PropagateFileRename(OvTools::Utils::PathParser::MakeWindowsStyle(p.path().string()), "?");
+			PropagateFileRename(OvTools::Utils::PathParser::MakeNonWindowsStyle(p.path().string()), "?");
 		}
 	}
 }

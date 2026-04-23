@@ -250,7 +250,7 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			return;
 
 		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
-		const uint32_t scriptIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Script")->GetTexture().GetID();
+		const uint32_t addScriptIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Add_Script")->GetTexture().GetID();
 
 		OvCore::Helpers::GUIHelpers::PickerItemList items;
 
@@ -319,7 +319,7 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			"Create Script...",
 			"Create Script...",
 			"Create Script...",
-			scriptIconID,
+			addScriptIconID,
 			[this] {
 				if (!m_targetActor.has_value())
 					return;

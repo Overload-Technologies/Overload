@@ -787,8 +787,6 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateEmptyActor(bool p_focu
 	if (p_focusOnCreation)
 		SelectActor(instance);
 
-	OVLOG_INFO("Actor created");
-
 	return instance;
 }
 

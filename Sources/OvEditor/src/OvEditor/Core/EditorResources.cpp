@@ -123,6 +123,7 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 		{"Component", CreateTexture<LINEAR>(texturesFolder / "Component.png")},
 		{"Material", CreateTexture<LINEAR>(texturesFolder / "Material.png")},
 		{"Scene", CreateTexture<LINEAR>(texturesFolder / "Scene.png")},
+		{"Prefab", CreateTexture<LINEAR>(texturesFolder / "Prefab.png")},
 		{"Sound", CreateTexture<LINEAR>(texturesFolder / "Sound.png")},
 		{"Script", CreateTexture<LINEAR>(texturesFolder / "Script.png")},
 		{"Add_Script", CreateTexture<LINEAR>(texturesFolder / "Add_Script.png")},

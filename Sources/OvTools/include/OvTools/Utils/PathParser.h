@@ -28,6 +28,7 @@ namespace OvTools::Utils
 			MATERIAL,
 			SOUND,
 			SCENE,
+			PREFAB,
 			SCRIPT,
 			FONT
 		};

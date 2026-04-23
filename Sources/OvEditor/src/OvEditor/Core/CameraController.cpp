@@ -290,8 +290,6 @@ std::optional<std::reference_wrapper<OvCore::ECS::Actor>> OvEditor::Core::Camera
 
 void OvEditor::Core::CameraController::HandleCameraPanning(const OvMaths::FVector2& p_mouseOffset, bool p_firstMouset)
 {
-	m_window.SetCursorShape(OvWindowing::Cursor::ECursorShape::HAND);
-
 	auto mouseOffset = p_mouseOffset * m_cameraDragSpeed;
 
 	m_camera.SetPosition(m_camera.GetPosition() + m_camera.transform->GetWorldRight() * mouseOffset.x);
@@ -411,6 +409,7 @@ void OvEditor::Core::CameraController::HandleMousePressed()
 
 	if (m_inputManager.IsMouseButtonPressed(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
 	{
+		m_window.SetCursorShape(OvWindowing::Cursor::ECursorShape::HAND);
 		m_middleMousePressed = true;
 	}
 
@@ -433,6 +432,7 @@ void OvEditor::Core::CameraController::HandleMouseReleased()
 	{
 		m_middleMousePressed = false;
 		m_firstMouse = true;
+		m_window.SetCursorShape(OvWindowing::Cursor::ECursorShape::ARROW);
 	}
 
 	if (m_rightMousePressed && m_inputManager.IsMouseButtonReleased(OvWindowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))

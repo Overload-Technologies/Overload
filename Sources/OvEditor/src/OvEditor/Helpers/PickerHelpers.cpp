@@ -19,7 +19,8 @@ namespace
 		const std::filesystem::path& p_directory,
 		bool p_isEngine,
 		PathParser::EFileType p_fileType,
-		const std::function<void(std::string)>& p_onSelected)
+		const std::function<void(std::string)>& p_onSelected,
+		const std::function<bool(const std::string&)>& p_filter)
 	{
 		if (!std::filesystem::exists(p_directory))
 			return;
@@ -41,6 +42,10 @@ namespace
 				continue;
 
 			const std::string resourcePath = EDITOR_EXEC(GetResourcePath(path, p_isEngine));
+
+			if (p_filter && !p_filter(resourcePath))
+				continue;
+
 			const std::string filename = PathParser::GetElementName(resourcePath);
 			const std::string friendlyPath = PathParser::GetFriendlyPath(resourcePath);
 			const uint32_t iconID = EDITOR_CONTEXT(editorResources)->GetFileIcon(path)->GetTexture().GetID();
@@ -61,11 +66,12 @@ void OvEditor::Helpers::PickerHelpers::AddFileItems(
 	PathParser::EFileType p_fileType,
 	std::function<void(std::string)> p_onSelected,
 	bool p_searchProject,
-	bool p_searchEngine)
+	bool p_searchEngine,
+	std::function<bool(const std::string&)> p_filter)
 {
 	if (p_searchProject)
-		CollectFromDirectory(p_list, EDITOR_CONTEXT(projectAssetsPath), false, p_fileType, p_onSelected);
+		CollectFromDirectory(p_list, EDITOR_CONTEXT(projectAssetsPath), false, p_fileType, p_onSelected, p_filter);
 
 	if (p_searchEngine)
-		CollectFromDirectory(p_list, EDITOR_CONTEXT(engineAssetsPath), true, p_fileType, p_onSelected);
+		CollectFromDirectory(p_list, EDITOR_CONTEXT(engineAssetsPath), true, p_fileType, p_onSelected, p_filter);
 }

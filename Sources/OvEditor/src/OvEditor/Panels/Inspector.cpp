@@ -250,6 +250,7 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 			return;
 
 		const uint32_t componentIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Component")->GetTexture().GetID();
+		const uint32_t scriptIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Script")->GetTexture().GetID();
 
 		OvCore::Helpers::GUIHelpers::PickerItemList items;
 
@@ -307,8 +308,47 @@ void OvEditor::Panels::Inspector::_DrawAddSection()
 
 				m_targetActor->AddBehaviour(scriptPath);
 			},
-			true, false
+			true, false,
+			[this](const std::string& p_resourcePath) {
+				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(p_resourcePath));
+				return !m_targetActor->GetBehaviour(scriptPath);
+			}
 		);
+
+		items.Add({
+			"Create Script...",
+			"Create Script...",
+			"Create Script...",
+			scriptIconID,
+			[this] {
+				if (!m_targetActor.has_value())
+					return;
+
+				const std::string searchText = OvCore::Helpers::GUIHelpers::GetPickerSearchText();
+				const std::string initialDir = EDITOR_CONTEXT(projectAssetsPath).string();
+				const std::string destination = EDITOR_EXEC(CreateScript(initialDir, searchText));
+
+				if (destination.empty())
+					return;
+
+				const std::string scriptPath = EDITOR_EXEC(GetScriptPath(destination));
+				const std::string displayName = OvTools::Utils::PathParser::GetElementName(scriptPath);
+
+				if (m_targetActor->GetBehaviour(scriptPath))
+				{
+					OvWindowing::Dialogs::MessageBox(
+						"Script already attached",
+						"The script \"" + displayName + "\" is already attached to this actor.",
+						OvWindowing::Dialogs::MessageBox::EMessageType::ERROR,
+						OvWindowing::Dialogs::MessageBox::EButtonLayout::OK
+					);
+					return;
+				}
+
+				m_targetActor->AddBehaviour(scriptPath);
+			},
+			true  /* alwaysVisible */
+		});
 
 		OvCore::Helpers::GUIHelpers::OpenPicker(std::move(items), "Add Component");
 	};

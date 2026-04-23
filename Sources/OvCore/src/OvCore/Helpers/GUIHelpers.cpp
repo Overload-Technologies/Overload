@@ -13,6 +13,7 @@ namespace
 	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
 	OvCore::Helpers::GUIHelpers::FileItemBuilderCallback __FILE_ITEM_BUILDER;
 	OvCore::Helpers::GUIHelpers::PickerProviderCallback __PICKER_PROVIDER;
+	OvCore::Helpers::GUIHelpers::PickerSearchTextProviderCallback __PICKER_SEARCH_TEXT_PROVIDER;
 	OvCore::Helpers::GUIHelpers::IconProviderCallback __ICON_PROVIDER;
 	OvCore::Helpers::GUIHelpers::OpenProviderCallback __OPEN_PROVIDER;
 	OvCore::Helpers::GUIHelpers::ActorSelectionProviderCallback __ACTOR_SELECTION_PROVIDER;
@@ -101,6 +102,16 @@ void OvCore::Helpers::GUIHelpers::OpenPicker(PickerItemList p_items, std::string
 {
 	if (__PICKER_PROVIDER)
 		__PICKER_PROVIDER(std::move(p_items), std::move(p_title));
+}
+
+void OvCore::Helpers::GUIHelpers::SetPickerSearchTextProvider(PickerSearchTextProviderCallback p_provider)
+{
+	__PICKER_SEARCH_TEXT_PROVIDER = std::move(p_provider);
+}
+
+std::string OvCore::Helpers::GUIHelpers::GetPickerSearchText()
+{
+	return __PICKER_SEARCH_TEXT_PROVIDER ? __PICKER_SEARCH_TEXT_PROVIDER() : "";
 }
 
 void OvCore::Helpers::GUIHelpers::SetActorIconID(uint32_t p_id)

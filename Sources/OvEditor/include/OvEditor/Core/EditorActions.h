@@ -312,6 +312,14 @@ namespace OvEditor::Core
 		bool ImportAsset(const std::string& p_initialDestinationDirectory);
 
 		/**
+		* Open a save dialog to create a new script file at a user-chosen location.
+		* Returns the absolute path of the created script, or empty on cancellation.
+		* @param p_initialDirectory  Directory the dialog opens in
+		* @param p_initialName       Suggested filename (without extension)
+		*/
+		std::string CreateScript(const std::string& p_initialDirectory, const std::string& p_initialName);
+
+		/**
 		* Import an asset at location
 		* @param p_destination
 		*/

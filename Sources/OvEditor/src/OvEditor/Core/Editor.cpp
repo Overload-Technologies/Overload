@@ -76,6 +76,10 @@ void OvEditor::Core::Editor::SetupUI()
 		}
 	);
 
+	OvCore::Helpers::GUIHelpers::SetPickerSearchTextProvider(
+		[this]() { return m_itemPicker->GetSearchText(); }
+	);
+
 	OvCore::Helpers::GUIHelpers::SetIconProvider(
 		[this](OvTools::Utils::PathParser::EFileType p_fileType) -> uint32_t {
 			auto* texture = m_context.editorResources->GetTexture(OvTools::Utils::PathParser::FileTypeToString(p_fileType));

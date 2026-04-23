@@ -31,6 +31,7 @@
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Helpers/PickerHelpers.h>
+#include <OvEditor/Panels/AssetBrowser.h>
 #include <OvEditor/Panels/AssetView.h>
 #include <OvEditor/Panels/GameView.h>
 #include <OvEditor/Panels/Inspector.h>
@@ -1099,6 +1100,42 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 	}
 
 	return false;
+}
+
+std::string OvEditor::Core::EditorActions::CreateScript(const std::string& p_initialDirectory, const std::string& p_initialName)
+{
+	using namespace OvWindowing::Dialogs;
+
+	const std::string extension = m_context.scriptEngine->GetDefaultExtension();
+
+	SaveFileDialog dialog("Create Script");
+	dialog.SetInitialDirectory(p_initialDirectory);
+	dialog.SetInitialFilename(p_initialName);
+	dialog.DefineExtension("Script", extension);
+	dialog.Show(
+		EExplorerFlags::DONTADDTORECENT |
+		EExplorerFlags::PATHMUSTEXIST   |
+		EExplorerFlags::HIDEREADONLY    |
+		EExplorerFlags::NOCHANGEDIR
+	);
+
+	if (!dialog.HasSucceeded())
+		return {};
+
+	const std::string destination = dialog.GetSelectedFilePath();
+
+	if (!std::filesystem::exists(destination))
+	{
+		const std::string scriptName = std::filesystem::path{ destination }.stem().string();
+		const std::string fileContent = m_context.scriptEngine->GetDefaultScriptContent(scriptName);
+
+		std::ofstream outfile(destination);
+		outfile << fileContent << std::endl;
+
+		EDITOR_PANEL(Panels::AssetBrowser, "Asset Browser").Refresh();
+	}
+
+	return destination;
 }
 
 bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_destination)

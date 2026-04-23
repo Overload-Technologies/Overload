@@ -24,12 +24,14 @@ namespace OvEditor::Helpers::PickerHelpers
 	* @param p_onSelected       Called with the resource path when the item is selected
 	* @param p_searchProject    Include project assets
 	* @param p_searchEngine     Include engine assets
+	* @param p_filter           Optional predicate; return false to exclude an item (receives resource path)
 	*/
 	void AddFileItems(
 		OvCore::Helpers::GUIHelpers::PickerItemList& p_list,
 		OvTools::Utils::PathParser::EFileType p_fileType,
 		std::function<void(std::string)> p_onSelected,
 		bool p_searchProject = true,
-		bool p_searchEngine = true
+		bool p_searchEngine = true,
+		std::function<bool(const std::string&)> p_filter = {}
 	);
 }

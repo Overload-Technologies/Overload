@@ -84,7 +84,7 @@ void ItemPicker::_Draw_Impl()
 			const auto& items = m_items.Items();
 			for (size_t i = 0; i < m_rows.size() && i < items.size(); ++i)
 			{
-				if (m_rows[i].second->enabled)
+				if (m_rows[i].widget->enabled)
 				{
 					items[i].onSelected();
 					Close();
@@ -164,12 +164,17 @@ void ItemPicker::Populate()
 			Close();
 		};
 
-		m_rows.emplace_back(item.key, &row);
+		m_rows.emplace_back(item.key, item.alwaysVisible, &row);
 	}
 }
 
 void ItemPicker::FilterList(const std::string& p_search)
 {
-	for (auto& [key, row] : m_rows)
-		row->enabled = ContainsCaseInsensitive(key, p_search);
+	for (auto& entry : m_rows)
+		entry.widget->enabled = entry.alwaysVisible || ContainsCaseInsensitive(entry.key, p_search);
+}
+
+std::string ItemPicker::GetSearchText() const
+{
+	return m_searchField ? m_searchField->content : "";
 }

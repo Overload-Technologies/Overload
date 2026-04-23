@@ -1186,11 +1186,14 @@ std::string OvEditor::Core::EditorActions::GetRealPath(const std::string& p_path
 
 std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_path, bool p_isFromEngine)
 {
-	std::string result = p_path;
+	// Normalize to forward slashes so the comparison works regardless of whether
+	// the caller or the stored context paths use POSIX or Windows separators.
+	std::string result = std::filesystem::path(p_path).generic_string();
+	const std::string contextPath = (p_isFromEngine ? m_context.engineAssetsPath : m_context.projectAssetsPath).generic_string();
 
-	if (OvTools::Utils::String::Replace(result, p_isFromEngine ? m_context.engineAssetsPath.string() : m_context.projectAssetsPath.string(), ""))
+	if (OvTools::Utils::String::Replace(result, contextPath, ""))
 	{
-		if (result.starts_with(std::filesystem::path::preferred_separator))
+		if (result.starts_with('/'))
 		{
 			result = result.substr(1);
 		}
@@ -1204,19 +1207,18 @@ std::string OvEditor::Core::EditorActions::GetResourcePath(const std::string& p_
 	return result;
 }
 
-std::string OvEditor::Core::EditorActions::GetScriptPath(const std::string & p_path)
+std::string OvEditor::Core::EditorActions::GetScriptPath(const std::string& p_path)
 {
-	std::string result = p_path;
+	// Normalize to forward slashes so the comparison works regardless of separator style.
+	std::string result = std::filesystem::path(p_path).generic_string();
+	const std::string contextPath = m_context.projectAssetsPath.generic_string();
 
-	OvTools::Utils::String::Replace(result, m_context.projectAssetsPath.string(), "");
+	OvTools::Utils::String::Replace(result, contextPath, "");
 
-	if (result.starts_with(std::filesystem::path::preferred_separator))
+	if (result.starts_with('/'))
 	{
 		result = result.substr(1);
 	}
-
-	// Normalize to forward slashes for cross-platform consistency
-	std::replace(result.begin(), result.end(), '\\', '/');
 
 	return result;
 }

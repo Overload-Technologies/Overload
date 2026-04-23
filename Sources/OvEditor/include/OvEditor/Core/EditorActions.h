@@ -235,7 +235,7 @@ namespace OvEditor::Core
 		void CopyActor(OvCore::ECS::Actor& p_actor);
 
 		/**
-		* Paste the copied actor, optionally as a child of the given parent
+		* Paste the copied actor next to the given actor (same parent), or at root if null
 		* @param p_parent
 		*/
 		void PasteActor(OvCore::ECS::Actor* p_parent = nullptr);

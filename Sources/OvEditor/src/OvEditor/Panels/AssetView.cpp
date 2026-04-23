@@ -135,7 +135,7 @@ void OvEditor::Panels::AssetView::SetModel(OvRendering::Resources::Model& p_mode
 	m_assetActor->transform.SetLocalRotation(OvMaths::FQuaternion::Identity);
 	m_assetActor->transform.SetLocalScale(OvMaths::FVector3::One);
 	m_modelRenderer->SetModel(&p_model);
-	m_materialRenderer->FillWithMaterial(m_defaultMaterial);
+	m_materialRenderer->FillWithEmbeddedMaterials(true, &m_defaultMaterial);
 
 	m_cameraController.MoveToTarget(*m_assetActor);
 }

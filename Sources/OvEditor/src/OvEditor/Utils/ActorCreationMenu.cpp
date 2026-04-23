@@ -4,6 +4,9 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+#include <optional>
+
 #include "OvCore/ECS/Components/CSkinnedMeshRenderer.h"
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
@@ -19,6 +22,8 @@
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/Helpers/GUIHelpers.h>
+#include <OvTools/Utils/PathParser.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Utils/ActorCreationMenu.h>
@@ -144,6 +149,44 @@ namespace
 	{
 		return Combine(std::bind(CreateCharacter, p_parent), p_onItemClicked);
 	}
+
+	std::function<void()> CreateFromPrefabHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
+	{
+		const std::optional<uint64_t> parentGUID = p_parent ? std::make_optional(p_parent->GetGUID()) : std::nullopt;
+
+		return [parentGUID, p_onItemClicked]()
+		{
+			OvCore::Helpers::GUIHelpers::OpenAssetPicker(
+				OvTools::Utils::PathParser::EFileType::PREFAB,
+				[parentGUID](const std::string& p_prefabPath)
+				{
+					if (p_prefabPath.empty())
+					{
+						return;
+					}
+
+					OvCore::ECS::Actor* parent = nullptr;
+
+					if (parentGUID.has_value())
+					{
+						if (auto* scene = EDITOR_CONTEXT(sceneManager).GetCurrentScene())
+						{
+							parent = scene->FindActorByGUID(parentGUID.value());
+						}
+					}
+
+					EDITOR_EXEC(InstantiatePrefab(p_prefabPath, true, parent));
+				},
+				true,
+				false
+			);
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
+	}
 }
 
 void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets::Menu::MenuList& p_menuList, OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
@@ -152,6 +195,7 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	using namespace OvCore::ECS::Components;
 
 	p_menuList.CreateWidget<MenuItem>("Create Empty").ClickedEvent += Combine(EDITOR_BIND(CreateEmptyActor, true, p_parent, ""), p_onItemClicked);
+	p_menuList.CreateWidget<MenuItem>("From prefab...").ClickedEvent += CreateFromPrefabHandler(p_parent, p_onItemClicked);
 
 	auto& primitives = p_menuList.CreateWidget<MenuList>("Primitives");
 	auto& physicals = p_menuList.CreateWidget<MenuList>("Physicals");

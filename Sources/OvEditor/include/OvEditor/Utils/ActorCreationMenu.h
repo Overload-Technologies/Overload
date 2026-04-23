@@ -7,6 +7,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 namespace OvUI::Widgets::Menu
 {

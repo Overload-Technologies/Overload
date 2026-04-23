@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <cstdint>
+
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Core/EditorActions.h"
 
@@ -36,6 +38,26 @@
 #include "OvEditor/Core/EditorResources.h"
 #include "OvEditor/Utils/ActorCreationMenu.h"
 
+namespace
+{
+	bool IsPrefabRelatedActor(const OvCore::ECS::Actor& p_actor)
+	{
+		const OvCore::ECS::Actor* current = &p_actor;
+
+		while (current)
+		{
+			if (current->HasSourcePrefab())
+			{
+				return true;
+			}
+
+			current = current->GetParent();
+		}
+
+		return false;
+	}
+}
+
 class ActorContextualMenu : public OvUI::Plugins::ContextualMenu
 {
 public:
@@ -67,6 +89,27 @@ public:
 			{
 				EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*m_target), nullptr, true), 0));
 			};
+
+			auto& saveAsPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Save as prefab...");
+			saveAsPrefabButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(SaveActorAsPrefab(*m_target));
+			};
+
+			if (m_target->HasSourcePrefab())
+			{
+				auto& revertToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Revert to prefab");
+				revertToPrefabButton.ClickedEvent += [this]
+				{
+					EDITOR_EXEC(RevertActorToPrefab(*m_target));
+				};
+
+				auto& applyToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Apply to prefab");
+				applyToPrefabButton.ClickedEvent += [this]
+				{
+					EDITOR_EXEC(ApplyActorToPrefab(*m_target));
+				};
+			}
 
 			auto& pasteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Paste");
 			pasteButton.ClickedEvent += [this]
@@ -364,8 +407,25 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	auto& textSelectable = m_actors.CreateWidget<OvUI::Widgets::Layout::TreeNode>(p_actor.GetName(), true);
 	textSelectable.leaf = true;
 
-	if (auto* actorTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Actor"))
-		textSelectable.iconTextureID = actorTexture->GetTexture().GetID();
+	const uint32_t actorIconID = [] {
+		if (auto* actorTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Actor"))
+		{
+			return actorTexture->GetTexture().GetID();
+		}
+
+		return 0u;
+	}();
+
+	const uint32_t prefabIconID = [] {
+		if (auto* prefabTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Prefab"))
+		{
+			return prefabTexture->GetTexture().GetID();
+		}
+
+		return 0u;
+	}();
+
+	textSelectable.iconTextureID = actorIconID;
 
 	textSelectable.AddPlugin<ActorContextualMenu>(&p_actor, &textSelectable);
 	textSelectable.AddPlugin<OvUI::Plugins::DDSource<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor", "Attach to...", std::make_pair(&p_actor, &textSelectable));
@@ -387,12 +447,17 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	auto& dispatcher = textSelectable.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
 
 	OvCore::ECS::Actor* targetPtr = &p_actor;
-	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
+	dispatcher.RegisterGatherer([targetPtr, &textSelectable, actorIconID, prefabIconID]
 	{
 		const bool isActive = targetPtr->IsActive();
 		textSelectable.labelColor = isActive
 			? OVUI_STYLE(Text)
 			: OVUI_STYLE(TextDisabled);
+
+		textSelectable.iconTextureID =
+			IsPrefabRelatedActor(*targetPtr) && prefabIconID != 0
+			? prefabIconID
+			: actorIconID;
 
 		return targetPtr->GetName();
 	});

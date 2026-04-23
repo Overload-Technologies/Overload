@@ -53,57 +53,72 @@ void OvWindowing::Dialogs::MessageBox::Spawn()
 	if (glfwWin)
 	{
 		unsigned long xid = (unsigned long)glfwGetX11Window(glfwWin);
-		attachArg = " --attach=" + std::to_string(xid);
+		if (xid != 0)
+			attachArg = " --attach=" + std::to_string(xid);
+	}
+
+	// For single-button (OK only) layouts, use the typed dialog (--info/--warning/--error).
+	// These don't support extra button labels but always show a single OK button.
+	// For multi-button layouts, use --question which supports ok-label/cancel-label.
+	const bool singleButton =
+		m_buttonLayout == EButtonLayout::OK ||
+		m_buttonLayout == EButtonLayout::HELP;
+
+	std::string dialogType;
+	if (singleButton)
+	{
+		switch (m_messageType)
+		{
+			case EMessageType::ERROR:       dialogType = "--error";    break;
+			case EMessageType::WARNING:     dialogType = "--warning";  break;
+			case EMessageType::INFORMATION: dialogType = "--info";     break;
+			default:                        dialogType = "--info";     break;
+		}
 	}
 	else
 	{
-		printf("NO GLFW WINDOW\n");
+		dialogType = "--question";
 	}
 
-	std::string command = "zenity --question"; // Always use question dialog for flexibility
-	command += attachArg; // <-- attach to our window
-	
-	// Add title and message
+	std::string command = "zenity " + dialogType;
+	command += attachArg;
 	command += " --title=\"" + m_title + "\"";
 	command += " --text=\"" + m_message + "\"";
-	command += " --no-markup"; // Prevent markup interpretation issues
-	
-	// Handle button layout
+	command += " --no-markup";
+
 	bool useExtraButtons = false;
-	
-	switch (m_buttonLayout)
+
+	if (!singleButton)
 	{
-		case EButtonLayout::OK:
-			command += " --ok-label=\"OK\" --no-cancel";
-			break;
-		case EButtonLayout::OK_CANCEL:
-			command += " --ok-label=\"OK\" --cancel-label=\"Cancel\"";
-			break;
-		case EButtonLayout::YES_NO:
-			command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
-			break;
-		case EButtonLayout::YES_NO_CANCEL:
-			useExtraButtons = true;
-			// When using extra buttons, don't use ok-label or cancel-label
-			command += " --extra-button=\"Yes\" --extra-button=\"No\" --extra-button=\"Cancel\"";
-			break;
-		case EButtonLayout::RETRY_CANCEL:
-			command += " --ok-label=\"Retry\" --cancel-label=\"Cancel\"";
-			break;
-		case EButtonLayout::ABORT_RETRY_IGNORE:
-			useExtraButtons = true;
-			command += " --extra-button=\"Abort\" --extra-button=\"Retry\" --extra-button=\"Ignore\"";
-			break;
-		case EButtonLayout::CANCEL_TRYAGAIN_CONTINUE:
-			useExtraButtons = true;
-			command += " --extra-button=\"Cancel\" --extra-button=\"Try Again\" --extra-button=\"Continue\"";
-			break;
-		case EButtonLayout::HELP:
-			command += " --ok-label=\"Help\" --no-cancel";
-			break;
+		switch (m_buttonLayout)
+		{
+			case EButtonLayout::OK_CANCEL:
+				command += " --ok-label=\"OK\" --cancel-label=\"Cancel\"";
+				break;
+			case EButtonLayout::YES_NO:
+				command += " --ok-label=\"Yes\" --cancel-label=\"No\"";
+				break;
+			case EButtonLayout::YES_NO_CANCEL:
+				useExtraButtons = true;
+				command += " --extra-button=\"Yes\" --extra-button=\"No\" --extra-button=\"Cancel\"";
+				break;
+			case EButtonLayout::RETRY_CANCEL:
+				command += " --ok-label=\"Retry\" --cancel-label=\"Cancel\"";
+				break;
+			case EButtonLayout::ABORT_RETRY_IGNORE:
+				useExtraButtons = true;
+				command += " --extra-button=\"Abort\" --extra-button=\"Retry\" --extra-button=\"Ignore\"";
+				break;
+			case EButtonLayout::CANCEL_TRYAGAIN_CONTINUE:
+				useExtraButtons = true;
+				command += " --extra-button=\"Cancel\" --extra-button=\"Try Again\" --extra-button=\"Continue\"";
+				break;
+			default:
+				break;
+		}
 	}
-	
-	command += " 2>/dev/null"; // Suppress GTK warnings
+
+	command += " 2>/dev/null";
 	
 	// Execute zenity and check exit code
 	int exitCode = system(command.c_str());

@@ -5,12 +5,14 @@
 */
 
 #include <tinyxml2.h>
-#include <OvWindowing/Dialogs/MessageBox.h>
 
-#include "OvCore/SceneSystem/SceneManager.h"
-#include "OvCore/ECS/Components/CDirectionalLight.h"
-#include "OvCore/ECS/Components/CAmbientSphereLight.h"
-#include "OvCore/ECS/Components/CCamera.h"
+#include <OvCore/SceneSystem/SceneManager.h>
+#include <OvCore/ECS/Components/CDirectionalLight.h>
+#include <OvCore/ECS/Components/CAmbientSphereLight.h>
+#include <OvCore/ECS/Components/CCamera.h>
+#include <OvDebug/Logger.h>
+#include <OvTools/Utils/PathParser.h>
+#include <OvWindowing/Dialogs/MessageBox.h>
 
 OvCore::SceneSystem::SceneManager::SceneManager(const std::string& p_sceneRootFolder) : m_sceneRootFolder(p_sceneRootFolder)
 {
@@ -68,10 +70,14 @@ bool OvCore::SceneSystem::SceneManager::LoadScene(const std::string& p_path, boo
 		std::filesystem::current_path() :
 		std::filesystem::path{ m_sceneRootFolder };
 
-	path /= p_path;
+	path /= OvTools::Utils::PathParser::MakeNonWindowsStyle(p_path);
 
 	tinyxml2::XMLDocument doc;
-	doc.LoadFile(path.string().c_str());
+	if (doc.LoadFile(path.string().c_str()) != tinyxml2::XMLError::XML_SUCCESS)
+	{
+		OVLOG_ERROR(std::format("Failed to load scene: {}", path.string()));
+		return false;
+	}
 
 	if (LoadSceneFromMemory(doc))
 	{

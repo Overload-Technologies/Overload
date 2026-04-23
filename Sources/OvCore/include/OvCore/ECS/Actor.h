@@ -104,6 +104,23 @@ namespace OvCore::ECS
 		uint64_t GetGUID() const;
 
 		/**
+		* Defines the prefab source path for this actor.
+		* An empty path means this actor is not linked to a prefab source.
+		* @param p_prefabSource
+		*/
+		void SetPrefabSource(const std::string& p_prefabSource);
+
+		/**
+		* Returns the prefab source path for this actor.
+		*/
+		const std::string& GetPrefabSource() const;
+
+		/**
+		* Returns true if this actor is linked to a prefab source.
+		*/
+		bool HasPrefabSource() const;
+
+		/**
 		* Set an actor as the parent of this actor
 		* @param p_parent
 		*/
@@ -369,6 +386,7 @@ namespace OvCore::ECS
 		/* Internal settings */
 		int64_t		m_actorID;
 		uint64_t	m_guid;
+		std::string	m_prefabSource;
 		bool		m_destroyed = false;
 		bool	m_sleeping = true;
 		bool	m_awaked = false;

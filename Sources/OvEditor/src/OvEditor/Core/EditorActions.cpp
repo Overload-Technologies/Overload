@@ -56,6 +56,16 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
+	void SetPrefabSourceRecursively(OvCore::ECS::Actor& p_rootActor, const std::string& p_prefabSource)
+	{
+		p_rootActor.SetPrefabSource(p_prefabSource);
+
+		for (auto* child : p_rootActor.GetChildren())
+		{
+			SetPrefabSourceRecursively(*child, p_prefabSource);
+		}
+	}
+
 	void RefreshMaterialsUsingShader(
 		OvCore::ResourceManagement::MaterialManager& p_materialManager,
 		OvRendering::Resources::Shader& p_shader
@@ -892,6 +902,9 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 		return;
 	}
 
+	const std::string prefabSourcePath = GetResourcePath(p_path);
+	SetPrefabSourceRecursively(p_actor, prefabSourcePath);
+
 	OVLOG_INFO("Prefab saved to: " + p_path);
 }
 
@@ -903,6 +916,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 	}
 
 	const std::filesystem::path realPath = GetRealPath(p_path);
+	const std::string prefabSourcePath = GetResourcePath(realPath.string());
 
 	auto* instantiatedRoot = OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 		realPath,
@@ -914,12 +928,61 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 
 	if (instantiatedRoot)
 	{
+		SetPrefabSourceRecursively(*instantiatedRoot, prefabSourcePath);
 		OVLOG_INFO("Prefab instantiated: " + realPath.string());
 	}
 	else
 	{
 		OVLOG_ERROR("Failed to instantiate prefab from: " + realPath.string());
 	}
+
+	return instantiatedRoot;
+}
+
+bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_actor)
+{
+	if (!p_actor.HasPrefabSource())
+	{
+		OVLOG_WARNING("Cannot apply actor \"" + p_actor.GetName() + "\" to prefab: no source instance.");
+		return false;
+	}
+
+	const std::string realPath = GetRealPath(p_actor.GetPrefabSource());
+
+	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, realPath))
+	{
+		OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath);
+		return false;
+	}
+
+	OVLOG_INFO("Prefab updated from actor \"" + p_actor.GetName() + "\": " + realPath);
+	return true;
+}
+
+OvCore::ECS::Actor* OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_actor)
+{
+	if (!p_actor.HasPrefabSource())
+	{
+		OVLOG_WARNING("Cannot revert actor \"" + p_actor.GetName() + "\" to prefab: no source instance.");
+		return nullptr;
+	}
+
+	OvCore::ECS::Actor* parent = p_actor.GetParent();
+	const auto prefabSourcePath = p_actor.GetPrefabSource();
+
+	auto* instantiatedRoot = InstantiatePrefab(prefabSourcePath);
+	if (!instantiatedRoot)
+	{
+		return nullptr;
+	}
+
+	if (parent)
+	{
+		instantiatedRoot->SetParent(*parent);
+	}
+
+	DestroyActor(p_actor);
+	SelectActor(*instantiatedRoot);
 
 	return instantiatedRoot;
 }
@@ -1590,6 +1653,21 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
+		break;
+	case OvTools::Utils::PathParser::EFileType::PREFAB:
+		if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+		{
+			for (auto actor : currentScene->GetActors())
+			{
+				if (actor->GetPrefabSource() == p_previousName)
+				{
+					actor->SetPrefabSource(p_newName);
+				}
+			}
+		}
+
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;

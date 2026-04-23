@@ -238,6 +238,21 @@ namespace OvEditor::Core
 		* @param p_path
 		*/
 		OvCore::ECS::Actor* InstantiatePrefab(const std::string& p_path);
+
+		/**
+		* Apply the current actor hierarchy state to its prefab source.
+		* Returns true on success.
+		* @param p_actor
+		*/
+		bool ApplyActorToPrefab(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Revert an actor hierarchy from its prefab source.
+		* The actor instance is replaced by a fresh prefab instantiation.
+		* Returns the new root actor on success.
+		* @param p_actor
+		*/
+		OvCore::ECS::Actor* RevertActorToPrefab(OvCore::ECS::Actor& p_actor);
 		#pragma endregion
 
 		#pragma region ACTOR_MANIPULATION

@@ -17,6 +17,7 @@
 #include <OvDebug/Logger.h>
 
 #include <OvCore/Global/ServiceLocator.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 
 #include <OvCore/ECS/Components/CCamera.h>
@@ -35,8 +36,30 @@
 #include <OvWindowing/Dialogs/MessageBox.h>
 #include <OvWindowing/Dialogs/SaveFileDialog.h>
 
+#include <OvTools/Utils/PathParser.h>
+
 #include "OvEditor/Core/EditorResources.h"
 #include "OvEditor/Utils/ActorCreationMenu.h"
+
+namespace
+{
+	bool IsPartOfPrefabInstance(const OvCore::ECS::Actor& p_actor)
+	{
+		const OvCore::ECS::Actor* current = &p_actor;
+
+		while (current)
+		{
+			if (current->HasPrefabSource())
+			{
+				return true;
+			}
+
+			current = current->GetParent();
+		}
+
+		return false;
+	}
+}
 
 class ActorContextualMenu : public OvUI::Plugins::ContextualMenu
 {
@@ -108,6 +131,21 @@ public:
 
 				EDITOR_EXEC(SaveActorAsPrefab(*m_target, dialog.GetSelectedFilePath()));
 			};
+
+			if (m_target->HasPrefabSource())
+			{
+				auto& applyToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Apply to Prefab");
+				applyToPrefabButton.ClickedEvent += [this]
+				{
+					EDITOR_EXEC(ApplyActorToPrefab(*m_target));
+				};
+
+				auto& revertToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Revert to Prefab");
+				revertToPrefabButton.ClickedEvent += [this]
+				{
+					EDITOR_EXEC(RevertActorToPrefab(*m_target));
+				};
+			}
 
 			auto& deleteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
 			deleteButton.ClickedEvent += [this]
@@ -399,8 +437,10 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	auto& textSelectable = m_actors.CreateWidget<OvUI::Widgets::Layout::TreeNode>(p_actor.GetName(), true);
 	textSelectable.leaf = true;
 
-	if (auto* actorTexture = EDITOR_CONTEXT(editorResources)->GetTexture("Actor"))
-		textSelectable.iconTextureID = actorTexture->GetTexture().GetID();
+	const uint32_t actorIconID = OvCore::Helpers::GUIHelpers::GetActorIconID();
+	const uint32_t prefabIconID = OvCore::Helpers::GUIHelpers::GetIconForFileType(OvTools::Utils::PathParser::EFileType::PREFAB);
+
+	textSelectable.iconTextureID = IsPartOfPrefabInstance(p_actor) && prefabIconID != 0 ? prefabIconID : actorIconID;
 
 	textSelectable.AddPlugin<ActorContextualMenu>(&p_actor, &textSelectable);
 	textSelectable.AddPlugin<OvUI::Plugins::DDSource<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor", "Attach to...", std::make_pair(&p_actor, &textSelectable));
@@ -422,12 +462,14 @@ void OvEditor::Panels::Hierarchy::AddActorByInstance(OvCore::ECS::Actor & p_acto
 	auto& dispatcher = textSelectable.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
 
 	OvCore::ECS::Actor* targetPtr = &p_actor;
-	dispatcher.RegisterGatherer([targetPtr, &textSelectable]
+	dispatcher.RegisterGatherer([targetPtr, &textSelectable, actorIconID, prefabIconID]
 	{
 		const bool isActive = targetPtr->IsActive();
 		textSelectable.labelColor = isActive
 			? OVUI_STYLE(Text)
 			: OVUI_STYLE(TextDisabled);
+
+		textSelectable.iconTextureID = IsPartOfPrefabInstance(*targetPtr) && prefabIconID != 0 ? prefabIconID : actorIconID;
 
 		return targetPtr->GetName();
 	});

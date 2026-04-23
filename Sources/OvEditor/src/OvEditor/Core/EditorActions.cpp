@@ -1081,6 +1081,7 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 
 		SaveFileDialog saveLocationDialog("Where to import?");
 		saveLocationDialog.SetInitialDirectory(p_initialDestinationDirectory);
+		saveLocationDialog.SetInitialFilename(filename);
 		saveLocationDialog.DefineExtension(extension, extension);
 		saveLocationDialog.Show();
 

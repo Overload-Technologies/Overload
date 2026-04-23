@@ -382,9 +382,10 @@ bool OvCore::ECS::Actor::RemoveBehaviour(const std::string & p_name)
 	Components::Behaviour* found = GetBehaviour(p_name);
 	if (found)
 	{
+		const std::string nameCopy = p_name;
 		BehaviourRemovedEvent.Invoke(*found);
 		m_behaviours.erase(p_name);
-		auto it = std::find(m_behavioursOrder.begin(), m_behavioursOrder.end(), p_name);
+		auto it = std::find(m_behavioursOrder.begin(), m_behavioursOrder.end(), nameCopy);
 		if (it != m_behavioursOrder.end())
 			m_behavioursOrder.erase(it);
 		return true;

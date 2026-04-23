@@ -518,27 +518,30 @@ namespace
 				embeddedMaterial.heightTexture.reset();
 			}
 
-			aiColor4D albedoColor{};
-			bool hasBaseColor = false;
+			if (!embeddedMaterial.albedoTexture.has_value())
+			{
+				aiColor4D albedoColor{};
+				bool hasBaseColor = false;
 #if defined(AI_MATKEY_BASE_COLOR)
-			hasBaseColor = material->Get(AI_MATKEY_BASE_COLOR, albedoColor) == AI_SUCCESS;
+				hasBaseColor = material->Get(AI_MATKEY_BASE_COLOR, albedoColor) == AI_SUCCESS;
 #endif
 
-			if (hasBaseColor)
-			{
-				embeddedMaterial.albedo.x = ToPerceptualColor(albedoColor.r);
-				embeddedMaterial.albedo.y = ToPerceptualColor(albedoColor.g);
-				embeddedMaterial.albedo.z = ToPerceptualColor(albedoColor.b);
-				embeddedMaterial.albedo.w = std::clamp(albedoColor.a, 0.0f, 1.0f);
-			}
-			else if (!embeddedMaterial.albedoTexture.has_value())
-			{
-				aiColor3D diffuseColor{};
-				if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+				if (hasBaseColor)
 				{
-					embeddedMaterial.albedo.x = ToPerceptualColor(diffuseColor.r);
-					embeddedMaterial.albedo.y = ToPerceptualColor(diffuseColor.g);
-					embeddedMaterial.albedo.z = ToPerceptualColor(diffuseColor.b);
+					embeddedMaterial.albedo.x = ToPerceptualColor(albedoColor.r);
+					embeddedMaterial.albedo.y = ToPerceptualColor(albedoColor.g);
+					embeddedMaterial.albedo.z = ToPerceptualColor(albedoColor.b);
+					embeddedMaterial.albedo.w = std::clamp(albedoColor.a, 0.0f, 1.0f);
+				}
+				else
+				{
+					aiColor3D diffuseColor{};
+					if (material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) == AI_SUCCESS)
+					{
+						embeddedMaterial.albedo.x = ToPerceptualColor(diffuseColor.r);
+						embeddedMaterial.albedo.y = ToPerceptualColor(diffuseColor.g);
+						embeddedMaterial.albedo.z = ToPerceptualColor(diffuseColor.b);
+					}
 				}
 			}
 
@@ -552,13 +555,13 @@ namespace
 			float metallicFactor = 0.0f;
 			const bool hasMetallicFactor = material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor) == AI_SUCCESS;
 
-			if (hasMetallicFactor)
-			{
-				embeddedMaterial.metallic = std::clamp(metallicFactor, 0.0f, 1.0f);
-			}
-			else if (embeddedMaterial.metallicTexture.has_value())
+			if (embeddedMaterial.metallicTexture.has_value())
 			{
 				embeddedMaterial.metallic = 1.0f;
+			}
+			else if (hasMetallicFactor)
+			{
+				embeddedMaterial.metallic = std::clamp(metallicFactor, 0.0f, 1.0f);
 			}
 #if defined(AI_MATKEY_REFLECTIVITY)
 			else
@@ -580,13 +583,13 @@ namespace
 
 #if defined(AI_MATKEY_ROUGHNESS_FACTOR)
 			float roughnessFactor = 0.0f;
-			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == AI_SUCCESS)
-			{
-				embeddedMaterial.roughness = std::clamp(roughnessFactor, 0.0f, 1.0f);
-			}
-			else if (embeddedMaterial.roughnessTexture.has_value())
+			if (embeddedMaterial.roughnessTexture.has_value())
 			{
 				embeddedMaterial.roughness = 1.0f;
+			}
+			else if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor) == AI_SUCCESS)
+			{
+				embeddedMaterial.roughness = std::clamp(roughnessFactor, 0.0f, 1.0f);
 			}
 #else
 			if (embeddedMaterial.roughnessTexture.has_value())

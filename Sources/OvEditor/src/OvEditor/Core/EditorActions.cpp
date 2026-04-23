@@ -909,11 +909,11 @@ void OvEditor::Core::EditorActions::PasteActor(OvCore::ECS::Actor* p_parent)
 	{
 		auto* destinationParent = p_parent;
 
-		// Pasting on the copied actor itself falls back to its current parent,
-		// preserving the "duplicate-like" behavior by default.
-		if (destinationParent && destinationParent->GetGUID() == copiedActor->GetGUID())
+		// Pasted actors are always inserted next to the target actor (same parent),
+		// never as children.
+		if (destinationParent)
 		{
-			destinationParent = copiedActor->GetParent();
+			destinationParent = destinationParent->GetParent();
 		}
 
 		DuplicateActor(*copiedActor, destinationParent, true);

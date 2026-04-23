@@ -39,6 +39,7 @@
 #include <OvEditor/Panels/SceneView.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
+#include <OvEditor/Utils/PrefabUtility.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -942,6 +943,212 @@ void OvEditor::Core::EditorActions::MoveToTarget(OvCore::ECS::Actor& p_target)
 	EDITOR_PANEL(Panels::SceneView, "Scene View").GetCameraController().MoveToTarget(p_target);
 }
 
+bool OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor)
+{
+	using namespace OvWindowing::Dialogs;
+
+	SaveFileDialog dialog("Save Prefab");
+	dialog.SetInitialDirectory(m_context.projectAssetsPath.string());
+	dialog.SetInitialFilename(p_actor.GetName());
+	dialog.DefineExtension("Overload Prefab", ".ovprefab");
+	dialog.Show();
+
+	if (!dialog.HasSucceeded())
+	{
+		return false;
+	}
+
+	const std::string selectedPath = dialog.GetSelectedFilePath();
+	const auto relativePrefabPath = std::filesystem::path(selectedPath).lexically_relative(m_context.projectAssetsPath);
+
+	const bool outsideProjectAssets =
+		relativePrefabPath.empty() ||
+		relativePrefabPath.is_absolute() ||
+		relativePrefabPath.string().starts_with("..");
+
+	if (outsideProjectAssets)
+	{
+		MessageBox(
+			"Invalid prefab destination",
+			"Prefabs must be saved inside the project Assets folder.",
+			MessageBox::EMessageType::ERROR,
+			MessageBox::EButtonLayout::OK,
+			true
+		);
+		return false;
+	}
+
+	const std::string resourcePath = GetResourcePath(selectedPath);
+
+	const std::string previousSourcePrefab = p_actor.GetSourcePrefab();
+	p_actor.SetSourcePrefab(resourcePath);
+
+	if (!OvEditor::Utils::PrefabUtility::SaveActorHierarchyAsPrefab(p_actor, selectedPath))
+	{
+		p_actor.SetSourcePrefab(previousSourcePrefab);
+		OVLOG_ERROR("Failed to save prefab: " + selectedPath);
+		return false;
+	}
+
+	OVLOG_INFO("Prefab saved: " + resourcePath);
+	return true;
+}
+
+bool OvEditor::Core::EditorActions::InstantiatePrefab(const std::string& p_prefabPath, bool p_focusOnCreation, OvCore::ECS::Actor* p_parent)
+{
+	tinyxml2::XMLDocument doc;
+	std::vector<OvEditor::Utils::PrefabActorEntry> serializedActors;
+	const std::string prefabRealPath = GetRealPath(p_prefabPath);
+
+	if (!OvEditor::Utils::PrefabUtility::LoadPrefabActors(prefabRealPath, doc, serializedActors))
+	{
+		OVLOG_ERROR("Failed to load prefab: " + p_prefabPath);
+		return false;
+	}
+
+	auto& rootActor = CreateEmptyActor(false);
+
+	if (!OvEditor::Utils::PrefabUtility::DeserializePrefabHierarchy(
+		doc,
+		serializedActors,
+		rootActor,
+		[this]() -> OvCore::ECS::Actor& { return CreateEmptyActor(false); },
+		&rootActor
+	))
+	{
+		if (auto* currentScene = m_context.sceneManager.GetCurrentScene())
+		{
+			currentScene->DestroyActor(rootActor);
+		}
+
+		OVLOG_ERROR("Failed to deserialize prefab hierarchy: " + p_prefabPath);
+		return false;
+	}
+
+	if (p_parent)
+	{
+		rootActor.SetParent(*p_parent);
+	}
+	else
+	{
+		rootActor.DetachFromParent();
+	}
+
+	rootActor.SetSourcePrefab(p_prefabPath);
+
+	if (p_focusOnCreation)
+	{
+		SelectActor(rootActor);
+	}
+
+	return true;
+}
+
+bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_actor)
+{
+	if (!p_actor.HasSourcePrefab())
+	{
+		return false;
+	}
+
+	using namespace OvWindowing::Dialogs;
+
+	MessageBox confirmation(
+		"Revert to prefab",
+		"Reverting to prefab will overwrite this actor and all its children with the prefab content.\n\nContinue?",
+		MessageBox::EMessageType::WARNING,
+		MessageBox::EButtonLayout::YES_NO,
+		true
+	);
+
+	if (confirmation.GetUserAction() != MessageBox::EUserAction::YES)
+	{
+		return false;
+	}
+
+	tinyxml2::XMLDocument doc;
+	std::vector<OvEditor::Utils::PrefabActorEntry> serializedActors;
+	const std::string sourcePrefab = p_actor.GetSourcePrefab();
+	const std::string prefabRealPath = GetRealPath(sourcePrefab);
+
+	if (!OvEditor::Utils::PrefabUtility::LoadPrefabActors(prefabRealPath, doc, serializedActors))
+	{
+		OVLOG_ERROR("Failed to load prefab: " + sourcePrefab);
+		return false;
+	}
+
+	auto* currentScene = m_context.sceneManager.GetCurrentScene();
+	if (!currentScene)
+	{
+		return false;
+	}
+
+	auto* previousParent = p_actor.GetParent();
+	OvEditor::Utils::PrefabUtility::ClearActorHierarchyContent(*currentScene, p_actor);
+
+	if (!OvEditor::Utils::PrefabUtility::DeserializePrefabHierarchy(
+		doc,
+		serializedActors,
+		p_actor,
+		[this]() -> OvCore::ECS::Actor& { return CreateEmptyActor(false); },
+		&p_actor
+	))
+	{
+		OVLOG_ERROR("Failed to deserialize prefab hierarchy: " + sourcePrefab);
+		return false;
+	}
+
+	p_actor.SetSourcePrefab(sourcePrefab);
+
+	if (previousParent)
+	{
+		p_actor.SetParent(*previousParent);
+	}
+	else
+	{
+		p_actor.DetachFromParent();
+	}
+
+	SelectActor(p_actor);
+	OVLOG_INFO("Prefab instance reverted: " + sourcePrefab);
+	return true;
+}
+
+bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_actor)
+{
+	if (!p_actor.HasSourcePrefab())
+	{
+		return false;
+	}
+
+	using namespace OvWindowing::Dialogs;
+
+	MessageBox confirmation(
+		"Apply to prefab",
+		"Applying to prefab will overwrite the prefab content with this actor and its children.\n\nContinue?",
+		MessageBox::EMessageType::WARNING,
+		MessageBox::EButtonLayout::YES_NO,
+		true
+	);
+
+	if (confirmation.GetUserAction() != MessageBox::EUserAction::YES)
+	{
+		return false;
+	}
+
+	const std::string sourcePrefab = p_actor.GetSourcePrefab();
+	const std::string prefabRealPath = GetRealPath(sourcePrefab);
+
+	if (!OvEditor::Utils::PrefabUtility::SaveActorHierarchyAsPrefab(p_actor, prefabRealPath))
+	{
+		OVLOG_ERROR("Failed to apply actor to prefab: " + sourcePrefab);
+		return false;
+	}
+
+	OVLOG_INFO("Prefab updated: " + sourcePrefab);
+	return true;
+}
+
 void OvEditor::Core::EditorActions::CompileShaders()
 {
 	for (const auto shader : m_context.shaderManager.GetResources() | std::views::values)
@@ -1327,9 +1534,10 @@ void OvEditor::Core::EditorActions::MigrateScripts()
 		const auto newRelPath = (std::filesystem::path("Scripts") / scriptName).generic_string();
 
 		PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(stem, newRelPath, OvTools::Utils::PathParser::EFileType::PREFAB);
 	}
 
-	OVLOG_INFO("Scene files updated with new script paths");
+	OVLOG_INFO("Scene and prefab files updated with new script paths");
 }
 
 void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousName, std::string p_newName)
@@ -1486,6 +1694,7 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		if (next != "?")
 		{
 			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::SCENE);
+			PropagateFileRenameThroughSavedFilesOfType(prev, next, OvTools::Utils::PathParser::EFileType::PREFAB);
 		}
 
 		EDITOR_PANEL(Panels::Inspector, "Inspector").Refresh();
@@ -1493,9 +1702,11 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 	}
 	case OvTools::Utils::PathParser::EFileType::MATERIAL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	case OvTools::Utils::PathParser::EFileType::MODEL:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SHADER:
@@ -1506,6 +1717,24 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
+		break;
+	case OvTools::Utils::PathParser::EFileType::PREFAB:
+		if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+		{
+			for (auto* actor : currentScene->GetActors())
+			{
+				if (!actor->HasSourcePrefab() || actor->GetSourcePrefab() != p_previousName)
+				{
+					continue;
+				}
+
+				actor->SetSourcePrefab(p_newName == "?" ? "" : p_newName);
+			}
+		}
+
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;
 	default:
 		break;

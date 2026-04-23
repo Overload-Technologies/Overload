@@ -268,6 +268,34 @@ namespace OvEditor::Core
 		void MoveToTarget(OvCore::ECS::Actor& p_target);
 		#pragma endregion
 
+		#pragma region PREFABS
+		/**
+		* Save the given actor hierarchy as a prefab file and set the actor source instance.
+		* @param p_actor
+		*/
+		bool SaveActorAsPrefab(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Instantiate a prefab in the current scene.
+		* @param p_prefabPath
+		* @param p_focusOnCreation
+		* @param p_parent
+		*/
+		bool InstantiatePrefab(const std::string& p_prefabPath, bool p_focusOnCreation = true, OvCore::ECS::Actor* p_parent = nullptr);
+
+		/**
+		* Replace the actor hierarchy with the linked prefab content.
+		* @param p_actor
+		*/
+		bool RevertActorToPrefab(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Replace the linked prefab content with the actor hierarchy.
+		* @param p_actor
+		*/
+		bool ApplyActorToPrefab(OvCore::ECS::Actor& p_actor);
+		#pragma endregion
+
 		#pragma region RESOURCE_MANAGEMENT
 		/**
 		* Compile every loaded shaders

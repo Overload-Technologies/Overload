@@ -133,7 +133,8 @@ OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAsse
 		{"Ambient_Sphere_Light", CreateTexture<NEAREST>(texturesFolder / "Ambient_Sphere_Light.png")},
 		{"Empty_Texture", CreateTexture<LINEAR>(texturesFolder / "Empty_Texture.png")},
 		{"Actor", CreateTexture<LINEAR>(texturesFolder / "Actor.png")},
-		{"Search", CreateTexture<LINEAR>(texturesFolder / "Search.png")}
+		{"Search", CreateTexture<LINEAR>(texturesFolder / "Search.png")},
+		{"Edit", CreateTexture<LINEAR>(texturesFolder / "Edit.png")}
 	};
 
 	m_models = {

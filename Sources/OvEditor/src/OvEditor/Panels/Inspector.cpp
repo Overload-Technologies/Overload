@@ -378,6 +378,12 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_i
 	header.MoveUpEvent += [move] { move(true); };
 	header.MoveDownEvent += [move] { move(false); };
 
+	const uint32_t editIconID = EDITOR_CONTEXT(editorResources)->GetTexture("Edit")->GetTexture().GetID();
+	const auto scriptPath = EDITOR_CONTEXT(projectAssetsPath) / p_behaviour.name;
+	header.actions.push_back({editIconID, [scriptPath] {
+		EDITOR_EXEC(OpenInCodeEditor(scriptPath));
+	}});
+
 	auto& columns = header.CreateWidget<Layout::Columns<2>>();
 	columns.SetID("bhv_" + p_behaviour.name);
 	columns.widths[0] = 200 * OVUI_SCALE;

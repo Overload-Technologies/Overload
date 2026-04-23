@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include <OvTools/Eventing/Event.h>
@@ -20,6 +21,15 @@ namespace OvUI::Widgets::Layout
 	class GroupCollapsable : public Group
 	{
 	public:
+		/**
+		* Represents a clickable icon button drawn inside the collapsable header
+		*/
+		struct HeaderAction
+		{
+			uint32_t textureID;
+			std::function<void()> callback;
+		};
+
 		/**
 		* Constructor
 		* @param p_name
@@ -36,6 +46,7 @@ namespace OvUI::Widgets::Layout
 		bool reorderable = false;
 		bool canMoveUp = true;
 		bool canMoveDown = true;
+		std::vector<HeaderAction> actions;
 		OvTools::Eventing::Event<> CloseEvent;
 		OvTools::Eventing::Event<> OpenEvent;
 		OvTools::Eventing::Event<> MoveUpEvent;

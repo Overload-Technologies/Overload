@@ -87,11 +87,11 @@ void OvEditor::Panels::AView::DrawFrame()
 
 std::pair<uint16_t, uint16_t> OvEditor::Panels::AView::GetSafeSize() const
 {
-	constexpr float kTitleBarHeight = 25.0f; // <--- this takes into account the imgui window title bar
+	const float kTitleBarHeight = ImGui::GetFrameHeight(); // accounts for the imgui window title bar
 	const auto& size = GetSize();
 	return {
 		static_cast<uint16_t>(size.x),
-		static_cast<uint16_t>(std::max(0.0f, size.y - kTitleBarHeight)) // <--- clamp to prevent the output size to be negative
+		static_cast<uint16_t>(std::max(0.0f, size.y - kTitleBarHeight))
 	}; 
 }
 

@@ -31,6 +31,7 @@ namespace
 		case EFileType::SOUND:    return "Pick Sound";
 		case EFileType::SCRIPT:   return "Pick Script";
 		case EFileType::SCENE:    return "Pick Scene";
+		case EFileType::PREFAB:   return "Pick Prefab";
 		default:                  return "Pick Asset";
 		}
 	}

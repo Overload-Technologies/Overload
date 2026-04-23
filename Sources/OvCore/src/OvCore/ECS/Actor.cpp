@@ -100,6 +100,21 @@ void OvCore::ECS::Actor::SetTag(const std::string & p_tag)
 	m_tag = p_tag;
 }
 
+void OvCore::ECS::Actor::SetSourcePrefab(const std::string& p_sourcePrefab)
+{
+	m_sourcePrefab = p_sourcePrefab;
+}
+
+const std::string& OvCore::ECS::Actor::GetSourcePrefab() const
+{
+	return m_sourcePrefab;
+}
+
+bool OvCore::ECS::Actor::HasSourcePrefab() const
+{
+	return !m_sourcePrefab.empty();
+}
+
 void OvCore::ECS::Actor::SetActive(bool p_active)
 {
 	if (p_active != m_active)
@@ -448,6 +463,7 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 
 	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "name", m_name);
 	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "tag", m_tag);
+	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "source_instance", m_sourcePrefab);
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, actorNode, "active", m_active);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "id", m_actorID);
 	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "guid", m_guid);
@@ -502,6 +518,7 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 {
 	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "name", m_name);
 	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "tag", m_tag);
+	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "source_instance", m_sourcePrefab);
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_actorsRoot, "active", m_active);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "id", m_actorID);
 	OvCore::Helpers::Serializer::DeserializeUInt64(p_doc, p_actorsRoot, "guid", m_guid);

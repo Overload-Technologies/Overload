@@ -64,6 +64,23 @@ namespace OvCore::ECS
 		void SetTag(const std::string& p_tag);
 
 		/**
+		* Defines the source prefab path for this actor.
+		* Empty means this actor is not a prefab instance root.
+		* @param p_sourcePrefab
+		*/
+		void SetSourcePrefab(const std::string& p_sourcePrefab);
+
+		/**
+		* Returns the source prefab path for this actor.
+		*/
+		const std::string& GetSourcePrefab() const;
+
+		/**
+		* Returns true if this actor has a source prefab path.
+		*/
+		bool HasSourcePrefab() const;
+
+		/**
 		* Enable or disable the actor
 		* @param p_active
 		*/
@@ -363,6 +380,7 @@ namespace OvCore::ECS
 		/* Settings */
 		std::string		m_name;
 		std::string		m_tag;
+		std::string		m_sourcePrefab;
 		bool			m_active = true;
 		bool&			m_playing;
 

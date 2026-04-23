@@ -47,6 +47,11 @@ namespace OvEditor::Panels
 		*/
 		void Open(OvCore::Helpers::GUIHelpers::PickerItemList p_items, std::string p_title);
 
+		/**
+		* Returns the current text in the search field.
+		*/
+		std::string GetSearchText() const;
+
 	private:
 		void _Draw_Impl() override;
 		void Populate();
@@ -65,7 +70,13 @@ namespace OvEditor::Panels
 		OvUI::Widgets::InputFields::InputText* m_searchField = nullptr;
 		OvUI::Widgets::Layout::Group* m_listGroup = nullptr;
 
-		/* Each entry: (search key, row widget) */
-		std::vector<std::pair<std::string, OvUI::Widgets::Layout::Group*>> m_rows;
+		/* Each entry: search key, always-visible flag, and row widget */
+		struct RowEntry
+		{
+			std::string key;
+			bool alwaysVisible;
+			OvUI::Widgets::Layout::Group* widget;
+		};
+		std::vector<RowEntry> m_rows;
 	};
 }

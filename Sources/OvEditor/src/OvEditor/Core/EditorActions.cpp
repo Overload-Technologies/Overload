@@ -822,7 +822,6 @@ OvCore::ECS::Actor & OvEditor::Core::EditorActions::CreateActorWithModel(const s
 bool OvEditor::Core::EditorActions::DestroyActor(OvCore::ECS::Actor & p_actor)
 {
 	p_actor.MarkAsDestroy();
-	OVLOG_INFO("Actor destroyed");
 	return true;
 }
 

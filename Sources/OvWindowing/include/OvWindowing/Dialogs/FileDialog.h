@@ -75,6 +75,12 @@ namespace OvWindowing::Dialogs
 		void SetInitialDirectory(const std::string& p_initialDirectory);
 
 		/**
+		* Defines the initial filename pre-populated in the dialog
+		* @param p_initialFilename
+		*/
+		void SetInitialFilename(const std::string& p_initialFilename);
+
+		/**
 		* Show the file dialog
 		* @param p_flags
 		*/
@@ -112,6 +118,7 @@ namespace OvWindowing::Dialogs
 		std::function<int(tagOFNA*)> m_callback;
 		const std::string m_dialogTitle;
 		std::string m_initialDirectory;
+		std::string m_initialFilename;
 		std::string m_filter;
 		std::string m_error;
 		std::string m_filename;

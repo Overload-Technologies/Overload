@@ -744,9 +744,15 @@ namespace
 			if (!m_protected)
 			{
 				auto& generateMaterialsMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Generate materials...");
+				auto& extractMaterialsAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Extract materials");
 
 				CreateMaterialCreationOption(generateMaterialsMenu, "Standard");
 				CreateMaterialCreationOption(generateMaterialsMenu, "Unlit");
+
+				extractMaterialsAction.ClickedEvent += [this]
+				{
+					ExtractMaterialFiles();
+				};
 			}
 
 			FileContextualMenu::CreateList();

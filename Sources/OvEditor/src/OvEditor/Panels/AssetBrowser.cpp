@@ -680,6 +680,42 @@ namespace
 			}
 		}
 
+		void ExtractMaterialFiles()
+		{
+			auto& modelManager = OVSERVICE(OvCore::ResourceManagement::ModelManager);
+			auto& materialManager = OVSERVICE(OvCore::ResourceManagement::MaterialManager);
+			const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected));
+
+			if (auto model = modelManager.GetResource(resourcePath))
+			{
+				const auto& embeddedMaterials = model->GetEmbeddedMaterials();
+				const auto& materialNames = model->GetMaterialNames();
+
+				for (size_t materialIndex = 0; materialIndex < embeddedMaterials.size(); ++materialIndex)
+				{
+					const std::string embeddedMaterialPath = OvRendering::Resources::Parsers::MakeEmbeddedMaterialPath(
+						resourcePath,
+						static_cast<uint32_t>(materialIndex)
+					);
+
+					auto* embeddedMaterial = materialManager.GetResource(embeddedMaterialPath);
+					if (!embeddedMaterial)
+					{
+						continue;
+					}
+
+					const bool hasNamedSlot = materialIndex < materialNames.size() && !materialNames[materialIndex].empty();
+					const std::string materialName = hasNamedSlot
+						? materialNames[materialIndex]
+						: std::format("embedded_material_{}", materialIndex);
+
+					const auto finalPath = FindAvailableFilePath(filePath.parent_path() / (materialName + ".ovmat"));
+					OvCore::Resources::Loaders::MaterialLoader::Save(*embeddedMaterial, finalPath.string());
+					DuplicateEvent.Invoke(finalPath);
+				}
+			}
+		}
+
 		void CreateMaterialCreationOption(OvUI::Internal::WidgetContainer& p_root, const std::string_view p_materialName)
 		{
 			const std::string materialName{ p_materialName };
@@ -708,9 +744,15 @@ namespace
 			if (!m_protected)
 			{
 				auto& generateMaterialsMenu = CreateWidget<OvUI::Widgets::Menu::MenuList>("Generate materials...");
+				auto& extractMaterialsAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Extract materials");
 
 				CreateMaterialCreationOption(generateMaterialsMenu, "Standard");
 				CreateMaterialCreationOption(generateMaterialsMenu, "Unlit");
+
+				extractMaterialsAction.ClickedEvent += [this]
+				{
+					ExtractMaterialFiles();
+				};
 			}
 
 			FileContextualMenu::CreateList();

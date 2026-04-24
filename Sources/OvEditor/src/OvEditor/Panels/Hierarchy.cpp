@@ -128,8 +128,8 @@ public:
 				}
 
 				OvWindowing::Dialogs::SaveFileDialog dialog("Save Prefab");
-				const auto initialPath = EDITOR_CONTEXT(projectAssetsPath) / target->GetName();
-				dialog.SetInitialDirectory(initialPath.string());
+				dialog.SetInitialDirectory(EDITOR_CONTEXT(projectAssetsPath).string());
+				dialog.SetInitialFilename(target->GetName());
 				dialog.DefineExtension("Overload Prefab", ".ovprefab");
 				dialog.Show();
 

@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <charconv>
 #include "OvDebug/Assertion.h"
 #include "OvTools/Utils/OptRef.h"
 #include <filesystem>
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <ranges>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include <tinyxml2.h>
 
@@ -58,18 +60,15 @@ namespace
 
 	void NormalizePrefabSourcesRecursively(
 		OvCore::ECS::Actor& p_actor,
-		const std::string& p_inheritedPrefabSource,
-		const std::string& p_previousRootPrefabSource)
+		const std::string& p_inheritedPrefabSource)
 	{
 		if (p_actor.HasPrefabSource())
 		{
 			const std::string currentPrefabSource = p_actor.GetPrefabSource();
-			const bool hasRedundantSource =
-				currentPrefabSource == p_inheritedPrefabSource ||
-				(!p_previousRootPrefabSource.empty() && currentPrefabSource == p_previousRootPrefabSource);
-
-			if (hasRedundantSource)
+			if (currentPrefabSource == p_inheritedPrefabSource)
+			{
 				p_actor.SetPrefabSource("?");
+			}
 		}
 
 		const std::string nextInheritedPrefabSource =
@@ -77,20 +76,19 @@ namespace
 
 		for (auto* child : p_actor.GetChildren())
 		{
-			NormalizePrefabSourcesRecursively(*child, nextInheritedPrefabSource, p_previousRootPrefabSource);
+			NormalizePrefabSourcesRecursively(*child, nextInheritedPrefabSource);
 		}
 	}
 
 	void SetRootPrefabSourceAndNormalizeChildren(
 		OvCore::ECS::Actor& p_rootActor,
-		const std::string& p_previousRootPrefabSource,
 		const std::string& p_newRootPrefabSource)
 	{
 		p_rootActor.SetPrefabSource(p_newRootPrefabSource);
 
 		for (auto* child : p_rootActor.GetChildren())
 		{
-			NormalizePrefabSourcesRecursively(*child, p_newRootPrefabSource, p_previousRootPrefabSource);
+			NormalizePrefabSourcesRecursively(*child, p_newRootPrefabSource);
 		}
 	}
 
@@ -109,17 +107,163 @@ namespace
 			return nullptr;
 		}
 
-		const std::string prefabSource = resolvedRoot->GetPrefabSource();
+		return resolvedRoot;
+	}
 
-		// Handle scenes where ancestors may still share the same prefab source.
-		while (resolvedRoot->HasParent() &&
-			resolvedRoot->GetParent()->HasPrefabSource() &&
-			resolvedRoot->GetParent()->GetPrefabSource() == prefabSource)
+	bool TryParseUInt64(const char* p_text, uint64_t& p_value)
+	{
+		if (!p_text)
 		{
-			resolvedRoot = resolvedRoot->GetParent();
+			return false;
 		}
 
-		return resolvedRoot;
+		const std::string_view text{ p_text };
+		const auto [parseEnd, error] = std::from_chars(text.data(), text.data() + text.size(), p_value);
+		return error == std::errc{} && parseEnd == text.data() + text.size();
+	}
+
+	void RemapActorReferenceGuidsInActorNode(
+		tinyxml2::XMLElement& p_actorNode,
+		const std::unordered_map<uint64_t, uint64_t>& p_guidRemap)
+	{
+		auto* behavioursNode = p_actorNode.FirstChildElement("behaviours");
+
+		if (!behavioursNode)
+		{
+			return;
+		}
+
+		for (auto* behaviourNode = behavioursNode->FirstChildElement("behaviour");
+			behaviourNode;
+			behaviourNode = behaviourNode->NextSiblingElement("behaviour"))
+		{
+			auto* dataNode = behaviourNode->FirstChildElement("data");
+			auto* scriptPropertiesNode = dataNode ? dataNode->FirstChildElement("script_properties") : nullptr;
+
+			if (!scriptPropertiesNode)
+			{
+				continue;
+			}
+
+			for (auto* propertyNode = scriptPropertiesNode->FirstChildElement();
+				propertyNode;
+				propertyNode = propertyNode->NextSiblingElement())
+			{
+				const char* typeAttribute = propertyNode->Attribute("type");
+
+				if (!typeAttribute || std::string_view{ typeAttribute } != "actor")
+				{
+					continue;
+				}
+
+				uint64_t sourceGuid = 0;
+
+				if (!TryParseUInt64(propertyNode->GetText(), sourceGuid))
+				{
+					continue;
+				}
+
+				if (const auto it = p_guidRemap.find(sourceGuid); it != p_guidRemap.end())
+				{
+					propertyNode->SetText(std::to_string(it->second).c_str());
+				}
+			}
+		}
+	}
+
+	void BuildGuidRemapFromCommonHierarchy(
+		OvCore::ECS::Actor& p_targetActor,
+		OvCore::ECS::Actor& p_templateActor,
+		std::unordered_map<uint64_t, uint64_t>& p_guidRemap)
+	{
+		p_guidRemap[p_templateActor.GetGUID()] = p_targetActor.GetGUID();
+
+		auto& targetChildren = p_targetActor.GetChildren();
+		auto& templateChildren = p_templateActor.GetChildren();
+		const size_t commonChildrenCount = std::min(targetChildren.size(), templateChildren.size());
+
+		for (size_t childIndex = 0; childIndex < commonChildrenCount; ++childIndex)
+		{
+			BuildGuidRemapFromCommonHierarchy(*targetChildren[childIndex], *templateChildren[childIndex], p_guidRemap);
+		}
+	}
+
+	void SetActorNodeValue(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLElement& p_actorNode, const char* p_fieldName, const std::string& p_value)
+	{
+		auto* field = p_actorNode.FirstChildElement(p_fieldName);
+
+		if (!field)
+		{
+			field = p_doc.NewElement(p_fieldName);
+			p_actorNode.InsertEndChild(field);
+		}
+
+		field->SetText(p_value.c_str());
+	}
+
+	void RemoveActorComponentsAndBehaviours(OvCore::ECS::Actor& p_actor)
+	{
+		const auto components = p_actor.GetComponents();
+
+		for (const auto& component : components)
+		{
+			if (!dynamic_cast<OvCore::ECS::Components::CTransform*>(component.get()))
+			{
+				p_actor.RemoveComponent(*component);
+			}
+		}
+
+		const auto behaviourNames = p_actor.GetBehavioursOrder();
+
+		for (const auto& behaviourName : behaviourNames)
+		{
+			p_actor.RemoveBehaviour(behaviourName);
+		}
+	}
+
+	void OverwriteActorFromPrefabTemplate(
+		OvCore::ECS::Actor& p_targetActor,
+		OvCore::ECS::Actor& p_templateActor,
+		const std::unordered_map<uint64_t, uint64_t>& p_guidRemap,
+		bool p_preserveName,
+		bool p_preserveLocalTransform)
+	{
+		tinyxml2::XMLDocument doc;
+		auto* actorsNode = doc.NewElement("actors");
+		doc.InsertFirstChild(actorsNode);
+		p_templateActor.OnSerialize(doc, actorsNode);
+
+		auto* actorNode = actorsNode->FirstChildElement("actor");
+		if (!actorNode)
+		{
+			return;
+		}
+
+		RemapActorReferenceGuidsInActorNode(*actorNode, p_guidRemap);
+
+		SetActorNodeValue(doc, *actorNode, "id", std::to_string(p_targetActor.GetID()));
+		SetActorNodeValue(doc, *actorNode, "guid", std::to_string(p_targetActor.GetGUID()));
+		SetActorNodeValue(doc, *actorNode, "parent", std::to_string(p_targetActor.GetParentID()));
+
+		const std::string previousName = p_targetActor.GetName();
+		const auto previousLocalPosition = p_targetActor.transform.GetLocalPosition();
+		const auto previousLocalRotation = p_targetActor.transform.GetLocalRotation();
+		const auto previousLocalScale = p_targetActor.transform.GetLocalScale();
+
+		RemoveActorComponentsAndBehaviours(p_targetActor);
+		p_targetActor.OnDeserialize(doc, actorNode);
+
+		if (p_preserveName)
+		{
+			p_targetActor.SetName(previousName);
+		}
+
+		if (p_preserveLocalTransform)
+		{
+			p_targetActor.transform.SetLocalPosition(previousLocalPosition);
+			p_targetActor.transform.SetLocalRotation(previousLocalRotation);
+			p_targetActor.transform.SetLocalScale(previousLocalScale);
+		}
 	}
 
 	void RefreshMaterialsUsingShader(
@@ -952,8 +1096,6 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 
 void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor, const std::string& p_path)
 {
-	const std::string previousRootPrefabSource = p_actor.GetPrefabSource();
-
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
 	{
 		OVLOG_ERROR("Failed to save prefab to: " + p_path);
@@ -961,7 +1103,7 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 	}
 
 	const std::string prefabSourcePath = GetResourcePath(p_path);
-	SetRootPrefabSourceAndNormalizeChildren(p_actor, previousRootPrefabSource, prefabSourcePath);
+	SetRootPrefabSourceAndNormalizeChildren(p_actor, prefabSourcePath);
 
 	OVLOG_INFO("Prefab saved to: " + p_path);
 }
@@ -984,8 +1126,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 
 	if (instantiatedRoot)
 	{
-		const std::string previousRootPrefabSource = instantiatedRoot->GetPrefabSource();
-		SetRootPrefabSourceAndNormalizeChildren(*instantiatedRoot, previousRootPrefabSource, prefabSourcePath);
+		SetRootPrefabSourceAndNormalizeChildren(*instantiatedRoot, prefabSourcePath);
 
 		const std::string prefabName = realPath.stem().string();
 		if (!prefabName.empty())
@@ -1026,36 +1167,64 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 	return true;
 }
 
-OvCore::ECS::Actor* OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_actor)
+bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_actor)
 {
 	auto* prefabInstanceRoot = ResolvePrefabInstanceRoot(p_actor);
 	if (!prefabInstanceRoot)
 	{
 		OVLOG_ERROR("Cannot revert actor \"" + p_actor.GetName() + "\" to prefab: no source instance.");
-		return nullptr;
+		return false;
 	}
 
-	OvCore::ECS::Actor* parent = prefabInstanceRoot->GetParent();
-	const auto previousLocalPosition = prefabInstanceRoot->transform.GetLocalPosition();
-	const auto previousLocalRotation = prefabInstanceRoot->transform.GetLocalRotation();
-	const auto previousLocalScale = prefabInstanceRoot->transform.GetLocalScale();
 	const auto prefabSourcePath = prefabInstanceRoot->GetPrefabSource();
 
-	auto* instantiatedRoot = InstantiatePrefab(prefabSourcePath);
-	if (!instantiatedRoot)
-		return nullptr;
+	auto* prefabTemplateRoot = InstantiatePrefab(prefabSourcePath);
+	if (!prefabTemplateRoot)
+	{
+		return false;
+	}
 
-	if (parent)
-		instantiatedRoot->SetParent(*parent);
+	std::unordered_map<uint64_t, uint64_t> prefabToInstanceGuidMap;
+	BuildGuidRemapFromCommonHierarchy(*prefabInstanceRoot, *prefabTemplateRoot, prefabToInstanceGuidMap);
 
-	instantiatedRoot->transform.SetLocalPosition(previousLocalPosition);
-	instantiatedRoot->transform.SetLocalRotation(previousLocalRotation);
-	instantiatedRoot->transform.SetLocalScale(previousLocalScale);
+	std::function<void(OvCore::ECS::Actor&, OvCore::ECS::Actor&, bool)> syncActorHierarchy;
+	syncActorHierarchy = [this, &syncActorHierarchy, &prefabToInstanceGuidMap](OvCore::ECS::Actor& p_targetActor, OvCore::ECS::Actor& p_templateActor, bool p_isRoot)
+	{
+		OverwriteActorFromPrefabTemplate(
+			p_targetActor,
+			p_templateActor,
+			prefabToInstanceGuidMap,
+			p_isRoot, /* keep root name */
+			p_isRoot  /* keep root local transform */
+		);
 
-	DestroyActor(*prefabInstanceRoot);
-	SelectActor(*instantiatedRoot);
+		auto& targetChildren = p_targetActor.GetChildren();
+		auto& templateChildren = p_templateActor.GetChildren();
+		const size_t commonChildrenCount = std::min(targetChildren.size(), templateChildren.size());
 
-	return instantiatedRoot;
+		for (size_t childIndex = 0; childIndex < commonChildrenCount; ++childIndex)
+		{
+			syncActorHierarchy(*targetChildren[childIndex], *templateChildren[childIndex], false);
+		}
+
+		for (size_t childIndex = targetChildren.size(); childIndex > commonChildrenCount; --childIndex)
+		{
+			targetChildren[childIndex - 1]->MarkAsDestroy();
+		}
+
+		for (size_t childIndex = commonChildrenCount; childIndex < templateChildren.size(); ++childIndex)
+		{
+			DuplicateActor(*templateChildren[childIndex], &p_targetActor, false);
+		}
+	};
+
+	syncActorHierarchy(*prefabInstanceRoot, *prefabTemplateRoot, true);
+
+	prefabTemplateRoot->MarkAsDestroy();
+	SelectActor(*prefabInstanceRoot);
+
+	OVLOG_INFO("Prefab reverted on actor \"" + prefabInstanceRoot->GetName() + "\": " + GetRealPath(prefabSourcePath));
+	return true;
 }
 
 void OvEditor::Core::EditorActions::CopyActor(OvCore::ECS::Actor& p_actor)

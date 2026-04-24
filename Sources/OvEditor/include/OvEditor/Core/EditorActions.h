@@ -248,11 +248,11 @@ namespace OvEditor::Core
 
 		/**
 		* Revert an actor hierarchy from its prefab source.
-		* The actor instance is replaced by a fresh prefab instantiation.
-		* Returns the new root actor on success.
+		* Keeps existing actor GUIDs to preserve scene/script references.
+		* Returns true on success.
 		* @param p_actor
 		*/
-		OvCore::ECS::Actor* RevertActorToPrefab(OvCore::ECS::Actor& p_actor);
+		bool RevertActorToPrefab(OvCore::ECS::Actor& p_actor);
 		#pragma endregion
 
 		#pragma region ACTOR_MANIPULATION

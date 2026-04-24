@@ -225,7 +225,20 @@ public:
 			) :
 			std::nullopt;
 
-		OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(createActor, GetTargetActor(), onItemClicked);
+		OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(
+			createActor,
+			[targetGUID = m_targetID]() -> OvCore::ECS::Actor*
+			{
+				if (targetGUID == 0)
+				{
+					return nullptr;
+				}
+
+				const auto scene = EDITOR_CONTEXT(sceneManager).GetCurrentScene();
+				return scene ? scene->FindActorByGUID(targetGUID) : nullptr;
+			},
+			onItemClicked
+		);
 	}
 
 	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override

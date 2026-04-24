@@ -216,7 +216,14 @@ void OvEditor::Panels::Inspector::_PopulateActorInfo()
 		[this] { return std::format("{:016X}", m_targetActor->GetGUID()); }
 	);
 
-	_DrawAddSection();
+	auto& prefabSourceField = OvCore::Helpers::GUIDrawer::DrawAsset(
+		headerColumns,
+		"Prefab Source",
+		[this] { return m_targetActor->GetPrefabSource(); },
+		[](const std::string&) {},
+		OvTools::Utils::PathParser::EFileType::PREFAB
+	);
+	prefabSourceField.disabled = true;
 }
 
 void OvEditor::Panels::Inspector::_PopulateActorComponents()

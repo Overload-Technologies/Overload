@@ -69,9 +69,7 @@ namespace
 				(!p_previousRootPrefabSource.empty() && currentPrefabSource == p_previousRootPrefabSource);
 
 			if (hasRedundantSource)
-			{
 				p_actor.SetPrefabSource("?");
-			}
 		}
 
 		const std::string nextInheritedPrefabSource =
@@ -107,12 +105,13 @@ namespace
 
 		if (!resolvedRoot)
 		{
-			return (OVLOG_ERROR("Failed to resolve prefab instance root for actor \"" + p_actor.GetName() + "\": no prefab source found in actor hierarchy."), nullptr);
+			OVLOG_ERROR("Failed to resolve prefab instance root for actor \"" + p_actor.GetName() + "\": no prefab source found in actor hierarchy.");
+			return nullptr;
 		}
 
 		const std::string prefabSource = resolvedRoot->GetPrefabSource();
 
-		// Keep compatibility with legacy scenes where every actor of an instance inherited the same source.
+		// Handle scenes where ancestors may still share the same prefab source.
 		while (resolvedRoot->HasParent() &&
 			resolvedRoot->GetParent()->HasPrefabSource() &&
 			resolvedRoot->GetParent()->GetPrefabSource() == prefabSource)
@@ -957,7 +956,8 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
 	{
-		return (OVLOG_ERROR("Failed to save prefab to: " + p_path), void());
+		OVLOG_ERROR("Failed to save prefab to: " + p_path);
+		return;
 	}
 
 	const std::string prefabSourcePath = GetResourcePath(p_path);
@@ -969,9 +969,7 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::string& p_path)
 {
 	if (!m_context.sceneManager.GetCurrentScene())
-	{
 		return nullptr;
-	}
 
 	const std::filesystem::path realPath = GetRealPath(p_path);
 	const std::string prefabSourcePath = GetResourcePath(realPath.string());
@@ -988,6 +986,11 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 	{
 		const std::string previousRootPrefabSource = instantiatedRoot->GetPrefabSource();
 		SetRootPrefabSourceAndNormalizeChildren(*instantiatedRoot, previousRootPrefabSource, prefabSourcePath);
+
+		const std::string prefabName = realPath.stem().string();
+		if (!prefabName.empty())
+			instantiatedRoot->SetName(prefabName);
+
 		OVLOG_INFO("Prefab instantiated: " + realPath.string());
 	}
 	else
@@ -1003,14 +1006,16 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 	auto* prefabInstanceRoot = ResolvePrefabInstanceRoot(p_actor);
 	if (!prefabInstanceRoot)
 	{
-		return (OVLOG_ERROR("Cannot apply actor \"" + p_actor.GetName() + "\" to prefab: no source instance."), false);
+		OVLOG_ERROR("Cannot apply actor \"" + p_actor.GetName() + "\" to prefab: no source instance.");
+		return false;
 	}
 
 	const std::string realPath = GetRealPath(prefabInstanceRoot->GetPrefabSource());
 
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(*prefabInstanceRoot, realPath))
 	{
-		return (OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath), false);
+		OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath);
+		return false;
 	}
 
 	OVLOG_INFO(
@@ -1026,22 +1031,26 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::E
 	auto* prefabInstanceRoot = ResolvePrefabInstanceRoot(p_actor);
 	if (!prefabInstanceRoot)
 	{
-		return (OVLOG_ERROR("Cannot revert actor \"" + p_actor.GetName() + "\" to prefab: no source instance."), nullptr);
+		OVLOG_ERROR("Cannot revert actor \"" + p_actor.GetName() + "\" to prefab: no source instance.");
+		return nullptr;
 	}
 
 	OvCore::ECS::Actor* parent = prefabInstanceRoot->GetParent();
+	const auto previousLocalPosition = prefabInstanceRoot->transform.GetLocalPosition();
+	const auto previousLocalRotation = prefabInstanceRoot->transform.GetLocalRotation();
+	const auto previousLocalScale = prefabInstanceRoot->transform.GetLocalScale();
 	const auto prefabSourcePath = prefabInstanceRoot->GetPrefabSource();
 
 	auto* instantiatedRoot = InstantiatePrefab(prefabSourcePath);
 	if (!instantiatedRoot)
-	{
 		return nullptr;
-	}
 
 	if (parent)
-	{
 		instantiatedRoot->SetParent(*parent);
-	}
+
+	instantiatedRoot->transform.SetLocalPosition(previousLocalPosition);
+	instantiatedRoot->transform.SetLocalRotation(previousLocalRotation);
+	instantiatedRoot->transform.SetLocalScale(previousLocalScale);
 
 	DestroyActor(*prefabInstanceRoot);
 	SelectActor(*instantiatedRoot);

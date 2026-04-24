@@ -13,6 +13,7 @@
 #include <vector>
 #include <tinyxml2.h>
 
+#include <OvCore/ECS/Actor.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
@@ -1155,6 +1156,29 @@ void OvEditor::Panels::AssetBrowser::ConsiderItem(OvUI::Widgets::Layout::TreeNod
 						}
 					}
 				};
+
+			treeNode.AddPlugin<OvUI::Plugins::DDTarget<std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*>>>("Actor").DataReceivedEvent += [this, &treeNode, path, p_isEngineItem](std::pair<OvCore::ECS::Actor*, OvUI::Widgets::Layout::TreeNode*> p_data)
+			{
+				if (!p_data.first)
+				{
+					return;
+				}
+
+				const auto correctPath = m_pathUpdate.find(&treeNode) != m_pathUpdate.end() ? m_pathUpdate.at(&treeNode) : std::filesystem::path(path);
+				if (!ValidateFolderPath(correctPath, "Create prefab"))
+				{
+					return;
+				}
+
+				const std::string actorName = p_data.first->GetName().empty() ? "Prefab" : p_data.first->GetName();
+				const std::filesystem::path prefabPath = FindAvailableFilePath(correctPath / (actorName + ".ovprefab"));
+
+				EDITOR_EXEC(SaveActorAsPrefab(*p_data.first, prefabPath.string()));
+
+				treeNode.Open();
+				treeNode.RemoveAllWidgets();
+				ParseFolder(treeNode, std::filesystem::directory_entry(correctPath), p_isEngineItem);
+			};
 			}
 
 			contextMenu.DestroyedEvent += [&itemGroup](const std::filesystem::path& p_deletedPath) { itemGroup.Destroy(); };

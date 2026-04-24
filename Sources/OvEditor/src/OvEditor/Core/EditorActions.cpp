@@ -957,8 +957,7 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
 	{
-		OVLOG_ERROR("Failed to save prefab to: " + p_path);
-		return;
+		return (OVLOG_ERROR("Failed to save prefab to: " + p_path), void());
 	}
 
 	const std::string prefabSourcePath = GetResourcePath(p_path);
@@ -1011,8 +1010,7 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(*prefabInstanceRoot, realPath))
 	{
-		OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath);
-		return false;
+		return (OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath), false);
 	}
 
 	OVLOG_INFO(

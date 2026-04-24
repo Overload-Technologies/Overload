@@ -5,11 +5,13 @@
 */
 
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 #include <tinyxml2.h>
 
+#include <OvDebug/Logger.h>
 #include <OvCore/ECS/Actor.h>
 
 #include <OvEditor/Utils/PrefabOperations.h>
@@ -54,15 +56,14 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 {
 	if (!p_createActor)
 	{
-		return nullptr;
+		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": invalid actor factory callback."), nullptr);
 	}
 
 	tinyxml2::XMLDocument doc;
-	doc.LoadFile(p_prefabPath.string().c_str());
-
-	if (doc.Error())
+	const auto loadResult = doc.LoadFile(p_prefabPath.string().c_str());
+	if (loadResult != tinyxml2::XML_SUCCESS)
 	{
-		return nullptr;
+		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": XML parsing failed (code " + std::to_string(loadResult) + ")."), nullptr);
 	}
 
 	auto* rootNode = doc.FirstChildElement("root");
@@ -71,7 +72,7 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 
 	if (!actorsNode)
 	{
-		return nullptr;
+		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": missing <root>/<prefab>/<actors> node."), nullptr);
 	}
 
 	struct PendingAttachment

@@ -56,14 +56,16 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 {
 	if (!p_createActor)
 	{
-		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": invalid actor factory callback."), nullptr);
+		OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": invalid actor factory callback.");
+		return nullptr;
 	}
 
 	tinyxml2::XMLDocument doc;
 	const auto loadResult = doc.LoadFile(p_prefabPath.string().c_str());
 	if (loadResult != tinyxml2::XML_SUCCESS)
 	{
-		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": XML parsing failed (code " + std::to_string(loadResult) + ")."), nullptr);
+		OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": XML parsing failed (code " + std::to_string(loadResult) + ").");
+		return nullptr;
 	}
 
 	auto* rootNode = doc.FirstChildElement("root");
@@ -72,7 +74,8 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 
 	if (!actorsNode)
 	{
-		return (OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": missing <root>/<prefab>/<actors> node."), nullptr);
+		OVLOG_ERROR("Failed to instantiate prefab \"" + p_prefabPath.string() + "\": missing <root>/<prefab>/<actors> node.");
+		return nullptr;
 	}
 
 	struct PendingAttachment
@@ -110,13 +113,9 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 	for (auto& pending : pendingAttachments)
 	{
 		if (auto found = sourceToInstance.find(pending.sourceParentID); found != sourceToInstance.end())
-		{
 			pending.actor->SetParent(*found->second);
-		}
 		else if (!instantiatedRoot)
-		{
 			instantiatedRoot = pending.actor;
-		}
 	}
 
 	return instantiatedRoot;

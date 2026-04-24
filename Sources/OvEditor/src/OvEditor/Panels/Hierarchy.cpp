@@ -7,6 +7,7 @@
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Core/EditorActions.h"
 
+#include <algorithm>
 #include <cstdint>
 
 #include <OvUI/Styling/Style.h>
@@ -72,7 +73,7 @@ class ActorContextualMenu : public OvUI::Plugins::ContextualMenu
 {
 public:
 	ActorContextualMenu(OvCore::ECS::Actor* p_target, OvUI::Widgets::Layout::TreeNode* p_treeNode = nullptr, bool p_panelMenu = false) :
-		m_targetID(p_target ? p_target->GetGUID() : 0),
+		m_targetActor(p_target),
 		m_treeNode(p_treeNode)
 	{
 		using namespace OvUI::Panels;
@@ -80,7 +81,7 @@ public:
 		using namespace OvUI::Widgets::Menu;
 		using namespace OvCore::ECS::Components;
 
-		if (m_targetID != 0)
+		if (m_targetActor)
 		{
 			auto& focusButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Focus");
 			focusButton.ClickedEvent += [this]
@@ -227,16 +228,7 @@ public:
 
 		OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(
 			createActor,
-			[targetGUID = m_targetID]() -> OvCore::ECS::Actor*
-			{
-				if (targetGUID == 0)
-				{
-					return nullptr;
-				}
-
-				const auto scene = EDITOR_CONTEXT(sceneManager).GetCurrentScene();
-				return scene ? scene->FindActorByGUID(targetGUID) : nullptr;
-			},
+			[this]() { return GetTargetActor(); },
 			onItemClicked
 		);
 	}
@@ -265,7 +257,7 @@ public:
 private:
 	OvCore::ECS::Actor* GetTargetActor() const
 	{
-		if (m_targetID == 0)
+		if (!m_targetActor)
 		{
 			return nullptr;
 		}
@@ -276,7 +268,11 @@ private:
 			return nullptr;
 		}
 
-		return currentScene->FindActorByGUID(m_targetID);
+		const auto& actors = currentScene->GetActors();
+		const bool actorIsStillInScene =
+			std::find(actors.begin(), actors.end(), m_targetActor) != actors.end();
+
+		return actorIsStillInScene ? m_targetActor : nullptr;
 	}
 
 	bool CanEditPrefab() const
@@ -289,7 +285,7 @@ private:
 		return false;
 	}
 
-	uint64_t m_targetID;
+	OvCore::ECS::Actor* m_targetActor = nullptr;
 	OvUI::Widgets::Layout::TreeNode* m_treeNode;
 	OvUI::Widgets::Menu::MenuItem* m_applyToPrefabButton = nullptr;
 	OvUI::Widgets::Menu::MenuItem* m_revertToPrefabButton = nullptr;

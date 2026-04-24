@@ -171,6 +171,89 @@ namespace
 		}
 	}
 
+	struct ChildMatchPlan
+	{
+		std::vector<std::pair<size_t, size_t>> matchedChildren;
+		std::vector<size_t> unmatchedTargetChildren;
+		std::vector<size_t> unmatchedTemplateChildren;
+	};
+
+	ChildMatchPlan BuildChildMatchPlan(OvCore::ECS::Actor& p_targetActor, OvCore::ECS::Actor& p_templateActor)
+	{
+		auto& targetChildren = p_targetActor.GetChildren();
+		auto& templateChildren = p_templateActor.GetChildren();
+
+		ChildMatchPlan matchPlan;
+		std::vector<bool> usedTargetChildren(targetChildren.size(), false);
+		std::vector<bool> usedTemplateChildren(templateChildren.size(), false);
+
+		// Prefer name-based matching to keep GUID identity stable when siblings were reordered.
+		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
+		{
+			const std::string& templateChildName = templateChildren[templateChildIndex]->GetName();
+
+			for (size_t targetChildIndex = 0; targetChildIndex < targetChildren.size(); ++targetChildIndex)
+			{
+				if (usedTargetChildren[targetChildIndex])
+				{
+					continue;
+				}
+
+				if (targetChildren[targetChildIndex]->GetName() == templateChildName)
+				{
+					matchPlan.matchedChildren.emplace_back(targetChildIndex, templateChildIndex);
+					usedTargetChildren[targetChildIndex] = true;
+					usedTemplateChildren[templateChildIndex] = true;
+					break;
+				}
+			}
+		}
+
+		// Fallback to positional matching for unnamed/duplicate-name leftovers.
+		size_t nextUnmatchedTargetChild = 0;
+
+		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
+		{
+			if (usedTemplateChildren[templateChildIndex])
+			{
+				continue;
+			}
+
+			while (nextUnmatchedTargetChild < targetChildren.size() && usedTargetChildren[nextUnmatchedTargetChild])
+			{
+				++nextUnmatchedTargetChild;
+			}
+
+			if (nextUnmatchedTargetChild >= targetChildren.size())
+			{
+				break;
+			}
+
+			matchPlan.matchedChildren.emplace_back(nextUnmatchedTargetChild, templateChildIndex);
+			usedTargetChildren[nextUnmatchedTargetChild] = true;
+			usedTemplateChildren[templateChildIndex] = true;
+			++nextUnmatchedTargetChild;
+		}
+
+		for (size_t targetChildIndex = 0; targetChildIndex < targetChildren.size(); ++targetChildIndex)
+		{
+			if (!usedTargetChildren[targetChildIndex])
+			{
+				matchPlan.unmatchedTargetChildren.push_back(targetChildIndex);
+			}
+		}
+
+		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
+		{
+			if (!usedTemplateChildren[templateChildIndex])
+			{
+				matchPlan.unmatchedTemplateChildren.push_back(templateChildIndex);
+			}
+		}
+
+		return matchPlan;
+	}
+
 	void BuildGuidRemapFromCommonHierarchy(
 		OvCore::ECS::Actor& p_targetActor,
 		OvCore::ECS::Actor& p_templateActor,
@@ -180,11 +263,15 @@ namespace
 
 		auto& targetChildren = p_targetActor.GetChildren();
 		auto& templateChildren = p_templateActor.GetChildren();
-		const size_t commonChildrenCount = std::min(targetChildren.size(), templateChildren.size());
+		const auto matchPlan = BuildChildMatchPlan(p_targetActor, p_templateActor);
 
-		for (size_t childIndex = 0; childIndex < commonChildrenCount; ++childIndex)
+		for (const auto& [targetChildIndex, templateChildIndex] : matchPlan.matchedChildren)
 		{
-			BuildGuidRemapFromCommonHierarchy(*targetChildren[childIndex], *templateChildren[childIndex], p_guidRemap);
+			BuildGuidRemapFromCommonHierarchy(
+				*targetChildren[targetChildIndex],
+				*templateChildren[templateChildIndex],
+				p_guidRemap
+			);
 		}
 	}
 
@@ -1200,21 +1287,21 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 
 		auto& targetChildren = p_targetActor.GetChildren();
 		auto& templateChildren = p_templateActor.GetChildren();
-		const size_t commonChildrenCount = std::min(targetChildren.size(), templateChildren.size());
+		const auto matchPlan = BuildChildMatchPlan(p_targetActor, p_templateActor);
 
-		for (size_t childIndex = 0; childIndex < commonChildrenCount; ++childIndex)
+		for (const auto& [targetChildIndex, templateChildIndex] : matchPlan.matchedChildren)
 		{
-			syncActorHierarchy(*targetChildren[childIndex], *templateChildren[childIndex], false);
+			syncActorHierarchy(*targetChildren[targetChildIndex], *templateChildren[templateChildIndex], false);
 		}
 
-		for (size_t childIndex = targetChildren.size(); childIndex > commonChildrenCount; --childIndex)
+		for (const size_t targetChildIndex : matchPlan.unmatchedTargetChildren)
 		{
-			targetChildren[childIndex - 1]->MarkAsDestroy();
+			targetChildren[targetChildIndex]->MarkAsDestroy();
 		}
 
-		for (size_t childIndex = commonChildrenCount; childIndex < templateChildren.size(); ++childIndex)
+		for (const size_t templateChildIndex : matchPlan.unmatchedTemplateChildren)
 		{
-			DuplicateActor(*templateChildren[childIndex], &p_targetActor, false);
+			DuplicateActor(*templateChildren[templateChildIndex], &p_targetActor, false);
 		}
 	};
 

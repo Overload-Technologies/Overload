@@ -56,14 +56,39 @@ namespace
 {
 	constexpr std::string_view kDefaultMaterialPath = ":Materials\\Default.ovmat";
 
-	void SetPrefabSourceRecursively(OvCore::ECS::Actor& p_rootActor, const std::string& p_prefabSource)
+	void RemapPrefabSourceRecursively(
+		OvCore::ECS::Actor& p_rootActor,
+		const std::string& p_previousRootPrefabSource,
+		const std::string& p_newRootPrefabSource,
+		bool p_isRoot = true)
 	{
-		p_rootActor.SetPrefabSource(p_prefabSource);
+		const bool shouldRemapCurrent =
+			p_isRoot ||
+			!p_rootActor.HasPrefabSource() ||
+			p_rootActor.GetPrefabSource() == p_previousRootPrefabSource;
+
+		if (shouldRemapCurrent)
+		{
+			p_rootActor.SetPrefabSource(p_newRootPrefabSource);
+		}
 
 		for (auto* child : p_rootActor.GetChildren())
 		{
-			SetPrefabSourceRecursively(*child, p_prefabSource);
+			RemapPrefabSourceRecursively(*child, p_previousRootPrefabSource, p_newRootPrefabSource, false);
 		}
+	}
+
+	OvCore::ECS::Actor& ResolvePrefabInstanceRoot(OvCore::ECS::Actor& p_actor)
+	{
+		auto* resolvedRoot = &p_actor;
+		const std::string& prefabSource = p_actor.GetPrefabSource();
+
+		while (resolvedRoot->HasParent() && resolvedRoot->GetParent()->GetPrefabSource() == prefabSource)
+		{
+			resolvedRoot = resolvedRoot->GetParent();
+		}
+
+		return *resolvedRoot;
 	}
 
 	void RefreshMaterialsUsingShader(
@@ -896,6 +921,8 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 
 void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor, const std::string& p_path)
 {
+	const std::string previousRootPrefabSource = p_actor.GetPrefabSource();
+
 	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
 	{
 		OVLOG_ERROR("Failed to save prefab to: " + p_path);
@@ -903,7 +930,7 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 	}
 
 	const std::string prefabSourcePath = GetResourcePath(p_path);
-	SetPrefabSourceRecursively(p_actor, prefabSourcePath);
+	RemapPrefabSourceRecursively(p_actor, previousRootPrefabSource, prefabSourcePath);
 
 	OVLOG_INFO("Prefab saved to: " + p_path);
 }
@@ -928,7 +955,8 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 
 	if (instantiatedRoot)
 	{
-		SetPrefabSourceRecursively(*instantiatedRoot, prefabSourcePath);
+		const std::string previousRootPrefabSource = instantiatedRoot->GetPrefabSource();
+		RemapPrefabSourceRecursively(*instantiatedRoot, previousRootPrefabSource, prefabSourcePath);
 		OVLOG_INFO("Prefab instantiated: " + realPath.string());
 	}
 	else
@@ -947,15 +975,20 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 		return false;
 	}
 
-	const std::string realPath = GetRealPath(p_actor.GetPrefabSource());
+	auto& prefabInstanceRoot = ResolvePrefabInstanceRoot(p_actor);
+	const std::string realPath = GetRealPath(prefabInstanceRoot.GetPrefabSource());
 
-	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, realPath))
+	if (!OvEditor::Utils::PrefabOperations::SaveToFile(prefabInstanceRoot, realPath))
 	{
 		OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath);
 		return false;
 	}
 
-	OVLOG_INFO("Prefab updated from actor \"" + p_actor.GetName() + "\": " + realPath);
+	OVLOG_INFO(
+		"Prefab updated from actor \"" + p_actor.GetName() +
+		"\" (instance root: \"" + prefabInstanceRoot.GetName() +
+		"\"): " + realPath
+	);
 	return true;
 }
 
@@ -967,8 +1000,9 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::E
 		return nullptr;
 	}
 
-	OvCore::ECS::Actor* parent = p_actor.GetParent();
-	const auto prefabSourcePath = p_actor.GetPrefabSource();
+	auto& prefabInstanceRoot = ResolvePrefabInstanceRoot(p_actor);
+	OvCore::ECS::Actor* parent = prefabInstanceRoot.GetParent();
+	const auto prefabSourcePath = prefabInstanceRoot.GetPrefabSource();
 
 	auto* instantiatedRoot = InstantiatePrefab(prefabSourcePath);
 	if (!instantiatedRoot)
@@ -981,7 +1015,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::E
 		instantiatedRoot->SetParent(*parent);
 	}
 
-	DestroyActor(p_actor);
+	DestroyActor(prefabInstanceRoot);
 	SelectActor(*instantiatedRoot);
 
 	return instantiatedRoot;

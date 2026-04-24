@@ -132,20 +132,21 @@ public:
 				EDITOR_EXEC(SaveActorAsPrefab(*m_target, dialog.GetSelectedFilePath()));
 			};
 
-			if (m_target->HasPrefabSource())
+			auto& applyToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Apply to Prefab");
+			m_applyToPrefabButton = &applyToPrefabButton;
+			applyToPrefabButton.enabled = m_target->HasPrefabSource();
+			applyToPrefabButton.ClickedEvent += [this]
 			{
-				auto& applyToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Apply to Prefab");
-				applyToPrefabButton.ClickedEvent += [this]
-				{
-					EDITOR_EXEC(ApplyActorToPrefab(*m_target));
-				};
+				EDITOR_EXEC(ApplyActorToPrefab(*m_target));
+			};
 
-				auto& revertToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Revert to Prefab");
-				revertToPrefabButton.ClickedEvent += [this]
-				{
-					EDITOR_EXEC(RevertActorToPrefab(*m_target));
-				};
-			}
+			auto& revertToPrefabButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Revert to Prefab");
+			m_revertToPrefabButton = &revertToPrefabButton;
+			revertToPrefabButton.enabled = m_target->HasPrefabSource();
+			revertToPrefabButton.ClickedEvent += [this]
+			{
+				EDITOR_EXEC(RevertActorToPrefab(*m_target));
+			};
 
 			auto& deleteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Delete");
 			deleteButton.ClickedEvent += [this]
@@ -191,6 +192,21 @@ public:
 
 	virtual void Execute(OvUI::Plugins::EPluginExecutionContext p_context) override
 	{
+		if (m_target)
+		{
+			const bool hasPrefabSource = m_target->HasPrefabSource();
+
+			if (m_applyToPrefabButton)
+			{
+				m_applyToPrefabButton->enabled = hasPrefabSource;
+			}
+
+			if (m_revertToPrefabButton)
+			{
+				m_revertToPrefabButton->enabled = hasPrefabSource;
+			}
+		}
+
 		if (m_widgets.size() > 0)
 			OvUI::Plugins::ContextualMenu::Execute(p_context);
 	}
@@ -198,6 +214,8 @@ public:
 private:
 	OvCore::ECS::Actor* m_target;
 	OvUI::Widgets::Layout::TreeNode* m_treeNode;
+	OvUI::Widgets::Menu::MenuItem* m_applyToPrefabButton = nullptr;
+	OvUI::Widgets::Menu::MenuItem* m_revertToPrefabButton = nullptr;
 };
 
 void ExpandTreeNode(OvUI::Widgets::Layout::TreeNode& p_toExpand)

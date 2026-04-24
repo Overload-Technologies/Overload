@@ -13,8 +13,7 @@
 
 #include <OvDebug/Logger.h>
 #include <OvCore/ECS/Actor.h>
-
-#include <OvEditor/Utils/PrefabOperations.h>
+#include <OvCore/SceneSystem/PrefabOperations.h>
 
 namespace
 {
@@ -32,7 +31,7 @@ namespace
 	}
 }
 
-bool OvEditor::Utils::PrefabOperations::SaveToFile(OvCore::ECS::Actor& p_rootActor, const std::filesystem::path& p_outputPath)
+bool OvCore::SceneSystem::PrefabOperations::SaveToFile(OvCore::ECS::Actor& p_rootActor, const std::filesystem::path& p_outputPath)
 {
 	tinyxml2::XMLDocument doc;
 
@@ -50,7 +49,7 @@ bool OvEditor::Utils::PrefabOperations::SaveToFile(OvCore::ECS::Actor& p_rootAct
 	return doc.SaveFile(p_outputPath.string().c_str()) == tinyxml2::XML_SUCCESS;
 }
 
-OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
+OvCore::ECS::Actor* OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(
 	const std::filesystem::path& p_prefabPath,
 	const std::function<OvCore::ECS::Actor&(void)>& p_createActor)
 {
@@ -113,9 +112,13 @@ OvCore::ECS::Actor* OvEditor::Utils::PrefabOperations::InstantiateFromFile(
 	for (auto& pending : pendingAttachments)
 	{
 		if (auto found = sourceToInstance.find(pending.sourceParentID); found != sourceToInstance.end())
+		{
 			pending.actor->SetParent(*found->second);
+		}
 		else if (!instantiatedRoot)
+		{
 			instantiatedRoot = pending.actor;
+		}
 	}
 
 	return instantiatedRoot;

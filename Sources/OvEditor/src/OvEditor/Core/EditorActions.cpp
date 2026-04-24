@@ -42,7 +42,7 @@
 #include <OvEditor/Panels/SceneView.h>
 #include <OvEditor/Settings/EditorSettings.h>
 #include <OvEditor/Utils/FileSystem.h>
-#include <OvEditor/Utils/PrefabOperations.h>
+#include <OvCore/SceneSystem/PrefabOperations.h>
 
 #include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/String.h>
@@ -1096,7 +1096,7 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 
 void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_actor, const std::string& p_path)
 {
-	if (!OvEditor::Utils::PrefabOperations::SaveToFile(p_actor, p_path))
+	if (!OvCore::SceneSystem::PrefabOperations::SaveToFile(p_actor, p_path))
 	{
 		OVLOG_ERROR("Failed to save prefab to: " + p_path);
 		return;
@@ -1116,7 +1116,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 	const std::filesystem::path realPath = GetRealPath(p_path);
 	const std::string prefabSourcePath = GetResourcePath(realPath.string());
 
-	auto* instantiatedRoot = OvEditor::Utils::PrefabOperations::InstantiateFromFile(
+	auto* instantiatedRoot = OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(
 		realPath,
 		[this]() -> OvCore::ECS::Actor&
 		{
@@ -1153,7 +1153,7 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 
 	const std::string realPath = GetRealPath(prefabInstanceRoot->GetPrefabSource());
 
-	if (!OvEditor::Utils::PrefabOperations::SaveToFile(*prefabInstanceRoot, realPath))
+	if (!OvCore::SceneSystem::PrefabOperations::SaveToFile(*prefabInstanceRoot, realPath))
 	{
 		OVLOG_ERROR("Failed to apply actor \"" + p_actor.GetName() + "\" to prefab: " + realPath);
 		return false;

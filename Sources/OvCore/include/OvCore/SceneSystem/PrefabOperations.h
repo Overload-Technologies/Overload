@@ -14,7 +14,7 @@ namespace OvCore::ECS
 	class Actor;
 }
 
-namespace OvEditor::Utils
+namespace OvCore::SceneSystem
 {
 	/**
 	* Utility functions to serialize and instantiate prefab files.
@@ -45,4 +45,3 @@ namespace OvEditor::Utils
 		);
 	};
 }
-

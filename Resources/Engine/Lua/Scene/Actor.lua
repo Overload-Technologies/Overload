@@ -136,10 +136,15 @@ function Actor:GetPostProcessStack() end
 ---@return ReflectionProbe|nil
 function Actor:GetReflectionProbe() end
 
+--- Returns the component of the given type attached to this actor (If any)
+---@param type string
+---@return Component|nil
+function Actor:GetComponent(type) end
+
 --- Returns the Behaviour of the given type attached to this actor (If any)
----@param name string
+---@param type string
 ---@return table|nil
-function Actor:GetBehaviour(name) end
+function Actor:GetBehaviour(type) end
 
 --- Adds a Transform component to the actor and returns it
 ---@return Transform

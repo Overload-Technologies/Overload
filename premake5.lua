@@ -34,6 +34,7 @@ workspace "Overload"
 	-- Set toolset based on operating system
 	filter {"system:windows"}
 		toolset("msc")
+		buildoptions { "/FS" } -- Prevent C1041 PDB write conflicts with parallel compilation
 	filter {"system:linux"}
 		toolset("clang") -- Use Clang on Linux (sol2 doesn't work well with GCC)
 	filter {}

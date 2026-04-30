@@ -5,6 +5,7 @@
 */
 
 #include <filesystem>
+#include <format>
 
 #include <sol/sol.hpp>
 
@@ -40,6 +41,7 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetChildren", &Actor::GetChildren,
 		"SetTag", &Actor::SetTag,
 		"GetID", &Actor::GetID,
+		"GetGUID", [](Actor& p_actor) { return std::format("{:016X}", p_actor.GetGUID()); },
 		"GetParent", &Actor::GetParent,
 		"SetParent", &Actor::SetParent,
 		"DetachFromParent", &Actor::DetachFromParent,

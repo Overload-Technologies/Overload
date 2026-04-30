@@ -65,7 +65,7 @@ public:
 			auto& duplicateButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Duplicate");
 			duplicateButton.ClickedEvent += [this]
 			{
-				EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*m_target), nullptr, true), 0));
+				EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*m_target), nullptr, true, true), 0));
 			};
 
 			auto& pasteButton = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Paste");

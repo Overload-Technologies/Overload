@@ -222,9 +222,16 @@ namespace OvEditor::Core
 		* Duplicate an actor
 		* @param p_toDuplicate
 		* @param p_forcedParent
-		* @param bool
+		* @param p_focus
+		* @param p_keepSourceParentIfNoForcedParent
 		*/
-		void DuplicateActor(OvCore::ECS::Actor& p_toDuplicate, OvCore::ECS::Actor* p_forcedParent = nullptr, bool p_focus = true);
+		void DuplicateActor
+		(
+			OvCore::ECS::Actor& p_toDuplicate,
+			OvCore::ECS::Actor* p_forcedParent = nullptr,
+			bool p_focus = true,
+			bool p_keepSourceParentIfNoForcedParent = true
+		);
 		#pragma endregion
 
 		#pragma region ACTOR_MANIPULATION
@@ -235,7 +242,8 @@ namespace OvEditor::Core
 		void CopyActor(OvCore::ECS::Actor& p_actor);
 
 		/**
-		* Paste the copied actor next to the given actor (same parent), or at root if null
+		* Paste the copied actor next to the given actor (same parent), or at root if null.
+		* If the target actor is at root, the pasted actor is also pasted at root.
 		* @param p_parent
 		*/
 		void PasteActor(OvCore::ECS::Actor* p_parent = nullptr);

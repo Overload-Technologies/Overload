@@ -14,6 +14,7 @@
 #include <ranges>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <tinyxml2.h>
 
@@ -171,108 +172,54 @@ namespace
 		}
 	}
 
-	struct ChildMatchPlan
+	struct ActorHierarchyEntry
 	{
-		std::vector<std::pair<size_t, size_t>> matchedChildren;
-		std::vector<size_t> unmatchedTargetChildren;
-		std::vector<size_t> unmatchedTemplateChildren;
+		OvCore::ECS::Actor* actor = nullptr;
+		OvCore::ECS::Actor* parent = nullptr;
 	};
 
-	ChildMatchPlan BuildChildMatchPlan(OvCore::ECS::Actor& p_targetActor, OvCore::ECS::Actor& p_templateActor)
+	void CollectActorHierarchy(
+		OvCore::ECS::Actor& p_actor,
+		OvCore::ECS::Actor* p_parent,
+		std::vector<ActorHierarchyEntry>& p_outEntries)
 	{
-		auto& targetChildren = p_targetActor.GetChildren();
-		auto& templateChildren = p_templateActor.GetChildren();
+		p_outEntries.push_back({ &p_actor, p_parent });
 
-		ChildMatchPlan matchPlan;
-		std::vector<bool> usedTargetChildren(targetChildren.size(), false);
-		std::vector<bool> usedTemplateChildren(templateChildren.size(), false);
-
-		// Prefer name-based matching to keep GUID identity stable when siblings were reordered.
-		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
+		for (auto* child : p_actor.GetChildren())
 		{
-			const std::string& templateChildName = templateChildren[templateChildIndex]->GetName();
-
-			for (size_t targetChildIndex = 0; targetChildIndex < targetChildren.size(); ++targetChildIndex)
-			{
-				if (usedTargetChildren[targetChildIndex])
-				{
-					continue;
-				}
-
-				if (targetChildren[targetChildIndex]->GetName() == templateChildName)
-				{
-					matchPlan.matchedChildren.emplace_back(targetChildIndex, templateChildIndex);
-					usedTargetChildren[targetChildIndex] = true;
-					usedTemplateChildren[templateChildIndex] = true;
-					break;
-				}
-			}
+			CollectActorHierarchy(*child, &p_actor, p_outEntries);
 		}
-
-		// Fallback to positional matching for unnamed/duplicate-name leftovers.
-		size_t nextUnmatchedTargetChild = 0;
-
-		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
-		{
-			if (usedTemplateChildren[templateChildIndex])
-			{
-				continue;
-			}
-
-			while (nextUnmatchedTargetChild < targetChildren.size() && usedTargetChildren[nextUnmatchedTargetChild])
-			{
-				++nextUnmatchedTargetChild;
-			}
-
-			if (nextUnmatchedTargetChild >= targetChildren.size())
-			{
-				break;
-			}
-
-			matchPlan.matchedChildren.emplace_back(nextUnmatchedTargetChild, templateChildIndex);
-			usedTargetChildren[nextUnmatchedTargetChild] = true;
-			usedTemplateChildren[templateChildIndex] = true;
-			++nextUnmatchedTargetChild;
-		}
-
-		for (size_t targetChildIndex = 0; targetChildIndex < targetChildren.size(); ++targetChildIndex)
-		{
-			if (!usedTargetChildren[targetChildIndex])
-			{
-				matchPlan.unmatchedTargetChildren.push_back(targetChildIndex);
-			}
-		}
-
-		for (size_t templateChildIndex = 0; templateChildIndex < templateChildren.size(); ++templateChildIndex)
-		{
-			if (!usedTemplateChildren[templateChildIndex])
-			{
-				matchPlan.unmatchedTemplateChildren.push_back(templateChildIndex);
-			}
-		}
-
-		return matchPlan;
 	}
 
-	void BuildGuidRemapFromCommonHierarchy(
-		OvCore::ECS::Actor& p_targetActor,
-		OvCore::ECS::Actor& p_templateActor,
-		std::unordered_map<uint64_t, uint64_t>& p_guidRemap)
+	uint64_t GetPrefabNodeGUIDOrFallback(OvCore::ECS::Actor& p_actor)
 	{
-		p_guidRemap[p_templateActor.GetGUID()] = p_targetActor.GetGUID();
-
-		auto& targetChildren = p_targetActor.GetChildren();
-		auto& templateChildren = p_templateActor.GetChildren();
-		const auto matchPlan = BuildChildMatchPlan(p_targetActor, p_templateActor);
-
-		for (const auto& [targetChildIndex, templateChildIndex] : matchPlan.matchedChildren)
+		if (p_actor.HasPrefabNodeGUID())
 		{
-			BuildGuidRemapFromCommonHierarchy(
-				*targetChildren[targetChildIndex],
-				*templateChildren[templateChildIndex],
-				p_guidRemap
-			);
+			return p_actor.GetPrefabNodeGUID();
 		}
+
+		const uint64_t fallbackGUID = p_actor.GetGUID();
+		p_actor.SetPrefabNodeGUID(fallbackGUID);
+		return fallbackGUID;
+	}
+
+	OvCore::ECS::Actor* FindUnusedActorWithPrefabNodeGUID(
+		const uint64_t p_prefabNodeGUID,
+		const std::unordered_map<uint64_t, std::vector<OvCore::ECS::Actor*>>& p_actorsByPrefabNodeGUID,
+		const std::unordered_set<OvCore::ECS::Actor*>& p_usedActors)
+	{
+		if (const auto found = p_actorsByPrefabNodeGUID.find(p_prefabNodeGUID); found != p_actorsByPrefabNodeGUID.end())
+		{
+			for (auto* actor : found->second)
+			{
+				if (!p_usedActors.contains(actor))
+				{
+					return actor;
+				}
+			}
+		}
+
+		return nullptr;
 	}
 
 	void SetActorNodeValue(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLElement& p_actorNode, const char* p_fieldName, const std::string& p_value)
@@ -1218,8 +1165,6 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 		const std::string prefabName = realPath.stem().string();
 		if (!prefabName.empty())
 			instantiatedRoot->SetName(prefabName);
-
-		OVLOG_INFO("Prefab instantiated: " + realPath.string());
 	}
 	else
 	{
@@ -1271,41 +1216,96 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 		return false;
 	}
 
-	std::unordered_map<uint64_t, uint64_t> prefabToInstanceGuidMap;
-	BuildGuidRemapFromCommonHierarchy(*prefabInstanceRoot, *prefabTemplateRoot, prefabToInstanceGuidMap);
+	std::vector<ActorHierarchyEntry> templateHierarchy;
+	CollectActorHierarchy(*prefabTemplateRoot, nullptr, templateHierarchy);
 
-	std::function<void(OvCore::ECS::Actor&, OvCore::ECS::Actor&, bool)> syncActorHierarchy;
-	syncActorHierarchy = [this, &syncActorHierarchy, &prefabToInstanceGuidMap](OvCore::ECS::Actor& p_targetActor, OvCore::ECS::Actor& p_templateActor, bool p_isRoot)
+	std::vector<ActorHierarchyEntry> targetHierarchy;
+	CollectActorHierarchy(*prefabInstanceRoot, nullptr, targetHierarchy);
+
+	std::unordered_map<uint64_t, std::vector<OvCore::ECS::Actor*>> targetActorsByPrefabNodeGUID;
+	for (const auto& entry : targetHierarchy)
 	{
-		OverwriteActorFromPrefabTemplate(
-			p_targetActor,
-			p_templateActor,
-			prefabToInstanceGuidMap,
-			p_isRoot, /* keep root name */
-			p_isRoot  /* keep root local transform */
+		const uint64_t prefabNodeGUID = GetPrefabNodeGUIDOrFallback(*entry.actor);
+		targetActorsByPrefabNodeGUID[prefabNodeGUID].push_back(entry.actor);
+	}
+
+	std::unordered_map<OvCore::ECS::Actor*, OvCore::ECS::Actor*> templateToTarget;
+	std::unordered_set<OvCore::ECS::Actor*> usedTargetActors;
+
+	const uint64_t templateRootPrefabNodeGUID = GetPrefabNodeGUIDOrFallback(*prefabTemplateRoot);
+	prefabInstanceRoot->SetPrefabNodeGUID(templateRootPrefabNodeGUID);
+	templateToTarget[prefabTemplateRoot] = prefabInstanceRoot;
+	usedTargetActors.insert(prefabInstanceRoot);
+
+	for (size_t index = 1; index < templateHierarchy.size(); ++index)
+	{
+		auto* templateActor = templateHierarchy[index].actor;
+		const uint64_t prefabNodeGUID = GetPrefabNodeGUIDOrFallback(*templateActor);
+
+		OvCore::ECS::Actor* targetActor = FindUnusedActorWithPrefabNodeGUID(
+			prefabNodeGUID,
+			targetActorsByPrefabNodeGUID,
+			usedTargetActors
 		);
 
-		auto& targetChildren = p_targetActor.GetChildren();
-		auto& templateChildren = p_templateActor.GetChildren();
-		const auto matchPlan = BuildChildMatchPlan(p_targetActor, p_templateActor);
-
-		for (const auto& [targetChildIndex, templateChildIndex] : matchPlan.matchedChildren)
+		if (!targetActor)
 		{
-			syncActorHierarchy(*targetChildren[targetChildIndex], *templateChildren[templateChildIndex], false);
+			targetActor = &CreateEmptyActor(false);
 		}
 
-		for (const size_t targetChildIndex : matchPlan.unmatchedTargetChildren)
+		targetActor->SetPrefabNodeGUID(prefabNodeGUID);
+		templateToTarget[templateActor] = targetActor;
+		usedTargetActors.insert(targetActor);
+	}
+
+	std::unordered_map<uint64_t, uint64_t> prefabNodeToInstanceGuidMap;
+	for (const auto& [templateActor, targetActor] : templateToTarget)
+	{
+		const uint64_t prefabNodeGUID = templateActor->GetPrefabNodeGUID();
+		prefabNodeToInstanceGuidMap[prefabNodeGUID] = targetActor->GetGUID();
+	}
+
+	for (const auto& entry : templateHierarchy)
+	{
+		auto* templateActor = entry.actor;
+		auto* targetActor = templateToTarget[templateActor];
+		const bool isRoot = templateActor == prefabTemplateRoot;
+
+		OverwriteActorFromPrefabTemplate(
+			*targetActor,
+			*templateActor,
+			prefabNodeToInstanceGuidMap,
+			isRoot, /* keep root name */
+			isRoot  /* keep root local transform */
+		);
+	}
+
+	for (size_t index = 1; index < templateHierarchy.size(); ++index)
+	{
+		auto* templateActor = templateHierarchy[index].actor;
+		auto* templateParent = templateHierarchy[index].parent;
+		auto* targetActor = templateToTarget[templateActor];
+		auto* expectedParent = templateToTarget[templateParent];
+
+		if (targetActor->GetParent() != expectedParent)
 		{
-			targetChildren[targetChildIndex]->MarkAsDestroy();
+			targetActor->SetParent(*expectedParent);
+		}
+	}
+
+	for (const auto& entry : targetHierarchy)
+	{
+		auto* targetActor = entry.actor;
+		if (targetActor == prefabInstanceRoot)
+		{
+			continue;
 		}
 
-		for (const size_t templateChildIndex : matchPlan.unmatchedTemplateChildren)
+		if (!usedTargetActors.contains(targetActor))
 		{
-			DuplicateActor(*templateChildren[templateChildIndex], &p_targetActor, false);
+			targetActor->MarkAsDestroy();
 		}
-	};
-
-	syncActorHierarchy(*prefabInstanceRoot, *prefabTemplateRoot, true);
+	}
 
 	prefabTemplateRoot->MarkAsDestroy();
 	SelectActor(*prefabInstanceRoot);

@@ -162,6 +162,21 @@ bool OvCore::ECS::Actor::HasPrefabSource() const
 	return !m_prefabSource.empty();
 }
 
+void OvCore::ECS::Actor::SetPrefabNodeGUID(uint64_t p_prefabNodeGUID)
+{
+	m_prefabNodeGUID = p_prefabNodeGUID;
+}
+
+uint64_t OvCore::ECS::Actor::GetPrefabNodeGUID() const
+{
+	return m_prefabNodeGUID;
+}
+
+bool OvCore::ECS::Actor::HasPrefabNodeGUID() const
+{
+	return m_prefabNodeGUID != 0;
+}
+
 void OvCore::ECS::Actor::SetParent(Actor& p_parent)
 {
 	DetachFromParent();
@@ -474,6 +489,7 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "id", m_actorID);
 	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "guid", m_guid);
 	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "prefab_source", m_prefabSource);
+	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "prefab_node_guid", m_prefabNodeGUID);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "parent", m_parentID);
 
 	tinyxml2::XMLNode* componentsNode = p_doc.NewElement("components");
@@ -531,6 +547,9 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 	std::string prefabSource;
 	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "prefab_source", prefabSource);
 	SetPrefabSource(prefabSource);
+	uint64_t prefabNodeGUID = 0;
+	OvCore::Helpers::Serializer::DeserializeUInt64(p_doc, p_actorsRoot, "prefab_node_guid", prefabNodeGUID);
+	SetPrefabNodeGUID(prefabNodeGUID);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "parent", m_parentID);
 
 	{

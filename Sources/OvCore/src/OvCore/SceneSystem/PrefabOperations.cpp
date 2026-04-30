@@ -22,6 +22,11 @@ namespace
 		tinyxml2::XMLDocument& p_doc,
 		tinyxml2::XMLNode& p_actorsRoot)
 	{
+		if (!p_actor.HasPrefabNodeGUID())
+		{
+			p_actor.SetPrefabNodeGUID(p_actor.GetGUID());
+		}
+
 		p_actor.OnSerialize(p_doc, &p_actorsRoot);
 
 		for (auto* child : p_actor.GetChildren())
@@ -95,6 +100,8 @@ OvCore::ECS::Actor* OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(
 		const uint64_t generatedGUID = newActor.GetGUID();
 
 		newActor.OnDeserialize(doc, currentActor);
+		const uint64_t prefabNodeGUID = newActor.HasPrefabNodeGUID() ? newActor.GetPrefabNodeGUID() : newActor.GetGUID();
+		newActor.SetPrefabNodeGUID(prefabNodeGUID);
 
 		pendingAttachments.push_back({
 			&newActor,

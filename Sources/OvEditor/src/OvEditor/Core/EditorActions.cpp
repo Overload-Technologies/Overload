@@ -1237,11 +1237,6 @@ bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_act
 		return false;
 	}
 
-	OVLOG_INFO(
-		"Prefab updated from actor \"" + p_actor.GetName() +
-		"\" (instance root: \"" + prefabInstanceRoot->GetName() +
-		"\"): " + realPath
-	);
 	return true;
 }
 
@@ -1364,7 +1359,6 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 	prefabTemplateRoot->MarkAsDestroy();
 	SelectActor(*prefabInstanceRoot);
 
-	OVLOG_INFO("Prefab reverted on actor \"" + prefabInstanceRoot->GetName() + "\": " + GetRealPath(prefabSourcePath));
 	return true;
 }
 

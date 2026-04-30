@@ -1042,6 +1042,8 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 		const std::string quotedWorkdir = std::format("\"{}\"", preferredWorkdir.string());
 		const std::string quotedPath = std::format("\"{}\"", preferredPath.string());
 
+		OvTools::Utils::String::ReplaceAll(command, "\"{workdir}\"", "{workdir}");
+		OvTools::Utils::String::ReplaceAll(command, "\"{path}\"", "{path}");
 		OvTools::Utils::String::ReplaceAll(command, "{workdir}", quotedWorkdir);
 		OvTools::Utils::String::ReplaceAll(command, "{path}", quotedPath);
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))

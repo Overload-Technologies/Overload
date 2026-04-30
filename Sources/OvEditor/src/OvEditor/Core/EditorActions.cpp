@@ -1036,8 +1036,14 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 			return false;
 		}
 
-		OvTools::Utils::String::ReplaceAll(command, "{workdir}", p_workdir ? p_workdir->string() : m_context.projectFolder.string());
-		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
+		auto preferredWorkdir = p_workdir ? p_workdir.value() : m_context.projectFolder;
+		preferredWorkdir.make_preferred();
+
+		const std::string quotedWorkdir = std::format("\"{}\"", preferredWorkdir.string());
+		const std::string quotedPath = std::format("\"{}\"", preferredPath.string());
+
+		OvTools::Utils::String::ReplaceAll(command, "{workdir}", quotedWorkdir);
+		OvTools::Utils::String::ReplaceAll(command, "{path}", quotedPath);
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{
 			OVLOG_ERROR(std::format("Failed to open in code editor using command: \"{}\"", command));

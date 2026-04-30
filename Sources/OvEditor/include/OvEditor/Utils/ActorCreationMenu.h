@@ -27,8 +27,6 @@ namespace OvEditor::Utils
     class ActorCreationMenu
     {
     public:
-        using ActorParentProvider = std::function<OvCore::ECS::Actor*()>;
-
         /**
         * Disabled constructor
         */
@@ -38,9 +36,9 @@ namespace OvEditor::Utils
         * Generates an actor creation menu under the given MenuList item.
         * Also handles custom additionnal OnClick callback
         * @param p_menuList
-        * @param p_parentProvider
+        * @param p_parent
         * @param p_onItemClicked
         */
-        static void GenerateActorCreationMenu(OvUI::Widgets::Menu::MenuList& p_menuList, ActorParentProvider p_parentProvider = {}, std::optional<std::function<void()>> p_onItemClicked = {});
+        static void GenerateActorCreationMenu(OvUI::Widgets::Menu::MenuList& p_menuList, OvCore::ECS::Actor* p_parent = nullptr, std::optional<std::function<void()>> p_onItemClicked = {});
     };
 }

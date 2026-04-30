@@ -222,6 +222,52 @@ namespace
 		return nullptr;
 	}
 
+	std::unordered_map<uint64_t, uint64_t> GatherSerializedGuidsByPrefabNodeGUID(const std::filesystem::path& p_prefabPath)
+	{
+		std::unordered_map<uint64_t, uint64_t> serializedGuidsByPrefabNodeGUID;
+
+		tinyxml2::XMLDocument doc;
+		if (doc.LoadFile(p_prefabPath.string().c_str()) != tinyxml2::XML_SUCCESS)
+		{
+			return serializedGuidsByPrefabNodeGUID;
+		}
+
+		auto* rootNode = doc.FirstChildElement("root");
+		auto* prefabNode = rootNode ? rootNode->FirstChildElement("prefab") : nullptr;
+		auto* actorsNode = prefabNode ? prefabNode->FirstChildElement("actors") : nullptr;
+		if (!actorsNode)
+		{
+			return serializedGuidsByPrefabNodeGUID;
+		}
+
+		for (auto* actorNode = actorsNode->FirstChildElement("actor");
+			actorNode;
+			actorNode = actorNode->NextSiblingElement("actor"))
+		{
+			const char* serializedGuidText = actorNode->FirstChildElement("guid")
+				? actorNode->FirstChildElement("guid")->GetText()
+				: nullptr;
+			uint64_t serializedGUID = 0;
+			if (!TryParseUInt64(serializedGuidText, serializedGUID))
+			{
+				continue;
+			}
+
+			const char* prefabNodeGuidText = actorNode->FirstChildElement("prefab_node_guid")
+				? actorNode->FirstChildElement("prefab_node_guid")->GetText()
+				: nullptr;
+			uint64_t prefabNodeGUID = 0;
+			if (!TryParseUInt64(prefabNodeGuidText, prefabNodeGUID))
+			{
+				prefabNodeGUID = serializedGUID;
+			}
+
+			serializedGuidsByPrefabNodeGUID[prefabNodeGUID] = serializedGUID;
+		}
+
+		return serializedGuidsByPrefabNodeGUID;
+	}
+
 	void SetActorNodeValue(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLElement& p_actorNode, const char* p_fieldName, const std::string& p_value)
 	{
 		auto* field = p_actorNode.FirstChildElement(p_fieldName);
@@ -1209,6 +1255,8 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 	}
 
 	const auto prefabSourcePath = prefabInstanceRoot->GetPrefabSource();
+	const auto serializedGuidsByPrefabNodeGUID =
+		GatherSerializedGuidsByPrefabNodeGUID(GetRealPath(prefabSourcePath));
 
 	auto* prefabTemplateRoot = InstantiatePrefab(prefabSourcePath);
 	if (!prefabTemplateRoot)
@@ -1258,11 +1306,17 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 		usedTargetActors.insert(targetActor);
 	}
 
-	std::unordered_map<uint64_t, uint64_t> prefabNodeToInstanceGuidMap;
+	std::unordered_map<uint64_t, uint64_t> templateActorGuidToInstanceGuidMap;
 	for (const auto& [templateActor, targetActor] : templateToTarget)
 	{
 		const uint64_t prefabNodeGUID = templateActor->GetPrefabNodeGUID();
-		prefabNodeToInstanceGuidMap[prefabNodeGUID] = targetActor->GetGUID();
+		const uint64_t targetGUID = targetActor->GetGUID();
+		templateActorGuidToInstanceGuidMap[prefabNodeGUID] = targetGUID;
+
+		if (const auto it = serializedGuidsByPrefabNodeGUID.find(prefabNodeGUID); it != serializedGuidsByPrefabNodeGUID.end())
+		{
+			templateActorGuidToInstanceGuidMap[it->second] = targetGUID;
+		}
 	}
 
 	for (const auto& entry : templateHierarchy)
@@ -1274,7 +1328,7 @@ bool OvEditor::Core::EditorActions::RevertActorToPrefab(OvCore::ECS::Actor& p_ac
 		OverwriteActorFromPrefabTemplate(
 			*targetActor,
 			*templateActor,
-			prefabNodeToInstanceGuidMap,
+			templateActorGuidToInstanceGuidMap,
 			isRoot, /* keep root name */
 			isRoot  /* keep root local transform */
 		);

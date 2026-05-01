@@ -17,6 +17,7 @@
 #include <OvCore/Scripting/ScriptEngine.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/ECS/Actor.h>
+#include <OvTools/Utils/String.h>
 
 void BindLuaActor(sol::state& p_state);
 void BindLuaComponents(sol::state& p_state);
@@ -173,19 +174,22 @@ std::unordered_set<std::string> OvCore::Scripting::LuaScriptEngineBase::GetValid
 template<>
 std::string OvCore::Scripting::LuaScriptEngineBase::GetDefaultScriptContent(const std::string& p_name)
 {
+	std::string scriptTableName = p_name;
+	OvTools::Utils::String::ReplaceAll(scriptTableName, " ", "_");
+
 	return
-		"---@class " + p_name + " : Behaviour\n"
-		"local " + p_name + " =\n"
+		"---@class " + scriptTableName + " : Behaviour\n"
+		"local " + scriptTableName + " =\n"
 		"{\n"
 		"}\n"
 		"\n"
-		"function " + p_name + ":OnStart()\n"
+		"function " + scriptTableName + ":OnStart()\n"
 		"end\n"
 		"\n"
-		"function " + p_name + ":OnUpdate(deltaTime)\n"
+		"function " + scriptTableName + ":OnUpdate(deltaTime)\n"
 		"end\n"
 		"\n"
-		"return " + p_name;
+		"return " + scriptTableName;
 }
 
 template<>

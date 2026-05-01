@@ -125,7 +125,12 @@ namespace
 		return false;
 	}
 
-	void AddSkeletonNodeRecursive(OvRendering::Animation::Skeleton& p_skeleton, aiNode* p_node, int32_t p_parentIndex)
+	void AddSkeletonNodeRecursive(
+		OvRendering::Animation::Skeleton& p_skeleton,
+		aiNode* p_node,
+		int32_t p_parentIndex,
+		std::unordered_map<const aiNode*, uint32_t>* p_nodeIndexByPointer
+	)
 	{
 		const auto currentIndex = static_cast<uint32_t>(p_skeleton.nodes.size());
 
@@ -144,10 +149,19 @@ namespace
 		});
 
 		p_skeleton.nodeByName.emplace(p_node->mName.C_Str(), currentIndex);
+		if (p_nodeIndexByPointer)
+		{
+			p_nodeIndexByPointer->emplace(p_node, currentIndex);
+		}
 
 		for (uint32_t i = 0; i < p_node->mNumChildren; ++i)
 		{
-			AddSkeletonNodeRecursive(p_skeleton, p_node->mChildren[i], static_cast<int32_t>(currentIndex));
+			AddSkeletonNodeRecursive(
+				p_skeleton,
+				p_node->mChildren[i],
+				static_cast<int32_t>(currentIndex),
+				p_nodeIndexByPointer
+			);
 		}
 	}
 
@@ -637,6 +651,32 @@ namespace
 		std::vector<OvRendering::Animation::SkeletalAnimation>& p_animations
 	)
 	{
+		auto findAnimationNodeIndex = [&](std::string_view p_name) -> std::optional<uint32_t>
+		{
+			std::optional<uint32_t> fallbackIndex;
+			for (uint32_t nodeIndex = 0; nodeIndex < p_skeleton.nodes.size(); ++nodeIndex)
+			{
+				const auto& node = p_skeleton.nodes[nodeIndex];
+				if (node.name != p_name)
+				{
+					continue;
+				}
+
+				if (!fallbackIndex.has_value())
+				{
+					fallbackIndex = nodeIndex;
+				}
+
+				// Prefer the node that is effectively used by the skinning bones.
+				if (node.boneIndex >= 0)
+				{
+					return nodeIndex;
+				}
+			}
+
+			return fallbackIndex;
+		};
+
 		p_animations.reserve(p_scene->mNumAnimations);
 
 		for (uint32_t animIndex = 0; animIndex < p_scene->mNumAnimations; ++animIndex)
@@ -656,7 +696,7 @@ namespace
 				const auto* channel = animation->mChannels[channelIndex];
 				const std::string nodeName = channel->mNodeName.C_Str();
 
-				if (auto foundNode = p_skeleton.FindNodeIndex(nodeName))
+				if (auto foundNode = findAnimationNodeIndex(nodeName))
 				{
 					OvRendering::Animation::NodeAnimationTrack track;
 					track.nodeIndex = foundNode.value();
@@ -704,7 +744,8 @@ namespace
 	OvRendering::Resources::Mesh* ProcessMesh(
 		const aiMatrix4x4& p_transform,
 		aiMesh* p_mesh,
-		OvRendering::Animation::Skeleton* p_skeleton
+		OvRendering::Animation::Skeleton* p_skeleton,
+		const std::unordered_map<const aiNode*, uint32_t>* p_nodeIndexByPointer
 	)
 	{
 		std::vector<uint32_t> indices;
@@ -767,6 +808,18 @@ namespace
 
 		if (p_skeleton && p_mesh->HasBones())
 		{
+			const OvMaths::FMatrix4 meshGlobalBindTransform = ToMatrix4(p_transform);
+			std::optional<OvMaths::FMatrix4> meshGlobalBindTransformInverse;
+
+			try
+			{
+				meshGlobalBindTransformInverse = OvMaths::FMatrix4::Inverse(meshGlobalBindTransform);
+			}
+			catch (...)
+			{
+				meshGlobalBindTransformInverse = std::nullopt;
+			}
+
 			std::vector<OvRendering::Geometry::SkinnedVertex> vertices(p_mesh->mNumVertices);
 			for (uint32_t i = 0; i < p_mesh->mNumVertices; ++i)
 			{
@@ -777,33 +830,61 @@ namespace
 			{
 				const aiBone* bone = p_mesh->mBones[boneID];
 				const std::string boneName = bone->mName.C_Str();
-				const auto offsetMatrix = ToMatrix4(bone->mOffsetMatrix);
+				const OvMaths::FMatrix4 rawOffsetMatrix = ToMatrix4(bone->mOffsetMatrix);
 
-				auto nodeIndex = p_skeleton->FindNodeIndex(boneName);
+				std::optional<uint32_t> nodeIndex;
+#ifndef ASSIMP_BUILD_NO_ARMATUREPOPULATE_PROCESS
+				if (p_nodeIndexByPointer && bone->mNode)
+				{
+					if (const auto foundNode = p_nodeIndexByPointer->find(bone->mNode); foundNode != p_nodeIndexByPointer->end())
+					{
+						nodeIndex = foundNode->second;
+					}
+				}
+#endif
+
 				if (!nodeIndex)
+				{
+					nodeIndex = p_skeleton->FindNodeIndex(boneName);
+				}
+
+				if (!nodeIndex.has_value())
 				{
 					OVLOG_WARNING("AssimpParser: Bone '" + boneName + "' has no matching node in hierarchy and will be ignored.");
 					continue;
 				}
 
-				uint32_t boneIndex = 0;
-
-				if (auto existing = p_skeleton->FindBoneIndex(boneName))
+				OvMaths::FMatrix4 normalizedOffsetMatrix = rawOffsetMatrix;
+				if (meshGlobalBindTransformInverse)
 				{
-					boneIndex = existing.value();
+					// Assimp FBX stores aiBone::mOffsetMatrix relative to the source mesh bind space.
+					// Our importer bakes mesh vertices to scene/root space via p_transform, so we must
+					// remap the offset to the same space for consistent skinning across sub-meshes.
+					normalizedOffsetMatrix = rawOffsetMatrix * meshGlobalBindTransformInverse.value();
+				}
+
+				uint32_t boneIndex = 0;
+				const int32_t existingNodeBoneIndex = p_skeleton->nodes[nodeIndex.value()].boneIndex;
+				if (existingNodeBoneIndex >= 0)
+				{
+					boneIndex = static_cast<uint32_t>(existingNodeBoneIndex);
 				}
 				else
 				{
 					boneIndex = static_cast<uint32_t>(p_skeleton->bones.size());
-					p_skeleton->boneByName.emplace(boneName, boneIndex);
+					if (!p_skeleton->boneByName.contains(boneName))
+					{
+						p_skeleton->boneByName.emplace(boneName, boneIndex);
+					}
+
 					p_skeleton->bones.push_back({
 						.name = boneName,
 						.nodeIndex = nodeIndex.value(),
-						.offsetMatrix = offsetMatrix
+						.offsetMatrix = normalizedOffsetMatrix
 					});
-				}
 
-				p_skeleton->nodes[nodeIndex.value()].boneIndex = static_cast<int32_t>(boneIndex);
+					p_skeleton->nodes[nodeIndex.value()].boneIndex = static_cast<int32_t>(boneIndex);
+				}
 
 				for (uint32_t weightID = 0; weightID < bone->mNumWeights; ++weightID)
 				{
@@ -832,14 +913,20 @@ namespace
 		aiNode* p_node,
 		const aiScene* p_scene,
 		std::vector<OvRendering::Resources::Mesh*>& p_meshes,
-		OvRendering::Animation::Skeleton* p_skeleton
+		OvRendering::Animation::Skeleton* p_skeleton,
+		const std::unordered_map<const aiNode*, uint32_t>* p_nodeIndexByPointer
 	)
 	{
 		const aiMatrix4x4 nodeTransform = p_transform * p_node->mTransformation;
 
 		for (uint32_t i = 0; i < p_node->mNumMeshes; ++i)
 		{
-			if (OvRendering::Resources::Mesh* result = ProcessMesh(nodeTransform, p_scene->mMeshes[p_node->mMeshes[i]], p_skeleton))
+			if (OvRendering::Resources::Mesh* result = ProcessMesh(
+				nodeTransform,
+				p_scene->mMeshes[p_node->mMeshes[i]],
+				p_skeleton,
+				p_nodeIndexByPointer
+			))
 			{
 				p_meshes.push_back(result); // The model will handle mesh destruction
 			}
@@ -847,7 +934,14 @@ namespace
 
 		for (uint32_t i = 0; i < p_node->mNumChildren; ++i)
 		{
-			ProcessNode(nodeTransform, p_node->mChildren[i], p_scene, p_meshes, p_skeleton);
+			ProcessNode(
+				nodeTransform,
+				p_node->mChildren[i],
+				p_scene,
+				p_meshes,
+				p_skeleton,
+				p_nodeIndexByPointer
+			);
 		}
 	}
 }
@@ -869,8 +963,13 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 	// Fix the flags to avoid conflicts/invalid scenarios.
 	// This is a workaround, ideally the editor UI should not allow this to happen.
 	p_parserFlags = FixFlags(p_parserFlags);
+	uint32_t assimpFlags = static_cast<uint32_t>(p_parserFlags);
 
-	const aiScene* scene = import.ReadFile(p_fileName, static_cast<unsigned int>(p_parserFlags));
+#ifndef ASSIMP_BUILD_NO_ARMATUREPOPULATE_PROCESS
+	assimpFlags |= aiProcess_PopulateArmatureData;
+#endif
+
+	const aiScene* scene = import.ReadFile(p_fileName, assimpFlags);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -899,15 +998,28 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 
 	p_skeleton.reset();
 	p_animations.clear();
+	std::unordered_map<const aiNode*, uint32_t> nodeIndexByPointer;
 
 	if (hasBones)
 	{
 		p_skeleton.emplace();
-		AddSkeletonNodeRecursive(p_skeleton.value(), scene->mRootNode, -1);
-		ProcessAnimations(scene, p_skeleton.value(), p_animations);
+		nodeIndexByPointer.reserve(512);
+		AddSkeletonNodeRecursive(p_skeleton.value(), scene->mRootNode, -1, &nodeIndexByPointer);
 	}
 
-	ProcessNode(aiMatrix4x4{}, scene->mRootNode, scene, p_meshes, p_skeleton ? &p_skeleton.value() : nullptr);
+	ProcessNode(
+		aiMatrix4x4{},
+		scene->mRootNode,
+		scene,
+		p_meshes,
+		p_skeleton ? &p_skeleton.value() : nullptr,
+		hasBones ? &nodeIndexByPointer : nullptr
+	);
+
+	if (hasBones && p_skeleton.has_value())
+	{
+		ProcessAnimations(scene, p_skeleton.value(), p_animations);
+	}
 
 	if (p_skeleton && p_skeleton->bones.empty())
 	{

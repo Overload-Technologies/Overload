@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2024, assimp team
+Copyright (c) 2006-2026, assimp team
 
 All rights reserved.
 
@@ -64,7 +64,7 @@ class Parser;
 class Element;
 
 using ScopeList = std::vector<Scope*>;
-using ElementMap = std::fbx_unordered_multimap< std::string, Element*>;
+using ElementMap = std::multimap< std::string, Element*>;
 using ElementCollection = std::pair<ElementMap::const_iterator,ElementMap::const_iterator>;
 
 #define new_Scope new (allocator.Allocate(sizeof(Scope))) Scope
@@ -82,10 +82,9 @@ using ElementCollection = std::pair<ElementMap::const_iterator,ElementMap::const
  *  @endverbatim
  *
  *  As can be seen in this sample, elements can contain nested #Scope
- *  as their trailing member.  
+ *  as their trailing member.
 **/
-class Element
-{
+class Element {
 public:
     Element(const Token& key_token, Parser& parser);
     ~Element();

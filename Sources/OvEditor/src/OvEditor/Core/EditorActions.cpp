@@ -1132,7 +1132,13 @@ std::string FindDuplicatedActorUniqueName(OvCore::ECS::Actor& p_duplicated, OvCo
     return OvTools::Utils::String::GenerateUnique(p_duplicated.GetName(), availabilityChecker);
 }
 
-void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDuplicate, OvCore::ECS::Actor* p_forcedParent, bool p_focus)
+void OvEditor::Core::EditorActions::DuplicateActor
+(
+	OvCore::ECS::Actor& p_toDuplicate,
+	OvCore::ECS::Actor* p_forcedParent,
+	bool p_focus,
+	bool p_keepSourceParentIfNoForcedParent
+)
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLNode* actorsRoot = doc.NewElement("actors");
@@ -1151,7 +1157,7 @@ void OvEditor::Core::EditorActions::DuplicateActor(OvCore::ECS::Actor & p_toDupl
 	{
 		newActor.SetParent(*p_forcedParent);
 	}
-	else if (newActor.GetParentID() > 0)
+	else if (p_keepSourceParentIfNoForcedParent && newActor.GetParentID() > 0)
 	{
 		if (auto found = currentScene->FindActorByID(newActor.GetParentID()); found)
 		{
@@ -1394,7 +1400,7 @@ void OvEditor::Core::EditorActions::PasteActor(OvCore::ECS::Actor* p_parent)
 			destinationParent = destinationParent->GetParent();
 		}
 
-		DuplicateActor(*copiedActor, destinationParent, true);
+		DuplicateActor(*copiedActor, destinationParent, true, false);
 	}
 }
 
@@ -1516,8 +1522,16 @@ bool OvEditor::Core::EditorActions::OpenInCodeEditor(const std::filesystem::path
 			return false;
 		}
 
-		OvTools::Utils::String::ReplaceAll(command, "{workdir}", p_workdir ? p_workdir->string() : m_context.projectFolder.string());
-		OvTools::Utils::String::ReplaceAll(command, "{path}", p_path.string());
+		auto preferredWorkdir = p_workdir ? p_workdir.value() : m_context.projectFolder;
+		preferredWorkdir.make_preferred();
+
+		const std::string quotedWorkdir = std::format("\"{}\"", preferredWorkdir.string());
+		const std::string quotedPath = std::format("\"{}\"", preferredPath.string());
+
+		OvTools::Utils::String::ReplaceAll(command, "\"{workdir}\"", "{workdir}");
+		OvTools::Utils::String::ReplaceAll(command, "\"{path}\"", "{path}");
+		OvTools::Utils::String::ReplaceAll(command, "{workdir}", quotedWorkdir);
+		OvTools::Utils::String::ReplaceAll(command, "{path}", quotedPath);
 		if (!OvTools::Utils::SystemCalls::ExecuteCommand(command))
 		{
 			OVLOG_ERROR(std::format("Failed to open in code editor using command: \"{}\"", command));

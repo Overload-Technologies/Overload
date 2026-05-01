@@ -106,7 +106,7 @@ public:
 			{
 				if (auto* target = GetTargetActor())
 				{
-					EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*target), nullptr, true), 0));
+					EDITOR_EXEC(DelayAction(EDITOR_BIND(DuplicateActor, std::ref(*target), nullptr, true, true), 0));
 				}
 			};
 

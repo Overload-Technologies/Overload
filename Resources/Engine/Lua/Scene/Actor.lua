@@ -25,6 +25,10 @@ function Actor:SetTag(tag) end
 ---@return integer
 function Actor:GetID() end
 
+--- Returns the GUID of this actor as a hexadecimal string
+---@return string
+function Actor:GetGUID() end
+
 --- Returns children of this actor
 ---@return Actor[]
 function Actor:GetChildren() end

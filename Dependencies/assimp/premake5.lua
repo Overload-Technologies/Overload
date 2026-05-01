@@ -133,6 +133,9 @@ project 'assimp'
 		'ASSIMP_BUILD_NO_PBRT_EXPORTER'
 	}
 
+	filter { "system:linux" }
+		defines { "HAVE_UNISTD_H" }
+
 	filter { "configurations:Debug" }
 		defines { "DEBUG", "_DEBUG" }
 		symbols "On"

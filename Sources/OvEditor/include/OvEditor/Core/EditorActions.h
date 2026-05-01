@@ -232,6 +232,34 @@ namespace OvEditor::Core
 			bool p_focus = true,
 			bool p_keepSourceParentIfNoForcedParent = true
 		);
+
+		/**
+		* Save an actor hierarchy to a prefab file
+		* @param p_actor
+		* @param p_path
+		*/
+		void SaveActorAsPrefab(OvCore::ECS::Actor& p_actor, const std::string& p_path);
+
+		/**
+		* Instantiate a prefab file in the current scene
+		* @param p_path
+		*/
+		OvCore::ECS::Actor* InstantiatePrefab(const std::string& p_path);
+
+		/**
+		* Apply the current actor hierarchy state to its prefab source.
+		* Returns true on success.
+		* @param p_actor
+		*/
+		bool ApplyActorToPrefab(OvCore::ECS::Actor& p_actor);
+
+		/**
+		* Revert an actor hierarchy from its prefab source.
+		* Keeps existing actor GUIDs to preserve scene/script references.
+		* Returns true on success.
+		* @param p_actor
+		*/
+		bool RevertActorToPrefab(OvCore::ECS::Actor& p_actor);
 		#pragma endregion
 
 		#pragma region ACTOR_MANIPULATION

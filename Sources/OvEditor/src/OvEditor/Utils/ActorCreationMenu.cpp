@@ -19,27 +19,34 @@
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Utils/ActorCreationMenu.h>
+
+#include <algorithm>
 
 #include <OvUI/Widgets/Menu/MenuItem.h>
 #include <OvUI/Widgets/Menu/MenuList.h>
 
 namespace
 {
-	std::function<void()> Combine(std::function<void()> p_a, std::optional<std::function<void()>> p_b)
+	OvCore::ECS::Actor* ResolveAliveParent(OvCore::ECS::Actor* p_parent)
 	{
-		if (p_b.has_value())
+		if (!p_parent)
 		{
-			return [=]()
-			{
-				p_a();
-				p_b.value()();
-			};
+			return nullptr;
 		}
 
-		return p_a;
+		auto* currentScene = EDITOR_CONTEXT(sceneManager).GetCurrentScene();
+		if (!currentScene)
+		{
+			return nullptr;
+		}
+
+		const auto& actors = currentScene->GetActors();
+		const bool parentIsStillInScene = std::find(actors.begin(), actors.end(), p_parent) != actors.end();
+		return parentIsStillInScene ? p_parent : nullptr;
 	}
 
 	void CreateSkysphere(OvCore::ECS::Actor* p_parent)
@@ -122,27 +129,101 @@ namespace
 	template<class T>
 	std::function<void()> ActorWithComponentCreationHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
-		return Combine(EDITOR_BIND(CreateMonoComponentActor<T>, true, p_parent), p_onItemClicked);
+		return [p_parent, p_onItemClicked]()
+		{
+			EDITOR_EXEC(CreateMonoComponentActor<T>(true, ResolveAliveParent(p_parent)));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
 	}
 
 	std::function<void()> ActorWithModelComponentCreationHandler(OvCore::ECS::Actor* p_parent, const std::string& p_modelName, std::optional<std::function<void()>> p_onItemClicked)
 	{
-		return Combine(EDITOR_BIND(CreateActorWithModel, ":Models\\" + p_modelName + ".fbx", true, p_parent, p_modelName), p_onItemClicked);
+		return [p_parent, p_modelName, p_onItemClicked]()
+		{
+			EDITOR_EXEC(CreateActorWithModel(":Models\\" + p_modelName + ".fbx", true, ResolveAliveParent(p_parent), p_modelName));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
 	}
 
 	std::function<void()> CreateSkysphereHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
-		return Combine(std::bind(CreateSkysphere, p_parent), p_onItemClicked);
+		return [p_parent, p_onItemClicked]()
+		{
+			CreateSkysphere(ResolveAliveParent(p_parent));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
 	}
 
 	std::function<void()> CreateAtmosphereHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
-		return Combine(std::bind(CreateAtmosphere, p_parent), p_onItemClicked);
+		return [p_parent, p_onItemClicked]()
+		{
+			CreateAtmosphere(ResolveAliveParent(p_parent));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
 	}
 
 	std::function<void()> CreateCharacterHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
 	{
-		return Combine(std::bind(CreateCharacter, p_parent), p_onItemClicked);
+		return [p_parent, p_onItemClicked]()
+		{
+			CreateCharacter(ResolveAliveParent(p_parent));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
+	}
+
+	std::function<void()> CreateFromPrefabHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
+	{
+		return [p_parent, p_onItemClicked]()
+		{
+			OvCore::Helpers::GUIHelpers::OpenAssetPicker(
+				OvTools::Utils::PathParser::EFileType::PREFAB,
+				[p_parent, p_onItemClicked](std::string p_prefabPath)
+				{
+					if (p_prefabPath.empty())
+					{
+						return;
+					}
+
+					if (auto* actor = EDITOR_EXEC(InstantiatePrefab(p_prefabPath)); actor)
+					{
+						if (auto* parent = ResolveAliveParent(p_parent); parent)
+						{
+							actor->SetParent(*parent);
+						}
+
+						EDITOR_EXEC(SelectActor(*actor));
+
+						if (p_onItemClicked.has_value())
+						{
+							p_onItemClicked.value()();
+						}
+					}
+				},
+				true,
+				false
+			);
+		};
 	}
 }
 
@@ -151,7 +232,16 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	using namespace OvUI::Widgets::Menu;
 	using namespace OvCore::ECS::Components;
 
-	p_menuList.CreateWidget<MenuItem>("Create Empty").ClickedEvent += Combine(EDITOR_BIND(CreateEmptyActor, true, p_parent, ""), p_onItemClicked);
+	p_menuList.CreateWidget<MenuItem>("Create Empty").ClickedEvent += [p_parent, p_onItemClicked]()
+	{
+		EDITOR_EXEC(CreateEmptyActor(true, ResolveAliveParent(p_parent), ""));
+
+		if (p_onItemClicked.has_value())
+		{
+			p_onItemClicked.value()();
+		}
+	};
+	p_menuList.CreateWidget<MenuItem>("From prefab...").ClickedEvent += CreateFromPrefabHandler(p_parent, p_onItemClicked);
 
 	auto& primitives = p_menuList.CreateWidget<MenuList>("Primitives");
 	auto& physicals = p_menuList.CreateWidget<MenuList>("Physicals");

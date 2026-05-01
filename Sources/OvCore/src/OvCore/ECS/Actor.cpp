@@ -140,6 +140,43 @@ uint64_t OvCore::ECS::Actor::GetGUID() const
 	return m_guid;
 }
 
+void OvCore::ECS::Actor::SetPrefabSource(const std::string& p_prefabSource)
+{
+	if (p_prefabSource == "?")
+	{
+		m_prefabSource.clear();
+	}
+	else
+	{
+		m_prefabSource = p_prefabSource;
+	}
+}
+
+const std::string& OvCore::ECS::Actor::GetPrefabSource() const
+{
+	return m_prefabSource;
+}
+
+bool OvCore::ECS::Actor::HasPrefabSource() const
+{
+	return !m_prefabSource.empty();
+}
+
+void OvCore::ECS::Actor::SetPrefabNodeGUID(uint64_t p_prefabNodeGUID)
+{
+	m_prefabNodeGUID = p_prefabNodeGUID;
+}
+
+uint64_t OvCore::ECS::Actor::GetPrefabNodeGUID() const
+{
+	return m_prefabNodeGUID;
+}
+
+bool OvCore::ECS::Actor::HasPrefabNodeGUID() const
+{
+	return m_prefabNodeGUID != 0;
+}
+
 void OvCore::ECS::Actor::SetParent(Actor& p_parent)
 {
 	DetachFromParent();
@@ -451,6 +488,8 @@ void OvCore::ECS::Actor::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XM
 	OvCore::Helpers::Serializer::SerializeBoolean(p_doc, actorNode, "active", m_active);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "id", m_actorID);
 	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "guid", m_guid);
+	OvCore::Helpers::Serializer::SerializeString(p_doc, actorNode, "prefab_source", m_prefabSource);
+	OvCore::Helpers::Serializer::SerializeUInt64(p_doc, actorNode, "prefab_node_guid", m_prefabNodeGUID);
 	OvCore::Helpers::Serializer::SerializeInt64(p_doc, actorNode, "parent", m_parentID);
 
 	tinyxml2::XMLNode* componentsNode = p_doc.NewElement("components");
@@ -505,6 +544,12 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 	OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_actorsRoot, "active", m_active);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "id", m_actorID);
 	OvCore::Helpers::Serializer::DeserializeUInt64(p_doc, p_actorsRoot, "guid", m_guid);
+	std::string prefabSource;
+	OvCore::Helpers::Serializer::DeserializeString(p_doc, p_actorsRoot, "prefab_source", prefabSource);
+	SetPrefabSource(prefabSource);
+	uint64_t prefabNodeGUID = 0;
+	OvCore::Helpers::Serializer::DeserializeUInt64(p_doc, p_actorsRoot, "prefab_node_guid", prefabNodeGUID);
+	SetPrefabNodeGUID(prefabNodeGUID);
 	OvCore::Helpers::Serializer::DeserializeInt64(p_doc, p_actorsRoot, "parent", m_parentID);
 
 	{

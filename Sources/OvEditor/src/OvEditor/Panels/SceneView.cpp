@@ -61,6 +61,7 @@ OvEditor::Panels::SceneView::SceneView
 			case SCENE: OnSceneDropped(path); break;
 			case MODEL: OnModelDropped(path); break;
 			case MATERIAL: OnMaterialDropped(path); break;
+			case PREFAB: OnPrefabDropped(path); break;
 			default: break;
 		}
 	};
@@ -298,5 +299,13 @@ void OvEditor::Panels::SceneView::OnMaterialDropped(const std::string& p_path)
 				materialRenderer->SetMaterialAtIndex(0, *material);
 			}
 		}
+	}
+}
+
+void OvEditor::Panels::SceneView::OnPrefabDropped(const std::string& p_path)
+{
+	if (auto* actor = EDITOR_EXEC(InstantiatePrefab(p_path)); actor)
+	{
+		EDITOR_EXEC(SelectActor(*actor));
 	}
 }

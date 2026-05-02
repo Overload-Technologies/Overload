@@ -149,13 +149,6 @@ void OvRendering::HAL::GLFramebuffer::Resize(uint16_t p_width, uint16_t p_height
 {
 	OVASSERT(IsValid(), "Cannot resize an invalid framebuffer");
 
-	auto [currentWidth, currentHeight] = GetSize();
-
-	if (currentWidth == p_width && currentHeight == p_height)
-	{
-		return;
-	}
-
 	for (auto& attachment : m_context.attachments)
 	{
 		if (const auto pval = std::get_if<std::shared_ptr<GLTexture>>(&attachment.second); pval && *pval)

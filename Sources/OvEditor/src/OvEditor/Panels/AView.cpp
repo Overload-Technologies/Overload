@@ -62,12 +62,7 @@ void OvEditor::Panels::AView::Render()
 	{
 		FrameMarkStart(name.c_str());
 
-		auto [framebufferWidth, framebufferHeight] = m_framebuffer.GetSize();
-
-		if (framebufferWidth != winWidth || framebufferHeight != winHeight)
-		{
-			m_framebuffer.Resize(winWidth, winHeight);
-		}
+		m_framebuffer.Resize(winWidth, winHeight);
 
 		InitFrame();
 

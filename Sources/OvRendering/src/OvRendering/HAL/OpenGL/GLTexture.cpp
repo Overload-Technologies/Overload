@@ -178,7 +178,7 @@ void OvRendering::HAL::GLTexture::Resize(uint32_t p_width, uint32_t p_height)
 
 	auto& desc = m_textureContext.desc;
 
-	if (p_width != desc.width || p_height != desc.width)
+	if (p_width != desc.width || p_height != desc.height)
 	{
 		desc.width = p_width;
 		desc.height = p_height;

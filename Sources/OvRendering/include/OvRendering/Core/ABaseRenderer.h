@@ -128,6 +128,7 @@ namespace OvRendering::Core
 		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;
+		const Data::Material* m_lastBoundMaterial = nullptr;
 
 	private:
 		static std::atomic_bool s_isDrawing;

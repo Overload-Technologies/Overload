@@ -85,6 +85,7 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 
 	p_frameDescriptor.camera->CacheMatrices(p_frameDescriptor.renderWidth, p_frameDescriptor.renderHeight);
 
+	m_lastBoundMaterial = nullptr;
 	m_isDrawing = true;
 	s_isDrawing.store(true);
 }
@@ -100,6 +101,7 @@ void OvRendering::Core::ABaseRenderer::EndFrame()
 		m_frameDescriptor.outputBuffer.value().Unbind();
 	}
 
+	m_lastBoundMaterial = nullptr;
 	m_isDrawing = false;
 	s_isDrawing.store(false);
 }
@@ -230,13 +232,17 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		}
 	}
 
+	const auto* currentMaterial = &p_drawable.material.value();
+	const bool forceUniformUpload = m_lastBoundMaterial != currentMaterial;
+
 	p_drawable.material->Bind(
 		&m_emptyTexture2D,
 		&m_emptyTextureCube,
 		p_drawable.pass,
 		p_drawable.featureSetOverride.has_value() ?
 		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
-		std::nullopt
+		std::nullopt,
+		forceUniformUpload
 	);
 
 	m_driver.Draw(
@@ -246,5 +252,5 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		p_drawable.material->GetGPUInstances()
 	);
 
-	p_drawable.material->Unbind();
+	m_lastBoundMaterial = currentMaterial;
 }

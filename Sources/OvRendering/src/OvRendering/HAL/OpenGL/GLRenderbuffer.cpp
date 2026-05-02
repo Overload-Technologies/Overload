@@ -62,6 +62,12 @@ template<>
 void OvRendering::HAL::GLRenderbuffer::Resize(uint16_t p_width, uint16_t p_height)
 {
 	OVASSERT(IsValid(), "Cannot resize a renderbuffer that has not been allocated");
+
+	if (m_context.width == p_width && m_context.height == p_height)
+	{
+		return;
+	}
+
 	Allocate(p_width, p_height, m_context.format);
 }
 

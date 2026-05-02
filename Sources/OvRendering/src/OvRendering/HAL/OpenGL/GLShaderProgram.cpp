@@ -26,6 +26,11 @@ namespace
 	}
 }
 
+void OvRendering::HAL::InvalidateGLShaderProgramBindingCache()
+{
+	g_boundProgramId = 0;
+}
+
 template<>
 OvRendering::HAL::GLShaderProgram::TShaderProgram() : m_context{ .id = glCreateProgram() }
 {

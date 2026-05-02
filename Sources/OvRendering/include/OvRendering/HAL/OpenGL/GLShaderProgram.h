@@ -25,4 +25,10 @@ namespace OvRendering::HAL
 	};
 
 	using GLShaderProgram = TShaderProgram<Settings::EGraphicsBackend::OPENGL, GLShaderProgramContext, GLShaderStageContext>;
+
+	/**
+	* Invalidate the shader program binding cache.
+	* Useful when external code binds programs directly through OpenGL calls.
+	*/
+	void InvalidateGLShaderProgramBindingCache();
 }

@@ -14,6 +14,7 @@
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 #include <OvRendering/HAL/OpenGL/GLBackend.h>
+#include <OvRendering/HAL/OpenGL/GLShaderProgram.h>
 #include <OvRendering/HAL/OpenGL/GLTypes.h>
 #include <OvRendering/Utils/Conversions.h>
 
@@ -220,6 +221,8 @@ namespace OvRendering::HAL
 	template<>
 	std::optional<Data::PipelineState> GLBackend::Init(bool debug)
 	{
+		InvalidateGLShaderProgramBindingCache();
+
 		const int error = gladLoadGL();
 
 		if (error == 0)
@@ -248,6 +251,7 @@ namespace OvRendering::HAL
 	template<>
 	void GLBackend::OnFrameCompleted()
 	{
+		InvalidateGLShaderProgramBindingCache();
 		TracyGpuCollect;
 	}
 

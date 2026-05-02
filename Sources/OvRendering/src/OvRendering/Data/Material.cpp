@@ -176,6 +176,7 @@ void OvRendering::Data::Material::Bind(
 	}
 
 	int textureSlot = 0;
+	bool hasDirtyPropertiesAfterBind = false;
 
 	for (auto& [name, prop] : m_properties)
 	{
@@ -189,6 +190,7 @@ void OvRendering::Data::Material::Bind(
 		// Skip this property if the current program isn't using its associated uniform
 		if (!uniformData)
 		{
+			hasDirtyPropertiesAfterBind = hasDirtyPropertiesAfterBind || prop.dirty;
 			continue;
 		}
 
@@ -265,15 +267,11 @@ void OvRendering::Data::Material::Bind(
 		{
 			prop.dirty = false;
 		}
+
+		hasDirtyPropertiesAfterBind = hasDirtyPropertiesAfterBind || prop.dirty;
 	}
 
-	m_hasDirtyProperties = std::any_of(
-		m_properties.begin(),
-		m_properties.end(),
-		[](const auto& property) {
-			return property.second.dirty;
-		}
-	);
+	m_hasDirtyProperties = hasDirtyPropertiesAfterBind;
 
 	m_lastBoundVariant = &program;
 }

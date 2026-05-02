@@ -4,8 +4,8 @@
 * @licence: MIT
 */
 
-#include <array>
 #include <algorithm>
+#include <array>
 
 #include <glad.h>
 
@@ -18,6 +18,8 @@
 
 namespace
 {
+	uint32_t g_boundProgramId = 0;
+
 	constexpr bool IsReservedUniform(std::string_view p_name)
 	{
 		return p_name.starts_with("ubo_") || p_name.starts_with("ReflectionUBO");
@@ -33,19 +35,32 @@ OvRendering::HAL::GLShaderProgram::TShaderProgram() : m_context{ .id = glCreateP
 template<>
 OvRendering::HAL::GLShaderProgram::~TShaderProgram()
 {
+	if (g_boundProgramId == m_context.id)
+	{
+		g_boundProgramId = 0;
+	}
+
 	glDeleteProgram(m_context.id);
 }
 
 template<>
 void OvRendering::HAL::GLShaderProgram::Bind() const
 {
-	glUseProgram(m_context.id);
+	if (g_boundProgramId != m_context.id)
+	{
+		glUseProgram(m_context.id);
+		g_boundProgramId = m_context.id;
+	}
 }
 
 template<>
 void OvRendering::HAL::GLShaderProgram::Unbind() const
 {
-	glUseProgram(0);
+	if (g_boundProgramId != 0)
+	{
+		glUseProgram(0);
+		g_boundProgramId = 0;
+	}
 }
 
 template<>
@@ -91,12 +106,9 @@ template<> \
 type OvRendering::HAL::GLShaderProgram::GetUniform<type>(const std::string& p_name) \
 { \
 	type result{}; \
-	if (m_context.uniformsLocationCache.contains(p_name)) \
+	if (const auto location = m_context.uniformsLocationCache.find(p_name); location != m_context.uniformsLocationCache.end()) \
 	{ \
-		if (const uint32_t location = m_context.uniformsLocationCache.at(p_name)) \
-		{ \
-			func(m_context.id, location, reinterpret_cast<glType*>(&result)); \
-		} \
+		func(m_context.id, static_cast<GLint>(location->second), reinterpret_cast<glType*>(&result)); \
 	} \
 	return result; \
 }
@@ -114,9 +126,9 @@ template<> \
 template<> \
 void OvRendering::HAL::GLShaderProgram::SetUniform<type>(const std::string& p_name, const type& value) \
 { \
-	if (m_context.uniformsLocationCache.contains(p_name)) \
+	if (const auto location = m_context.uniformsLocationCache.find(p_name); location != m_context.uniformsLocationCache.end()) \
 	{ \
-		func(m_context.uniformsLocationCache.at(p_name), __VA_ARGS__); \
+		func(static_cast<GLint>(location->second), __VA_ARGS__); \
 	} \
 }
 

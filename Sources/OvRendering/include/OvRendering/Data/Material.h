@@ -42,6 +42,8 @@ namespace OvRendering::Data
 	{
 		MaterialPropertyType value;
 		bool singleUse;
+		bool dirty;
+		bool pendingSingleUseReset;
 	};
 
 	/**
@@ -90,7 +92,8 @@ namespace OvRendering::Data
 			HAL::Texture* p_emptyTexture2D = nullptr,
 			HAL::Texture* p_emptyTextureCube = nullptr,
 			std::optional<const std::string_view> p_pass = std::nullopt,
-			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
+			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt,
+			bool p_forceUniformUpload = true
 		);
 
 		/**
@@ -387,5 +390,7 @@ namespace OvRendering::Data
 
 		int m_gpuInstances = 1;
 		int m_drawOrder = 1000;
+		bool m_hasDirtyProperties = true;
+		HAL::ShaderProgram* m_lastBoundVariant = nullptr;
 	};
 }

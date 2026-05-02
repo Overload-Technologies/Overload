@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <format>
 #include <ranges>
 
@@ -71,6 +72,7 @@ OvRendering::Data::Material::Material(OvRendering::Resources::Shader* p_shader)
 void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_shader)
 {
 	m_shader = p_shader;
+	m_lastBoundVariant = nullptr;
 
 	if (m_shader)
 	{
@@ -80,6 +82,7 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 	else
 	{
 		m_properties.clear();
+		m_hasDirtyProperties = false;
 	}
 }
 
@@ -119,7 +122,9 @@ void OvRendering::Data::Material::UpdateProperties()
 			{
 				m_properties.emplace(name, MaterialProperty{
 					.value = UniformToPropertyValue(uniformInfo.defaultValue),
-					.singleUse = false
+					.singleUse = false,
+					.dirty = true,
+					.pendingSingleUseReset = false
 				});
 			}
 		}
@@ -128,6 +133,14 @@ void OvRendering::Data::Material::UpdateProperties()
 	std::erase_if(m_properties, [&usedUniforms](const auto& property) {
 		return !usedUniforms.contains(property.first);
 	});
+
+	m_hasDirtyProperties = std::any_of(
+		m_properties.begin(),
+		m_properties.end(),
+		[](const auto& property) {
+			return property.second.dirty;
+		}
+	);
 }
 
 // Note: this function is critical for performance, as it may be called many times during a frame.
@@ -136,7 +149,8 @@ void OvRendering::Data::Material::Bind(
 	HAL::Texture* p_emptyTexture,
 	HAL::Texture* p_emptyTextureCube,
 	std::optional<const std::string_view> p_pass,
-	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
+	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride,
+	bool p_forceUniformUpload
 )
 {
 	ZoneScoped;
@@ -151,12 +165,25 @@ void OvRendering::Data::Material::Bind(
 		p_featureSetOverride.value_or(m_features)
 	);
 
+	const bool variantChanged = m_lastBoundVariant != &program;
+	const bool forceUniformUpload = p_forceUniformUpload || variantChanged;
+
 	program.Bind();
+
+	if (!forceUniformUpload && !m_hasDirtyProperties)
+	{
+		return;
+	}
 
 	int textureSlot = 0;
 
 	for (auto& [name, prop] : m_properties)
 	{
+		if (!forceUniformUpload && !prop.dirty)
+		{
+			continue;
+		}
+
 		const auto uniformData = program.GetUniformInfo(name);
 
 		// Skip this property if the current program isn't using its associated uniform
@@ -223,9 +250,32 @@ void OvRendering::Data::Material::Bind(
 
 		if (prop.singleUse)
 		{
-			value = UniformToPropertyValue(uniformData->defaultValue);
+			if (prop.pendingSingleUseReset)
+			{
+				value = UniformToPropertyValue(uniformData->defaultValue);
+				prop.pendingSingleUseReset = false;
+				prop.dirty = true;
+			}
+			else
+			{
+				prop.dirty = false;
+			}
+		}
+		else
+		{
+			prop.dirty = false;
 		}
 	}
+
+	m_hasDirtyProperties = std::any_of(
+		m_properties.begin(),
+		m_properties.end(),
+		[](const auto& property) {
+			return property.second.dirty;
+		}
+	);
+
+	m_lastBoundVariant = &program;
 }
 
 void OvRendering::Data::Material::Unbind() const
@@ -244,12 +294,15 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 {
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
-	const auto property = 
 
 	m_properties[p_name] = MaterialProperty{
-		p_value,
-		p_singleUse
+		.value = p_value,
+		.singleUse = p_singleUse,
+		.dirty = true,
+		.pendingSingleUseReset = p_singleUse
 	};
+
+	m_hasDirtyProperties = true;
 }
 
 bool OvRendering::Data::Material::TrySetProperty(const std::string& p_name, const MaterialPropertyType& p_value, bool p_singleUse)

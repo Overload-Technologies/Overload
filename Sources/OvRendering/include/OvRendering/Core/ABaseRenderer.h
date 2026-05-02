@@ -7,6 +7,7 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_map>
 
 #include "OvRendering/Core/IRenderer.h"
 #include "OvRendering/Data/FrameInfo.h"
@@ -128,7 +129,7 @@ namespace OvRendering::Core
 		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;
-		const Data::Material* m_lastBoundMaterial = nullptr;
+		std::unordered_map<uint32_t, const Data::Material*> m_lastBoundMaterialPerProgram;
 
 	private:
 		static std::atomic_bool s_isDrawing;

@@ -85,7 +85,7 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 
 	p_frameDescriptor.camera->CacheMatrices(p_frameDescriptor.renderWidth, p_frameDescriptor.renderHeight);
 
-	m_lastBoundMaterial = nullptr;
+	m_lastBoundMaterialPerProgram.clear();
 	m_isDrawing = true;
 	s_isDrawing.store(true);
 }
@@ -101,7 +101,7 @@ void OvRendering::Core::ABaseRenderer::EndFrame()
 		m_frameDescriptor.outputBuffer.value().Unbind();
 	}
 
-	m_lastBoundMaterial = nullptr;
+	m_lastBoundMaterialPerProgram.clear();
 	m_isDrawing = false;
 	s_isDrawing.store(false);
 }
@@ -232,16 +232,30 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		}
 	}
 
+	const auto featureSetOverride =
+		p_drawable.featureSetOverride.has_value() ?
+		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
+		std::nullopt;
+
+	const auto currentVariant = p_drawable.material->GetVariant(p_drawable.pass, featureSetOverride);
+	OVASSERT(currentVariant, "Cannot draw a material without a valid shader variant");
+
+	const uint32_t currentProgramId = currentVariant->GetID();
 	const auto* currentMaterial = &p_drawable.material.value();
-	const bool forceUniformUpload = m_lastBoundMaterial != currentMaterial;
+
+	bool forceUniformUpload = true;
+	if (const auto boundMaterial = m_lastBoundMaterialPerProgram.find(currentProgramId);
+		boundMaterial != m_lastBoundMaterialPerProgram.end() &&
+		boundMaterial->second == currentMaterial)
+	{
+		forceUniformUpload = false;
+	}
 
 	p_drawable.material->Bind(
 		&m_emptyTexture2D,
 		&m_emptyTextureCube,
 		p_drawable.pass,
-		p_drawable.featureSetOverride.has_value() ?
-		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
-		std::nullopt,
+		featureSetOverride,
 		forceUniformUpload
 	);
 
@@ -252,5 +266,5 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		p_drawable.material->GetGPUInstances()
 	);
 
-	m_lastBoundMaterial = currentMaterial;
+	m_lastBoundMaterialPerProgram[currentProgramId] = currentMaterial;
 }

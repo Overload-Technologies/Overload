@@ -176,6 +176,13 @@ namespace OvCore::ECS
 		std::vector<Actor*>& GetChildren();
 
 		/**
+		* Finds a child actor by name
+		* @param p_name
+		* @param p_recursive
+		*/
+		Actor* FindChild(const std::string& p_name, bool p_recursive) const;
+
+		/**
 		* Mark the Actor as "Destroyed". A "Destroyed" actor will be removed from the scene by the scene itself
 		*/
 		void MarkAsDestroy();

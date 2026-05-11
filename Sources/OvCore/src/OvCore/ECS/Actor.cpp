@@ -247,6 +247,30 @@ std::vector<OvCore::ECS::Actor*>& OvCore::ECS::Actor::GetChildren()
 	return m_children;
 }
 
+OvCore::ECS::Actor* OvCore::ECS::Actor::FindChild(const std::string& p_name, bool p_recursive) const
+{
+	for (auto child : m_children)
+	{
+		if (child->GetName() == p_name)
+		{
+			return child;
+		}
+	}
+
+	if (p_recursive)
+	{
+		for (auto child : m_children)
+		{
+			if (auto found = child->FindChild(p_name, true); found)
+			{
+				return found;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 void OvCore::ECS::Actor::MarkAsDestroy()
 {
 	m_destroyed = true;

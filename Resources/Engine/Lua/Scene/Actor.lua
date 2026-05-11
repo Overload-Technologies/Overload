@@ -33,6 +33,12 @@ function Actor:GetGUID() end
 ---@return Actor[]
 function Actor:GetChildren() end
 
+--- Finds a child actor by name
+---@param name string
+---@param recursive boolean
+---@return Actor|nil
+function Actor:FindChild(name, recursive) end
+
 --- Returns the parent (or nil) of this actor
 ---@return Actor|nil
 function Actor:GetParent() end

@@ -39,6 +39,7 @@ void BindLuaActor(sol::state& p_luaState)
 		"SetName", &Actor::SetName,
 		"GetTag", &Actor::GetTag,
 		"GetChildren", &Actor::GetChildren,
+		"FindChild", &Actor::FindChild,
 		"SetTag", &Actor::SetTag,
 		"GetID", &Actor::GetID,
 		"GetGUID", [](Actor& p_actor) { return std::format("{:016X}", p_actor.GetGUID()); },

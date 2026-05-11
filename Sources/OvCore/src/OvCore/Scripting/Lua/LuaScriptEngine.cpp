@@ -45,15 +45,22 @@ namespace
 
 		const sol::table& table = *static_cast<OvCore::Scripting::LuaScript&>(context.value()).GetContext().table;
 
-		if (table[p_functionName].valid())
+		try
 		{
-			sol::protected_function pfr = table[p_functionName];
-			auto pfrResult = pfr.call(table, std::forward<Args>(p_args)...);
-			if (!pfrResult.valid())
+			if (table[p_functionName].valid())
 			{
-				sol::error err = pfrResult;
-				OVLOG_ERROR(err.what());
+				sol::protected_function pfr = table[p_functionName];
+				auto pfrResult = pfr.call(table, std::forward<Args>(p_args)...);
+				if (!pfrResult.valid())
+				{
+					sol::error err = pfrResult;
+					OVLOG_ERROR(err.what());
+				}
 			}
+		}
+		catch (const sol::error& p_error)
+		{
+			OVLOG_ERROR(p_error.what());
 		}
 	}
 

@@ -228,7 +228,7 @@ public:
 
 		OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(
 			createActor,
-			GetTargetActor(),
+			m_targetActor,
 			onItemClicked
 		);
 	}

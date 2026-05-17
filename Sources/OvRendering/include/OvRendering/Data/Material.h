@@ -9,6 +9,7 @@
 #include <any>
 #include <map>
 #include <optional>
+#include <set>
 #include <variant>
 
 #include <OvMaths/FMatrix3.h>
@@ -42,6 +43,17 @@ namespace OvRendering::Data
 	{
 		MaterialPropertyType value;
 		bool singleUse;
+	};
+
+	/**
+	* Context required by materials when bound.
+	*/
+	struct MaterialBindContext
+	{
+		HAL::Texture* emptyTexture2D = nullptr; // p_emptyTexture2D (The texture to use if a texture uniform is null)
+		HAL::Texture* emptyTextureCube = nullptr; // p_emptyTextureCube (The texture to use if a texture uniform is null)
+		std::optional<const std::string_view> pass = std::nullopt;
+		OvTools::Utils::OptRef<const Data::FeatureSet> featureSetOverride = std::nullopt;
 	};
 
 	/**
@@ -80,17 +92,19 @@ namespace OvRendering::Data
 		void UpdateProperties();
 
 		/**
+		* Calculate a hash for the material based on a given bind context, used for caching purposes.
+		* @param p_bindContext
+		*/
+		std::size_t CalculateBindContextHash(
+			const MaterialBindContext& p_bindContext
+		);
+
+		/**
 		* Bind the material and send its uniform data to the GPU
-		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
-		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
-		* @param p_pass
-		* @param p_featureSetOverride
+		* @param p_bindContext
 		*/
 		void Bind(
-			HAL::Texture* p_emptyTexture2D = nullptr,
-			HAL::Texture* p_emptyTextureCube = nullptr,
-			std::optional<const std::string_view> p_pass = std::nullopt,
-			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
+			const MaterialBindContext& p_bindContext
 		);
 
 		/**
@@ -365,8 +379,12 @@ namespace OvRendering::Data
 		bool SupportsProjectionMode(OvRendering::Settings::EProjectionMode p_projectionMode) const;
 
 	protected:
+		void UpdateBindCacheVersion();
+
+	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
+		std::set<std::string> m_mutableProperties;
 		Data::FeatureSet m_features;
 
 		bool m_supportOrthographic = true;
@@ -387,5 +405,9 @@ namespace OvRendering::Data
 
 		int m_gpuInstances = 1;
 		int m_drawOrder = 1000;
+
+		// For caching purposes. If the material properties changed between 2 binds,
+		// this will ensure the material hash also changes.
+		std::size_t m_bindCacheVersion = 0;
 	};
 }

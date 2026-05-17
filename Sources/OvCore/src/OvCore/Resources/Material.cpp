@@ -125,6 +125,8 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 {
 	using namespace OvCore::Helpers;
 
+	UpdateBindCacheVersion();
+
 	tinyxml2::XMLNode* settingsNode = p_node->FirstChildElement("settings");
 	
 	if (settingsNode)

@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <format>
 #include <ranges>
 
 #include <tracy/Tracy.hpp>
@@ -17,6 +16,7 @@
 #include <OvRendering/HAL/TextureHandle.h>
 #include <OvRendering/Resources/Texture.h>
 
+#include <OvTools/Utils/Hash.h>
 #include <OvTools/Utils/OptRef.h>
 
 namespace
@@ -70,6 +70,8 @@ OvRendering::Data::Material::Material(OvRendering::Resources::Shader* p_shader)
 
 void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_shader)
 {
+	UpdateBindCacheVersion();
+
 	m_shader = p_shader;
 
 	if (m_shader)
@@ -130,13 +132,43 @@ void OvRendering::Data::Material::UpdateProperties()
 	});
 }
 
+std::size_t OvRendering::Data::Material::CalculateBindContextHash(
+	const OvRendering::Data::MaterialBindContext& p_bindContext
+)
+{
+	ZoneScoped;
+
+	std::size_t hash{};
+
+	// Materials with mutable properties (singleUse) cannot be cached to avoid unnecessary binds.
+	if (!m_mutableProperties.empty())
+	{
+		return hash;
+	}
+
+	// Self pointer
+	OvTools::Utils::HashCombine(hash, this);
+
+	// Cache version (ensures property changes invalidate the hash)
+	OvTools::Utils::HashCombine(hash, m_bindCacheVersion);
+
+	// Texture pointers
+	OvTools::Utils::HashCombine(hash, p_bindContext.emptyTexture2D);
+	OvTools::Utils::HashCombine(hash, p_bindContext.emptyTextureCube);
+
+	// Pass
+	OvTools::Utils::HashCombine(hash, p_bindContext.pass);
+
+	// FeatureSet
+	OvTools::Utils::HashCombine(hash, FeatureSetHash{}(p_bindContext.featureSetOverride.value_or(m_features)));
+
+	return hash;
+}
+
 // Note: this function is critical for performance, as it may be called many times during a frame.
 // Avoid using any heavy operations or allocations inside this function.
 void OvRendering::Data::Material::Bind(
-	HAL::Texture* p_emptyTexture,
-	HAL::Texture* p_emptyTextureCube,
-	std::optional<const std::string_view> p_pass,
-	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
+	const OvRendering::Data::MaterialBindContext& p_bindContext
 )
 {
 	ZoneScoped;
@@ -147,8 +179,8 @@ void OvRendering::Data::Material::Bind(
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
 	auto& program = m_shader->GetVariant(
-		p_pass,
-		p_featureSetOverride.value_or(m_features)
+		p_bindContext.pass,
+		p_bindContext.featureSetOverride.value_or(m_features)
 	);
 
 	program.Bind();
@@ -218,7 +250,7 @@ void OvRendering::Data::Material::Bind(
 					handle = &(*texture)->GetTexture();
 				}
 			}
-			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube, textureSlot);
+			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_bindContext.emptyTexture2D : p_bindContext.emptyTextureCube, textureSlot);
 		}
 
 		if (prop.singleUse)
@@ -226,6 +258,8 @@ void OvRendering::Data::Material::Bind(
 			value = UniformToPropertyValue(uniformData->defaultValue);
 		}
 	}
+
+	m_mutableProperties.clear();
 }
 
 void OvRendering::Data::Material::Unbind() const
@@ -245,10 +279,17 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
 
+	UpdateBindCacheVersion();
+
 	m_properties[p_name] = MaterialProperty{
 		p_value,
 		p_singleUse
 	};
+
+	if (p_singleUse)
+	{
+		m_mutableProperties.insert(p_name);
+	}
 }
 
 bool OvRendering::Data::Material::TrySetProperty(const std::string& p_name, const MaterialPropertyType& p_value, bool p_singleUse)
@@ -453,16 +494,19 @@ OvRendering::Data::FeatureSet& OvRendering::Data::Material::GetFeatures()
 
 void OvRendering::Data::Material::SetFeatures(const Data::FeatureSet& p_features)
 {
+	UpdateBindCacheVersion();
 	m_features = p_features;
 }
 
 void OvRendering::Data::Material::AddFeature(const std::string& p_feature)
 {
+	UpdateBindCacheVersion();
 	m_features.insert(p_feature);
 }
 
 void OvRendering::Data::Material::RemoveFeature(const std::string& p_feature)
 {
+	UpdateBindCacheVersion();
 	m_features.erase(p_feature);
 }
 
@@ -504,4 +548,9 @@ bool OvRendering::Data::Material::SupportsProjectionMode(OvRendering::Settings::
 	}
 
 	return true;
+}
+
+void OvRendering::Data::Material::UpdateBindCacheVersion()
+{
+	++m_bindCacheVersion;
 }

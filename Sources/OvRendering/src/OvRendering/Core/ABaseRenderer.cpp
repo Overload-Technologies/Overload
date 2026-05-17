@@ -39,7 +39,8 @@ OvRendering::Core::ABaseRenderer::ABaseRenderer(Context::Driver& p_driver) :
 	m_isDrawing(false),
 	m_emptyTexture2D{ Settings::ETextureType::TEXTURE_2D },
 	m_emptyTextureCube{ Settings::ETextureType::TEXTURE_CUBE },
-	m_unitQuad(kUnitQuadVertices, kUnitQuadIndices)
+	m_unitQuad(kUnitQuadVertices, kUnitQuadIndices),
+	m_cachedMaterialBindContextHash(0UL)
 {
 	const auto kEmptyTextureDesc = Settings::TextureDesc{
 		.width = 1,
@@ -65,6 +66,8 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 
 	OVASSERT(!s_isDrawing, "Cannot call BeginFrame() when previous frame hasn't finished.");
 	OVASSERT(p_frameDescriptor.IsValid(), "Invalid FrameDescriptor!");
+
+	InvalidateMaterialBindContextCache();
 
 	m_frameDescriptor = p_frameDescriptor;
 
@@ -230,14 +233,24 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		}
 	}
 
-	p_drawable.material->Bind(
-		&m_emptyTexture2D,
-		&m_emptyTextureCube,
-		p_drawable.pass,
-		p_drawable.featureSetOverride.has_value() ?
-		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
-		std::nullopt
-	);
+	const Data::MaterialBindContext bindContext{
+		.emptyTexture2D = &m_emptyTexture2D,
+		.emptyTextureCube = &m_emptyTextureCube,
+		.pass = p_drawable.pass,
+		.featureSetOverride = 
+			p_drawable.featureSetOverride.has_value() ?
+			OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
+			std::nullopt
+	};
+
+	const std::size_t bindContextHash = p_drawable.material->CalculateBindContextHash(bindContext);
+
+	if (bindContextHash == 0 || bindContextHash != m_cachedMaterialBindContextHash)
+	{
+		p_drawable.material->Bind(bindContext);
+	}
+
+	m_cachedMaterialBindContextHash = bindContextHash;
 
 	m_driver.Draw(
 		p_pso,
@@ -246,3 +259,9 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		p_drawable.material->GetGPUInstances()
 	);
 }
+
+void OvRendering::Core::ABaseRenderer::InvalidateMaterialBindContextCache()
+{
+	m_cachedMaterialBindContextHash = 0;
+}
+

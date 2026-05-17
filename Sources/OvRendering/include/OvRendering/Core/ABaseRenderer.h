@@ -120,6 +120,13 @@ namespace OvRendering::Core
 			const Entities::Drawable& p_drawable
 		);
 
+		/**
+		* Reset the cached material bind context signature, forcing material.Bind calls
+		* even if the material was previously bound. It's recommended to invalidate the cache
+		* after other code-paths changed the graphics API context.
+		*/
+		virtual void InvalidateMaterialBindContextCache();
+
 	protected:
 		Data::FrameDescriptor m_frameDescriptor;
 		Context::Driver& m_driver;
@@ -128,6 +135,7 @@ namespace OvRendering::Core
 		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;
+		std::size_t m_cachedMaterialBindContextHash;
 
 	private:
 		static std::atomic_bool s_isDrawing;

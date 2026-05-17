@@ -6,6 +6,8 @@
 
 #include <cstdint>
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 
@@ -97,6 +99,8 @@ void OvRendering::Context::Driver::Draw(
 	uint32_t p_instances
 )
 {
+	ZoneScoped;
+
 	if (p_instances > 0)
 	{
 		SetPipelineState(p_pso);

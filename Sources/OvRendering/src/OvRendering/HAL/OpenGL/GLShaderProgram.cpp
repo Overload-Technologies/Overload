@@ -114,9 +114,9 @@ template<> \
 template<> \
 void OvRendering::HAL::GLShaderProgram::SetUniform<type>(const std::string& p_name, const type& value) \
 { \
-	if (m_context.uniformsLocationCache.contains(p_name)) \
+	if (auto it = m_context.uniformsLocationCache.find(p_name); it != m_context.uniformsLocationCache.end()) \
 	{ \
-		func(m_context.uniformsLocationCache.at(p_name), __VA_ARGS__); \
+		func(it->second, __VA_ARGS__); \
 	} \
 }
 
@@ -221,9 +221,9 @@ OvRendering::Settings::ShaderLinkingResult OvRendering::HAL::GLShaderProgram::Li
 template<>
 OvTools::Utils::OptRef<const OvRendering::Settings::UniformInfo> OvRendering::HAL::GLShaderProgram::GetUniformInfo(const std::string& p_name) const
 {
-	if (m_context.uniforms.contains(p_name))
+	if (auto it = m_context.uniforms.find(p_name); it != m_context.uniforms.end())
 	{
-		return m_context.uniforms.at(p_name);
+		return it->second;
 	}
 
 	return std::nullopt;

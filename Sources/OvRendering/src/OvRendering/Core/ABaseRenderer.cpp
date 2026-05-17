@@ -245,6 +245,4 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		p_drawable.primitiveMode,
 		p_drawable.material->GetGPUInstances()
 	);
-
-	p_drawable.material->Unbind();
 }

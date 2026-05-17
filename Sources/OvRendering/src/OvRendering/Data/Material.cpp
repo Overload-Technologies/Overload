@@ -244,7 +244,6 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 {
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
-	const auto property = 
 
 	m_properties[p_name] = MaterialProperty{
 		p_value,

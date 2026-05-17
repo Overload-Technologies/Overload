@@ -134,14 +134,14 @@ void OvRendering::Data::Material::UpdateProperties()
 
 std::size_t OvRendering::Data::Material::CalculateBindContextHash(
 	const OvRendering::Data::MaterialBindContext& p_bindContext
-)
+) const
 {
 	ZoneScoped;
 
 	std::size_t hash{};
 
 	// Materials with mutable properties (singleUse) cannot be cached to avoid unnecessary binds.
-	if (!m_mutableProperties.empty())
+	if (m_hasMutableProperties)
 	{
 		return hash;
 	}
@@ -259,7 +259,7 @@ void OvRendering::Data::Material::Bind(
 		}
 	}
 
-	m_mutableProperties.clear();
+	m_hasMutableProperties = false;
 }
 
 void OvRendering::Data::Material::Unbind() const
@@ -279,8 +279,6 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
 
-	UpdateBindCacheVersion();
-
 	m_properties[p_name] = MaterialProperty{
 		p_value,
 		p_singleUse
@@ -288,7 +286,12 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 
 	if (p_singleUse)
 	{
-		m_mutableProperties.insert(p_name);
+		// singleUse bypasses the bind cache (hash=0), so no need to bump the version.
+		m_hasMutableProperties = true;
+	}
+	else
+	{
+		UpdateBindCacheVersion();
 	}
 }
 

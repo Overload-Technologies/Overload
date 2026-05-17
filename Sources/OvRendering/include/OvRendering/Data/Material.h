@@ -9,7 +9,6 @@
 #include <any>
 #include <map>
 #include <optional>
-#include <set>
 #include <variant>
 
 #include <OvMaths/FMatrix3.h>
@@ -95,9 +94,9 @@ namespace OvRendering::Data
 		* Calculate a hash for the material based on a given bind context, used for caching purposes.
 		* @param p_bindContext
 		*/
-		std::size_t CalculateBindContextHash(
+		[[nodiscard]] std::size_t CalculateBindContextHash(
 			const MaterialBindContext& p_bindContext
-		);
+		) const;
 
 		/**
 		* Bind the material and send its uniform data to the GPU
@@ -384,8 +383,8 @@ namespace OvRendering::Data
 	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
-		std::set<std::string> m_mutableProperties;
 		Data::FeatureSet m_features;
+		bool m_hasMutableProperties = false;
 
 		bool m_supportOrthographic = true;
 		bool m_supportPerspective = true;

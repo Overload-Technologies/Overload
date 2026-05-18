@@ -40,6 +40,7 @@ Overload pillars are:
 # Features
 - Lua scripting
 - Game editor
+- Prefab system
 - Physically-Based Rendering (PBR)
 - Custom shaders support
 - Windows game building

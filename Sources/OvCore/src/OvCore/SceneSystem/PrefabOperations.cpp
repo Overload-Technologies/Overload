@@ -17,6 +17,28 @@
 
 namespace
 {
+	void NormalizePrefabSourcesRecursively(
+		OvCore::ECS::Actor& p_actor,
+		const std::string& p_inheritedPrefabSource)
+	{
+		if (p_actor.HasPrefabSource())
+		{
+			const std::string currentPrefabSource = p_actor.GetPrefabSource();
+			if (currentPrefabSource == p_inheritedPrefabSource)
+			{
+				p_actor.SetPrefabSource("?");
+			}
+		}
+
+		const std::string nextInheritedPrefabSource =
+			p_actor.HasPrefabSource() ? p_actor.GetPrefabSource() : p_inheritedPrefabSource;
+
+		for (auto* child : p_actor.GetChildren())
+		{
+			NormalizePrefabSourcesRecursively(*child, nextInheritedPrefabSource);
+		}
+	}
+
 	void SerializeActorHierarchy(
 		OvCore::ECS::Actor& p_actor,
 		tinyxml2::XMLDocument& p_doc,
@@ -52,6 +74,18 @@ bool OvCore::SceneSystem::PrefabOperations::SaveToFile(OvCore::ECS::Actor& p_roo
 	SerializeActorHierarchy(p_rootActor, doc, *actorsNode);
 
 	return doc.SaveFile(p_outputPath.string().c_str()) == tinyxml2::XML_SUCCESS;
+}
+
+void OvCore::SceneSystem::PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(
+	OvCore::ECS::Actor& p_rootActor,
+	const std::string& p_newRootPrefabSource)
+{
+	p_rootActor.SetPrefabSource(p_newRootPrefabSource);
+
+	for (auto* child : p_rootActor.GetChildren())
+	{
+		NormalizePrefabSourcesRecursively(*child, p_newRootPrefabSource);
+	}
 }
 
 OvCore::ECS::Actor* OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(

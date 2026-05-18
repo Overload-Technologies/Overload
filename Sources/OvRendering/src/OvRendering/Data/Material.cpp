@@ -147,12 +147,12 @@ void OvRendering::Data::Material::UpdateProperties()
 	});
 }
 
-std::size_t OvRendering::Data::Material::Bind(
+OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::Bind(
 	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride,
 	HAL::Texture* p_emptyTexture2D,
 	HAL::Texture* p_emptyTextureCube,
-	std::optional<std::size_t> p_lastBindSignature
+	std::optional<MaterialSignatureSet> p_previousMaterialSignature
 )
 {
 	ZoneScoped;
@@ -164,13 +164,13 @@ std::size_t OvRendering::Data::Material::Bind(
 		p_featureSetOverride.value_or(m_features)
 	);
 
-	std::size_t signature = CalculateSignature(
+	const auto signature = CalculateSignature(
 		program,
 		p_emptyTexture2D,
 		p_emptyTextureCube
 	);
 
-	if (!p_lastBindSignature || signature != p_lastBindSignature.value())
+	if (!p_previousMaterialSignature || signature.bindSignature != p_previousMaterialSignature->bindSignature)
 	{
 		program.Bind();
 	}
@@ -303,9 +303,13 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 		p_singleUse
 	};
 
-	if (!p_singleUse)
+	if (p_singleUse)
 	{
-		InvalidatePropertySignature();
+		++m_singleUsePropertySignatureVersion;
+	}
+	else
+	{
+		++m_stablePropertySignatureVersion;
 	}
 }
 
@@ -566,10 +570,11 @@ bool OvRendering::Data::Material::SupportsProjectionMode(OvRendering::Settings::
 
 void OvRendering::Data::Material::InvalidatePropertySignature()
 {
-	++m_propertySignatureVersion;
+	++m_stablePropertySignatureVersion;
+	++m_singleUsePropertySignatureVersion;
 }
 
-std::size_t OvRendering::Data::Material::CalculateSignature(
+OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::CalculateSignature(
 	OvRendering::HAL::ShaderProgram& p_selectedProgram,
 	HAL::Texture* p_emptyTexture2D,
 	HAL::Texture* p_emptyTextureCube
@@ -577,19 +582,24 @@ std::size_t OvRendering::Data::Material::CalculateSignature(
 {
 	ZoneScoped;
 
-	std::size_t hash{};
+	MaterialSignatureSet signature;
 
-	// Material + shader pointer
-	HashCombine(hash, this);
-	HashCombine(hash, &p_selectedProgram);
+	// Bind
+	HashCombine(signature.bindSignature, this);
+	HashCombine(signature.bindSignature, &p_selectedProgram);
 
-	// Cache version (ensures property changes invalidate the hash)
-	HashCombine(hash, m_propertySignatureVersion);
+	// Stable Properties
+	signature.stablePropertySignature = signature.bindSignature;
+	HashCombine(signature.stablePropertySignature, m_stablePropertySignatureVersion);
+	HashCombine(signature.stablePropertySignature, p_emptyTexture2D);
+	HashCombine(signature.stablePropertySignature, p_emptyTextureCube);
 
-	// Texture pointers
-	HashCombine(hash, p_emptyTexture2D);
-	HashCombine(hash, p_emptyTextureCube);
+	// Single Use Properties
+	signature.singleUsePropertySignature = signature.bindSignature;
+	HashCombine(signature.singleUsePropertySignature, m_singleUsePropertySignatureVersion);
+	HashCombine(signature.singleUsePropertySignature, p_emptyTexture2D);
+	HashCombine(signature.singleUsePropertySignature, p_emptyTextureCube);
 
-	return hash;
+	return signature;
 }
 

@@ -66,7 +66,7 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 	OVASSERT(!s_isDrawing, "Cannot call BeginFrame() when previous frame hasn't finished.");
 	OVASSERT(p_frameDescriptor.IsValid(), "Invalid FrameDescriptor!");
 
-	m_lastEntitySignature.reset();
+	m_previousMaterialSignature.reset();
 
 	m_frameDescriptor = p_frameDescriptor;
 
@@ -232,24 +232,30 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		}
 	}
 
-	const std::size_t signature = p_drawable.material->Bind(
+	const auto signature = p_drawable.material->Bind(
 		p_drawable.pass,
 		p_drawable.featureSetOverride.has_value() ?
 			OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
 			std::nullopt,
 		&m_emptyTexture2D,
 		&m_emptyTextureCube,
-		m_lastEntitySignature
+		m_previousMaterialSignature
 	);
 
-	p_drawable.material->UploadProperties(
-		!m_lastEntitySignature.has_value() || signature != m_lastEntitySignature.value(),
-		true,
-		&m_emptyTexture2D,
-		&m_emptyTextureCube
-	);
+	const bool uploadStableProperties = !m_previousMaterialSignature.has_value() || signature.stablePropertySignature != m_previousMaterialSignature->stablePropertySignature;
+	const bool uploadSingleUseProperties = !m_previousMaterialSignature.has_value() || signature.singleUsePropertySignature != m_previousMaterialSignature->singleUsePropertySignature;
 
-	m_lastEntitySignature = signature;
+	if (uploadStableProperties || uploadSingleUseProperties)
+	{
+		p_drawable.material->UploadProperties(
+			uploadStableProperties,
+			uploadSingleUseProperties,
+			&m_emptyTexture2D,
+			&m_emptyTextureCube
+		);
+	}
+
+	m_previousMaterialSignature = signature;
 
 	m_driver.Draw(
 		p_pso,

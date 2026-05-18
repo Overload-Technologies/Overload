@@ -45,6 +45,16 @@ namespace OvRendering::Data
 	};
 
 	/**
+	* Signature set for a material, used for caching purposes
+	*/
+	struct MaterialSignatureSet
+	{
+		std::size_t bindSignature;
+		std::size_t stablePropertySignature;
+		std::size_t singleUsePropertySignature;
+	};
+
+	/**
 	* A material is a combination of a shader and some settings (Material settings and shader settings)
 	*/
 	class Material
@@ -81,19 +91,19 @@ namespace OvRendering::Data
 
 		/**
 		* Bind the appropriate shader program based on a given pass and potential feature set override
-		* @return Material signature, so that subsequent draw can use it for caching purposes.
+		* @return Material signature, used to skip redundant binding/upload operations
 		* @param p_pass
 		* @param p_featureSetOverride
 		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
 		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
-		* @param p_lastBindSignature (Can be used to skip binding if the signature is the same as the last bind)
+		* @param p_previousMaterialSignature (Can be used to skip binding)
 		*/
-		std::size_t Bind(
+		MaterialSignatureSet Bind(
 			std::optional<const std::string_view> p_pass = std::nullopt,
 			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt,
 			HAL::Texture* p_emptyTexture2D = nullptr,
 			HAL::Texture* p_emptyTextureCube = nullptr,
-			std::optional<std::size_t> p_lastBindSignature = std::nullopt
+			std::optional<MaterialSignatureSet> p_previousMaterialSignature = std::nullopt
 		);
 
 		/**
@@ -385,7 +395,7 @@ namespace OvRendering::Data
 	protected:
 		void InvalidatePropertySignature();
 
-		std::size_t CalculateSignature(
+		MaterialSignatureSet CalculateSignature(
 			OvRendering::HAL::ShaderProgram& p_selectedProgram,
 			HAL::Texture* p_emptyTexture2D = nullptr,
 			HAL::Texture* p_emptyTextureCube = nullptr
@@ -395,7 +405,8 @@ namespace OvRendering::Data
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
 		Data::FeatureSet m_features;
-		size_t m_propertySignatureVersion = 0ULL;
+		size_t m_stablePropertySignatureVersion = 0ULL;
+		size_t m_singleUsePropertySignatureVersion = 0ULL;
 		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> m_programInUse = std::nullopt;
 
 		bool m_supportOrthographic = true;

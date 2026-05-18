@@ -15,6 +15,7 @@
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FQuaternion.h>
 #include <OvMaths/FVector3.h>
+#include <OvTools/Eventing/Event.h>
 
 namespace OvCore::ECS { class Actor; }
 namespace OvRendering::Resources { class Model; }
@@ -118,6 +119,22 @@ namespace OvCore::ECS::Components
 		* Returns the current playback time in seconds
 		*/
 		float GetTime() const;
+
+		/**
+		* Sets the external model used as animation source. Pass nullptr to use the rendered model animations.
+		* @param p_model
+		*/
+		void SetAnimationSourceModel(OvRendering::Resources::Model* p_model);
+
+		/**
+		* Returns the external animation source model, or nullptr when the rendered model is used
+		*/
+		OvRendering::Resources::Model* GetAnimationSourceModel() const;
+
+		/**
+		* Returns true if the current animation source can be applied to the rendered model skeleton
+		*/
+		bool IsAnimationSourceCompatible() const;
 
 		/**
 		* Returns the number of available animations
@@ -246,6 +263,8 @@ namespace OvCore::ECS::Components
 
 	private:
 		bool HasCompatibleModel() const;
+		bool HasCompatibleAnimationSource() const;
+		const OvRendering::Resources::Model* GetAnimationModel() const;
 		void SyncWithModel();
 		void RebuildRuntimeData();
 		void EvaluatePose();
@@ -256,6 +275,8 @@ namespace OvCore::ECS::Components
 
 	private:
 		const OvRendering::Resources::Model* m_model = nullptr;
+		OvRendering::Resources::Model* m_animationSourceModel = nullptr;
+		OvTools::Eventing::Event<> m_animationSourceChangedEvent;
 
 		bool m_playing = true;
 		bool m_looping = true;
@@ -272,6 +293,7 @@ namespace OvCore::ECS::Components
 		bool m_manualPoseOverride = false;
 
 		std::vector<std::string> m_animationNames;
+		std::vector<int32_t> m_animationNodeMap;
 		std::vector<OvMaths::FMatrix4> m_localPose;
 		std::vector<OvMaths::FMatrix4> m_globalPose;
 		std::vector<OvMaths::FMatrix4> m_boneMatrices;

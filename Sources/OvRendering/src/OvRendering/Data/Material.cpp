@@ -30,13 +30,15 @@ namespace
 		seed ^= std::hash<T>{}(value)
 			+ kHashCombineConstant 
 			// Bit mixing. They spread entropy from earlier values so order matters
-			// and nearby hashes don’t collapse into similar outputs.
+			// and nearby hashes don't collapse into similar outputs.
 			+ (seed << 6)
 			+ (seed >> 2);
 	}
 
 	OvRendering::Data::MaterialPropertyType UniformToPropertyValue(const std::any& p_uniformValue)
 	{
+		ZoneScoped;
+
 		using namespace OvMaths;
 		using namespace OvRendering;
 
@@ -134,8 +136,10 @@ void OvRendering::Data::Material::UpdateProperties()
 
 			if (!m_properties.contains(name))
 			{
+				const auto defaultValue = UniformToPropertyValue(uniformInfo.defaultValue);
 				m_properties.emplace(name, MaterialProperty{
-					.value = UniformToPropertyValue(uniformInfo.defaultValue),
+					.value = defaultValue,
+					.defaultValue = defaultValue,
 					.singleUse = false
 				});
 			}
@@ -267,7 +271,7 @@ void OvRendering::Data::Material::UploadProperties(
 
 		if (prop.singleUse)
 		{
-			value = UniformToPropertyValue(uniformData->defaultValue);
+			value = prop.defaultValue;
 		}
 	}
 }
@@ -298,10 +302,8 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
 
-	m_properties[p_name] = MaterialProperty{
-		p_value,
-		p_singleUse
-	};
+	m_properties[p_name].value = p_value;
+	m_properties[p_name].singleUse = p_singleUse;
 
 	if (p_singleUse)
 	{

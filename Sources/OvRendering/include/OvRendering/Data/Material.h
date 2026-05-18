@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include <any>
-#include <map>
 #include <optional>
+#include <unordered_map>
 #include <variant>
 
 #include <OvMaths/FMatrix3.h>
@@ -41,6 +40,7 @@ namespace OvRendering::Data
 	struct MaterialProperty
 	{
 		MaterialPropertyType value;
+		MaterialPropertyType defaultValue;
 		bool singleUse;
 	};
 
@@ -60,7 +60,7 @@ namespace OvRendering::Data
 	class Material
 	{
 	public:
-		using PropertyMap = std::map<std::string, MaterialProperty>;
+		using PropertyMap = std::unordered_map<std::string, MaterialProperty>;
 
 		/**
 		* Creates a material

@@ -229,7 +229,11 @@ void OvEditor::Core::Editor::Update(float p_deltaTime)
 	const bool mouseEnabled = m_context.window->GetCursorMode() != OvWindowing::Cursor::ECursorMode::DISABLED;
 	m_context.uiManager->EnableMouse(mouseEnabled);
 
-	HandleGlobalShortcuts();
+	if (m_editorActions.GetCurrentEditorMode() == EditorActions::EEditorMode::EDIT)
+	{
+		HandleGlobalShortcuts();
+	}
+
 	UpdateCurrentEditorMode(p_deltaTime);
 	RenderViews(p_deltaTime);
 	UpdateEditorPanels(p_deltaTime);

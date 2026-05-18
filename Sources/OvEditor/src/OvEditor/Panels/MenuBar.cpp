@@ -57,6 +57,11 @@ OvEditor::Panels::MenuBar::MenuBar()
 
 void OvEditor::Panels::MenuBar::HandleShortcuts(float p_deltaTime)
 {
+	if (EDITOR_EXEC(GetCurrentEditorMode()) != OvEditor::Core::EditorActions::EEditorMode::EDIT)
+	{
+		return;
+	}
+
 	auto& inputManager = *EDITOR_CONTEXT(inputManager);
 
 	if (inputManager.GetKeyState(OvWindowing::Inputs::EKey::KEY_LEFT_CONTROL) == OvWindowing::Inputs::EKeyState::KEY_DOWN)

@@ -35,21 +35,29 @@ namespace OvCore::Rendering
 			FRONT_TO_BACK,
 		};
 
-		template<EOrderingMode OrderingMode>
+		template<EOrderingMode OrderingMode, bool BatchMaterial>
 		struct DrawOrder
 		{
 			const int order;
+			const uintptr_t materialKey;
 			const float distance;
 
 			/**
 			* Determines the order of the drawables.
-			* Current order is: order -> distance
 			* @param p_other
 			*/
 			bool operator<(const DrawOrder& p_other) const
 			{
 				if (order == p_other.order)
 				{
+					if constexpr (BatchMaterial)
+					{
+						if (materialKey != p_other.materialKey)
+						{
+							return materialKey < p_other.materialKey;
+						}
+					}
+
 					if constexpr (OrderingMode == EOrderingMode::BACK_TO_FRONT)
 					{
 						return distance > p_other.distance;
@@ -66,8 +74,8 @@ namespace OvCore::Rendering
 			}
 		};
 
-		template<EOrderingMode OrderingMode>
-		using DrawableMap = std::multimap<DrawOrder<OrderingMode>, OvRendering::Entities::Drawable>;
+		template<EOrderingMode OrderingMode, bool BatchMaterial = false>
+		using DrawableMap = std::multimap<DrawOrder<OrderingMode, BatchMaterial>, OvRendering::Entities::Drawable>;
 
 		/**
 		* Input data for the scene renderer.
@@ -108,7 +116,7 @@ namespace OvCore::Rendering
 		*/
 		struct SceneFilteredDrawablesDescriptor
 		{
-			DrawableMap<EOrderingMode::FRONT_TO_BACK> opaques;
+			DrawableMap<EOrderingMode::FRONT_TO_BACK, true> opaques;
 			DrawableMap<EOrderingMode::BACK_TO_FRONT> transparents;
 			DrawableMap<EOrderingMode::BACK_TO_FRONT> ui;
 		};

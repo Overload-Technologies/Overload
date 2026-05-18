@@ -128,6 +128,7 @@ namespace OvRendering::Core
 		OvRendering::Resources::Mesh m_unitQuad;
 		OvRendering::Data::PipelineState m_basePipelineState;
 		bool m_isDrawing;
+		std::optional<std::size_t> m_lastEntitySignature = std::nullopt;
 
 	private:
 		static std::atomic_bool s_isDrawing;

@@ -436,6 +436,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
 				.order = drawableCopy.material->GetDrawOrder(),
+				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}
@@ -443,6 +444,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
 				.order = drawableCopy.material->GetDrawOrder(),
+				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}
@@ -450,6 +452,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
 				.order = drawableCopy.material->GetDrawOrder(),
+				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}

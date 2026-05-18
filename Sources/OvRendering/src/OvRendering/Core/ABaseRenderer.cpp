@@ -66,6 +66,8 @@ void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p
 	OVASSERT(!s_isDrawing, "Cannot call BeginFrame() when previous frame hasn't finished.");
 	OVASSERT(p_frameDescriptor.IsValid(), "Invalid FrameDescriptor!");
 
+	m_lastEntitySignature.reset();
+
 	m_frameDescriptor = p_frameDescriptor;
 
 	if (p_frameDescriptor.outputBuffer)
@@ -230,14 +232,24 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		}
 	}
 
-	p_drawable.material->Bind(
-		&m_emptyTexture2D,
-		&m_emptyTextureCube,
+	const std::size_t signature = p_drawable.material->Bind(
 		p_drawable.pass,
 		p_drawable.featureSetOverride.has_value() ?
-		OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
-		std::nullopt
+			OvTools::Utils::OptRef<const Data::FeatureSet>(p_drawable.featureSetOverride.value()) :
+			std::nullopt,
+		&m_emptyTexture2D,
+		&m_emptyTextureCube,
+		m_lastEntitySignature
 	);
+
+	p_drawable.material->UploadProperties(
+		!m_lastEntitySignature.has_value() || signature != m_lastEntitySignature.value(),
+		true,
+		&m_emptyTexture2D,
+		&m_emptyTextureCube
+	);
+
+	m_lastEntitySignature = signature;
 
 	m_driver.Draw(
 		p_pso,
@@ -245,4 +257,6 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 		p_drawable.primitiveMode,
 		p_drawable.material->GetGPUInstances()
 	);
+
+	p_drawable.material->Unbind();
 }

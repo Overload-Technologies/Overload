@@ -80,23 +80,41 @@ namespace OvRendering::Data
 		void UpdateProperties();
 
 		/**
-		* Bind the material and send its uniform data to the GPU
-		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
-		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
+		* Bind the appropriate shader program based on a given pass and potential feature set override
+		* @return Material signature, so that subsequent draw can use it for caching purposes.
 		* @param p_pass
 		* @param p_featureSetOverride
+		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
+		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
+		* @param p_lastBindSignature (Can be used to skip binding if the signature is the same as the last bind)
 		*/
-		void Bind(
+		std::size_t Bind(
+			std::optional<const std::string_view> p_pass = std::nullopt,
+			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt,
 			HAL::Texture* p_emptyTexture2D = nullptr,
 			HAL::Texture* p_emptyTextureCube = nullptr,
-			std::optional<const std::string_view> p_pass = std::nullopt,
-			OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride = std::nullopt
+			std::optional<std::size_t> p_lastBindSignature = std::nullopt
+		);
+
+		/**
+		* Upload the material properties to the GPU.
+		* @param bool uploadStableProperties
+		* @parma bool uploadSingleUseProperties
+		* @param p_emptyTexture2D (The texture to use if a texture uniform is null)
+		* @param p_emptyTextureCube (The texture to use if a texture uniform is null)
+		*/
+		void UploadProperties(
+			bool uploadStableProperties,
+			bool uploadSingleUseProperties,
+			HAL::Texture* p_emptyTexture2D = nullptr,
+			HAL::Texture* p_emptyTextureCube = nullptr
 		);
 
 		/**
 		* Unbind the material
+		* @param p_resetBoundProgram (ensures the last used program is fully unbound to minimize context leaks, only use after your done drawing with this material)
 		*/
-		void Unbind() const;
+		void Unbind(bool p_resetBoundProgram = false);
 
 		/**
 		* Returns true if the material has a given property
@@ -365,9 +383,20 @@ namespace OvRendering::Data
 		bool SupportsProjectionMode(OvRendering::Settings::EProjectionMode p_projectionMode) const;
 
 	protected:
+		void InvalidatePropertySignature();
+
+		std::size_t CalculateSignature(
+			OvRendering::HAL::ShaderProgram& p_selectedProgram,
+			HAL::Texture* p_emptyTexture2D = nullptr,
+			HAL::Texture* p_emptyTextureCube = nullptr
+		);
+
+	protected:
 		OvRendering::Resources::Shader* m_shader = nullptr;
 		PropertyMap m_properties;
 		Data::FeatureSet m_features;
+		size_t m_propertySignatureVersion = 0ULL;
+		OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> m_programInUse = std::nullopt;
 
 		bool m_supportOrthographic = true;
 		bool m_supportPerspective = true;

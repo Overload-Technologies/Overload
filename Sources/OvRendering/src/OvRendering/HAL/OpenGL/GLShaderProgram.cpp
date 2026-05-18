@@ -138,6 +138,8 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 	GLint activeUniformCount = 0;
 	glGetProgramiv(m_context.id, GL_ACTIVE_UNIFORMS, &activeUniformCount);
 
+	uint32_t textureSlotCounter = 0;
+
 	for (GLint i = 0; i < activeUniformCount; ++i)
 	{
 		GLint arraySize = 0;
@@ -180,10 +182,15 @@ void OvRendering::HAL::GLShaderProgram::QueryUniforms()
 		// Only add the uniform if it has a value (unsupported uniform types will be ignored)
 		if (uniformValue.has_value())
 		{
+			const bool isTexture =
+				uniformType == Settings::EUniformType::SAMPLER_2D ||
+				uniformType == Settings::EUniformType::SAMPLER_CUBE;
+
 			m_context.uniforms.emplace(name, Settings::UniformInfo{
 				.type = uniformType,
 				.name = name,
-				.defaultValue = uniformValue
+				.defaultValue = uniformValue,
+				.textureSlot = isTexture ? textureSlotCounter++ : 0
 			});
 		}
 	}

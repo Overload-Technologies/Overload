@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <format>
 #include <ranges>
 
 #include <tracy/Tracy.hpp>
@@ -21,8 +20,25 @@
 
 namespace
 {
+	template<typename T>
+	inline void HashCombine(std::size_t& seed, const T& value)
+	{
+		// A large odd constant derived from the golden ratio (64-bit variant).
+		// It helps distribute bits more uniformly and reduce clustering/collisions.
+		constexpr std::size_t kHashCombineConstant = 0x9e3779b97f4a7c15ULL;
+
+		seed ^= std::hash<T>{}(value)
+			+ kHashCombineConstant 
+			// Bit mixing. They spread entropy from earlier values so order matters
+			// and nearby hashes don't collapse into similar outputs.
+			+ (seed << 6)
+			+ (seed >> 2);
+	}
+
 	OvRendering::Data::MaterialPropertyType UniformToPropertyValue(const std::any& p_uniformValue)
 	{
+		ZoneScoped;
+
 		using namespace OvMaths;
 		using namespace OvRendering;
 
@@ -52,13 +68,13 @@ namespace
 		const std::string& p_uniformName,
 		OvRendering::HAL::TextureHandle* p_texture,
 		OvRendering::HAL::TextureHandle* p_fallback,
-		int& p_textureSlot
+		uint32_t p_textureSlot
 	)
 	{
 		if (auto target = p_texture ? p_texture : p_fallback)
 		{
 			target->Bind(p_textureSlot);
-			p_shader.SetUniform<int>(p_uniformName, p_textureSlot++);
+			p_shader.SetUniform<int>(p_uniformName, p_textureSlot);
 		}
 	}
 }
@@ -80,6 +96,7 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 	else
 	{
 		m_properties.clear();
+		InvalidatePropertySignature();
 	}
 }
 
@@ -101,6 +118,8 @@ OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Mater
 
 void OvRendering::Data::Material::UpdateProperties()
 {
+	InvalidatePropertySignature();
+
 	// Collect all uniform names currently used by the shader
 	std::unordered_set<std::string> usedUniforms;
 
@@ -117,8 +136,10 @@ void OvRendering::Data::Material::UpdateProperties()
 
 			if (!m_properties.contains(name))
 			{
+				const auto defaultValue = UniformToPropertyValue(uniformInfo.defaultValue);
 				m_properties.emplace(name, MaterialProperty{
-					.value = UniformToPropertyValue(uniformInfo.defaultValue),
+					.value = defaultValue,
+					.defaultValue = defaultValue,
 					.singleUse = false
 				});
 			}
@@ -130,19 +151,15 @@ void OvRendering::Data::Material::UpdateProperties()
 	});
 }
 
-// Note: this function is critical for performance, as it may be called many times during a frame.
-// Avoid using any heavy operations or allocations inside this function.
-void OvRendering::Data::Material::Bind(
-	HAL::Texture* p_emptyTexture,
-	HAL::Texture* p_emptyTextureCube,
+OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::Bind(
 	std::optional<const std::string_view> p_pass,
-	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride
+	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride,
+	HAL::Texture* p_emptyTexture2D,
+	HAL::Texture* p_emptyTextureCube,
+	std::optional<MaterialSignatureSet> p_previousMaterialSignature
 )
 {
 	ZoneScoped;
-
-	using namespace OvMaths;
-	using enum OvRendering::Settings::EUniformType;
 
 	OVASSERT(IsValid(), "Attempting to bind an invalid material.");
 
@@ -151,12 +168,43 @@ void OvRendering::Data::Material::Bind(
 		p_featureSetOverride.value_or(m_features)
 	);
 
-	program.Bind();
+	const auto signature = CalculateSignature(
+		program,
+		p_emptyTexture2D,
+		p_emptyTextureCube
+	);
 
-	int textureSlot = 0;
+	if (!p_previousMaterialSignature || signature.bindSignature != p_previousMaterialSignature->bindSignature)
+	{
+		program.Bind();
+	}
+
+	m_programInUse = program;
+
+	return signature;
+}
+
+void OvRendering::Data::Material::UploadProperties(
+	bool uploadStableProperties,
+	bool uploadSingleUseProperties,
+	HAL::Texture* p_emptyTexture2D,
+	HAL::Texture* p_emptyTextureCube
+)
+{
+	ZoneScoped;
+
+	OVASSERT(m_programInUse.has_value(), "Cannot upload properties before binding");
+
+	using namespace OvMaths;
+	using enum OvRendering::Settings::EUniformType;
+
+	auto& program = m_programInUse.value();
 
 	for (auto& [name, prop] : m_properties)
 	{
+		if (!uploadStableProperties && !prop.singleUse) continue;
+		if (!uploadSingleUseProperties && prop.singleUse) continue;
+
 		const auto uniformData = program.GetUniformInfo(name);
 
 		// Skip this property if the current program isn't using its associated uniform
@@ -218,20 +266,29 @@ void OvRendering::Data::Material::Bind(
 					handle = &(*texture)->GetTexture();
 				}
 			}
-			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_emptyTexture : p_emptyTextureCube, textureSlot);
+			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_emptyTexture2D : p_emptyTextureCube, uniformData->textureSlot);
 		}
 
 		if (prop.singleUse)
 		{
-			value = UniformToPropertyValue(uniformData->defaultValue);
+			value = prop.defaultValue;
 		}
 	}
 }
 
-void OvRendering::Data::Material::Unbind() const
+void OvRendering::Data::Material::Unbind(bool p_resetBoundProgram)
 {
+	ZoneScoped;
+
 	OVASSERT(IsValid(), "Attempting to unbind an invalid material.");
-	m_shader->GetVariant().Unbind();
+	OVASSERT(m_programInUse.has_value(), "Attempting to unbind a material that hasn't been bound");
+
+	if (p_resetBoundProgram)
+	{
+		m_programInUse->Unbind();
+	}
+
+	m_programInUse.reset();
 }
 
 bool OvRendering::Data::Material::HasProperty(const std::string& p_name) const
@@ -245,10 +302,17 @@ void OvRendering::Data::Material::SetProperty(const std::string p_name, const Ma
 	OVASSERT(IsValid(), "Attempting to SetProperty on an invalid material.");
 	OVASSERT(HasProperty(p_name), "Attempting to SetProperty on a non-existing property.");
 
-	m_properties[p_name] = MaterialProperty{
-		p_value,
-		p_singleUse
-	};
+	m_properties[p_name].value = p_value;
+	m_properties[p_name].singleUse = p_singleUse;
+
+	if (p_singleUse)
+	{
+		++m_singleUsePropertySignatureVersion;
+	}
+	else
+	{
+		++m_stablePropertySignatureVersion;
+	}
 }
 
 bool OvRendering::Data::Material::TrySetProperty(const std::string& p_name, const MaterialPropertyType& p_value, bool p_singleUse)
@@ -505,3 +569,39 @@ bool OvRendering::Data::Material::SupportsProjectionMode(OvRendering::Settings::
 
 	return true;
 }
+
+void OvRendering::Data::Material::InvalidatePropertySignature()
+{
+	++m_stablePropertySignatureVersion;
+	++m_singleUsePropertySignatureVersion;
+}
+
+OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::CalculateSignature(
+	OvRendering::HAL::ShaderProgram& p_selectedProgram,
+	HAL::Texture* p_emptyTexture2D,
+	HAL::Texture* p_emptyTextureCube
+)
+{
+	ZoneScoped;
+
+	MaterialSignatureSet signature;
+
+	// Bind
+	HashCombine(signature.bindSignature, this);
+	HashCombine(signature.bindSignature, &p_selectedProgram);
+
+	// Stable Properties
+	signature.stablePropertySignature = signature.bindSignature;
+	HashCombine(signature.stablePropertySignature, m_stablePropertySignatureVersion);
+	HashCombine(signature.stablePropertySignature, p_emptyTexture2D);
+	HashCombine(signature.stablePropertySignature, p_emptyTextureCube);
+
+	// Single Use Properties
+	signature.singleUsePropertySignature = signature.bindSignature;
+	HashCombine(signature.singleUsePropertySignature, m_singleUsePropertySignatureVersion);
+	HashCombine(signature.singleUsePropertySignature, p_emptyTexture2D);
+	HashCombine(signature.singleUsePropertySignature, p_emptyTextureCube);
+
+	return signature;
+}
+

@@ -21,5 +21,6 @@ namespace OvRendering::Settings
 		EUniformType type;
 		std::string name;
 		std::any defaultValue;
+		uint32_t textureSlot;
 	};
 }

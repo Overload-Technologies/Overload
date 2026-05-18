@@ -114,8 +114,6 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
 	drawable.primitiveMode = Settings::EPrimitiveMode::LINES;
 
 	m_renderer.DrawEntity(p_pso, drawable);
-
-	m_lineShader->GetVariant().Unbind();
 }
 
 void OvRendering::Features::DebugShapeRenderFeature::DrawBox(

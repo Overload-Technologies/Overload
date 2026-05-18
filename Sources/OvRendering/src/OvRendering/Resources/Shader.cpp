@@ -7,6 +7,8 @@
 #include <format>
 #include <ranges>
 
+#include <tracy/Tracy.hpp>
+
 #include <OvDebug/Assertion.h>
 #include <OvRendering/Resources/Shader.h>
 
@@ -21,21 +23,27 @@ namespace
 
 OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetVariant(std::optional<const std::string_view> p_pass, const Data::FeatureSet& p_featureSet)
 {
-	const std::string pass = std::string{ p_pass.value_or("") };
+	ZoneScoped;
 
-	if (!m_variants.contains(pass))
+	const std::string pass{ p_pass.value_or("") };
+
+	auto passIt = m_variants.find(pass);
+	if (passIt == m_variants.end())
 	{
-		OVASSERT(m_variants[{}].contains({}), "No default program found for the default pass");
-		return *m_variants[{}][{}];
+		auto defaultPassIt = m_variants.find("");
+		OVASSERT(defaultPassIt != m_variants.end() && defaultPassIt->second.contains({}), "No default program found for the default pass");
+		return *defaultPassIt->second.at({});
 	}
 
-	if (!m_variants[pass].contains(p_featureSet))
+	auto featureIt = passIt->second.find(p_featureSet);
+	if (featureIt == passIt->second.end())
 	{
-		OVASSERT(m_variants[pass].contains({}), std::format("No default program found for pass: {}", pass));
-		return *m_variants[pass][{}];
+		auto defaultFeatureIt = passIt->second.find({});
+		OVASSERT(defaultFeatureIt != passIt->second.end(), std::format("No default program found for pass: {}", pass));
+		return *defaultFeatureIt->second;
 	}
 
-	return *m_variants[pass][p_featureSet];
+	return *featureIt->second;
 }
 
 const OvRendering::Data::FeatureSet& OvRendering::Resources::Shader::GetFeatures() const

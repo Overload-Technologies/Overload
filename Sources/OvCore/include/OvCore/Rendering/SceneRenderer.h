@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 
 #include <OvRendering/Core/CompositeRenderer.h>
@@ -39,29 +40,29 @@ namespace OvCore::Rendering
 		struct DrawOrder
 		{
 			const int order;
+			const uintptr_t materialKey; // Only used in FRONT_TO_BACK to group same-material drawables
 			const float distance;
 
 			/**
 			* Determines the order of the drawables.
-			* Current order is: order -> distance
+			* For FRONT_TO_BACK (opaque): order -> materialKey -> distance (front-to-back within material group)
+			* For BACK_TO_FRONT (transparent/UI): order -> distance (back-to-front, strict)
 			* @param p_other
 			*/
 			bool operator<(const DrawOrder& p_other) const
 			{
-				if (order == p_other.order)
+				if (order != p_other.order)
+					return order < p_other.order;
+
+				if constexpr (OrderingMode == EOrderingMode::FRONT_TO_BACK)
 				{
-					if constexpr (OrderingMode == EOrderingMode::BACK_TO_FRONT)
-					{
-						return distance > p_other.distance;
-					}
-					else
-					{
-						return distance < p_other.distance;
-					}
+					if (materialKey != p_other.materialKey)
+						return materialKey < p_other.materialKey;
+					return distance < p_other.distance;
 				}
 				else
 				{
-					return order < p_other.order;
+					return distance > p_other.distance;
 				}
 			}
 		};

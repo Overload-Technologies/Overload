@@ -21,6 +21,14 @@
 
 namespace
 {
+	OvRendering::HAL::TextureHandle* GetTextureHandle(const OvRendering::Data::MaterialPropertyType& p_value)
+	{
+		if (auto h = std::get_if<OvRendering::HAL::TextureHandle*>(&p_value)) return *h;
+		if (auto t = std::get_if<OvRendering::Resources::Texture*>(&p_value))
+			if (*t) return &(*t)->GetTexture();
+		return nullptr;
+	}
+
 	OvRendering::Data::MaterialPropertyType UniformToPropertyValue(const std::any& p_uniformValue)
 	{
 		using namespace OvMaths;
@@ -140,12 +148,6 @@ std::size_t OvRendering::Data::Material::CalculateBindContextHash(
 
 	std::size_t hash{};
 
-	// Materials with mutable properties (singleUse) cannot be cached to avoid unnecessary binds.
-	if (m_hasMutableProperties)
-	{
-		return hash;
-	}
-
 	// Self pointer
 	OvTools::Utils::HashCombine(hash, this);
 
@@ -238,23 +240,78 @@ void OvRendering::Data::Material::Bind(
 		}
 		else if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
 		{
-			HAL::TextureHandle* handle = nullptr;
-			if (auto textureHandle = std::get_if<HAL::TextureHandle*>(&value))
-			{
-				handle = *textureHandle;
-			}
-			else if (auto texture = std::get_if<Resources::Texture*>(&value))
-			{
-				if (*texture != nullptr)
-				{
-					handle = &(*texture)->GetTexture();
-				}
-			}
-			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_bindContext.emptyTexture2D : p_bindContext.emptyTextureCube, textureSlot);
+			BindTexture(program, name, GetTextureHandle(value), uniformType == SAMPLER_2D ? p_bindContext.emptyTexture2D : p_bindContext.emptyTextureCube, textureSlot);
 		}
 
 		if (prop.singleUse)
 		{
+			value = UniformToPropertyValue(uniformData->defaultValue);
+		}
+	}
+
+	m_hasMutableProperties = false;
+}
+
+bool OvRendering::Data::Material::HasMutableProperties() const
+{
+	return m_hasMutableProperties;
+}
+
+void OvRendering::Data::Material::BindMutableProperties(
+	const OvRendering::Data::MaterialBindContext& p_bindContext
+)
+{
+	ZoneScoped;
+
+	using namespace OvMaths;
+	using enum OvRendering::Settings::EUniformType;
+
+	OVASSERT(IsValid(), "Attempting to BindMutableProperties on an invalid material.");
+
+	auto& program = m_shader->GetVariant(
+		p_bindContext.pass,
+		p_bindContext.featureSetOverride.value_or(m_features)
+	);
+
+	// Iterate all properties in the same order as Bind() to maintain correct texture slot indices.
+	// Non-mutable texture slots are counted but not rebound (still bound from the prior full Bind call).
+	int textureSlot = 0;
+
+	for (auto& [name, prop] : m_properties)
+	{
+		const auto uniformData = program.GetUniformInfo(name);
+		if (!uniformData) continue;
+
+		auto& value = prop.value;
+		const auto uniformType = uniformData->type;
+		const bool isTexture = (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE);
+
+		if (isTexture)
+		{
+			auto* fallback = uniformType == SAMPLER_2D ? p_bindContext.emptyTexture2D : p_bindContext.emptyTextureCube;
+
+			if (prop.singleUse)
+			{
+				BindTexture(program, name, GetTextureHandle(value), fallback, textureSlot);
+				value = UniformToPropertyValue(uniformData->defaultValue);
+			}
+			else
+			{
+				// Count the slot without rebinding; the texture is still bound from the prior full Bind.
+				if (GetTextureHandle(value) || fallback) ++textureSlot;
+			}
+		}
+		else if (prop.singleUse)
+		{
+			if (uniformType == BOOL)            program.SetUniform<int>(name, static_cast<int>(std::get<bool>(value)));
+			else if (uniformType == INT)        program.SetUniform<int>(name, std::get<int>(value));
+			else if (uniformType == FLOAT)      program.SetUniform<float>(name, std::get<float>(value));
+			else if (uniformType == FLOAT_VEC2) program.SetUniform<FVector2>(name, std::get<FVector2>(value));
+			else if (uniformType == FLOAT_VEC3) program.SetUniform<FVector3>(name, std::get<FVector3>(value));
+			else if (uniformType == FLOAT_VEC4) program.SetUniform<FVector4>(name, std::get<FVector4>(value));
+			else if (uniformType == FLOAT_MAT3) program.SetUniform<FMatrix3>(name, std::get<FMatrix3>(value));
+			else if (uniformType == FLOAT_MAT4) program.SetUniform<FMatrix4>(name, std::get<FMatrix4>(value));
+
 			value = UniformToPropertyValue(uniformData->defaultValue);
 		}
 	}

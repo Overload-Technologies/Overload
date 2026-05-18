@@ -243,14 +243,17 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 			std::nullopt
 	};
 
-	const std::size_t bindContextHash = p_drawable.material->CalculateBindContextHash(bindContext);
+	const std::size_t stableHash = p_drawable.material->CalculateBindContextHash(bindContext);
 
-	if (bindContextHash == 0 || bindContextHash != m_cachedMaterialBindContextHash)
+	if (stableHash == 0 || stableHash != m_cachedMaterialBindContextHash)
 	{
 		p_drawable.material->Bind(bindContext);
+		m_cachedMaterialBindContextHash = stableHash;
 	}
-
-	m_cachedMaterialBindContextHash = bindContextHash;
+	else if (p_drawable.material->HasMutableProperties())
+	{
+		p_drawable.material->BindMutableProperties(bindContext);
+	}
 
 	m_driver.Draw(
 		p_pso,

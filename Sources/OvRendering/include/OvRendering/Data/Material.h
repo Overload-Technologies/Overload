@@ -91,7 +91,8 @@ namespace OvRendering::Data
 		void UpdateProperties();
 
 		/**
-		* Calculate a hash for the material based on a given bind context, used for caching purposes.
+		* Calculate a hash for the material's stable (non-mutable) bind state, used for caching purposes.
+		* This hash is always computed regardless of whether mutable properties are present.
 		* @param p_bindContext
 		*/
 		[[nodiscard]] std::size_t CalculateBindContextHash(
@@ -99,10 +100,25 @@ namespace OvRendering::Data
 		) const;
 
 		/**
+		* Returns true if the material has mutable (singleUse) properties pending upload.
+		*/
+		[[nodiscard]] bool HasMutableProperties() const;
+
+		/**
 		* Bind the material and send its uniform data to the GPU
 		* @param p_bindContext
 		*/
 		void Bind(
+			const MaterialBindContext& p_bindContext
+		);
+
+		/**
+		* Re-upload only the mutable (singleUse) properties to an already-bound program.
+		* Call this instead of Bind() when the stable bind context hash hasn't changed
+		* but HasMutableProperties() is true.
+		* @param p_bindContext
+		*/
+		void BindMutableProperties(
 			const MaterialBindContext& p_bindContext
 		);
 

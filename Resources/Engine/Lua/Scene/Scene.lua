@@ -30,3 +30,15 @@ function Scene:FindActorsByTag(tag) end
 ---@overload fun(self: Scene, name: string, tag: string): Actor
 ---@return Actor
 function Scene:CreateActor(...) end
+
+--- Instantiates a prefab in the scene. Transform values are applied locally.
+---@overload fun(self: Scene, path: string): Actor|nil
+---@overload fun(self: Scene, path: string, parent: Actor|nil): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3, parent: Actor|nil): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3, rotation: Quaternion): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3, rotation: Quaternion, parent: Actor|nil): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3, rotation: Quaternion, scale: Vector3): Actor|nil
+---@overload fun(self: Scene, path: string, position: Vector3, rotation: Quaternion, scale: Vector3, parent: Actor|nil): Actor|nil
+---@return Actor|nil
+function Scene:InstantiatePrefab(...) end

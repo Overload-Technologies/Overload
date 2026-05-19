@@ -50,9 +50,9 @@ namespace OvUI::Core
 		* Load a font (Returns true on success)
 		* @param p_id
 		* @param p_path
-		* @param p_fontSize
+		* @param p_fontSize (optional)
 		*/
-		bool LoadFont(const std::string& p_id, const std::string& p_path, float p_fontSize);
+		bool LoadFont(const std::string& p_id, const std::string& p_path, std::optional<float> p_fontSize = std::nullopt);
 
 		/**
 		* Unload a font (Returns true on success)

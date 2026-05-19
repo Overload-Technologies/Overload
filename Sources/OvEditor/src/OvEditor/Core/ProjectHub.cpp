@@ -323,10 +323,10 @@ void OvEditor::Core::ProjectHub::SetupContext()
 		static_cast<OvUI::Styling::EStyle>(OvEditor::Settings::EditorSettings::ColorTheme.Get())
 	);
 
-	const auto fontPath = std::filesystem::current_path() / "Data" / "Editor" / "Fonts" / "Ruda-Bold.ttf";
+	const auto fontPath = std::filesystem::current_path() / "Data" / "Editor" / "Fonts" / "Roboto-Regular.ttf";
 
-	m_uiManager->LoadFont("Ruda-Bold", fontPath.string(), 18);
-	m_uiManager->UseFont("Ruda-Bold");
+	m_uiManager->LoadFont("Roboto", fontPath.string(), 18);
+	m_uiManager->UseFont("Roboto");
 	const int uiScale = Settings::EditorSettings::UIScale.Get();
 	m_uiManager->SetScale(uiScale == 0 ? std::nullopt : std::make_optional(uiScale / 100.0f));
 	m_uiManager->EnableEditorLayoutSave(false);

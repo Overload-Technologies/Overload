@@ -129,9 +129,9 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 		uiManager->ResetLayout(defaultLayoutPath.string());
 	}
 
-	const auto fontPath = editorAssetsPath / "Fonts" / "Ruda-Bold.ttf";
-	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
-	uiManager->UseFont("Ruda-Bold");
+	const auto fontPath = editorAssetsPath / "Fonts" / "Roboto-Regular.ttf";
+	uiManager->LoadFont("Roboto", fontPath.string(), 15.0f);
+	uiManager->UseFont("Roboto");
 	const int uiScale = Settings::EditorSettings::UIScale.Get();
 	uiManager->SetScale(uiScale == 0 ? std::nullopt : std::make_optional(uiScale / 100.0f));
 	uiManager->SetEditorLayoutSaveFilename(OvEditor::Utils::FileSystem::kLayoutFilePath.string());

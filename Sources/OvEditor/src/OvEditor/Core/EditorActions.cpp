@@ -519,6 +519,11 @@ bool OvEditor::Core::EditorActions::IsCurrentSceneLoadedFromDisk() const
 
 void OvEditor::Core::EditorActions::SaveSceneChanges()
 {
+	if (m_editorMode != EEditorMode::EDIT)
+	{
+		return;
+	}
+
 	if (IsCurrentSceneLoadedFromDisk())
 	{
 		auto currentScene = m_context.sceneManager.GetCurrentScene();
@@ -536,6 +541,11 @@ void OvEditor::Core::EditorActions::SaveSceneChanges()
 
 void OvEditor::Core::EditorActions::SaveAs()
 {
+	if (m_editorMode != EEditorMode::EDIT)
+	{
+		return;
+	}
+
 	OvWindowing::Dialogs::SaveFileDialog dialog("New Scene");
 	const auto initialPath = m_context.projectAssetsPath / "New Scene";
 	dialog.SetInitialDirectory(initialPath.string());

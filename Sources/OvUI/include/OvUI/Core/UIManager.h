@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "OvTools/Eventing/Event.h"
 #include <optional>
 #include <string>
 #include <unordered_map>
 
+#include <OvTools/Eventing/Event.h>
 #include <OvUI/Modules/Canvas.h>
 #include <OvUI/Styling/EStyle.h>
 

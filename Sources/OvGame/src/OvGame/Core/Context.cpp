@@ -138,7 +138,7 @@ OvGame::Core::Context::Context() :
 
 	const auto fontPath = engineAssetsPath / "Fonts" / "Roboto-Regular.ttf";
 
-	uiManager->LoadFont("Roboto", fontPath.string(), 15);
+	uiManager->LoadFont("Roboto", fontPath.string(), 15.0f);
 	uiManager->UseFont("Roboto");
 	uiManager->EnableEditorLayoutSave(false);
 	uiManager->EnableDocking(false);

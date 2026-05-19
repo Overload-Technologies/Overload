@@ -325,7 +325,7 @@ void OvEditor::Core::ProjectHub::SetupContext()
 
 	const auto fontPath = std::filesystem::current_path() / "Data" / "Editor" / "Fonts" / "Roboto-Regular.ttf";
 
-	m_uiManager->LoadFont("Roboto", fontPath.string(), 18);
+	m_uiManager->LoadFont("Roboto", fontPath.string(), 18.0f);
 	m_uiManager->UseFont("Roboto");
 	const int uiScale = Settings::EditorSettings::UIScale.Get();
 	m_uiManager->SetScale(uiScale == 0 ? std::nullopt : std::make_optional(uiScale / 100.0f));

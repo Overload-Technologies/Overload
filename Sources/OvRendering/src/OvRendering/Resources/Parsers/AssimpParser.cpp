@@ -995,12 +995,13 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 	{
 		hasBones = scene->mMeshes[i] && scene->mMeshes[i]->HasBones();
 	}
+	const bool hasAnimations = scene->mNumAnimations > 0;
 
 	p_skeleton.reset();
 	p_animations.clear();
 	std::unordered_map<const aiNode*, uint32_t> nodeIndexByPointer;
 
-	if (hasBones)
+	if (hasBones || hasAnimations)
 	{
 		p_skeleton.emplace();
 		nodeIndexByPointer.reserve(512);
@@ -1013,15 +1014,15 @@ bool OvRendering::Resources::Parsers::AssimpParser::LoadModel(
 		scene,
 		p_meshes,
 		p_skeleton ? &p_skeleton.value() : nullptr,
-		hasBones ? &nodeIndexByPointer : nullptr
+		p_skeleton ? &nodeIndexByPointer : nullptr
 	);
 
-	if (hasBones && p_skeleton.has_value())
+	if (hasAnimations && p_skeleton.has_value())
 	{
 		ProcessAnimations(scene, p_skeleton.value(), p_animations);
 	}
 
-	if (p_skeleton && p_skeleton->bones.empty())
+	if (p_skeleton && p_skeleton->bones.empty() && p_animations.empty())
 	{
 		p_skeleton.reset();
 		p_animations.clear();

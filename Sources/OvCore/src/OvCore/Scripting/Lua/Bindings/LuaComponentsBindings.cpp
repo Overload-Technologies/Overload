@@ -105,6 +105,9 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetMeshBoundsScale", &CSkinnedMeshRenderer::GetMeshBoundsScale,
 		"SetTime", &CSkinnedMeshRenderer::SetTime,
 		"GetTime", &CSkinnedMeshRenderer::GetTime,
+		"SetAnimationSourceModel", &CSkinnedMeshRenderer::SetAnimationSourceModel,
+		"GetAnimationSourceModel", &CSkinnedMeshRenderer::GetAnimationSourceModel,
+		"IsAnimationSourceCompatible", &CSkinnedMeshRenderer::IsAnimationSourceCompatible,
 		"GetAnimationCount", &CSkinnedMeshRenderer::GetAnimationCount,
 		"GetAnimationName", &CSkinnedMeshRenderer::GetAnimationName,
 		"SetAnimation", sol::overload(

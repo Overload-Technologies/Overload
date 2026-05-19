@@ -55,6 +55,18 @@ function SkinnedMeshRenderer:SetTime(timeSeconds) end
 ---@return number
 function SkinnedMeshRenderer:GetTime() end
 
+--- Sets an external model used as animation source, or nil to use the rendered model
+---@param model Model|nil
+function SkinnedMeshRenderer:SetAnimationSourceModel(model) end
+
+--- Returns the external animation source model, or nil when the rendered model is used
+---@return Model|nil
+function SkinnedMeshRenderer:GetAnimationSourceModel() end
+
+--- Returns whether the current animation source is compatible with the rendered model skeleton
+---@return boolean
+function SkinnedMeshRenderer:IsAnimationSourceCompatible() end
+
 --- Returns the number of available animation clips
 ---@return integer
 function SkinnedMeshRenderer:GetAnimationCount() end

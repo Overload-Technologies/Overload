@@ -21,6 +21,54 @@
 #include <OvCore/SceneSystem/Scene.h>
 #include <OvTools/Utils/PathParser.h>
 
+namespace
+{
+	void CollectActorHierarchy(OvCore::ECS::Actor& p_actor, std::vector<OvCore::ECS::Actor*>& p_actors)
+	{
+		p_actors.push_back(&p_actor);
+
+		for (auto* child : p_actor.GetChildren())
+		{
+			CollectActorHierarchy(*child, p_actors);
+		}
+	}
+
+	void StartActorHierarchy(OvCore::ECS::Actor& p_rootActor)
+	{
+		std::vector<OvCore::ECS::Actor*> actors;
+		CollectActorHierarchy(p_rootActor, actors);
+
+		for (auto* actor : actors)
+		{
+			actor->SetSleeping(false);
+		}
+
+		for (auto* actor : actors)
+		{
+			if (actor->IsActive())
+			{
+				actor->OnAwake();
+			}
+		}
+
+		for (auto* actor : actors)
+		{
+			if (actor->IsActive())
+			{
+				actor->OnEnable();
+			}
+		}
+
+		for (auto* actor : actors)
+		{
+			if (actor->IsActive())
+			{
+				actor->OnStart();
+			}
+		}
+	}
+}
+
 OvCore::SceneSystem::Scene::Scene(
 	const std::filesystem::path& p_projectAssetsPath,
 	const std::filesystem::path& p_engineAssetsPath
@@ -213,6 +261,9 @@ OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
 
 	const std::filesystem::path realPath = GetRealAssetPath(p_prefab.path);
 
+	const bool wasPlaying = m_isPlaying;
+	m_isPlaying = false;
+
 	auto* instantiatedRoot = PrefabOperations::InstantiateFromFile(
 		realPath,
 		[this]() -> ECS::Actor&
@@ -220,6 +271,8 @@ OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
 			return CreateActor();
 		}
 	);
+
+	m_isPlaying = wasPlaying;
 
 	if (!instantiatedRoot)
 	{
@@ -241,6 +294,11 @@ OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
 	if (p_parent)
 	{
 		instantiatedRoot->SetParent(p_parent->get());
+	}
+
+	if (m_isPlaying)
+	{
+		StartActorHierarchy(*instantiatedRoot);
 	}
 
 	return instantiatedRoot;

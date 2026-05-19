@@ -19,7 +19,6 @@
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
-#include <OvCore/SceneSystem/PrefabRef.h>
 
 namespace OvCore::SceneSystem
 {
@@ -127,16 +126,16 @@ namespace OvCore::SceneSystem
 
 		/**
 		* Instantiate a prefab and return its root actor.
-		* @param p_prefab
+		* @param p_prefabPath
 		*/
-		ECS::Actor* InstantiatePrefab(const PrefabRef& p_prefab);
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath);
 
 		/**
 		* Instantiate a prefab under the given parent and return its root actor.
-		* @param p_prefab
+		* @param p_prefabPath
 		* @param p_parent
 		*/
-		ECS::Actor* InstantiatePrefab(const PrefabRef& p_prefab, ECS::Actor& p_parent);
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, ECS::Actor& p_parent);
 
 		/**
 		* Destroy and actor and return true on success
@@ -228,7 +227,7 @@ namespace OvCore::SceneSystem
 
 	private:
 		std::filesystem::path GetRealAssetPath(const std::string& p_path) const;
-		ECS::Actor* InstantiatePrefab(const PrefabRef& p_prefab, std::optional<std::reference_wrapper<ECS::Actor>> p_parent);
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, std::optional<std::reference_wrapper<ECS::Actor>> p_parent);
 
 		int64_t m_availableID = 1;
 		bool m_isPlaying = false;

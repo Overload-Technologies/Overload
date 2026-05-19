@@ -231,35 +231,35 @@ std::filesystem::path OvCore::SceneSystem::Scene::GetRealAssetPath(const std::st
 	);
 }
 
-OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const PrefabRef& p_prefab)
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath)
 {
-	return InstantiatePrefab(p_prefab, std::nullopt);
+	return InstantiatePrefab(p_prefabPath, std::nullopt);
 }
 
-OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const PrefabRef& p_prefab, ECS::Actor& p_parent)
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath, ECS::Actor& p_parent)
 {
-	return InstantiatePrefab(p_prefab, std::optional<std::reference_wrapper<ECS::Actor>>{ std::ref(p_parent) });
+	return InstantiatePrefab(p_prefabPath, std::optional<std::reference_wrapper<ECS::Actor>>{ std::ref(p_parent) });
 }
 
 OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
-	const PrefabRef& p_prefab,
+	const std::string& p_prefabPath,
 	std::optional<std::reference_wrapper<ECS::Actor>> p_parent)
 {
 	using EFileType = OvTools::Utils::PathParser::EFileType;
 
-	if (p_prefab.path.empty())
+	if (p_prefabPath.empty())
 	{
 		OVLOG_ERROR("Failed to instantiate prefab: no prefab selected.");
 		return nullptr;
 	}
 
-	if (OvTools::Utils::PathParser::GetFileType(p_prefab.path) != EFileType::PREFAB)
+	if (OvTools::Utils::PathParser::GetFileType(p_prefabPath) != EFileType::PREFAB)
 	{
-		OVLOG_ERROR("Failed to instantiate prefab: \"" + p_prefab.path + "\" is not a prefab.");
+		OVLOG_ERROR("Failed to instantiate prefab: \"" + p_prefabPath + "\" is not a prefab.");
 		return nullptr;
 	}
 
-	const std::filesystem::path realPath = GetRealAssetPath(p_prefab.path);
+	const std::filesystem::path realPath = GetRealAssetPath(p_prefabPath);
 
 	const bool wasPlaying = m_isPlaying;
 	m_isPlaying = false;
@@ -282,7 +282,7 @@ OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
 
 	PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(
 		*instantiatedRoot,
-		OvTools::Utils::PathParser::MakeNonWindowsStyle(std::filesystem::path{ p_prefab.path }.generic_string())
+		OvTools::Utils::PathParser::MakeNonWindowsStyle(std::filesystem::path{ p_prefabPath }.generic_string())
 	);
 
 	const std::string prefabName = realPath.stem().string();

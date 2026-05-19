@@ -1168,8 +1168,7 @@ OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::
 
 	const std::filesystem::path realPath = GetRealPath(p_path);
 	const bool isEnginePrefab = !p_path.empty() && p_path.front() == ':';
-	const OvCore::SceneSystem::PrefabRef prefab{ GetResourcePath(realPath.string(), isEnginePrefab) };
-	return currentScene->InstantiatePrefab(prefab);
+	return currentScene->InstantiatePrefab(GetResourcePath(realPath.string(), isEnginePrefab));
 }
 
 bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_actor)

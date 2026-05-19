@@ -198,8 +198,6 @@ void OvCore::ECS::Components::Behaviour::OnSerialize(tinyxml2::XMLDocument & p_d
 				{ elem->SetAttribute("type", "asset"); elem->SetAttribute("assetType", OvTools::Utils::PathParser::FileTypeToString(v.fileType).c_str()); elem->SetText(v.path.c_str()); }
 			else if constexpr (std::is_same_v<T, OvCore::Scripting::ActorRef>)
 				{ elem->SetAttribute("type", "actor"); elem->SetText(std::to_string(v.guid).c_str()); }
-			else if constexpr (std::is_same_v<T, OvCore::SceneSystem::PrefabRef>)
-				{ elem->SetAttribute("type", "prefab"); elem->SetText(v.path.c_str()); }
 			else
 				{ elem->SetAttribute("type", "string"); elem->SetText(v.c_str()); }
 		}, fieldValue);
@@ -254,10 +252,6 @@ void OvCore::ECS::Components::Behaviour::OnDeserialize(tinyxml2::XMLDocument & p
 			if (const char* text = elem->GetText())
 				guid = std::stoull(text);
 			val = OvCore::Scripting::ActorRef{guid};
-		}
-		else if (typeStr == "prefab" && std::holds_alternative<OvCore::SceneSystem::PrefabRef>(val))
-		{
-			val = OvCore::SceneSystem::PrefabRef{elem->GetText() ? elem->GetText() : ""};
 		}
 		else
 			continue;
@@ -328,19 +322,9 @@ void OvCore::ECS::Components::Behaviour::OnInspector(OvUI::Internal::WidgetConta
 					d.RegisterProvider(setter);
 					inputPtr = &w;
 				}
-				else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef> || std::is_same_v<T, OvCore::SceneSystem::PrefabRef>)
+				else if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
 				{
-					const auto fileType = [&getter]()
-					{
-						if constexpr (std::is_same_v<T, OvCore::Scripting::AssetRef>)
-						{
-							return getter().fileType;
-						}
-						else
-						{
-							return OvTools::Utils::PathParser::EFileType::PREFAB;
-						}
-					}();
+					const auto fileType = getter().fileType;
 
 					auto pathGatherer = [getter]() { return getter().path; };
 					auto pathProvider = [setter, getter](std::string newPath) {

@@ -61,7 +61,6 @@ std::map<std::string, OvCore::Scripting::ScriptPropertyValue> OvCore::Scripting:
 			case sol::type::userdata:
 				if (value.is<AssetRef>()) properties[keyStr] = value.as<AssetRef>();
 				else if (value.is<ActorRef>()) properties[keyStr] = value.as<ActorRef>();
-				else if (value.is<OvCore::SceneSystem::PrefabRef>()) properties[keyStr] = value.as<OvCore::SceneSystem::PrefabRef>();
 				break;
 			default: break;
 		}
@@ -85,7 +84,6 @@ std::optional<OvCore::Scripting::ScriptPropertyValue> OvCore::Scripting::LuaScri
 		case sol::type::userdata:
 			if (obj.is<AssetRef>()) return obj.as<AssetRef>();
 			if (obj.is<ActorRef>()) return obj.as<ActorRef>();
-			if (obj.is<OvCore::SceneSystem::PrefabRef>()) return obj.as<OvCore::SceneSystem::PrefabRef>();
 			return std::nullopt;
 		default:                  return std::nullopt;
 	}
@@ -100,8 +98,7 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 		using T = std::decay_t<decltype(v)>;
 		if constexpr (std::is_same_v<T, AssetRef>)
 		{
-			// Resolve the path to the actual loaded resource so Lua code can use
-			// the value directly (e.g. materialRenderer:SetMaterial(0, self.mat)).
+			// Resolve loadable assets to resources. Prefabs stay as AssetRef for Scene::InstantiatePrefab.
 			using EFT = OvTools::Utils::PathParser::EFileType;
 			if (v.path.empty())
 			{
@@ -116,6 +113,7 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 				case EFT::SHADER:   (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::ShaderManager>()[v.path];   break;
 				case EFT::MATERIAL: (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::MaterialManager>()[v.path]; break;
 				case EFT::SOUND:    (*m_context.table)[p_key] = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>()[v.path];    break;
+				case EFT::PREFAB:   (*m_context.table)[p_key] = v; break;
 				default:            (*m_context.table)[p_key] = sol::nil; break;
 				}
 			}
@@ -135,17 +133,6 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 					(*m_context.table)[p_key] = actor;
 				else
 					(*m_context.table)[p_key] = sol::nil;
-			}
-		}
-		else if constexpr (std::is_same_v<T, OvCore::SceneSystem::PrefabRef>)
-		{
-			if (v.path.empty())
-			{
-				(*m_context.table)[p_key] = sol::nil;
-			}
-			else
-			{
-				(*m_context.table)[p_key] = v;
 			}
 		}
 		else

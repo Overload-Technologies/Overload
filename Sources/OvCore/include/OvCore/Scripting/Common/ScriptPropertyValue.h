@@ -10,6 +10,7 @@
 #include <string>
 #include <variant>
 
+#include <OvCore/SceneSystem/PrefabRef.h>
 #include <OvTools/Utils/PathParser.h>
 
 namespace OvCore::Scripting
@@ -37,5 +38,5 @@ namespace OvCore::Scripting
 	* Represents a primitive, asset, or actor reference script property value.
 	* This type is backend-agnostic and used by Behaviour to store and expose script fields.
 	*/
-	using ScriptPropertyValue = std::variant<bool, double, std::string, AssetRef, ActorRef>;
+	using ScriptPropertyValue = std::variant<bool, double, std::string, AssetRef, ActorRef, OvCore::SceneSystem::PrefabRef>;
 }

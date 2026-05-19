@@ -6,7 +6,9 @@
 
 #pragma once
 
-
+#include <functional>
+#include <memory>
+#include <string>
 
 #include "OvCore/SceneSystem/Scene.h"
 
@@ -19,11 +21,15 @@ namespace OvCore::SceneSystem
 	{
 	public:
 
-		/** 
+		/**
 		* Default constructor
 		* @param p_sceneRootFolder (Optional)
+		* @param p_engineAssetsFolder (Optional)
 		*/
-		SceneManager(const std::string& p_sceneRootFolder = "");
+		SceneManager(
+			const std::string& p_sceneRootFolder = "",
+			const std::string& p_engineAssetsFolder = ""
+		);
 
 		/**
 		* Default destructor
@@ -108,6 +114,7 @@ namespace OvCore::SceneSystem
 
 	private:
 		const std::string m_sceneRootFolder;
+		const std::string m_engineAssetsFolder;
 		std::unique_ptr<Scene> m_currentScene = nullptr;
 
 		bool m_currentSceneLoadedFromPath = false;

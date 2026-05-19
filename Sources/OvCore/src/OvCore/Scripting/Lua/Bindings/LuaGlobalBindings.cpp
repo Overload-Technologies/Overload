@@ -5,27 +5,25 @@
 */
 
 #include <cstdint>
-#include <filesystem>
 #include <string>
 
 #include <OvDebug/Logger.h>
-#include <OvMaths/FQuaternion.h>
+#include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
-#include <OvTools/Utils/Random.h>
 #include <OvTools/Utils/PathParser.h>
+#include <OvTools/Utils/Random.h>
 
 #include "OvCore/ECS/Actor.h"
 #include "OvCore/ECS/PhysicsWrapper.h"
 #include "OvCore/Global/ServiceLocator.h"
 #include "OvCore/SceneSystem/SceneManager.h"
-#include "OvCore/SceneSystem/PrefabOperations.h"
+#include "OvCore/SceneSystem/PrefabRef.h"
 #include "OvCore/ResourceManagement/ModelManager.h"
 #include "OvCore/ResourceManagement/ShaderManager.h"
 #include "OvCore/ResourceManagement/TextureManager.h"
 #include "OvCore/ResourceManagement/MaterialManager.h"
 #include "OvCore/ResourceManagement/SoundManager.h"
 #include "OvCore/Scripting/Common/ScriptPropertyValue.h"
-#include "OvCore/Scripting/Lua/LuaScriptEngine.h"
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 
@@ -33,77 +31,7 @@
 
 #include <sol/sol.hpp>
 
-namespace
-{
-	std::string NormalizePrefabSourcePath(const std::string& p_prefabPath)
-	{
-		return OvTools::Utils::PathParser::MakeNonWindowsStyle(std::filesystem::path{ p_prefabPath }.generic_string());
-	}
-
-	OvCore::ECS::Actor* InstantiatePrefabFromLua(
-		OvCore::SceneSystem::Scene& p_scene,
-		const std::string& p_prefabPath,
-		const OvCore::Scripting::LuaScriptEngineContext& p_context,
-		const OvMaths::FVector3* p_position,
-		const OvMaths::FQuaternion* p_rotation,
-		const OvMaths::FVector3* p_scale,
-		OvCore::ECS::Actor* p_parent)
-	{
-		const std::filesystem::path realPath = OvTools::Utils::PathParser::GetRealPath(
-			std::filesystem::path{ p_prefabPath },
-			p_context.engineAssetsPath,
-			p_context.projectAssetsPath
-		);
-
-		auto* instantiatedRoot = OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(
-			realPath,
-			[&p_scene]() -> OvCore::ECS::Actor&
-			{
-				return p_scene.CreateActor();
-			}
-		);
-
-		if (!instantiatedRoot)
-		{
-			return nullptr;
-		}
-
-		OvCore::SceneSystem::PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(
-			*instantiatedRoot,
-			NormalizePrefabSourcePath(p_prefabPath)
-		);
-
-		const std::string prefabName = realPath.stem().string();
-		if (!prefabName.empty())
-		{
-			instantiatedRoot->SetName(prefabName);
-		}
-
-		if (p_parent)
-		{
-			instantiatedRoot->SetParent(*p_parent);
-		}
-
-		if (p_position)
-		{
-			instantiatedRoot->transform.SetLocalPosition(*p_position);
-		}
-
-		if (p_rotation)
-		{
-			instantiatedRoot->transform.SetLocalRotation(*p_rotation);
-		}
-
-		if (p_scale)
-		{
-			instantiatedRoot->transform.SetLocalScale(*p_scale);
-		}
-
-		return instantiatedRoot;
-	}
-}
-
-void BindLuaGlobal(sol::state& p_luaState, const OvCore::Scripting::LuaScriptEngineContext& p_context)
+void BindLuaGlobal(sol::state& p_luaState)
 {
 	using namespace OvWindowing;
 	using namespace OvWindowing::Inputs;
@@ -113,18 +41,7 @@ void BindLuaGlobal(sol::state& p_luaState, const OvCore::Scripting::LuaScriptEng
 	using namespace OvCore::SceneSystem;
 	using namespace OvCore::ResourceManagement;
 
-	auto instantiatePrefab = [&p_context](
-		Scene& p_scene,
-		const std::string& p_path,
-		const FVector3* p_position,
-		const FQuaternion* p_rotation,
-		const FVector3* p_scale,
-		Actor* p_parent) -> Actor*
-	{
-		return InstantiatePrefabFromLua(p_scene, p_path, p_context, p_position, p_rotation, p_scale, p_parent);
-	};
-
-	// Asset reference type — used in script local tables to declare asset properties.
+	// Asset reference type, used in script local tables to declare asset properties.
 	// The inspector renders an asset picker for any field initialised with one of the
 	// factory functions below (Model(), Texture(), Shader(), Material(), Sound()).
 	p_luaState.new_usertype<AssetRef>("AssetRef",
@@ -137,6 +54,13 @@ void BindLuaGlobal(sol::state& p_luaState, const OvCore::Scripting::LuaScriptEng
 	p_luaState["Shader"]   = []() { return AssetRef{EFT::SHADER,   ""}; };
 	p_luaState["Material"] = []() { return AssetRef{EFT::MATERIAL, ""}; };
 	p_luaState["Sound"]    = []() { return AssetRef{EFT::SOUND,    ""}; };
+
+	// PrefabRef is kept as a path reference so scripts can pass it to Scene::InstantiatePrefab.
+	p_luaState.new_usertype<PrefabRef>("_PrefabRef",
+		"path", &PrefabRef::path
+	);
+
+	p_luaState["Prefab"] = []() { return PrefabRef{""}; };
 
 	// ActorRef is a C++-only internal sentinel type. It is registered so that sol2 can
 	// identify it via is<ActorRef>() in GetDefaultProperties. The Lua-visible factory is
@@ -160,38 +84,8 @@ void BindLuaGlobal(sol::state& p_luaState, const OvCore::Scripting::LuaScriptEng
 			sol::resolve<Actor&(void)>(&Scene::CreateActor),
 			sol::resolve<Actor&(const std::string&, const std::string&)>(&Scene::CreateActor)),
 		"InstantiatePrefab", sol::overload(
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, nullptr, nullptr, nullptr, nullptr);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, Actor* p_parent) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, nullptr, nullptr, nullptr, p_parent);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, nullptr, nullptr, nullptr);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position, Actor* p_parent) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, nullptr, nullptr, p_parent);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position, const FQuaternion& p_rotation) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, &p_rotation, nullptr, nullptr);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position, const FQuaternion& p_rotation, Actor* p_parent) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, &p_rotation, nullptr, p_parent);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position, const FQuaternion& p_rotation, const FVector3& p_scale) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, &p_rotation, &p_scale, nullptr);
-			},
-			[instantiatePrefab](Scene& p_scene, const std::string& p_path, const FVector3& p_position, const FQuaternion& p_rotation, const FVector3& p_scale, Actor* p_parent) -> Actor*
-			{
-				return instantiatePrefab(p_scene, p_path, &p_position, &p_rotation, &p_scale, p_parent);
-			})
+			sol::resolve<Actor*(const PrefabRef&)>(&Scene::InstantiatePrefab),
+			sol::resolve<Actor*(const PrefabRef&, Actor&)>(&Scene::InstantiatePrefab))
 	);
 
 	p_luaState.new_enum<EKey>("Key", {

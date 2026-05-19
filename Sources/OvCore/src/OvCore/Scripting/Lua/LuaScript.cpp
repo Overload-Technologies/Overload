@@ -59,8 +59,9 @@ std::map<std::string, OvCore::Scripting::ScriptPropertyValue> OvCore::Scripting:
 			case sol::type::number:   properties[keyStr] = value.as<double>();      break;
 			case sol::type::string:   properties[keyStr] = value.as<std::string>(); break;
 			case sol::type::userdata:
-				if (value.is<AssetRef>())       properties[keyStr] = value.as<AssetRef>();
+				if (value.is<AssetRef>()) properties[keyStr] = value.as<AssetRef>();
 				else if (value.is<ActorRef>()) properties[keyStr] = value.as<ActorRef>();
+				else if (value.is<OvCore::SceneSystem::PrefabRef>()) properties[keyStr] = value.as<OvCore::SceneSystem::PrefabRef>();
 				break;
 			default: break;
 		}
@@ -82,8 +83,9 @@ std::optional<OvCore::Scripting::ScriptPropertyValue> OvCore::Scripting::LuaScri
 		case sol::type::number:   return obj.as<double>();
 		case sol::type::string:   return obj.as<std::string>();
 		case sol::type::userdata:
-			if (obj.is<AssetRef>())       return obj.as<AssetRef>();
-			if (obj.is<ActorRef>())       return obj.as<ActorRef>();
+			if (obj.is<AssetRef>()) return obj.as<AssetRef>();
+			if (obj.is<ActorRef>()) return obj.as<ActorRef>();
+			if (obj.is<OvCore::SceneSystem::PrefabRef>()) return obj.as<OvCore::SceneSystem::PrefabRef>();
 			return std::nullopt;
 		default:                  return std::nullopt;
 	}
@@ -133,6 +135,17 @@ void OvCore::Scripting::LuaScriptBase::SetProperty(const std::string& p_key, con
 					(*m_context.table)[p_key] = actor;
 				else
 					(*m_context.table)[p_key] = sol::nil;
+			}
+		}
+		else if constexpr (std::is_same_v<T, OvCore::SceneSystem::PrefabRef>)
+		{
+			if (v.path.empty())
+			{
+				(*m_context.table)[p_key] = sol::nil;
+			}
+			else
+			{
+				(*m_context.table)[p_key] = v;
 			}
 		}
 		else

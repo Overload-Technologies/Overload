@@ -51,7 +51,7 @@ OvGame::Core::Context::Context() :
 	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
 	projectAssetsPath(std::filesystem::current_path() / "Data" / "User" / "Assets"),
 	projectSettings((std::filesystem::current_path() / "Data" / "User" / "Game.ini").string()),
-	sceneManager(projectAssetsPath.string())
+	sceneManager(projectAssetsPath.string(), engineAssetsPath.string())
 {
 	ModelManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	TextureManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);

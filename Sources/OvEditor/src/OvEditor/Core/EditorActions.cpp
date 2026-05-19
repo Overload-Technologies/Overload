@@ -1162,34 +1162,14 @@ void OvEditor::Core::EditorActions::SaveActorAsPrefab(OvCore::ECS::Actor& p_acto
 
 OvCore::ECS::Actor* OvEditor::Core::EditorActions::InstantiatePrefab(const std::string& p_path)
 {
-	if (!m_context.sceneManager.GetCurrentScene())
+	auto* currentScene = m_context.sceneManager.GetCurrentScene();
+	if (!currentScene)
 		return nullptr;
 
 	const std::filesystem::path realPath = GetRealPath(p_path);
-	const std::string prefabSourcePath = GetResourcePath(realPath.string());
-
-	auto* instantiatedRoot = OvCore::SceneSystem::PrefabOperations::InstantiateFromFile(
-		realPath,
-		[this]() -> OvCore::ECS::Actor&
-		{
-			return CreateEmptyActor(false);
-		}
-	);
-
-	if (instantiatedRoot)
-	{
-		OvCore::SceneSystem::PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(*instantiatedRoot, prefabSourcePath);
-
-		const std::string prefabName = realPath.stem().string();
-		if (!prefabName.empty())
-			instantiatedRoot->SetName(prefabName);
-	}
-	else
-	{
-		OVLOG_ERROR("Failed to instantiate prefab from: " + realPath.string());
-	}
-
-	return instantiatedRoot;
+	const bool isEnginePrefab = !p_path.empty() && p_path.front() == ':';
+	const OvCore::SceneSystem::PrefabRef prefab{ GetResourcePath(realPath.string(), isEnginePrefab) };
+	return currentScene->InstantiatePrefab(prefab);
 }
 
 bool OvEditor::Core::EditorActions::ApplyActorToPrefab(OvCore::ECS::Actor& p_actor)

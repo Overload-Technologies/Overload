@@ -14,7 +14,12 @@
 #include <OvTools/Utils/PathParser.h>
 #include <OvWindowing/Dialogs/MessageBox.h>
 
-OvCore::SceneSystem::SceneManager::SceneManager(const std::string& p_sceneRootFolder) : m_sceneRootFolder(p_sceneRootFolder)
+OvCore::SceneSystem::SceneManager::SceneManager(
+	const std::string& p_sceneRootFolder,
+	const std::string& p_engineAssetsFolder
+) :
+	m_sceneRootFolder(p_sceneRootFolder),
+	m_engineAssetsFolder(p_engineAssetsFolder)
 {
 	LoadEmptyScene();
 }
@@ -47,14 +52,14 @@ void OvCore::SceneSystem::SceneManager::LoadAndPlayDelayed(const std::string& p_
 void OvCore::SceneSystem::SceneManager::LoadEmptyScene()
 {
 	UnloadCurrentScene();
-	m_currentScene.reset(new Scene());
+	m_currentScene.reset(new Scene(m_sceneRootFolder, m_engineAssetsFolder));
 	SceneLoadEvent.Invoke();
 }
 
 void OvCore::SceneSystem::SceneManager::LoadDefaultScene()
 {
 	UnloadCurrentScene();
-	m_currentScene.reset(new Scene());
+	m_currentScene.reset(new Scene(m_sceneRootFolder, m_engineAssetsFolder));
 	m_currentScene->AddDefaultCamera();
 	m_currentScene->AddDefaultLights();
 	m_currentScene->AddDefaultReflections();

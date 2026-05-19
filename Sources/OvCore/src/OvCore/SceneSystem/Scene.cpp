@@ -10,15 +10,23 @@
 #include <tinyxml2.h>
 #include <tracy/Tracy.hpp>
 
+#include <OvDebug/Logger.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/SceneSystem/PrefabOperations.h>
 #include <OvCore/SceneSystem/Scene.h>
+#include <OvTools/Utils/PathParser.h>
 
-OvCore::SceneSystem::Scene::Scene()
+OvCore::SceneSystem::Scene::Scene(
+	const std::filesystem::path& p_projectAssetsPath,
+	const std::filesystem::path& p_engineAssetsPath
+) :
+	m_projectAssetsPath(p_projectAssetsPath),
+	m_engineAssetsPath(p_engineAssetsPath)
 {
 
 }
@@ -164,6 +172,78 @@ OvCore::ECS::Actor& OvCore::SceneSystem::Scene::CreateActor(const std::string& p
 		}
 	}
 	return instance;
+}
+
+std::filesystem::path OvCore::SceneSystem::Scene::GetRealAssetPath(const std::string& p_path) const
+{
+	return OvTools::Utils::PathParser::GetRealPath(
+		std::filesystem::path{ p_path },
+		m_engineAssetsPath,
+		m_projectAssetsPath
+	);
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const PrefabRef& p_prefab)
+{
+	return InstantiatePrefab(p_prefab, std::nullopt);
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const PrefabRef& p_prefab, ECS::Actor& p_parent)
+{
+	return InstantiatePrefab(p_prefab, std::optional<std::reference_wrapper<ECS::Actor>>{ std::ref(p_parent) });
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
+	const PrefabRef& p_prefab,
+	std::optional<std::reference_wrapper<ECS::Actor>> p_parent)
+{
+	using EFileType = OvTools::Utils::PathParser::EFileType;
+
+	if (p_prefab.path.empty())
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: no prefab selected.");
+		return nullptr;
+	}
+
+	if (OvTools::Utils::PathParser::GetFileType(p_prefab.path) != EFileType::PREFAB)
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: \"" + p_prefab.path + "\" is not a prefab.");
+		return nullptr;
+	}
+
+	const std::filesystem::path realPath = GetRealAssetPath(p_prefab.path);
+
+	auto* instantiatedRoot = PrefabOperations::InstantiateFromFile(
+		realPath,
+		[this]() -> ECS::Actor&
+		{
+			return CreateActor();
+		}
+	);
+
+	if (!instantiatedRoot)
+	{
+		OVLOG_ERROR("Failed to instantiate prefab from: " + realPath.string());
+		return nullptr;
+	}
+
+	PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(
+		*instantiatedRoot,
+		OvTools::Utils::PathParser::MakeNonWindowsStyle(std::filesystem::path{ p_prefab.path }.generic_string())
+	);
+
+	const std::string prefabName = realPath.stem().string();
+	if (!prefabName.empty())
+	{
+		instantiatedRoot->SetName(prefabName);
+	}
+
+	if (p_parent)
+	{
+		instantiatedRoot->SetParent(p_parent->get());
+	}
+
+	return instantiatedRoot;
 }
 
 bool OvCore::SceneSystem::Scene::DestroyActor(ECS::Actor& p_target)

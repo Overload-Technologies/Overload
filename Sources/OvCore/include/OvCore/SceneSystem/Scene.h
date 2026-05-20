@@ -8,7 +8,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,6 +18,7 @@
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
+#include <OvTools/Utils/OptRef.h>
 
 namespace OvCore::SceneSystem
 {
@@ -227,11 +227,15 @@ namespace OvCore::SceneSystem
 
 	private:
 		std::filesystem::path GetRealAssetPath(const std::string& p_path) const;
-		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, std::optional<std::reference_wrapper<ECS::Actor>> p_parent);
+		void BeginBatchActorCreation();
+		void EndBatchActorCreation();
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, OvTools::Utils::OptRef<ECS::Actor> p_parent);
 
 		int64_t m_availableID = 1;
 		bool m_isPlaying = false;
+		bool m_batchActorCreation = false;
 		std::vector<ECS::Actor*> m_actors;
+		std::vector<std::reference_wrapper<ECS::Actor>> m_batchCreatedActors;
 
 		FastAccessComponents m_fastAccessComponents;
 		std::filesystem::path m_projectAssetsPath;

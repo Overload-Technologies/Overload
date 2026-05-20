@@ -39,6 +39,7 @@ project "OvGame"
 		-- Dependencies
 		"assimp",
 		"bullet3",
+		"freetype",
 		"glad",
 		"glfw",
 		"ImGui",

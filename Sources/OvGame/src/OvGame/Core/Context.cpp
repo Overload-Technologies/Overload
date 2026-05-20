@@ -136,10 +136,10 @@ OvGame::Core::Context::Context() :
 		OvUI::Styling::EStyle::DEFAULT_DARK
 	);
 
-	const auto fontPath = engineAssetsPath / "Fonts" / "Ruda-Bold.ttf";
+	const auto fontPath = engineAssetsPath / "Fonts" / "Roboto-Regular.ttf";
 
-	uiManager->LoadFont("Ruda-Bold", fontPath.string(), 15);
-	uiManager->UseFont("Ruda-Bold");
+	uiManager->LoadFont("Roboto", fontPath.string(), 15.0f);
+	uiManager->UseFont("Roboto");
 	uiManager->EnableEditorLayoutSave(false);
 	uiManager->EnableDocking(false);
 

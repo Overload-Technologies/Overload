@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include "OvTools/Eventing/Event.h"
 #include <optional>
 #include <string>
 #include <unordered_map>
 
+#include <OvTools/Eventing/Event.h>
 #include <OvUI/Modules/Canvas.h>
 #include <OvUI/Styling/EStyle.h>
 
@@ -50,9 +50,9 @@ namespace OvUI::Core
 		* Load a font (Returns true on success)
 		* @param p_id
 		* @param p_path
-		* @param p_fontSize
+		* @param p_fontSize (optional)
 		*/
-		bool LoadFont(const std::string& p_id, const std::string& p_path, float p_fontSize);
+		bool LoadFont(const std::string& p_id, const std::string& p_path, std::optional<float> p_fontSize = std::nullopt);
 
 		/**
 		* Unload a font (Returns true on success)

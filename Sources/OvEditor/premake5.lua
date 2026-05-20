@@ -39,6 +39,7 @@ project "OvEditor"
 	links {
 		-- Dependencies (order matters on Linux!)
 		"bullet3",
+		"freetype",
 		"glad",
 		"ImGui",
 		"lua",

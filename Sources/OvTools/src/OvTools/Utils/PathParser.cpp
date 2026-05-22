@@ -117,6 +117,7 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::StringToFileTy
 	if (p_type == "Material") return EFileType::MATERIAL;
 	if (p_type == "Sound")    return EFileType::SOUND;
 	if (p_type == "Prefab")   return EFileType::PREFAB;
+	if (p_type == "Font")     return EFileType::FONT;
 	return EFileType::UNKNOWN;
 }
 
@@ -134,7 +135,7 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 	else if (ext == "ovscene") return EFileType::SCENE;
 	else if (ext == "ovprefab") return EFileType::PREFAB;
 	else if (ext == "lua" || ext == "ovscript") return EFileType::SCRIPT;
-	else if (ext == "ttf") return EFileType::FONT;
+	else if (ext == "ttf" || ext == "otf") return EFileType::FONT;
 
 	return EFileType::UNKNOWN;
 }

@@ -11,6 +11,7 @@
 #include <variant>
 
 #include <OvAudio/Core/AudioEngine.h>
+#include <OvCore/ResourceManagement/FontManager.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
@@ -96,6 +97,7 @@ namespace OvEditor::Core
 		OvCore::ResourceManagement::TextureManager textureManager;
 		OvCore::ResourceManagement::ShaderManager shaderManager;
 		OvCore::ResourceManagement::MaterialManager materialManager;
+		OvCore::ResourceManagement::FontManager fontManager;
 		OvCore::ResourceManagement::SoundManager soundManager;
 
 		OvWindowing::Settings::WindowSettings windowSettings;

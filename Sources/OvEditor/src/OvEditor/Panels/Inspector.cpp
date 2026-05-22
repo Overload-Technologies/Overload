@@ -26,6 +26,11 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -105,6 +110,11 @@ namespace
 		CreateComponentInfo<CAudioListener>("Audio Listener"),
 		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
+		CreateComponentInfo<UI::CCanvas>("Canvas"),
+		CreateComponentInfo<UI::CImage>("Image"),
+		CreateComponentInfo<UI::CLayoutGroup>("Layout Group"),
+		CreateComponentInfo<UI::CText>("Text"),
+		CreateComponentInfo<UI::CTransform2D>("Transform 2D"),
 	});
 
 }

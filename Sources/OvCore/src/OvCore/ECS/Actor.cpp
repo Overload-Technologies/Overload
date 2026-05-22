@@ -25,6 +25,11 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 
 #include <iostream>
 
@@ -606,6 +611,11 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 				else if (IsType<CPostProcessStack>(componentType)) component = &AddComponent<CPostProcessStack>();
 				else if (IsType<CReflectionProbe>(componentType)) component = &AddComponent<CReflectionProbe>();
 				else if (IsType<CSkinnedMeshRenderer>(componentType)) component = &AddComponent<CSkinnedMeshRenderer>();
+				else if (IsType<UI::CCanvas>(componentType)) component = &AddComponent<UI::CCanvas>();
+				else if (IsType<UI::CImage>(componentType)) component = &AddComponent<UI::CImage>();
+				else if (IsType<UI::CLayoutGroup>(componentType)) component = &AddComponent<UI::CLayoutGroup>();
+				else if (IsType<UI::CText>(componentType)) component = &AddComponent<UI::CText>();
+				else if (IsType<UI::CTransform2D>(componentType)) component = &AddComponent<UI::CTransform2D>();
 
 				if (component)
 				{

@@ -1,0 +1,36 @@
+<root>
+    <shader>:Shaders\UI_Image.ovfx</shader>
+    <settings>
+        <support_orthographic>true</support_orthographic>
+        <support_perspective>true</support_perspective>
+        <blendable>true</blendable>
+        <backface_culling>false</backface_culling>
+        <frontface_culling>false</frontface_culling>
+        <depth_test>false</depth_test>
+        <depth_writing>false</depth_writing>
+        <color_writing>true</color_writing>
+        <cast_shadows>false</cast_shadows>
+        <receive_shadows>false</receive_shadows>
+        <captured_by_reflection_probes>false</captured_by_reflection_probes>
+        <receive_reflections>false</receive_reflections>
+        <user_interface>true</user_interface>
+        <gpu_instances>1</gpu_instances>
+        <draw_order>1000</draw_order>
+    </settings>
+    <uniforms>
+        <uniform>
+            <name>u_Image</name>
+            <value>?</value>
+        </uniform>
+        <uniform>
+            <name>u_Tint</name>
+            <value>
+                <x>1</x>
+                <y>1</y>
+                <z>1</z>
+                <w>1</w>
+            </value>
+        </uniform>
+    </uniforms>
+    <features></features>
+</root>

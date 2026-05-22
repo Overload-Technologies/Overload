@@ -229,7 +229,7 @@ namespace OvCore::SceneSystem
 		std::filesystem::path GetRealAssetPath(const std::string& p_path) const;
 		void BeginBatchActorCreation();
 		void EndBatchActorCreation(bool p_startCreatedActors);
-		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, OvTools::Utils::OptRef<ECS::Actor> p_parent);
+		ECS::Actor* InstantiatePrefabInternal(const std::string& p_prefabPath, OvTools::Utils::OptRef<ECS::Actor> p_parent);
 
 		int64_t m_availableID = 1;
 		bool m_isPlaying = false;

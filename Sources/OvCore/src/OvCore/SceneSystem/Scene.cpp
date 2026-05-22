@@ -240,15 +240,15 @@ void OvCore::SceneSystem::Scene::EndBatchActorCreation(bool p_startCreatedActors
 
 OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath)
 {
-	return InstantiatePrefab(p_prefabPath, std::nullopt);
+	return InstantiatePrefabInternal(p_prefabPath, std::nullopt);
 }
 
 OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath, ECS::Actor& p_parent)
 {
-	return InstantiatePrefab(p_prefabPath, p_parent);
+	return InstantiatePrefabInternal(p_prefabPath, p_parent);
 }
 
-OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefabInternal(
 	const std::string& p_prefabPath,
 	OvTools::Utils::OptRef<ECS::Actor> p_parent)
 {

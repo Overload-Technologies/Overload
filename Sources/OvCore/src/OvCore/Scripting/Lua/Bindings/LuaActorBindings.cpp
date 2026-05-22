@@ -26,6 +26,11 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
 void BindLuaActor(sol::state& p_luaState)
@@ -72,6 +77,11 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetAudioListener", &Actor::GetComponent<CAudioListener>,
 		"GetPostProcessStack", & Actor::GetComponent<CPostProcessStack>,
 		"GetReflectionProbe", &Actor::GetComponent<CReflectionProbe>,
+		"GetCanvas", &Actor::GetComponent<UI::CCanvas>,
+		"GetImage", &Actor::GetComponent<UI::CImage>,
+		"GetLayoutGroup", &Actor::GetComponent<UI::CLayoutGroup>,
+		"GetText", &Actor::GetComponent<UI::CText>,
+		"GetTransform2D", &Actor::GetComponent<UI::CTransform2D>,
 
 		/* Behaviours relatives */
 		"GetBehaviour", [](Actor& p_this, const std::string& p_name) -> sol::table {
@@ -125,6 +135,11 @@ void BindLuaActor(sol::state& p_luaState)
 		"AddAudioListener", &Actor::AddComponent<CAudioListener>,
 		"AddPostProcessStack", & Actor::AddComponent<CPostProcessStack>,
 		"AddReflectionProbe", &Actor::AddComponent<CReflectionProbe>,
+		"AddCanvas", &Actor::AddComponent<UI::CCanvas>,
+		"AddImage", &Actor::AddComponent<UI::CImage>,
+		"AddLayoutGroup", &Actor::AddComponent<UI::CLayoutGroup>,
+		"AddText", &Actor::AddComponent<UI::CText>,
+		"AddTransform2D", &Actor::AddComponent<UI::CTransform2D>,
 
 		/* Components Destructors */
 		"RemoveModelRenderer", &Actor::RemoveComponent<CModelRenderer>,
@@ -143,6 +158,11 @@ void BindLuaActor(sol::state& p_luaState)
 		"RemoveAudioListener", &Actor::RemoveComponent<CAudioListener>,
 		"RemovePostProcessStack", & Actor::RemoveComponent<CPostProcessStack>,
 		"RemoveReflectionProbe", &Actor::RemoveComponent<CReflectionProbe>,
+		"RemoveCanvas", &Actor::RemoveComponent<UI::CCanvas>,
+		"RemoveImage", &Actor::RemoveComponent<UI::CImage>,
+		"RemoveLayoutGroup", &Actor::RemoveComponent<UI::CLayoutGroup>,
+		"RemoveText", &Actor::RemoveComponent<UI::CText>,
+		"RemoveTransform2D", &Actor::RemoveComponent<UI::CTransform2D>,
 
 		/* Behaviour management */
 		"AddBehaviour", &Actor::AddBehaviour,

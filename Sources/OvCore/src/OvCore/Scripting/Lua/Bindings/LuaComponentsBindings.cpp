@@ -21,9 +21,14 @@
 #include <OvCore/ECS/Components/CPointLight.h>  
 #include <OvCore/ECS/Components/CPostProcessStack.h>  
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
-#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
-#include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
+#include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 
 void BindLuaComponents(sol::state& p_luaState)
 {
@@ -201,6 +206,120 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetFrustumGeometryCulling", &CCamera::SetFrustumGeometryCulling,
 		"SetFrustumLightCulling", &CCamera::SetFrustumLightCulling,
 		"SetProjectionMode", &CCamera::SetProjectionMode
+	);
+
+	p_luaState.new_enum<UI::CCanvas::EScalerMode>("CanvasScalerMode", {
+		{"CONSTANT_PIXEL_SIZE", UI::CCanvas::EScalerMode::CONSTANT_PIXEL_SIZE},
+		{"SCALE_WITH_SCREEN_SIZE", UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE}
+	});
+
+	p_luaState.new_enum<UI::CTransform2D::EAnchorPreset>("AnchorPreset", {
+		{"TOP_LEFT", UI::CTransform2D::EAnchorPreset::TOP_LEFT},
+		{"TOP_CENTER", UI::CTransform2D::EAnchorPreset::TOP_CENTER},
+		{"TOP_RIGHT", UI::CTransform2D::EAnchorPreset::TOP_RIGHT},
+		{"MIDDLE_LEFT", UI::CTransform2D::EAnchorPreset::MIDDLE_LEFT},
+		{"CENTER", UI::CTransform2D::EAnchorPreset::CENTER},
+		{"MIDDLE_RIGHT", UI::CTransform2D::EAnchorPreset::MIDDLE_RIGHT},
+		{"BOTTOM_LEFT", UI::CTransform2D::EAnchorPreset::BOTTOM_LEFT},
+		{"BOTTOM_CENTER", UI::CTransform2D::EAnchorPreset::BOTTOM_CENTER},
+		{"BOTTOM_RIGHT", UI::CTransform2D::EAnchorPreset::BOTTOM_RIGHT}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EDirection>("LayoutDirection", {
+		{"HORIZONTAL", UI::CLayoutGroup::EDirection::HORIZONTAL},
+		{"VERTICAL", UI::CLayoutGroup::EDirection::VERTICAL}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EHorizontalAlignment>("LayoutHorizontalAlignment", {
+		{"LEFT", UI::CLayoutGroup::EHorizontalAlignment::LEFT},
+		{"CENTER", UI::CLayoutGroup::EHorizontalAlignment::CENTER},
+		{"RIGHT", UI::CLayoutGroup::EHorizontalAlignment::RIGHT}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EVerticalAlignment>("LayoutVerticalAlignment", {
+		{"TOP", UI::CLayoutGroup::EVerticalAlignment::TOP},
+		{"CENTER", UI::CLayoutGroup::EVerticalAlignment::CENTER},
+		{"BOTTOM", UI::CLayoutGroup::EVerticalAlignment::BOTTOM}
+	});
+
+	p_luaState.new_enum<UI::CText::EHorizontalAlignment>("TextHorizontalAlignment", {
+		{"LEFT", UI::CText::EHorizontalAlignment::LEFT},
+		{"CENTER", UI::CText::EHorizontalAlignment::CENTER},
+		{"RIGHT", UI::CText::EHorizontalAlignment::RIGHT}
+	});
+
+	p_luaState.new_enum<UI::CText::EVerticalAlignment>("TextVerticalAlignment", {
+		{"TOP", UI::CText::EVerticalAlignment::TOP},
+		{"CENTER", UI::CText::EVerticalAlignment::CENTER},
+		{"BOTTOM", UI::CText::EVerticalAlignment::BOTTOM}
+	});
+
+	p_luaState.new_usertype<UI::CCanvas>("Canvas",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetReferenceResolution", [](UI::CCanvas& p_this) -> FVector2 { return p_this.GetReferenceResolution(); },
+		"SetReferenceResolution", &UI::CCanvas::SetReferenceResolution,
+		"GetScaleFactor", &UI::CCanvas::GetScaleFactor,
+		"SetScaleFactor", &UI::CCanvas::SetScaleFactor,
+		"GetPixelsPerUnit", &UI::CCanvas::GetPixelsPerUnit,
+		"SetPixelsPerUnit", &UI::CCanvas::SetPixelsPerUnit,
+		"GetScalerMode", &UI::CCanvas::GetScalerMode,
+		"SetScalerMode", &UI::CCanvas::SetScalerMode
+	);
+
+	p_luaState.new_usertype<UI::CImage>("Image",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetTexture", &UI::CImage::GetTexture,
+		"SetTexture", &UI::CImage::SetTexture,
+		"GetSize", [](UI::CImage& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CImage::SetSize,
+		"GetTint", [](UI::CImage& p_this) -> FVector4 { return p_this.GetTint(); },
+		"SetTint", &UI::CImage::SetTint
+	);
+
+	p_luaState.new_usertype<UI::CLayoutGroup>("LayoutGroup",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetDirection", &UI::CLayoutGroup::GetDirection,
+		"SetDirection", &UI::CLayoutGroup::SetDirection,
+		"GetSpacing", &UI::CLayoutGroup::GetSpacing,
+		"SetSpacing", &UI::CLayoutGroup::SetSpacing,
+		"GetSize", [](UI::CLayoutGroup& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CLayoutGroup::SetSize,
+		"GetPadding", [](UI::CLayoutGroup& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CLayoutGroup::SetPadding,
+		"GetHorizontalAlignment", &UI::CLayoutGroup::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CLayoutGroup::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CLayoutGroup::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CLayoutGroup::SetVerticalAlignment
+	);
+
+	p_luaState.new_usertype<UI::CText>("Text",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetText", &UI::CText::GetText,
+		"SetText", &UI::CText::SetText,
+		"GetFontPath", &UI::CText::GetFontPath,
+		"SetFontPath", &UI::CText::SetFontPath,
+		"GetFontSize", &UI::CText::GetFontSize,
+		"SetFontSize", &UI::CText::SetFontSize,
+		"GetColor", [](UI::CText& p_this) -> FVector4 { return p_this.GetColor(); },
+		"SetColor", &UI::CText::SetColor,
+		"GetExtents", [](UI::CText& p_this) -> FVector2 { return p_this.GetExtents(); },
+		"SetExtents", &UI::CText::SetExtents,
+		"GetHorizontalAlignment", &UI::CText::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CText::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CText::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CText::SetVerticalAlignment
+	);
+
+	p_luaState.new_usertype<UI::CTransform2D>("Transform2D",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetPosition", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetPosition(); },
+		"SetPosition", &UI::CTransform2D::SetPosition,
+		"GetRotation", &UI::CTransform2D::GetRotation,
+		"SetRotation", &UI::CTransform2D::SetRotation,
+		"GetScale", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetScale(); },
+		"SetScale", &UI::CTransform2D::SetScale,
+		"GetAnchorPreset", &UI::CTransform2D::GetAnchorPreset,
+		"SetAnchorPreset", &UI::CTransform2D::SetAnchorPreset
 	);
 
 	p_luaState.new_usertype<CLight>("Light",

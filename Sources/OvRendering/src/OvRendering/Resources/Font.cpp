@@ -17,37 +17,15 @@
 #include <OvRendering/Settings/ETextureFilteringMode.h>
 #include <OvRendering/Settings/ETextureWrapMode.h>
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4244 4267 4456 4505 4996 5262 6385)
-#endif
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
-#endif
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#endif
-#define STBTT_STATIC
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <imstb_truetype.h>
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace
 {
 	constexpr uint32_t kAtlasWidth = 512;
 	constexpr uint32_t kAtlasHeight = 512;
 	constexpr float kDefaultPixelSize = 32.0f;
+	constexpr uint32_t kGlyphPadding = 1;
 
 	struct BakedFont
 	{
@@ -55,6 +33,40 @@ namespace
 		float lineHeight = kDefaultPixelSize;
 		std::array<OvRendering::Resources::Font::Glyph, OvRendering::Resources::Font::kGlyphCount> glyphs = {};
 		std::vector<uint8_t> atlasData;
+	};
+
+	struct FreeTypeLibrary
+	{
+		FT_Library handle = nullptr;
+
+		FreeTypeLibrary()
+		{
+			if (FT_Init_FreeType(&handle) != 0)
+			{
+				handle = nullptr;
+			}
+		}
+
+		~FreeTypeLibrary()
+		{
+			if (handle)
+			{
+				FT_Done_FreeType(handle);
+			}
+		}
+	};
+
+	struct FreeTypeFace
+	{
+		FT_Face handle = nullptr;
+
+		~FreeTypeFace()
+		{
+			if (handle)
+			{
+				FT_Done_Face(handle);
+			}
+		}
 	};
 
 	std::vector<uint8_t> ReadFile(const std::filesystem::path& p_path)
@@ -78,11 +90,46 @@ namespace
 		return file ? data : std::vector<uint8_t>{};
 	}
 
+	bool CopyGlyphBitmap(
+		const FT_Bitmap& p_bitmap,
+		uint32_t p_x,
+		uint32_t p_y,
+		std::vector<uint8_t>& p_alphaAtlas
+	)
+	{
+		if (p_bitmap.pixel_mode != FT_PIXEL_MODE_GRAY)
+		{
+			return false;
+		}
+
+		const uint32_t glyphWidth = static_cast<uint32_t>(p_bitmap.width);
+		const uint32_t glyphHeight = static_cast<uint32_t>(p_bitmap.rows);
+		const int32_t pitch = static_cast<int32_t>(p_bitmap.pitch);
+		const uint32_t pitchAbs = static_cast<uint32_t>(pitch >= 0 ? pitch : -pitch);
+
+		for (uint32_t row = 0; row < glyphHeight; ++row)
+		{
+			const uint32_t sourceRow = pitch >= 0 ? row : glyphHeight - 1 - row;
+			const uint8_t* source = p_bitmap.buffer + static_cast<size_t>(sourceRow) * pitchAbs;
+			const size_t destinationOffset = (static_cast<size_t>(p_y) + row) * kAtlasWidth + p_x;
+			std::copy(source, source + glyphWidth, p_alphaAtlas.begin() + destinationOffset);
+		}
+
+		return true;
+	}
+
 	BakedFont BakeFont(const std::filesystem::path& p_realPath)
 	{
 		using namespace OvRendering::Resources;
 
 		BakedFont result;
+
+		FreeTypeLibrary library;
+		if (!library.handle)
+		{
+			OVLOG_WARNING("Unable to initialize FreeType");
+			return result;
+		}
 
 		const auto fontData = ReadFile(p_realPath);
 		if (fontData.empty())
@@ -91,39 +138,87 @@ namespace
 			return result;
 		}
 
-		stbtt_fontinfo fontInfo;
-		const int fontOffset = stbtt_GetFontOffsetForIndex(fontData.data(), 0);
-		if (fontOffset < 0 || !stbtt_InitFont(&fontInfo, fontData.data(), fontOffset))
+		FreeTypeFace face;
+		if (FT_New_Memory_Face(library.handle, fontData.data(), static_cast<FT_Long>(fontData.size()), 0, &face.handle) != 0)
 		{
 			OVLOG_WARNING("Unable to initialize font: " + p_realPath.string());
 			return result;
 		}
 
-		int ascent = 0;
-		int descent = 0;
-		int lineGap = 0;
-		stbtt_GetFontVMetrics(&fontInfo, &ascent, &descent, &lineGap);
-		result.lineHeight = static_cast<float>(ascent - descent + lineGap) * stbtt_ScaleForPixelHeight(&fontInfo, kDefaultPixelSize);
-
-		std::array<stbtt_bakedchar, Font::kGlyphCount> bakedChars = {};
-		std::vector<uint8_t> alphaAtlas(kAtlasWidth * kAtlasHeight);
-
-		const int bakeResult = stbtt_BakeFontBitmap(
-			fontData.data(),
-			fontOffset,
-			kDefaultPixelSize,
-			alphaAtlas.data(),
-			kAtlasWidth,
-			kAtlasHeight,
-			Font::kFirstGlyph,
-			Font::kGlyphCount,
-			bakedChars.data()
-		);
-
-		if (bakeResult <= 0)
+		if (FT_Select_Charmap(face.handle, FT_ENCODING_UNICODE) != 0)
 		{
-			OVLOG_WARNING("Unable to bake font atlas: " + p_realPath.string());
+			OVLOG_WARNING("Font does not provide a Unicode charmap: " + p_realPath.string());
 			return result;
+		}
+
+		if (FT_Set_Pixel_Sizes(face.handle, 0, static_cast<FT_UInt>(kDefaultPixelSize)) != 0)
+		{
+			OVLOG_WARNING("Unable to set font pixel size: " + p_realPath.string());
+			return result;
+		}
+
+		if (face.handle->size)
+		{
+			result.lineHeight = static_cast<float>(face.handle->size->metrics.height) / 64.0f;
+		}
+
+		std::vector<uint8_t> alphaAtlas(kAtlasWidth * kAtlasHeight);
+		uint32_t cursorX = 0;
+		uint32_t cursorY = 0;
+		uint32_t rowHeight = 0;
+
+		for (uint32_t i = 0; i < Font::kGlyphCount; ++i)
+		{
+			const uint32_t character = Font::kFirstGlyph + i;
+			if (FT_Load_Char(face.handle, character, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0)
+			{
+				OVLOG_WARNING("Unable to load glyph from font atlas: " + p_realPath.string());
+				return result;
+			}
+
+			const FT_GlyphSlot glyphSlot = face.handle->glyph;
+			const FT_Bitmap& bitmap = glyphSlot->bitmap;
+			const uint32_t glyphWidth = static_cast<uint32_t>(bitmap.width);
+			const uint32_t glyphHeight = static_cast<uint32_t>(bitmap.rows);
+			auto& glyph = result.glyphs[i];
+
+			glyph.xOffset = static_cast<float>(glyphSlot->bitmap_left);
+			glyph.yOffset = -static_cast<float>(glyphSlot->bitmap_top);
+			glyph.xAdvance = static_cast<float>(glyphSlot->advance.x) / 64.0f;
+			glyph.width = static_cast<float>(glyphWidth);
+			glyph.height = static_cast<float>(glyphHeight);
+
+			if (glyphWidth == 0 || glyphHeight == 0)
+			{
+				continue;
+			}
+
+			if (cursorX + glyphWidth + kGlyphPadding > kAtlasWidth)
+			{
+				cursorX = 0;
+				cursorY += rowHeight + kGlyphPadding;
+				rowHeight = 0;
+			}
+
+			if (cursorY + glyphHeight + kGlyphPadding > kAtlasHeight)
+			{
+				OVLOG_WARNING("Font atlas is too small for: " + p_realPath.string());
+				return result;
+			}
+
+			if (!CopyGlyphBitmap(bitmap, cursorX, cursorY, alphaAtlas))
+			{
+				OVLOG_WARNING("Unsupported glyph bitmap format in font: " + p_realPath.string());
+				return result;
+			}
+
+			glyph.uMin = static_cast<float>(cursorX) / static_cast<float>(kAtlasWidth);
+			glyph.vMin = static_cast<float>(cursorY) / static_cast<float>(kAtlasHeight);
+			glyph.uMax = static_cast<float>(cursorX + glyphWidth) / static_cast<float>(kAtlasWidth);
+			glyph.vMax = static_cast<float>(cursorY + glyphHeight) / static_cast<float>(kAtlasHeight);
+
+			cursorX += glyphWidth + kGlyphPadding;
+			rowHeight = std::max(rowHeight, glyphHeight);
 		}
 
 		result.atlasData.resize(kAtlasWidth * kAtlasHeight * 4);
@@ -134,21 +229,6 @@ namespace
 			result.atlasData[offset + 1] = 255;
 			result.atlasData[offset + 2] = 255;
 			result.atlasData[offset + 3] = alphaAtlas[i];
-		}
-
-		for (uint32_t i = 0; i < Font::kGlyphCount; ++i)
-		{
-			const auto& baked = bakedChars[i];
-			auto& glyph = result.glyphs[i];
-			glyph.xOffset = baked.xoff;
-			glyph.yOffset = baked.yoff;
-			glyph.xAdvance = baked.xadvance;
-			glyph.width = static_cast<float>(baked.x1 - baked.x0);
-			glyph.height = static_cast<float>(baked.y1 - baked.y0);
-			glyph.uMin = static_cast<float>(baked.x0) / static_cast<float>(kAtlasWidth);
-			glyph.vMin = static_cast<float>(baked.y0) / static_cast<float>(kAtlasHeight);
-			glyph.uMax = static_cast<float>(baked.x1) / static_cast<float>(kAtlasWidth);
-			glyph.vMax = static_cast<float>(baked.y1) / static_cast<float>(kAtlasHeight);
 		}
 
 		result.valid = true;

@@ -17,8 +17,8 @@ project "OvRendering"
 	includedirs {
 		-- Dependencies
 		dependdir .. "assimp/include",
+		dependdir .. "freetype/include",
 		dependdir .. "glad/include",
-		dependdir .. "ImGui/include",
 		dependdir .. "stb_image/include",
 		dependdir .. "tracy",
 

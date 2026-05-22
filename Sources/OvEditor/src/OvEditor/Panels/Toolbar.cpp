@@ -92,6 +92,19 @@ OvEditor::Panels::Toolbar::Toolbar
 	m_nextButton->ClickedEvent += EDITOR_BIND(NextFrame);
 	refreshButton.ClickedEvent += EDITOR_BIND(RefreshScripts);
 
+	CreateWidget<Layout::Spacing>(0).lineBreak = false;
+	m_sceneUIButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Font")->GetTexture().GetID(), iconSize);
+	m_sceneUIButton->lineBreak = false;
+	m_sceneUIButton->tooltip = "Toggle in-game UI rendering in views";
+	m_sceneUIButton->ClickedEvent += []() { EDITOR_EXEC(ToggleSceneUIRendering()); };
+
+	auto updateSceneUIRendering = [this](bool p_enabled) {
+		m_sceneUIButton->tint = GetButtonTint(p_enabled);
+	};
+
+	updateSceneUIRendering(EDITOR_EXEC(IsSceneUIRenderingEnabled()));
+	EDITOR_EVENT(SceneUIRenderingChangedEvent) += updateSceneUIRendering;
+
 	EDITOR_EVENT(EditorModeChangedEvent) += [this](Core::EditorActions::EEditorMode p_mode) {
 		using enum Core::EditorActions::EEditorMode;
 		m_playButton->disabled = !(p_mode == EDIT || p_mode == FRAME_BY_FRAME || p_mode == PAUSE);

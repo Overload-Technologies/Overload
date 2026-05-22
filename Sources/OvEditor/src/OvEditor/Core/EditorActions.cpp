@@ -1030,6 +1030,25 @@ OvEditor::Core::EGizmoOperation OvEditor::Core::EditorActions::GetGizmoOperation
 	return sceneView.GetGizmoOperation();
 }
 
+void OvEditor::Core::EditorActions::SetSceneUIRenderingEnabled(bool p_enabled)
+{
+	if (m_sceneUIRenderingEnabled != p_enabled)
+	{
+		m_sceneUIRenderingEnabled = p_enabled;
+		SceneUIRenderingChangedEvent.Invoke(m_sceneUIRenderingEnabled);
+	}
+}
+
+void OvEditor::Core::EditorActions::ToggleSceneUIRendering()
+{
+	SetSceneUIRenderingEnabled(!m_sceneUIRenderingEnabled);
+}
+
+bool OvEditor::Core::EditorActions::IsSceneUIRenderingEnabled() const
+{
+	return m_sceneUIRenderingEnabled;
+}
+
 OvMaths::FVector3 OvEditor::Core::EditorActions::CalculateActorSpawnPoint(float p_distanceToCamera)
 {
 	auto& sceneView = m_panelsManager.GetPanelAs<OvEditor::Panels::SceneView>("Scene View");

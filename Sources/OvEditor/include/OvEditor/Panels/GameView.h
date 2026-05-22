@@ -37,6 +37,9 @@ namespace OvEditor::Panels
 		*/
 		virtual OvCore::SceneSystem::Scene* GetScene();
 
+	protected:
+		virtual OvCore::Rendering::SceneRenderer::SceneDescriptor CreateSceneDescriptor() override;
+
 	private:
 		OvCore::SceneSystem::SceneManager& m_sceneManager;
 	};

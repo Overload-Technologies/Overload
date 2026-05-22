@@ -47,3 +47,11 @@ OvCore::SceneSystem::Scene* OvEditor::Panels::GameView::GetScene()
 	return m_sceneManager.GetCurrentScene();
 }
 
+OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::GameView::CreateSceneDescriptor()
+{
+	auto descriptor = AView::CreateSceneDescriptor();
+	descriptor.includeUI = EDITOR_EXEC(IsSceneUIRenderingEnabled());
+	descriptor.renderUIInScreenSpace = true;
+	return descriptor;
+}
+

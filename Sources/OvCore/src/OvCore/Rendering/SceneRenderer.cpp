@@ -4,13 +4,21 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <functional>
 #include <ranges>
 #include <string>
+#include <vector>
 #include <tracy/Tracy.hpp>
 
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
@@ -163,6 +171,260 @@ namespace
 		}
 		return probes;
 	}
+
+	OvMaths::FVector2 ClampCanvasSize(const OvMaths::FVector2& p_canvasSize)
+	{
+		return {
+			std::max(p_canvasSize.x, 1.0f),
+			std::max(p_canvasSize.y, 1.0f)
+		};
+	}
+
+	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Components::UI::CCanvas& p_canvas, const OvMaths::FVector2& p_renderSize)
+	{
+		const auto fallbackSize = ClampCanvasSize(p_renderSize);
+		const auto scaleFactor = p_canvas.GetScaleFactor();
+
+		if (p_canvas.GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE)
+		{
+			return ClampCanvasSize(fallbackSize * scaleFactor);
+		}
+
+		return ClampCanvasSize(p_canvas.GetReferenceResolution() * scaleFactor);
+	}
+
+	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
+	{
+		const auto renderSize = ClampCanvasSize(p_renderSize);
+		const auto aspectRatio = renderSize.x / renderSize.y;
+
+		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
+	}
+
+	float GetUIWorldScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas)
+	{
+		return p_canvas ? 1.0f / p_canvas->GetPixelsPerUnit() : 1.0f;
+	}
+
+	EngineDrawableDescriptor CreateUIDrawableDescriptor(
+		OvCore::ECS::Actor& p_owner,
+		const OvMaths::FVector2& p_canvasSize,
+		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_uiProjectionMatrix,
+		bool p_screenSpace,
+		float p_worldScale
+	)
+	{
+		auto* transform2D = p_owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+
+		EngineDrawableDescriptor descriptor{
+			.modelMatrix = transform2D ?
+				transform2D->GetMatrix(p_canvasSize, p_layoutOffset) :
+				p_owner.transform.GetFTransform().GetWorldMatrix(),
+			.userMatrix = OvMaths::FMatrix4::Identity
+		};
+
+		if (!p_screenSpace)
+		{
+			descriptor.modelMatrix =
+				OvMaths::FMatrix4::Scaling({ p_worldScale, p_worldScale, 1.0f }) *
+				descriptor.modelMatrix;
+		}
+		else
+		{
+			descriptor.viewMatrixOverride = OvMaths::FMatrix4::Identity;
+			descriptor.projectionMatrixOverride = p_uiProjectionMatrix;
+		}
+
+		return descriptor;
+	}
+
+	OvMaths::FVector2 FindLayoutOffset(
+		const std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset>& p_offsets,
+		const OvCore::ECS::Actor& p_child
+	)
+	{
+		const auto found = std::find_if(p_offsets.begin(), p_offsets.end(), [&p_child](const auto& p_offset)
+		{
+			return p_offset.first == &p_child;
+		});
+
+		if (found != p_offsets.end())
+		{
+			return found->second;
+		}
+
+		return OvMaths::FVector2::Zero;
+	}
+
+	void AppendImageDrawable(
+		SceneRenderer::SceneDrawablesDescriptor& p_result,
+		OvCore::ECS::Components::UI::CImage& p_image,
+		const OvMaths::FVector2& p_canvasSize,
+		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_uiProjectionMatrix,
+		bool p_screenSpace,
+		float p_worldScale,
+		int p_drawOrder
+	)
+	{
+		auto& owner = p_image.owner;
+		auto* material = p_image.GetMaterial();
+		if (!material) return;
+
+		OvRendering::Entities::Drawable drawable{
+			.mesh = p_image.GetMesh(),
+			.material = *material,
+			.stateMask = material->GenerateStateMask()
+		};
+
+		drawable.AddDescriptor<SceneRenderer::SceneDrawableDescriptor>({
+			.actor = owner,
+			.visibilityFlags = EVisibilityFlags::GEOMETRY,
+			.bounds = std::nullopt,
+			.drawOrderOverride = p_drawOrder,
+			.isUserInterface = true
+		});
+
+		drawable.AddDescriptor<EngineDrawableDescriptor>(
+			CreateUIDrawableDescriptor(owner, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, p_worldScale)
+		);
+
+		p_result.drawables.push_back(drawable);
+	}
+
+	void AppendTextDrawable(
+		SceneRenderer::SceneDrawablesDescriptor& p_result,
+		OvCore::ECS::Components::UI::CText& p_text,
+		const OvMaths::FVector2& p_canvasSize,
+		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_uiProjectionMatrix,
+		bool p_screenSpace,
+		float p_worldScale,
+		int p_drawOrder
+	)
+	{
+		auto& owner = p_text.owner;
+		auto* material = p_text.GetMaterial();
+		if (!material) return;
+
+		auto* mesh = p_text.GetMesh();
+		if (!mesh) return;
+
+		OvRendering::Entities::Drawable drawable{
+			.mesh = *mesh,
+			.material = *material,
+			.stateMask = material->GenerateStateMask()
+		};
+
+		drawable.AddDescriptor<SceneRenderer::SceneDrawableDescriptor>({
+			.actor = owner,
+			.visibilityFlags = EVisibilityFlags::GEOMETRY,
+			.bounds = std::nullopt,
+			.drawOrderOverride = p_drawOrder,
+			.isUserInterface = true
+		});
+
+		drawable.AddDescriptor<EngineDrawableDescriptor>(
+			CreateUIDrawableDescriptor(owner, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, p_worldScale)
+		);
+
+		p_result.drawables.push_back(drawable);
+	}
+
+	void AppendHierarchyUIDrawables(
+		SceneRenderer::SceneDrawablesDescriptor& p_result,
+		OvCore::ECS::Actor& p_actor,
+		const OvMaths::FVector2& p_renderSize,
+		const OvCore::ECS::Components::UI::CCanvas* p_canvas,
+		OvMaths::FVector2 p_canvasSize,
+		OvMaths::FVector2 p_layoutOffset,
+		const OvMaths::FMatrix4& p_uiProjectionMatrix,
+		bool p_screenSpace,
+		int& p_drawOrder
+	)
+	{
+		if (!p_actor.IsActive())
+		{
+			return;
+		}
+
+		if (auto* canvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			p_canvas = canvas;
+			p_canvasSize = GetCanvasSize(*canvas, p_renderSize);
+		}
+
+		if (p_canvas)
+		{
+			const auto worldScale = GetUIWorldScale(p_canvas);
+
+			if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
+			{
+				AppendImageDrawable(p_result, *image, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, worldScale, p_drawOrder++);
+			}
+
+			if (auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
+			{
+				AppendTextDrawable(p_result, *text, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, worldScale, p_drawOrder++);
+			}
+		}
+
+		std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> childOffsets;
+		if (auto* layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+		{
+			childOffsets = layout->GetChildOffsets();
+		}
+
+		for (auto* child : p_actor.GetChildren())
+		{
+			if (child)
+			{
+				const auto childLayoutOffset = p_layoutOffset + FindLayoutOffset(childOffsets, *child);
+
+				AppendHierarchyUIDrawables(
+					p_result,
+					*child,
+					p_renderSize,
+					p_canvas,
+					p_canvasSize,
+					childLayoutOffset,
+					p_uiProjectionMatrix,
+					p_screenSpace,
+					p_drawOrder
+				);
+			}
+		}
+	}
+
+	void AppendHierarchyUIDrawables(
+		SceneRenderer::SceneDrawablesDescriptor& p_result,
+		OvCore::SceneSystem::Scene& p_scene,
+		const OvMaths::FVector2& p_renderSize,
+		bool p_screenSpace
+	)
+	{
+		int drawOrder = 0;
+		const auto uiProjectionMatrix = CreateUIProjectionMatrix(p_renderSize);
+
+		for (auto* actor : p_scene.GetActors())
+		{
+			if (actor && !actor->HasParent())
+			{
+				AppendHierarchyUIDrawables(
+					p_result,
+					*actor,
+					p_renderSize,
+					nullptr,
+					OvMaths::FVector2::Zero,
+					OvMaths::FVector2::Zero,
+					uiProjectionMatrix,
+					p_screenSpace,
+					drawOrder
+				);
+			}
+		}
+	}
 }
 
 OvCore::Rendering::SceneRenderer::SceneRenderer(OvRendering::Context::Driver& p_driver, bool p_stencilWrite)
@@ -216,12 +478,17 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 
 	AddDescriptor<SceneDrawablesDescriptor>({
 		ParseScene(SceneParsingInput{
-			.scene = sceneDescriptor.scene
+			.scene = sceneDescriptor.scene,
+			.renderSize = {
+				static_cast<float>(p_frameDescriptor.renderWidth),
+				static_cast<float>(p_frameDescriptor.renderHeight)
+			},
+			.renderUIInScreenSpace = sceneDescriptor.renderUIInScreenSpace
 		})
 	});
 
 	// Default filtered drawables descriptor using the main camera (used by most render passes).
-	// Some other render passes can decide to filter the drawables themselves, using the 
+	// Some other render passes can decide to filter the drawables themselves, using the
 	// SceneDrawablesDescriptor instead of the SceneFilteredDrawablesDescriptor one.
 	AddDescriptor<SceneFilteredDrawablesDescriptor>({
 		FilterDrawables(
@@ -231,7 +498,8 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 				.frustumOverride = sceneDescriptor.frustumOverride,
 				.overrideMaterial = sceneDescriptor.overrideMaterial,
 				.fallbackMaterial = sceneDescriptor.fallbackMaterial,
-				.requiredVisibilityFlags = EVisibilityFlags::GEOMETRY
+				.requiredVisibilityFlags = EVisibilityFlags::GEOMETRY,
+				.includeUI = sceneDescriptor.includeUI
 			}
 		)
 	});
@@ -268,7 +536,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 	// Containers for the parsed drawables.
 	SceneRenderer::SceneDrawablesDescriptor result;
 
-	const auto& scene = p_input.scene;
+	auto& scene = p_input.scene;
 
 	for (const auto modelRenderer : scene.GetFastAccessComponents().modelRenderers)
 	{
@@ -316,7 +584,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 				.visibilityFlags = materialRenderer->GetVisibilityFlags(),
 				.bounds = bounds
 			});
-			
+
 			drawable.AddDescriptor<EngineDrawableDescriptor>({
 				transform.GetWorldMatrix(),
 				materialRenderer->GetUserMatrix()
@@ -330,6 +598,8 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 			result.drawables.push_back(drawable);
 		}
 	}
+
+	AppendHierarchyUIDrawables(result, scene, p_input.renderSize, p_input.renderUIInScreenSpace);
 
 	return result;
 }
@@ -368,7 +638,12 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 			continue;
 		}
 
-		const auto targetMaterial = 
+		if (desc.isUserInterface && !p_filteringInput.includeUI)
+		{
+			continue;
+		}
+
+		const auto targetMaterial =
 			p_filteringInput.overrideMaterial.has_value() ?
 			p_filteringInput.overrideMaterial.value() :
 			(drawable.material.has_value() ? drawable.material.value() : p_filteringInput.fallbackMaterial);
@@ -429,13 +704,15 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 			drawableCopy.featureSetOverride = std::nullopt;
 		}
 
+		const auto drawOrder = desc.drawOrderOverride.value_or(drawableCopy.material->GetDrawOrder());
+
 		// Categorize drawable based on their type.
 		// This is also where sorting happens, using
 		// the multimap key.
 		if (drawableCopy.material->IsUserInterface())
 		{
 			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
-				.order = drawableCopy.material->GetDrawOrder(),
+				.order = drawOrder,
 				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);
@@ -443,7 +720,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		else if (drawableCopy.material->IsBlendable())
 		{
 			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
-				.order = drawableCopy.material->GetDrawOrder(),
+				.order = drawOrder,
 				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);
@@ -451,7 +728,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		else
 		{
 			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
-				.order = drawableCopy.material->GetDrawOrder(),
+				.order = drawOrder,
 				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
 				.distance = distanceToCamera
 			}, drawableCopy);

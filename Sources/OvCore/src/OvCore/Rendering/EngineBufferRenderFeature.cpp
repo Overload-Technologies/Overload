@@ -105,5 +105,24 @@ void OvCore::Rendering::EngineBufferRenderFeature::OnBeforeDraw(OvRendering::Dat
 			.offset = kUBOSize - sizeof(modelMatrix),
 			.size = sizeof(modelMatrix)
 		});
+
+		if (descriptor->viewMatrixOverride && descriptor->projectionMatrixOverride)
+		{
+			struct
+			{
+				OvMaths::FMatrix4 viewMatrix;
+				OvMaths::FMatrix4 projectionMatrix;
+				OvMaths::FVector3 cameraPosition;
+			} uboDataPage{
+				.viewMatrix = OvMaths::FMatrix4::Transpose(*descriptor->viewMatrixOverride),
+				.projectionMatrix = OvMaths::FMatrix4::Transpose(*descriptor->projectionMatrixOverride),
+				.cameraPosition = OvMaths::FVector3::Zero
+			};
+
+			m_engineBuffer->Upload(&uboDataPage, OvRendering::HAL::BufferMemoryRange{
+				.offset = sizeof(OvMaths::FMatrix4),
+				.size = sizeof(uboDataPage)
+			});
+		}
 	}
 }

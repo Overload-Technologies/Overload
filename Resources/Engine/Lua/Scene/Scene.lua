@@ -30,3 +30,9 @@ function Scene:FindActorsByTag(tag) end
 ---@overload fun(self: Scene, name: string, tag: string): Actor
 ---@return Actor
 function Scene:CreateActor(...) end
+
+--- Instantiates a prefab in the scene
+---@overload fun(self: Scene, prefab: Prefab): Actor|nil
+---@overload fun(self: Scene, prefab: Prefab, parent: Actor): Actor|nil
+---@return Actor|nil
+function Scene:InstantiatePrefab(...) end

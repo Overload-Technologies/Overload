@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <string>
 
 namespace OvCore::ECS
 {
@@ -33,6 +34,16 @@ namespace OvCore::SceneSystem
 		* @param p_outputPath
 		*/
 		static bool SaveToFile(OvCore::ECS::Actor& p_rootActor, const std::filesystem::path& p_outputPath);
+
+		/**
+		* Set the root prefab source and remove redundant inherited sources from children.
+		* @param p_rootActor
+		* @param p_newRootPrefabSource
+		*/
+		static void SetRootPrefabSourceAndNormalizeChildren(
+			OvCore::ECS::Actor& p_rootActor,
+			const std::string& p_newRootPrefabSource
+		);
 
 		/**
 		* Instantiate a prefab file using the provided actor factory.

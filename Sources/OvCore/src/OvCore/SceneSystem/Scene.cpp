@@ -5,20 +5,30 @@
 */
 
 #include <algorithm>
+#include <optional>
 #include <string>
 
 #include <tinyxml2.h>
 #include <tracy/Tracy.hpp>
 
+#include <OvDebug/Assertion.h>
+#include <OvDebug/Logger.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
+#include <OvCore/SceneSystem/PrefabOperations.h>
 #include <OvCore/SceneSystem/Scene.h>
+#include <OvTools/Utils/PathParser.h>
 
-OvCore::SceneSystem::Scene::Scene()
+OvCore::SceneSystem::Scene::Scene(
+	const std::filesystem::path& p_projectAssetsPath,
+	const std::filesystem::path& p_engineAssetsPath
+) :
+	m_projectAssetsPath(p_projectAssetsPath),
+	m_engineAssetsPath(p_engineAssetsPath)
 {
 
 }
@@ -153,7 +163,11 @@ OvCore::ECS::Actor& OvCore::SceneSystem::Scene::CreateActor(const std::string& p
 	ECS::Actor& instance = *m_actors.back();
 	instance.ComponentAddedEvent	+= std::bind(&Scene::OnComponentAdded, this, std::placeholders::_1);
 	instance.ComponentRemovedEvent	+= std::bind(&Scene::OnComponentRemoved, this, std::placeholders::_1);
-	if (m_isPlaying)
+	if (m_batchActorCreation)
+	{
+		m_batchCreatedActors.push_back(std::ref(instance));
+	}
+	else if (m_isPlaying)
 	{
 		instance.SetSleeping(false);
 		if (instance.IsActive())
@@ -164,6 +178,131 @@ OvCore::ECS::Actor& OvCore::SceneSystem::Scene::CreateActor(const std::string& p
 		}
 	}
 	return instance;
+}
+
+std::filesystem::path OvCore::SceneSystem::Scene::GetRealAssetPath(const std::string& p_path) const
+{
+	return OvTools::Utils::PathParser::GetRealPath(
+		std::filesystem::path{ p_path },
+		m_engineAssetsPath,
+		m_projectAssetsPath
+	);
+}
+
+void OvCore::SceneSystem::Scene::BeginBatchActorCreation()
+{
+	OVASSERT(!m_batchActorCreation, "Cannot begin an actor creation batch while another one is still active.");
+	m_batchActorCreation = true;
+	m_batchCreatedActors.clear();
+}
+
+void OvCore::SceneSystem::Scene::EndBatchActorCreation(bool p_startCreatedActors)
+{
+	OVASSERT(m_batchActorCreation, "No active actor creation batch to end.");
+
+	std::vector<std::reference_wrapper<ECS::Actor>> actors;
+	// Keep callback-created actors out of the batch being started below.
+	actors.swap(m_batchCreatedActors);
+	m_batchActorCreation = false;
+
+	if (p_startCreatedActors && m_isPlaying)
+	{
+		for (auto actor : actors)
+		{
+			actor.get().SetSleeping(false);
+		}
+
+		for (auto actor : actors)
+		{
+			if (actor.get().IsActive())
+			{
+				actor.get().OnAwake();
+			}
+		}
+
+		for (auto actor : actors)
+		{
+			if (actor.get().IsActive())
+			{
+				actor.get().OnEnable();
+			}
+		}
+
+		for (auto actor : actors)
+		{
+			if (actor.get().IsActive())
+			{
+				actor.get().OnStart();
+			}
+		}
+	}
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath)
+{
+	return InstantiatePrefabInternal(p_prefabPath, std::nullopt);
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath, ECS::Actor& p_parent)
+{
+	return InstantiatePrefabInternal(p_prefabPath, p_parent);
+}
+
+OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefabInternal(
+	const std::string& p_prefabPath,
+	OvTools::Utils::OptRef<ECS::Actor> p_parent)
+{
+	using EFileType = OvTools::Utils::PathParser::EFileType;
+
+	if (p_prefabPath.empty())
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: no prefab selected.");
+		return nullptr;
+	}
+
+	if (OvTools::Utils::PathParser::GetFileType(p_prefabPath) != EFileType::PREFAB)
+	{
+		OVLOG_ERROR("Failed to instantiate prefab: \"" + p_prefabPath + "\" is not a prefab.");
+		return nullptr;
+	}
+
+	const std::filesystem::path realPath = GetRealAssetPath(p_prefabPath);
+	BeginBatchActorCreation();
+
+	auto* instantiatedRoot = PrefabOperations::InstantiateFromFile(
+		realPath,
+		[this]() -> ECS::Actor&
+		{
+			return CreateActor();
+		}
+	);
+
+	if (!instantiatedRoot)
+	{
+		EndBatchActorCreation(false);
+		OVLOG_ERROR("Failed to instantiate prefab from: " + realPath.string());
+		return nullptr;
+	}
+
+	PrefabOperations::SetRootPrefabSourceAndNormalizeChildren(
+		*instantiatedRoot,
+		OvTools::Utils::PathParser::MakeNonWindowsStyle(std::filesystem::path{ p_prefabPath }.generic_string())
+	);
+
+	const std::string prefabName = realPath.stem().string();
+	if (!prefabName.empty())
+	{
+		instantiatedRoot->SetName(prefabName);
+	}
+
+	if (p_parent)
+	{
+		instantiatedRoot->SetParent(p_parent.value());
+	}
+
+	EndBatchActorCreation(true);
+
+	return instantiatedRoot;
 }
 
 bool OvCore::SceneSystem::Scene::DestroyActor(ECS::Actor& p_target)

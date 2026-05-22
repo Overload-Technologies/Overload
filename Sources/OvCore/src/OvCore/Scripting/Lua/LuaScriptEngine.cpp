@@ -27,14 +27,6 @@ void BindLuaProfiler(sol::state& p_state);
 
 namespace
 {
-	constexpr auto luaBindings = std::array{
-		BindLuaActor,
-		BindLuaComponents,
-		BindLuaGlobal,
-		BindLuaMath,
-		BindLuaProfiler
-	};
-
 	template<typename... Args>
 	void ExecuteLuaFunction(OvCore::ECS::Components::Behaviour& p_behaviour, const std::string& p_functionName, Args&& ...p_args)
 	{
@@ -355,10 +347,11 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 	m_context.luaState = std::make_unique<sol::state>();
 	m_context.luaState->open_libraries(sol::lib::base, sol::lib::math);
 
-	for (auto& callback : luaBindings)
-	{
-		callback(*m_context.luaState);
-	}
+	BindLuaActor(*m_context.luaState);
+	BindLuaComponents(*m_context.luaState);
+	BindLuaGlobal(*m_context.luaState);
+	BindLuaMath(*m_context.luaState);
+	BindLuaProfiler(*m_context.luaState);
 
 	m_context.errorCount = 0;
 

@@ -410,7 +410,7 @@ OvCore::ECS::Components::Behaviour & OvCore::ECS::Actor::AddBehaviour(const std:
 	m_behavioursOrder.push_back(p_name);
 	Components::Behaviour& newInstance = m_behaviours.at(p_name);
 	BehaviourAddedEvent.Invoke(newInstance);
-	if (m_playing && IsActive())
+	if (m_playing && !m_sleeping && IsActive())
 	{
 		newInstance.OnAwake();
 		newInstance.OnEnable();
@@ -475,7 +475,7 @@ bool OvCore::ECS::Actor::RenameBehaviour(const std::string& p_previousName, cons
 	m_behaviours.try_emplace(p_newName, *this, p_newName);
 	Components::Behaviour& newInstance = m_behaviours.at(p_newName);
 	BehaviourAddedEvent.Invoke(newInstance);
-	if (m_playing && IsActive())
+	if (m_playing && !m_sleeping && IsActive())
 	{
 		newInstance.OnAwake();
 		newInstance.OnEnable();

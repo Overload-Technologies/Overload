@@ -72,7 +72,7 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	engineAssetsPath(std::filesystem::current_path() / "Data" / "Engine"),
 	projectAssetsPath(projectFolder / "Assets"),
 	editorAssetsPath(std::filesystem::current_path() / "Data" / "Editor"),
-	sceneManager(projectAssetsPath.string()),
+	sceneManager(projectAssetsPath.string(), engineAssetsPath.string()),
 	projectSettings(projectFile.string())
 {
 	if (!IsProjectSettingsIntegrityVerified())

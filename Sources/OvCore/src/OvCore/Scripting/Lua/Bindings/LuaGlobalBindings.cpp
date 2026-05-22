@@ -5,8 +5,12 @@
 */
 
 #include <cstdint>
+#include <string>
 
 #include <OvDebug/Logger.h>
+#include <OvMaths/FVector2.h>
+#include <OvMaths/FVector3.h>
+#include <OvTools/Utils/PathParser.h>
 #include <OvTools/Utils/Random.h>
 
 #include "OvCore/ECS/Actor.h"
@@ -36,9 +40,9 @@ void BindLuaGlobal(sol::state& p_luaState)
 	using namespace OvCore::SceneSystem;
 	using namespace OvCore::ResourceManagement;
 
-	// Asset reference type — used in script local tables to declare asset properties.
+	// Asset reference type, used in script local tables to declare asset properties.
 	// The inspector renders an asset picker for any field initialised with one of the
-	// factory functions below (Model(), Texture(), Shader(), Material(), Sound()).
+	// factory functions below (Model(), Texture(), Shader(), Material(), Sound(), Prefab()).
 	p_luaState.new_usertype<AssetRef>("AssetRef",
 		"path", &AssetRef::path
 	);
@@ -49,6 +53,7 @@ void BindLuaGlobal(sol::state& p_luaState)
 	p_luaState["Shader"]   = []() { return AssetRef{EFT::SHADER,   ""}; };
 	p_luaState["Material"] = []() { return AssetRef{EFT::MATERIAL, ""}; };
 	p_luaState["Sound"]    = []() { return AssetRef{EFT::SOUND,    ""}; };
+	p_luaState["Prefab"]   = []() { return AssetRef{EFT::PREFAB,   ""}; };
 
 	// ActorRef is a C++-only internal sentinel type. It is registered so that sol2 can
 	// identify it via is<ActorRef>() in GetDefaultProperties. The Lua-visible factory is
@@ -70,7 +75,16 @@ void BindLuaGlobal(sol::state& p_luaState)
 		"FindActorsByTag", &Scene::FindActorsByTag,
 		"CreateActor", sol::overload(
 			sol::resolve<Actor&(void)>(&Scene::CreateActor),
-			sol::resolve<Actor&(const std::string&, const std::string&)>(&Scene::CreateActor))
+			sol::resolve<Actor&(const std::string&, const std::string&)>(&Scene::CreateActor)),
+		"InstantiatePrefab", sol::overload(
+			[](Scene& p_scene, const AssetRef& p_prefab) -> Actor*
+			{
+				return p_scene.InstantiatePrefab(p_prefab.path);
+			},
+			[](Scene& p_scene, const AssetRef& p_prefab, Actor& p_parent) -> Actor*
+			{
+				return p_scene.InstantiatePrefab(p_prefab.path, p_parent);
+			})
 	);
 
 	p_luaState.new_enum<EKey>("Key", {

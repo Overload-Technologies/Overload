@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <filesystem>
+#include <functional>
+#include <string>
+#include <vector>
 
 #include <OvCore/API/ISerializable.h>
 #include <OvCore/ECS/Actor.h>
@@ -14,6 +18,7 @@
 #include <OvCore/ECS/Components/CModelRenderer.h>
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
+#include <OvTools/Utils/OptRef.h>
 
 namespace OvCore::SceneSystem
 {
@@ -39,7 +44,10 @@ namespace OvCore::SceneSystem
 		/**
 		* Constructor of the scene
 		*/
-		Scene();
+		Scene(
+			const std::filesystem::path& p_projectAssetsPath = "",
+			const std::filesystem::path& p_engineAssetsPath = ""
+		);
 
 		/**
 		* Handle the memory de-allocation of every actors
@@ -115,6 +123,19 @@ namespace OvCore::SceneSystem
 		* @param p_tag
 		*/
 		ECS::Actor& CreateActor(const std::string& p_name, const std::string& p_tag = "");
+
+		/**
+		* Instantiate a prefab and return its root actor.
+		* @param p_prefabPath
+		*/
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath);
+
+		/**
+		* Instantiate a prefab under the given parent and return its root actor.
+		* @param p_prefabPath
+		* @param p_parent
+		*/
+		ECS::Actor* InstantiatePrefab(const std::string& p_prefabPath, ECS::Actor& p_parent);
 
 		/**
 		* Destroy and actor and return true on success
@@ -205,10 +226,19 @@ namespace OvCore::SceneSystem
 		virtual void OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_root) override;
 
 	private:
+		std::filesystem::path GetRealAssetPath(const std::string& p_path) const;
+		void BeginBatchActorCreation();
+		void EndBatchActorCreation(bool p_startCreatedActors);
+		ECS::Actor* InstantiatePrefabInternal(const std::string& p_prefabPath, OvTools::Utils::OptRef<ECS::Actor> p_parent);
+
 		int64_t m_availableID = 1;
 		bool m_isPlaying = false;
+		bool m_batchActorCreation = false;
 		std::vector<ECS::Actor*> m_actors;
+		std::vector<std::reference_wrapper<ECS::Actor>> m_batchCreatedActors;
 
 		FastAccessComponents m_fastAccessComponents;
+		std::filesystem::path m_projectAssetsPath;
+		std::filesystem::path m_engineAssetsPath;
 	};
 }

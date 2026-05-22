@@ -128,6 +128,28 @@ namespace OvCore::ECS::Components::UI
 		EVerticalAlignment GetVerticalAlignment() const;
 
 		/**
+		* Sets whether the layout should control children width
+		* @param p_controlChildrenWidth
+		*/
+		void SetControlChildrenWidth(bool p_controlChildrenWidth);
+
+		/**
+		* Returns whether the layout controls children width
+		*/
+		bool GetControlChildrenWidth() const;
+
+		/**
+		* Sets whether the layout should control children height
+		* @param p_controlChildrenHeight
+		*/
+		void SetControlChildrenHeight(bool p_controlChildrenHeight);
+
+		/**
+		* Returns whether the layout controls children height
+		*/
+		bool GetControlChildrenHeight() const;
+
+		/**
 		* Returns the layout offset for a direct child
 		* @param p_child
 		*/
@@ -165,6 +187,8 @@ namespace OvCore::ECS::Components::UI
 		OvMaths::FVector4 m_padding = OvMaths::FVector4::Zero;
 		EHorizontalAlignment m_horizontalAlignment = EHorizontalAlignment::CENTER;
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::CENTER;
+		bool m_controlChildrenWidth = false;
+		bool m_controlChildrenHeight = false;
 	};
 }
 

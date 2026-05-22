@@ -289,7 +289,11 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetHorizontalAlignment", &UI::CLayoutGroup::GetHorizontalAlignment,
 		"SetHorizontalAlignment", &UI::CLayoutGroup::SetHorizontalAlignment,
 		"GetVerticalAlignment", &UI::CLayoutGroup::GetVerticalAlignment,
-		"SetVerticalAlignment", &UI::CLayoutGroup::SetVerticalAlignment
+		"SetVerticalAlignment", &UI::CLayoutGroup::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CLayoutGroup::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CLayoutGroup::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CLayoutGroup::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CLayoutGroup::SetControlChildrenHeight
 	);
 
 	p_luaState.new_usertype<UI::CText>("Text",
@@ -318,6 +322,8 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetRotation", &UI::CTransform2D::SetRotation,
 		"GetScale", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetScale(); },
 		"SetScale", &UI::CTransform2D::SetScale,
+		"GetSize", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CTransform2D::SetSize,
 		"GetAnchorPreset", &UI::CTransform2D::GetAnchorPreset,
 		"SetAnchorPreset", &UI::CTransform2D::SetAnchorPreset
 	);

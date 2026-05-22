@@ -20,6 +20,7 @@ namespace
 {
 	constexpr float kDegreesToRadians = 3.14159265359f / 180.0f;
 	constexpr float kMinimumScale = 0.0001f;
+	constexpr float kMinimumSize = 0.0f;
 
 	float ClampScaleAxis(float p_value, float p_fallback)
 	{
@@ -135,6 +136,17 @@ const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetScale() c
 	return m_scale;
 }
 
+void OvCore::ECS::Components::UI::CTransform2D::SetSize(const OvMaths::FVector2& p_size)
+{
+	m_size.x = std::isfinite(p_size.x) ? std::max(p_size.x, kMinimumSize) : m_size.x;
+	m_size.y = std::isfinite(p_size.y) ? std::max(p_size.y, kMinimumSize) : m_size.y;
+}
+
+const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetSize() const
+{
+	return m_size;
+}
+
 void OvCore::ECS::Components::UI::CTransform2D::SetAnchorPreset(EAnchorPreset p_anchorPreset)
 {
 	m_anchorPreset = ToAnchorPreset(static_cast<int>(p_anchorPreset));
@@ -160,6 +172,7 @@ void OvCore::ECS::Components::UI::CTransform2D::OnSerialize(tinyxml2::XMLDocumen
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "position", m_position);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "rotation", m_rotation);
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "scale", m_scale);
+	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "anchor_preset", static_cast<int>(m_anchorPreset));
 }
 
@@ -184,6 +197,13 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 		auto scale = m_scale;
 		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "scale", scale);
 		SetScale(scale);
+	}
+
+	if (p_node->FirstChildElement("size"))
+	{
+		auto size = m_size;
+		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "size", size);
+		SetSize(size);
 	}
 
 	if (p_node->FirstChildElement("anchor_preset"))
@@ -219,6 +239,15 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 		[this](OvMaths::FVector2 p_value) { SetScale(p_value); },
 		0.01f,
 		kMinimumScale
+	);
+
+	Helpers::GUIDrawer::DrawVec2(
+		p_root,
+		"Size",
+		[this]() { return GetSize(); },
+		[this](OvMaths::FVector2 p_value) { SetSize(p_value); },
+		1.0f,
+		kMinimumSize
 	);
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Anchor Preset");

@@ -94,6 +94,17 @@ namespace OvCore::ECS::Components::UI
 		EAnchorPreset GetAnchorPreset() const;
 
 		/**
+		* Sets the local 2D size in canvas pixels
+		* @param p_size
+		*/
+		void SetSize(const OvMaths::FVector2& p_size);
+
+		/**
+		* Returns the local 2D size in canvas pixels
+		*/
+		const OvMaths::FVector2& GetSize() const;
+
+		/**
 		* Returns a transform matrix resolved against a canvas size and layout offset
 		* @param p_canvasSize
 		* @param p_layoutOffset
@@ -127,6 +138,7 @@ namespace OvCore::ECS::Components::UI
 		OvMaths::FVector2 m_position = OvMaths::FVector2::Zero;
 		float m_rotation = 0.0f;
 		OvMaths::FVector2 m_scale = OvMaths::FVector2::One;
+		OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		EAnchorPreset m_anchorPreset = EAnchorPreset::CENTER;
 	};
 }

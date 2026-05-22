@@ -30,6 +30,7 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
@@ -120,6 +121,15 @@ namespace
 		if (const auto* text = p_child.GetComponent<OvCore::ECS::Components::UI::CText>(); text)
 		{
 			return text->GetSize();
+		}
+
+		if (const auto* transform2D = p_child.GetComponent<OvCore::ECS::Components::UI::CTransform2D>(); transform2D)
+		{
+			const auto& size = transform2D->GetSize();
+			if (size.x > 0.0f && size.y > 0.0f)
+			{
+				return size;
+			}
 		}
 
 		return std::nullopt;
@@ -246,6 +256,73 @@ namespace
 		};
 	}
 
+	void ApplyControlledChildrenSizing(
+		std::vector<LayoutChild>& p_children,
+		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
+		bool p_controlChildrenWidth,
+		bool p_controlChildrenHeight,
+		const OvMaths::FVector2& p_layoutSize,
+		uint16_t p_spacing,
+		Clay_Padding p_padding
+	)
+	{
+		if (p_children.empty())
+		{
+			return;
+		}
+
+		if (!p_controlChildrenWidth && !p_controlChildrenHeight)
+		{
+			return;
+		}
+
+		const auto childCount = static_cast<float>(p_children.size());
+		const float spacing = static_cast<float>(p_spacing);
+		const float horizontalPadding = static_cast<float>(p_padding.left + p_padding.right);
+		const float verticalPadding = static_cast<float>(p_padding.top + p_padding.bottom);
+		const float availableWidth = std::max(p_layoutSize.x - horizontalPadding, 0.0f);
+		const float availableHeight = std::max(p_layoutSize.y - verticalPadding, 0.0f);
+
+		float controlledWidth = 0.0f;
+		if (p_controlChildrenWidth)
+		{
+			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+			{
+				controlledWidth = std::max((availableWidth - std::max(childCount - 1.0f, 0.0f) * spacing) / childCount, 0.0f);
+			}
+			else
+			{
+				controlledWidth = availableWidth;
+			}
+		}
+
+		float controlledHeight = 0.0f;
+		if (p_controlChildrenHeight)
+		{
+			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::VERTICAL)
+			{
+				controlledHeight = std::max((availableHeight - std::max(childCount - 1.0f, 0.0f) * spacing) / childCount, 0.0f);
+			}
+			else
+			{
+				controlledHeight = availableHeight;
+			}
+		}
+
+		for (auto& child : p_children)
+		{
+			if (p_controlChildrenWidth)
+			{
+				child.size.x = controlledWidth;
+			}
+
+			if (p_controlChildrenHeight)
+			{
+				child.size.y = controlledHeight;
+			}
+		}
+	}
+
 	void DeclareClayLayout(
 		const std::vector<LayoutChild>& p_children,
 		const OvMaths::FVector2& p_layoutSize,
@@ -368,6 +445,26 @@ OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment OvCore::ECS::Compo
 	return m_verticalAlignment;
 }
 
+void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenWidth(bool p_controlChildrenWidth)
+{
+	m_controlChildrenWidth = p_controlChildrenWidth;
+}
+
+bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenWidth() const
+{
+	return m_controlChildrenWidth;
+}
+
+void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenHeight(bool p_controlChildrenHeight)
+{
+	m_controlChildrenHeight = p_controlChildrenHeight;
+}
+
+bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
+{
+	return m_controlChildrenHeight;
+}
+
 OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffset(const ECS::Actor& p_child) const
 {
 	if (p_child.GetParent() != &owner)
@@ -416,6 +513,15 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 	const auto spacing = ToClaySpacing(m_spacing);
 	const auto padding = ToClayPadding(m_padding);
 	const auto layoutSize = GetLayoutSize(layoutChildren, m_direction, static_cast<float>(spacing), m_size, padding);
+	ApplyControlledChildrenSizing(
+		layoutChildren,
+		m_direction,
+		m_controlChildrenWidth,
+		m_controlChildrenHeight,
+		layoutSize,
+		spacing,
+		padding
+	);
 
 	Clay_SetLayoutDimensions({ layoutSize.x, layoutSize.y });
 	Clay_BeginLayout();
@@ -444,6 +550,8 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocumen
 	Helpers::Serializer::SerializeVec4(p_doc, p_node, "padding", m_padding);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "horizontal_alignment", static_cast<int>(m_horizontalAlignment));
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "vertical_alignment", static_cast<int>(m_verticalAlignment));
+	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "control_children_width", m_controlChildrenWidth);
+	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "control_children_height", m_controlChildrenHeight);
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -488,6 +596,20 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocum
 		auto verticalAlignment = static_cast<int>(m_verticalAlignment);
 		Helpers::Serializer::DeserializeInt(p_doc, p_node, "vertical_alignment", verticalAlignment);
 		SetVerticalAlignment(ToVerticalAlignment(verticalAlignment));
+	}
+
+	if (p_node->FirstChildElement("control_children_width"))
+	{
+		auto controlChildrenWidth = m_controlChildrenWidth;
+		Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "control_children_width", controlChildrenWidth);
+		SetControlChildrenWidth(controlChildrenWidth);
+	}
+
+	if (p_node->FirstChildElement("control_children_height"))
+	{
+		auto controlChildrenHeight = m_controlChildrenHeight;
+		Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "control_children_height", controlChildrenHeight);
+		SetControlChildrenHeight(controlChildrenHeight);
 	}
 }
 
@@ -549,5 +671,19 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnInspector(OvUI::Internal::Widg
 		1.0f,
 		kMinimumPadding,
 		kMaximumPadding
+	);
+
+	Helpers::GUIDrawer::DrawBoolean(
+		p_root,
+		"Control Children Width",
+		[this]() { return GetControlChildrenWidth(); },
+		[this](bool p_value) { SetControlChildrenWidth(p_value); }
+	);
+
+	Helpers::GUIDrawer::DrawBoolean(
+		p_root,
+		"Control Children Height",
+		[this]() { return GetControlChildrenHeight(); },
+		[this](bool p_value) { SetControlChildrenHeight(p_value); }
 	);
 }

@@ -50,7 +50,7 @@ OvCore::SceneSystem::Scene* OvEditor::Panels::GameView::GetScene()
 OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::GameView::CreateSceneDescriptor()
 {
 	auto descriptor = AView::CreateSceneDescriptor();
-	descriptor.includeUI = EDITOR_EXEC(IsSceneUIRenderingEnabled());
+	descriptor.includeUI = true;
 	descriptor.renderUIInScreenSpace = true;
 	return descriptor;
 }

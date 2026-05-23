@@ -148,8 +148,8 @@ OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::SceneView::C
 {
 	auto descriptor = AViewControllable::CreateSceneDescriptor();
 	descriptor.fallbackMaterial = m_fallbackMaterial;
-	descriptor.includeUI = EDITOR_EXEC(IsSceneUIRenderingEnabled());
-	descriptor.renderUIInScreenSpace = false;
+	descriptor.includeUI = true;
+	descriptor.renderUIInScreenSpace = EDITOR_EXEC(IsSceneUIRenderingEnabled());
 
 	if (Settings::EditorSettings::DebugFrustumCulling)
 	{

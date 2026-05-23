@@ -95,7 +95,7 @@ OvEditor::Panels::Toolbar::Toolbar
 	CreateWidget<Layout::Spacing>(0).lineBreak = false;
 	m_sceneUIButton = &CreateWidget<ButtonImage>(editorResources->GetTexture("Font")->GetTexture().GetID(), iconSize);
 	m_sceneUIButton->lineBreak = false;
-	m_sceneUIButton->tooltip = "Toggle in-game UI rendering in views";
+	m_sceneUIButton->tooltip = "Toggle Scene View UI screen-space mode";
 	m_sceneUIButton->ClickedEvent += []() { EDITOR_EXEC(ToggleSceneUIRendering()); };
 
 	auto updateSceneUIRendering = [this](bool p_enabled) {

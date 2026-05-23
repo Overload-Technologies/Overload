@@ -20,10 +20,11 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
-#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvEditor/Core/EditorActions.h>
@@ -233,18 +234,17 @@ namespace
 		};
 	}
 
+	template<typename TLayout>
 	std::function<void()> CreateLayoutHandler(
 		OvCore::ECS::Actor* p_parent,
-		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
 		const std::string& p_name,
 		std::optional<std::function<void()>> p_onItemClicked
 	)
 	{
-		return [p_parent, p_direction, p_name, p_onItemClicked]()
+		return [p_parent, p_name, p_onItemClicked]()
 		{
 			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
-			auto& layout = instance.AddComponent<OvCore::ECS::Components::UI::CLayoutGroup>();
-			layout.SetDirection(p_direction);
+			instance.AddComponent<TLayout>();
 			instance.SetName(p_name);
 
 			EDITOR_EXEC(SelectActor(instance));
@@ -337,8 +337,8 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	ui.CreateWidget<MenuItem>("Canvas").ClickedEvent += ActorWithComponentCreationHandler<UI::CCanvas>(p_parent, p_onItemClicked);
 	ui.CreateWidget<MenuItem>("Image").ClickedEvent += CreateImageHandler(p_parent, p_onItemClicked);
 	ui.CreateWidget<MenuItem>("Text").ClickedEvent += CreateTextHandler(p_parent, p_onItemClicked);
-	ui.CreateWidget<MenuItem>("Horizontal Layout").ClickedEvent += CreateLayoutHandler(p_parent, UI::CLayoutGroup::EDirection::HORIZONTAL, "Horizontal Layout", p_onItemClicked);
-	ui.CreateWidget<MenuItem>("Vertical Layout").ClickedEvent += CreateLayoutHandler(p_parent, UI::CLayoutGroup::EDirection::VERTICAL, "Vertical Layout", p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Horizontal Layout").ClickedEvent += CreateLayoutHandler<UI::CHorizontalLayout>(p_parent, "Horizontal Layout", p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Vertical Layout").ClickedEvent += CreateLayoutHandler<UI::CVerticalLayout>(p_parent, "Vertical Layout", p_onItemClicked);
 	ui.CreateWidget<MenuItem>("Transform 2D").ClickedEvent += ActorWithComponentCreationHandler<UI::CTransform2D>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Camera").ClickedEvent += ActorWithComponentCreationHandler<CCamera>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Post Process Stack").ClickedEvent += ActorWithComponentCreationHandler<CPostProcessStack>(p_parent, p_onItemClicked);

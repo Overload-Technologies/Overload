@@ -27,10 +27,12 @@
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -80,6 +82,14 @@ namespace
 			{
 				return !p_actor.GetComponent<CPhysicalObject>();
 			}
+			else if constexpr (
+				std::is_same_v<TComponent, UI::CLayoutGroup> ||
+				std::is_same_v<TComponent, UI::CHorizontalLayout> ||
+				std::is_same_v<TComponent, UI::CVerticalLayout>
+			)
+			{
+				return !p_actor.GetComponent<UI::CLayoutGroup>();
+			}
 			else
 			{
 				return !p_actor.GetComponent<TComponent>();
@@ -111,10 +121,12 @@ namespace
 		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
 		CreateComponentInfo<UI::CCanvas>("Canvas"),
+		CreateComponentInfo<UI::CHorizontalLayout>("Horizontal Layout"),
 		CreateComponentInfo<UI::CImage>("Image"),
 		CreateComponentInfo<UI::CLayoutGroup>("Layout Group"),
 		CreateComponentInfo<UI::CText>("Text"),
 		CreateComponentInfo<UI::CTransform2D>("Transform 2D"),
+		CreateComponentInfo<UI::CVerticalLayout>("Vertical Layout"),
 	});
 
 }

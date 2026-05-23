@@ -9,7 +9,10 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <string>
+
+#include <OvRendering/Data/Material.h>
 
 namespace OvRendering::Resources
 {
@@ -84,6 +87,17 @@ namespace OvRendering::Resources
 		*/
 		Texture* GetAtlasTexture() const;
 
+		/**
+		* Initializes or refreshes the embedded material used for text rendering
+		* @param p_shader
+		*/
+		bool EnsureEmbeddedMaterial(Shader* p_shader);
+
+		/**
+		* Returns the embedded material used for text rendering
+		*/
+		Data::Material* GetEmbeddedMaterial() const;
+
 	public:
 		const std::string path;
 
@@ -93,5 +107,6 @@ namespace OvRendering::Resources
 		float m_lineHeight = 32.0f;
 		std::array<Glyph, kGlyphCount> m_glyphs = {};
 		Texture* m_atlasTexture = nullptr;
+		std::unique_ptr<Data::Material> m_embeddedMaterial;
 	};
 }

@@ -26,6 +26,25 @@ namespace
 	constexpr uint32_t kAtlasHeight = 512;
 	constexpr float kDefaultPixelSize = 32.0f;
 	constexpr uint32_t kGlyphPadding = 1;
+	constexpr const char* kFontAtlasUniform = "u_FontAtlas";
+
+	void ConfigureEmbeddedMaterial(OvRendering::Data::Material& p_material)
+	{
+		p_material.SetOrthographicSupport(true);
+		p_material.SetPerspectiveSupport(true);
+		p_material.SetBlendable(true);
+		p_material.SetUserInterface(true);
+		p_material.SetBackfaceCulling(false);
+		p_material.SetFrontfaceCulling(false);
+		p_material.SetDepthTest(false);
+		p_material.SetDepthWriting(false);
+		p_material.SetColorWriting(true);
+		p_material.SetCastShadows(false);
+		p_material.SetReceiveShadows(false);
+		p_material.SetCapturedByReflectionProbes(false);
+		p_material.SetReceiveReflections(false);
+		p_material.SetGPUInstances(1);
+	}
 
 	struct BakedFont
 	{
@@ -297,6 +316,10 @@ bool OvRendering::Resources::Font::Reload(const std::filesystem::path& p_realPat
 	m_pixelSize = kDefaultPixelSize;
 	m_lineHeight = bakedFont.lineHeight;
 	m_glyphs = bakedFont.glyphs;
+	if (m_embeddedMaterial && m_embeddedMaterial->IsValid())
+	{
+		m_embeddedMaterial->TrySetProperty(kFontAtlasUniform, m_atlasTexture);
+	}
 
 	return true;
 }
@@ -330,4 +353,37 @@ const OvRendering::Resources::Font::Glyph* OvRendering::Resources::Font::GetGlyp
 OvRendering::Resources::Texture* OvRendering::Resources::Font::GetAtlasTexture() const
 {
 	return m_atlasTexture;
+}
+
+bool OvRendering::Resources::Font::EnsureEmbeddedMaterial(Shader* p_shader)
+{
+	if (!p_shader || !m_atlasTexture)
+	{
+		m_embeddedMaterial.reset();
+		return false;
+	}
+
+	if (!m_embeddedMaterial)
+	{
+		m_embeddedMaterial = std::make_unique<Data::Material>(p_shader);
+		ConfigureEmbeddedMaterial(*m_embeddedMaterial);
+	}
+	else if (m_embeddedMaterial->GetShader() != p_shader)
+	{
+		m_embeddedMaterial->SetShader(p_shader);
+		ConfigureEmbeddedMaterial(*m_embeddedMaterial);
+	}
+
+	if (!m_embeddedMaterial->IsValid())
+	{
+		return false;
+	}
+
+	m_embeddedMaterial->TrySetProperty(kFontAtlasUniform, m_atlasTexture);
+	return true;
+}
+
+OvRendering::Data::Material* OvRendering::Resources::Font::GetEmbeddedMaterial() const
+{
+	return m_embeddedMaterial.get();
 }

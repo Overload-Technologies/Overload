@@ -185,7 +185,7 @@ namespace
 		const auto fallbackSize = ClampCanvasSize(p_renderSize);
 		const auto scaleFactor = p_canvas.GetScaleFactor();
 
-		if (p_canvas.GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE)
+		if (p_canvas.GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::CONSTANT_PIXEL_SIZE)
 		{
 			return ClampCanvasSize(fallbackSize * scaleFactor);
 		}

@@ -40,7 +40,7 @@ namespace
 {
 	struct LayoutChild
 	{
-		const OvCore::ECS::Actor* actor = nullptr;
+		OvCore::ECS::Actor* actor = nullptr;
 		OvMaths::FVector2 size;
 	};
 
@@ -49,6 +49,7 @@ namespace
 	constexpr float kMinimumPadding = 0.0f;
 	constexpr float kMaximumSpacing = static_cast<float>(std::numeric_limits<uint16_t>::max());
 	constexpr float kMaximumPadding = static_cast<float>(std::numeric_limits<uint16_t>::max());
+	constexpr float kSizeUpdateEpsilon = 0.0001f;
 
 	float ClampSpacing(float p_value, float p_fallback)
 	{
@@ -63,6 +64,31 @@ namespace
 	float ClampPadding(float p_value, float p_fallback)
 	{
 		return std::isfinite(p_value) ? std::clamp(p_value, kMinimumPadding, kMaximumPadding) : p_fallback;
+	}
+
+	bool IsNearlyEqual(float p_left, float p_right)
+	{
+		return std::abs(p_left - p_right) <= kSizeUpdateEpsilon;
+	}
+
+	bool ShouldUpdateControlledSize(
+		const OvMaths::FVector2& p_currentSize,
+		const OvMaths::FVector2& p_targetSize,
+		bool p_controlWidth,
+		bool p_controlHeight
+	)
+	{
+		if (p_controlWidth && !IsNearlyEqual(p_currentSize.x, p_targetSize.x))
+		{
+			return true;
+		}
+
+		if (p_controlHeight && !IsNearlyEqual(p_currentSize.y, p_targetSize.y))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	OvCore::ECS::Components::UI::CLayoutGroup::EDirection ToDirection(int p_value)
@@ -323,6 +349,80 @@ namespace
 		}
 	}
 
+	void ApplyControlledSizeToChildren(
+		const std::vector<LayoutChild>& p_children,
+		bool p_controlChildrenWidth,
+		bool p_controlChildrenHeight
+	)
+	{
+		if (!p_controlChildrenWidth && !p_controlChildrenHeight)
+		{
+			return;
+		}
+
+		for (const auto& child : p_children)
+		{
+			if (!child.actor)
+			{
+				continue;
+			}
+
+			if (auto* image = child.actor->GetComponent<OvCore::ECS::Components::UI::CImage>())
+			{
+				auto nextSize = image->GetSize();
+				if (p_controlChildrenWidth)
+				{
+					nextSize.x = child.size.x;
+				}
+				if (p_controlChildrenHeight)
+				{
+					nextSize.y = child.size.y;
+				}
+
+				if (ShouldUpdateControlledSize(image->GetSize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
+				{
+					image->SetSize(nextSize);
+				}
+			}
+
+			if (auto* text = child.actor->GetComponent<OvCore::ECS::Components::UI::CText>())
+			{
+				auto nextExtents = text->GetExtents();
+				if (p_controlChildrenWidth)
+				{
+					nextExtents.x = child.size.x;
+				}
+				if (p_controlChildrenHeight)
+				{
+					nextExtents.y = child.size.y;
+				}
+
+				if (ShouldUpdateControlledSize(text->GetExtents(), nextExtents, p_controlChildrenWidth, p_controlChildrenHeight))
+				{
+					text->SetExtents(nextExtents);
+				}
+			}
+
+			if (auto* transform2D = child.actor->GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+			{
+				auto nextSize = transform2D->GetSize();
+				if (p_controlChildrenWidth)
+				{
+					nextSize.x = child.size.x;
+				}
+				if (p_controlChildrenHeight)
+				{
+					nextSize.y = child.size.y;
+				}
+
+				if (ShouldUpdateControlledSize(transform2D->GetSize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
+				{
+					transform2D->SetSize(nextSize);
+				}
+			}
+		}
+	}
+
 	void DeclareClayLayout(
 		const std::vector<LayoutChild>& p_children,
 		const OvMaths::FVector2& p_layoutSize,
@@ -465,6 +565,11 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
 	return m_controlChildrenHeight;
 }
 
+bool OvCore::ECS::Components::UI::CLayoutGroup::IsDirectionEditable() const
+{
+	return true;
+}
+
 OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffset(const ECS::Actor& p_child) const
 {
 	if (p_child.GetParent() != &owner)
@@ -522,6 +627,7 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 		spacing,
 		padding
 	);
+	ApplyControlledSizeToChildren(layoutChildren, m_controlChildrenWidth, m_controlChildrenHeight);
 
 	Clay_SetLayoutDimensions({ layoutSize.x, layoutSize.y });
 	Clay_BeginLayout();
@@ -615,14 +721,17 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocum
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	Helpers::GUIDrawer::CreateTitle(p_root, "Direction");
-	auto& direction = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetDirection()));
-	direction.choices.emplace(static_cast<int>(EDirection::HORIZONTAL), "Horizontal");
-	direction.choices.emplace(static_cast<int>(EDirection::VERTICAL), "Vertical");
-	direction.ValueChangedEvent += [this](int p_choice)
+	if (IsDirectionEditable())
 	{
-		SetDirection(ToDirection(p_choice));
-	};
+		Helpers::GUIDrawer::CreateTitle(p_root, "Direction");
+		auto& direction = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetDirection()));
+		direction.choices.emplace(static_cast<int>(EDirection::HORIZONTAL), "Horizontal");
+		direction.choices.emplace(static_cast<int>(EDirection::VERTICAL), "Vertical");
+		direction.ValueChangedEvent += [this](int p_choice)
+		{
+			SetDirection(ToDirection(p_choice));
+		};
+	}
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Horizontal Alignment");
 	auto& horizontalAlignment = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetHorizontalAlignment()));

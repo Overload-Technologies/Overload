@@ -65,7 +65,7 @@ namespace OvCore::ECS::Components::UI
 		* Sets the layout direction
 		* @param p_direction
 		*/
-		void SetDirection(EDirection p_direction);
+		virtual void SetDirection(EDirection p_direction);
 
 		/**
 		* Returns the layout direction
@@ -179,6 +179,9 @@ namespace OvCore::ECS::Components::UI
 		* @param p_root
 		*/
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
+
+	protected:
+		virtual bool IsDirectionEditable() const;
 
 	private:
 		EDirection m_direction = EDirection::HORIZONTAL;

@@ -10,9 +10,9 @@
 #include <string>
 
 #include <OvCore/ECS/Components/AComponent.h>
-#include <OvCore/Resources/Material.h>
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector4.h>
+#include <OvRendering/Data/Material.h>
 #include <OvRendering/Resources/Font.h>
 #include <OvRendering/Resources/Mesh.h>
 
@@ -141,7 +141,7 @@ namespace OvCore::ECS::Components::UI
 		/**
 		* Returns the generated text material, or nullptr if it cannot be initialized
 		*/
-		OvCore::Resources::Material* GetMaterial();
+		OvRendering::Data::Material* GetMaterial();
 
 		/**
 		* Returns the generated text bounds size
@@ -176,7 +176,7 @@ namespace OvCore::ECS::Components::UI
 
 	private:
 		std::string m_text = "Text";
-		std::string m_fontPath = ":Fonts\\Ruda-Bold.ttf";
+		std::string m_fontPath = ":Fonts\\Roboto-Regular.ttf";
 		float m_fontSize = 32.0f;
 		OvMaths::FVector4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 		OvMaths::FVector2 m_extents = OvMaths::FVector2::Zero;
@@ -186,7 +186,7 @@ namespace OvCore::ECS::Components::UI
 		mutable bool m_meshDirty = true;
 		mutable OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		mutable std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
-		std::unique_ptr<OvCore::Resources::Material> m_material;
+		std::unique_ptr<OvRendering::Data::Material> m_material;
 	};
 }
 

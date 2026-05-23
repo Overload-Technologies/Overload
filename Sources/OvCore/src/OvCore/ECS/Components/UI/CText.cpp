@@ -29,7 +29,6 @@ namespace
 	constexpr float kMinimumFontSize = 1.0f;
 	constexpr float kMinimumExtent = 0.0f;
 	constexpr const char* kDefaultMaterialPath = ":Materials\\UI_Text.ovmat";
-	constexpr const char* kFontAtlasUniform = "u_FontAtlas";
 	constexpr const char* kColorUniform = "u_Color";
 
 	float ClampFinite(float p_value, float p_min)
@@ -261,7 +260,7 @@ OvRendering::Resources::Mesh* OvCore::ECS::Components::UI::CText::GetMesh() cons
 	return m_mesh.get();
 }
 
-OvCore::Resources::Material* OvCore::ECS::Components::UI::CText::GetMaterial()
+OvRendering::Data::Material* OvCore::ECS::Components::UI::CText::GetMaterial()
 {
 	RefreshMaterial();
 	return m_material && m_material->IsValid() ? m_material.get() : nullptr;
@@ -512,38 +511,31 @@ void OvCore::ECS::Components::UI::CText::RefreshMaterial()
 {
 	if (!m_material)
 	{
-		m_material = std::make_unique<OvCore::Resources::Material>();
+		m_material = std::make_unique<OvRendering::Data::Material>();
 	}
 
 	auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
 	auto* font = GetFont();
 
-	if (!defaultMaterial || !defaultMaterial->HasShader() || !font || !font->IsValid())
+	if (
+		!defaultMaterial ||
+		!defaultMaterial->HasShader() ||
+		!font ||
+		!font->IsValid() ||
+		!font->EnsureEmbeddedMaterial(defaultMaterial->GetShader())
+	)
 	{
 		m_material->SetShader(nullptr);
 		return;
 	}
 
-	if (m_material->GetShader() != defaultMaterial->GetShader())
+	auto* embeddedMaterial = font->GetEmbeddedMaterial();
+	if (!embeddedMaterial || !embeddedMaterial->IsValid())
 	{
-		m_material->SetShader(defaultMaterial->GetShader());
+		m_material->SetShader(nullptr);
+		return;
 	}
 
-	m_material->SetOrthographicSupport(true);
-	m_material->SetPerspectiveSupport(true);
-	m_material->SetBlendable(true);
-	m_material->SetUserInterface(true);
-	m_material->SetBackfaceCulling(false);
-	m_material->SetFrontfaceCulling(false);
-	m_material->SetDepthTest(false);
-	m_material->SetDepthWriting(false);
-	m_material->SetColorWriting(true);
-	m_material->SetCastShadows(false);
-	m_material->SetReceiveShadows(false);
-	m_material->SetCapturedByReflectionProbes(false);
-	m_material->SetReceiveReflections(false);
-	m_material->SetGPUInstances(1);
-
-	m_material->TrySetProperty(kFontAtlasUniform, font->GetAtlasTexture());
+	*m_material = *embeddedMaterial;
 	m_material->TrySetProperty(kColorUniform, m_color);
 }

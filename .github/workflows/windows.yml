@@ -35,3 +35,7 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64
+
+    - name: Run Lua API tests
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: .\Bin\${{ matrix.configuration }}\OvLuaApiTests\OvLuaApiTests.exe

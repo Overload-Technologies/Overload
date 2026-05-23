@@ -87,7 +87,7 @@ namespace OvCore::ECS::Components::UI
 		/**
 		* Returns the 2D scale
 		*/
-		const OvMaths::FVector2& GetScale() const;
+		OvMaths::FVector2 GetScale() const;
 
 		/**
 		* Sets the anchor preset
@@ -143,8 +143,6 @@ namespace OvCore::ECS::Components::UI
 
 	private:
 		OvMaths::FVector2 m_position = OvMaths::FVector2::Zero;
-		float m_rotation = 0.0f;
-		OvMaths::FVector2 m_scale = OvMaths::FVector2::One;
 		OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		EAnchorPreset m_anchorPreset = EAnchorPreset::CENTER;
 	};

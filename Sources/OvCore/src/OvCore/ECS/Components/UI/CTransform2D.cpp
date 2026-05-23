@@ -10,13 +10,11 @@
 
 #include <tinyxml2.h>
 
+#include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
-#include <OvUI/Plugins/DataDispatcher.h>
-#include <OvUI/Widgets/Drags/DragSingleScalar.h>
-#include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -180,23 +178,33 @@ const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetPosition(
 
 void OvCore::ECS::Components::UI::CTransform2D::SetRotation(float p_rotation)
 {
-	m_rotation = KeepFinite(p_rotation, m_rotation);
+	const auto rotation = KeepFinite(p_rotation, GetRotation());
+	auto eulerRotation = OvMaths::FQuaternion::EulerAngles(owner.transform.GetLocalRotation());
+	eulerRotation.z = rotation;
+	owner.transform.SetLocalRotation(OvMaths::FQuaternion(eulerRotation));
 }
 
 float OvCore::ECS::Components::UI::CTransform2D::GetRotation() const
 {
-	return m_rotation;
+	const auto eulerRotation = OvMaths::FQuaternion::EulerAngles(owner.transform.GetLocalRotation());
+	return KeepFinite(eulerRotation.z, 0.0f);
 }
 
 void OvCore::ECS::Components::UI::CTransform2D::SetScale(const OvMaths::FVector2& p_scale)
 {
-	m_scale.x = ClampScaleAxis(p_scale.x, m_scale.x);
-	m_scale.y = ClampScaleAxis(p_scale.y, m_scale.y);
+	auto localScale = owner.transform.GetLocalScale();
+	localScale.x = ClampScaleAxis(p_scale.x, localScale.x);
+	localScale.y = ClampScaleAxis(p_scale.y, localScale.y);
+	owner.transform.SetLocalScale(localScale);
 }
 
-const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetScale() const
+OvMaths::FVector2 OvCore::ECS::Components::UI::CTransform2D::GetScale() const
 {
-	return m_scale;
+	const auto& localScale = owner.transform.GetLocalScale();
+	return {
+		ClampScaleAxis(localScale.x, kMinimumScale),
+		ClampScaleAxis(localScale.y, kMinimumScale)
+	};
 }
 
 void OvCore::ECS::Components::UI::CTransform2D::SetSize(const OvMaths::FVector2& p_size)
@@ -223,18 +231,19 @@ OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset OvCore::ECS::Components
 OvMaths::FMatrix4 OvCore::ECS::Components::UI::CTransform2D::GetMatrix(const OvMaths::FVector2& p_canvasSize, const OvMaths::FVector2& p_layoutOffset) const
 {
 	const auto position = GetAnchoredPosition(p_canvasSize, p_layoutOffset);
+	const auto scale = GetScale();
 
 	return
 		OvMaths::FMatrix4::Translation({ position.x, position.y, 0.0f }) *
-		OvMaths::FMatrix4::RotationOnAxisZ(m_rotation * kDegreesToRadians) *
-		OvMaths::FMatrix4::Scaling({ m_scale.x, m_scale.y, 1.0f });
+		OvMaths::FMatrix4::RotationOnAxisZ(GetRotation() * kDegreesToRadians) *
+		OvMaths::FMatrix4::Scaling({ scale.x, scale.y, 1.0f });
 }
 
 void OvCore::ECS::Components::UI::CTransform2D::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "position", m_position);
-	Helpers::Serializer::SerializeFloat(p_doc, p_node, "rotation", m_rotation);
-	Helpers::Serializer::SerializeVec2(p_doc, p_node, "scale", m_scale);
+	Helpers::Serializer::SerializeFloat(p_doc, p_node, "rotation", GetRotation());
+	Helpers::Serializer::SerializeVec2(p_doc, p_node, "scale", GetScale());
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "anchor_preset", static_cast<int>(m_anchorPreset));
 }
@@ -250,14 +259,14 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 
 	if (p_node->FirstChildElement("rotation"))
 	{
-		auto rotation = m_rotation;
+		auto rotation = GetRotation();
 		Helpers::Serializer::DeserializeFloat(p_doc, p_node, "rotation", rotation);
 		SetRotation(rotation);
 	}
 
 	if (p_node->FirstChildElement("scale"))
 	{
-		auto scale = m_scale;
+		auto scale = GetScale();
 		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "scale", scale);
 		SetScale(scale);
 	}
@@ -279,56 +288,29 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 
 void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	Helpers::GUIDrawer::CreateTitle(p_root, "Position");
-	auto& positionGroup = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
-	positionGroup.horizontal = true;
-	positionGroup.stretchWidget = 0;
-
-	auto& positionX = positionGroup.CreateWidget<OvUI::Widgets::Drags::DragSingleScalar<float>>(
-		Helpers::GUIDrawer::GetDataType<float>(),
-		Helpers::GUIDrawer::_MIN_FLOAT,
-		Helpers::GUIDrawer::_MAX_FLOAT,
-		GetPosition().x,
-		1.0f,
-		"X",
-		Helpers::GUIDrawer::GetFormat<float>()
-	);
-	auto& positionXDispatcher = positionX.AddPlugin<OvUI::Plugins::DataDispatcher<float>>();
-	positionXDispatcher.RegisterGatherer([this]() { return GetPosition().x; });
-	positionXDispatcher.RegisterProvider([this](float p_value)
-	{
-		if (!IsHorizontalPositionEditable(GetAnchorPreset()))
+	Helpers::GUIDrawer::DrawVec2(
+		p_root,
+		"Position",
+		[this]() { return GetPosition(); },
+		[this](OvMaths::FVector2 p_value)
 		{
-			return;
-		}
+			auto position = GetPosition();
+			const auto anchorPreset = GetAnchorPreset();
 
-		auto position = GetPosition();
-		position.x = p_value;
-		SetPosition(position);
-	});
+			if (IsHorizontalPositionEditable(anchorPreset))
+			{
+				position.x = p_value.x;
+			}
 
-	auto& positionY = positionGroup.CreateWidget<OvUI::Widgets::Drags::DragSingleScalar<float>>(
-		Helpers::GUIDrawer::GetDataType<float>(),
-		Helpers::GUIDrawer::_MIN_FLOAT,
-		Helpers::GUIDrawer::_MAX_FLOAT,
-		GetPosition().y,
-		1.0f,
-		"Y",
-		Helpers::GUIDrawer::GetFormat<float>()
+			if (IsVerticalPositionEditable(anchorPreset))
+			{
+				position.y = p_value.y;
+			}
+
+			SetPosition(position);
+		},
+		1.0f
 	);
-	auto& positionYDispatcher = positionY.AddPlugin<OvUI::Plugins::DataDispatcher<float>>();
-	positionYDispatcher.RegisterGatherer([this]() { return GetPosition().y; });
-	positionYDispatcher.RegisterProvider([this](float p_value)
-	{
-		if (!IsVerticalPositionEditable(GetAnchorPreset()))
-		{
-			return;
-		}
-
-		auto position = GetPosition();
-		position.y = p_value;
-		SetPosition(position);
-	});
 
 	Helpers::GUIDrawer::DrawScalar<float>(
 		p_root,
@@ -375,21 +357,9 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_RIGHT), "Vertical Stretch Right");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::STRETCH_BOTH), "Stretch Both");
 
-	const auto refreshPositionLock = [this, &positionX, &positionY]()
-	{
-		const auto anchorPreset = GetAnchorPreset();
-		positionX.disabled = !IsHorizontalPositionEditable(anchorPreset);
-		positionY.disabled = !IsVerticalPositionEditable(anchorPreset);
-	};
-
-	refreshPositionLock();
 	anchorPreset.ValueChangedEvent += [this](int p_choice)
 	{
 		SetAnchorPreset(ToAnchorPreset(p_choice));
-	};
-	anchorPreset.ValueChangedEvent += [refreshPositionLock](int)
-	{
-		refreshPositionLock();
 	};
 }
 

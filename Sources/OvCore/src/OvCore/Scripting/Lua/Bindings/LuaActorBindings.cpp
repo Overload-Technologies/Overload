@@ -26,9 +26,10 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/Scripting/Lua/LuaBindings.h>
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
-void BindLuaActor(sol::state& p_luaState)
+void OvCore::Scripting::Lua::BindLuaActor(sol::state& p_luaState)
 {
 	using namespace OvCore::ECS;
 	using namespace OvCore::ECS::Components;

@@ -17,13 +17,8 @@
 #include <OvCore/Scripting/ScriptEngine.h>
 #include <OvCore/ECS/Components/Behaviour.h>
 #include <OvCore/ECS/Actor.h>
+#include <OvCore/Scripting/Lua/LuaBindings.h>
 #include <OvTools/Utils/String.h>
-
-void BindLuaActor(sol::state& p_state);
-void BindLuaComponents(sol::state& p_state);
-void BindLuaGlobal(sol::state& p_state);
-void BindLuaMath(sol::state& p_state);
-void BindLuaProfiler(sol::state& p_state);
 
 namespace
 {
@@ -345,13 +340,7 @@ void OvCore::Scripting::LuaScriptEngine::CreateContext()
 	OVASSERT(m_context.luaState == nullptr, "A Lua context already exists!");
 
 	m_context.luaState = std::make_unique<sol::state>();
-	m_context.luaState->open_libraries(sol::lib::base, sol::lib::math);
-
-	BindLuaActor(*m_context.luaState);
-	BindLuaComponents(*m_context.luaState);
-	BindLuaGlobal(*m_context.luaState);
-	BindLuaMath(*m_context.luaState);
-	BindLuaProfiler(*m_context.luaState);
+	OvCore::Scripting::Lua::BindLuaApi(*m_context.luaState);
 
 	m_context.errorCount = 0;
 

@@ -7,7 +7,9 @@
 #include <sol/sol.hpp>
 #include <tracy/TracyLua.hpp>
 
-void BindLuaProfiler(sol::state& p_luaState)
+#include <OvCore/Scripting/Lua/LuaBindings.h>
+
+void OvCore::Scripting::Lua::BindLuaProfiler(sol::state& p_luaState)
 {
 	tracy::LuaRegister(p_luaState.lua_state());
 }

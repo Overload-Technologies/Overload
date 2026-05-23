@@ -11,10 +11,11 @@
 #include <OvMaths/FMatrix3.h>
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FQuaternion.h>
+#include <OvCore/Scripting/Lua/LuaBindings.h>
 
 #include <sol/sol.hpp>
 
-void BindLuaMath(sol::state& p_luaState)
+void OvCore::Scripting::Lua::BindLuaMath(sol::state& p_luaState)
 {
 	using namespace OvMaths;
 

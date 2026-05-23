@@ -15,10 +15,6 @@ Makefile
 /Bin-Int/
 /Build/
 
-# Issue 631 local artifacts
-/issue-631-plan.md
-/UI_Demo/
-
 # ImGui
 imgui.ini
 

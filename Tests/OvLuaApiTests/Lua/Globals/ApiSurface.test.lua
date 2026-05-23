@@ -1,0 +1,38 @@
+AssertEquals("table", type(Debug), "Debug")
+AssertCallable(Debug.Log, "Debug.Log")
+AssertCallable(Debug.LogInfo, "Debug.LogInfo")
+AssertCallable(Debug.LogWarning, "Debug.LogWarning")
+AssertCallable(Debug.LogError, "Debug.LogError")
+
+AssertEquals("table", type(Inputs), "Inputs")
+AssertCallable(Inputs.GetKeyDown, "Inputs.GetKeyDown")
+AssertCallable(Inputs.GetMousePos, "Inputs.GetMousePos")
+
+AssertEquals("table", type(Scenes), "Scenes")
+AssertCallable(Scenes.GetCurrentScene, "Scenes.GetCurrentScene")
+AssertCallable(Scenes.Load, "Scenes.Load")
+
+AssertEquals("table", type(Resources), "Resources")
+AssertCallable(Resources.GetModel, "Resources.GetModel")
+AssertCallable(Resources.GetTexture, "Resources.GetTexture")
+AssertCallable(Resources.GetSound, "Resources.GetSound")
+
+AssertEquals("table", type(Math), "Math")
+AssertCallable(Math.Lerp, "Math.Lerp")
+AssertNear(4, Math.Lerp(2, 6, 0.5), 0.0001, "Math.Lerp")
+
+AssertEquals("table", type(Physics), "Physics")
+AssertCallable(Physics.Raycast, "Physics.Raycast")
+
+AssertEquals("table", type(Vector2), "Vector2")
+AssertCallable(Vector2.new, "Vector2.new")
+AssertEquals("table", type(Vector3), "Vector3")
+AssertCallable(Vector3.new, "Vector3.new")
+AssertEquals("table", type(Vector4), "Vector4")
+AssertCallable(Vector4.new, "Vector4.new")
+AssertEquals("table", type(Matrix3), "Matrix3")
+AssertCallable(Matrix3.new, "Matrix3.new")
+AssertEquals("table", type(Matrix4), "Matrix4")
+AssertCallable(Matrix4.new, "Matrix4.new")
+AssertEquals("table", type(Quaternion), "Quaternion")
+AssertCallable(Quaternion.new, "Quaternion.new")

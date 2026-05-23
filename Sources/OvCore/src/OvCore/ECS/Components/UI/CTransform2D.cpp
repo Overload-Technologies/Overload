@@ -14,6 +14,9 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
+#include <OvUI/Plugins/DataDispatcher.h>
+#include <OvUI/Widgets/Drags/DragSingleScalar.h>
+#include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -54,6 +57,20 @@ namespace
 			return EAnchorPreset::BOTTOM_CENTER;
 		case static_cast<int>(EAnchorPreset::BOTTOM_RIGHT):
 			return EAnchorPreset::BOTTOM_RIGHT;
+		case static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_TOP):
+			return EAnchorPreset::HORIZONTAL_STRETCH_TOP;
+		case static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE):
+			return EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE;
+		case static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM):
+			return EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM;
+		case static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_LEFT):
+			return EAnchorPreset::VERTICAL_STRETCH_LEFT;
+		case static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_CENTER):
+			return EAnchorPreset::VERTICAL_STRETCH_CENTER;
+		case static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_RIGHT):
+			return EAnchorPreset::VERTICAL_STRETCH_RIGHT;
+		case static_cast<int>(EAnchorPreset::STRETCH_BOTH):
+			return EAnchorPreset::STRETCH_BOTH;
 		case static_cast<int>(EAnchorPreset::CENTER):
 		default:
 			return EAnchorPreset::CENTER;
@@ -82,9 +99,55 @@ namespace
 			return { 0.0f, -0.5f };
 		case EAnchorPreset::BOTTOM_RIGHT:
 			return { 0.5f, -0.5f };
+		case EAnchorPreset::HORIZONTAL_STRETCH_TOP:
+			return { 0.0f, 0.5f };
+		case EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE:
+			return { 0.0f, 0.0f };
+		case EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM:
+			return { 0.0f, -0.5f };
+		case EAnchorPreset::VERTICAL_STRETCH_LEFT:
+			return { -0.5f, 0.0f };
+		case EAnchorPreset::VERTICAL_STRETCH_CENTER:
+			return { 0.0f, 0.0f };
+		case EAnchorPreset::VERTICAL_STRETCH_RIGHT:
+			return { 0.5f, 0.0f };
+		case EAnchorPreset::STRETCH_BOTH:
+			return { 0.0f, 0.0f };
 		case EAnchorPreset::CENTER:
 		default:
 			return { 0.0f, 0.0f };
+		}
+	}
+
+	bool IsHorizontalPositionEditable(OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset p_anchorPreset)
+	{
+		using EAnchorPreset = OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset;
+
+		switch (p_anchorPreset)
+		{
+		case EAnchorPreset::HORIZONTAL_STRETCH_TOP:
+		case EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE:
+		case EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM:
+		case EAnchorPreset::STRETCH_BOTH:
+			return false;
+		default:
+			return true;
+		}
+	}
+
+	bool IsVerticalPositionEditable(OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset p_anchorPreset)
+	{
+		using EAnchorPreset = OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset;
+
+		switch (p_anchorPreset)
+		{
+		case EAnchorPreset::VERTICAL_STRETCH_LEFT:
+		case EAnchorPreset::VERTICAL_STRETCH_CENTER:
+		case EAnchorPreset::VERTICAL_STRETCH_RIGHT:
+		case EAnchorPreset::STRETCH_BOTH:
+			return false;
+		default:
+			return true;
 		}
 	}
 }
@@ -216,13 +279,56 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 
 void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Position",
-		[this]() { return GetPosition(); },
-		[this](OvMaths::FVector2 p_value) { SetPosition(p_value); },
-		1.0f
+	Helpers::GUIDrawer::CreateTitle(p_root, "Position");
+	auto& positionGroup = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	positionGroup.horizontal = true;
+	positionGroup.stretchWidget = 0;
+
+	auto& positionX = positionGroup.CreateWidget<OvUI::Widgets::Drags::DragSingleScalar<float>>(
+		Helpers::GUIDrawer::GetDataType<float>(),
+		Helpers::GUIDrawer::_MIN_FLOAT,
+		Helpers::GUIDrawer::_MAX_FLOAT,
+		GetPosition().x,
+		1.0f,
+		"X",
+		Helpers::GUIDrawer::GetFormat<float>()
 	);
+	auto& positionXDispatcher = positionX.AddPlugin<OvUI::Plugins::DataDispatcher<float>>();
+	positionXDispatcher.RegisterGatherer([this]() { return GetPosition().x; });
+	positionXDispatcher.RegisterProvider([this](float p_value)
+	{
+		if (!IsHorizontalPositionEditable(GetAnchorPreset()))
+		{
+			return;
+		}
+
+		auto position = GetPosition();
+		position.x = p_value;
+		SetPosition(position);
+	});
+
+	auto& positionY = positionGroup.CreateWidget<OvUI::Widgets::Drags::DragSingleScalar<float>>(
+		Helpers::GUIDrawer::GetDataType<float>(),
+		Helpers::GUIDrawer::_MIN_FLOAT,
+		Helpers::GUIDrawer::_MAX_FLOAT,
+		GetPosition().y,
+		1.0f,
+		"Y",
+		Helpers::GUIDrawer::GetFormat<float>()
+	);
+	auto& positionYDispatcher = positionY.AddPlugin<OvUI::Plugins::DataDispatcher<float>>();
+	positionYDispatcher.RegisterGatherer([this]() { return GetPosition().y; });
+	positionYDispatcher.RegisterProvider([this](float p_value)
+	{
+		if (!IsVerticalPositionEditable(GetAnchorPreset()))
+		{
+			return;
+		}
+
+		auto position = GetPosition();
+		position.y = p_value;
+		SetPosition(position);
+	});
 
 	Helpers::GUIDrawer::DrawScalar<float>(
 		p_root,
@@ -261,9 +367,29 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::BOTTOM_LEFT), "Bottom Left");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::BOTTOM_CENTER), "Bottom Center");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::BOTTOM_RIGHT), "Bottom Right");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_TOP), "Horizontal Stretch Top");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE), "Horizontal Stretch Middle");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM), "Horizontal Stretch Bottom");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_LEFT), "Vertical Stretch Left");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_CENTER), "Vertical Stretch Center");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_RIGHT), "Vertical Stretch Right");
+	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::STRETCH_BOTH), "Stretch Both");
+
+	const auto refreshPositionLock = [this, &positionX, &positionY]()
+	{
+		const auto anchorPreset = GetAnchorPreset();
+		positionX.disabled = !IsHorizontalPositionEditable(anchorPreset);
+		positionY.disabled = !IsVerticalPositionEditable(anchorPreset);
+	};
+
+	refreshPositionLock();
 	anchorPreset.ValueChangedEvent += [this](int p_choice)
 	{
 		SetAnchorPreset(ToAnchorPreset(p_choice));
+	};
+	anchorPreset.ValueChangedEvent += [refreshPositionLock](int)
+	{
+		refreshPositionLock();
 	};
 }
 
@@ -274,9 +400,11 @@ OvMaths::FVector2 OvCore::ECS::Components::UI::CTransform2D::GetAnchoredPosition
 		KeepFinite(p_canvasSize.x, 0.0f) * anchorRatio.x,
 		KeepFinite(p_canvasSize.y, 0.0f) * anchorRatio.y
 	};
+	const float positionX = IsHorizontalPositionEditable(m_anchorPreset) ? m_position.x : 0.0f;
+	const float positionY = IsVerticalPositionEditable(m_anchorPreset) ? m_position.y : 0.0f;
 
 	return {
-		anchorOffset.x + p_layoutOffset.x + m_position.x,
-		anchorOffset.y + p_layoutOffset.y + m_position.y
+		anchorOffset.x + p_layoutOffset.x + positionX,
+		anchorOffset.y + p_layoutOffset.y + positionY
 	};
 }

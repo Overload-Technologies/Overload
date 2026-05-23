@@ -25,10 +25,12 @@
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 
 void BindLuaComponents(sol::state& p_luaState)
 {
@@ -222,7 +224,14 @@ void BindLuaComponents(sol::state& p_luaState)
 		{"MIDDLE_RIGHT", UI::CTransform2D::EAnchorPreset::MIDDLE_RIGHT},
 		{"BOTTOM_LEFT", UI::CTransform2D::EAnchorPreset::BOTTOM_LEFT},
 		{"BOTTOM_CENTER", UI::CTransform2D::EAnchorPreset::BOTTOM_CENTER},
-		{"BOTTOM_RIGHT", UI::CTransform2D::EAnchorPreset::BOTTOM_RIGHT}
+		{"BOTTOM_RIGHT", UI::CTransform2D::EAnchorPreset::BOTTOM_RIGHT},
+		{"HORIZONTAL_STRETCH_TOP", UI::CTransform2D::EAnchorPreset::HORIZONTAL_STRETCH_TOP},
+		{"HORIZONTAL_STRETCH_MIDDLE", UI::CTransform2D::EAnchorPreset::HORIZONTAL_STRETCH_MIDDLE},
+		{"HORIZONTAL_STRETCH_BOTTOM", UI::CTransform2D::EAnchorPreset::HORIZONTAL_STRETCH_BOTTOM},
+		{"VERTICAL_STRETCH_LEFT", UI::CTransform2D::EAnchorPreset::VERTICAL_STRETCH_LEFT},
+		{"VERTICAL_STRETCH_CENTER", UI::CTransform2D::EAnchorPreset::VERTICAL_STRETCH_CENTER},
+		{"VERTICAL_STRETCH_RIGHT", UI::CTransform2D::EAnchorPreset::VERTICAL_STRETCH_RIGHT},
+		{"STRETCH_BOTH", UI::CTransform2D::EAnchorPreset::STRETCH_BOTH}
 	});
 
 	p_luaState.new_enum<UI::CLayoutGroup::EDirection>("LayoutDirection", {
@@ -294,6 +303,42 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetControlChildrenWidth", &UI::CLayoutGroup::SetControlChildrenWidth,
 		"GetControlChildrenHeight", &UI::CLayoutGroup::GetControlChildrenHeight,
 		"SetControlChildrenHeight", &UI::CLayoutGroup::SetControlChildrenHeight
+	);
+
+	p_luaState.new_usertype<UI::CHorizontalLayout>("HorizontalLayout",
+		sol::base_classes, sol::bases<AComponent, UI::CLayoutGroup>(),
+		"GetSpacing", &UI::CHorizontalLayout::GetSpacing,
+		"SetSpacing", &UI::CHorizontalLayout::SetSpacing,
+		"GetSize", [](UI::CHorizontalLayout& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CHorizontalLayout::SetSize,
+		"GetPadding", [](UI::CHorizontalLayout& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CHorizontalLayout::SetPadding,
+		"GetHorizontalAlignment", &UI::CHorizontalLayout::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CHorizontalLayout::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CHorizontalLayout::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CHorizontalLayout::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CHorizontalLayout::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CHorizontalLayout::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CHorizontalLayout::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CHorizontalLayout::SetControlChildrenHeight
+	);
+
+	p_luaState.new_usertype<UI::CVerticalLayout>("VerticalLayout",
+		sol::base_classes, sol::bases<AComponent, UI::CLayoutGroup>(),
+		"GetSpacing", &UI::CVerticalLayout::GetSpacing,
+		"SetSpacing", &UI::CVerticalLayout::SetSpacing,
+		"GetSize", [](UI::CVerticalLayout& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CVerticalLayout::SetSize,
+		"GetPadding", [](UI::CVerticalLayout& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CVerticalLayout::SetPadding,
+		"GetHorizontalAlignment", &UI::CVerticalLayout::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CVerticalLayout::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CVerticalLayout::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CVerticalLayout::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CVerticalLayout::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CVerticalLayout::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CVerticalLayout::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CVerticalLayout::SetControlChildrenHeight
 	);
 
 	p_luaState.new_usertype<UI::CText>("Text",

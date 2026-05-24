@@ -112,11 +112,27 @@ namespace OvCore::ECS::Components::UI
 		const OvMaths::FVector2& GetSize() const;
 
 		/**
+		* Sets the normalized pivot in range [-1, 1] on each axis
+		* @param p_pivot
+		*/
+		void SetPivot(const OvMaths::FVector2& p_pivot);
+
+		/**
+		* Returns the normalized pivot in range [-1, 1] on each axis
+		*/
+		const OvMaths::FVector2& GetPivot() const;
+
+		/**
 		* Returns a transform matrix resolved against a canvas size and layout offset
 		* @param p_canvasSize
 		* @param p_layoutOffset
+		* @param p_elementSize
 		*/
-		OvMaths::FMatrix4 GetMatrix(const OvMaths::FVector2& p_canvasSize, const OvMaths::FVector2& p_layoutOffset = OvMaths::FVector2::Zero) const;
+		OvMaths::FMatrix4 GetMatrix(
+			const OvMaths::FVector2& p_canvasSize,
+			const OvMaths::FVector2& p_layoutOffset = OvMaths::FVector2::Zero,
+			const OvMaths::FVector2& p_elementSize = OvMaths::FVector2::Zero
+		) const;
 
 		/**
 		* Serialize the component
@@ -140,10 +156,12 @@ namespace OvCore::ECS::Components::UI
 
 	private:
 		OvMaths::FVector2 GetAnchoredPosition(const OvMaths::FVector2& p_canvasSize, const OvMaths::FVector2& p_layoutOffset) const;
+		OvMaths::FVector2 GetEffectiveSize(const OvMaths::FVector2& p_elementSize) const;
 
 	private:
 		OvMaths::FVector2 m_position = OvMaths::FVector2::Zero;
 		OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
+		OvMaths::FVector2 m_pivot = OvMaths::FVector2::Zero;
 		EAnchorPreset m_anchorPreset = EAnchorPreset::CENTER;
 	};
 }

@@ -21,10 +21,22 @@ namespace
 	constexpr float kMinimumReferenceResolutionAxis = 1.0f;
 	constexpr float kMinimumScaleFactor = 0.0001f;
 	constexpr float kMinimumPixelsPerUnit = 0.0001f;
+	constexpr float kMinimumMatchWidthOrHeight = 0.0f;
+	constexpr float kMaximumMatchWidthOrHeight = 1.0f;
 
 	float ClampFinite(float p_value, float p_min)
 	{
 		return std::isfinite(p_value) ? std::max(p_value, p_min) : p_min;
+	}
+
+	float ClampFiniteNormalized(float p_value, float p_fallback)
+	{
+		if (!std::isfinite(p_value))
+		{
+			return p_fallback;
+		}
+
+		return std::clamp(p_value, kMinimumMatchWidthOrHeight, kMaximumMatchWidthOrHeight);
 	}
 
 	OvCore::ECS::Components::UI::CCanvas::EScalerMode ToScalerMode(int p_value)
@@ -38,6 +50,22 @@ namespace
 		case static_cast<int>(EScalerMode::CONSTANT_PIXEL_SIZE):
 		default:
 			return EScalerMode::CONSTANT_PIXEL_SIZE;
+		}
+	}
+
+	OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode ToScreenMatchMode(int p_value)
+	{
+		using EScreenMatchMode = OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode;
+
+		switch (p_value)
+		{
+		case static_cast<int>(EScreenMatchMode::EXPAND):
+			return EScreenMatchMode::EXPAND;
+		case static_cast<int>(EScreenMatchMode::SHRINK):
+			return EScreenMatchMode::SHRINK;
+		case static_cast<int>(EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT):
+		default:
+			return EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT;
 		}
 	}
 }
@@ -98,12 +126,34 @@ OvCore::ECS::Components::UI::CCanvas::EScalerMode OvCore::ECS::Components::UI::C
 	return m_scalerMode;
 }
 
+void OvCore::ECS::Components::UI::CCanvas::SetScreenMatchMode(EScreenMatchMode p_screenMatchMode)
+{
+	m_screenMatchMode = ToScreenMatchMode(static_cast<int>(p_screenMatchMode));
+}
+
+OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode OvCore::ECS::Components::UI::CCanvas::GetScreenMatchMode() const
+{
+	return m_screenMatchMode;
+}
+
+void OvCore::ECS::Components::UI::CCanvas::SetMatchWidthOrHeight(float p_matchWidthOrHeight)
+{
+	m_matchWidthOrHeight = ClampFiniteNormalized(p_matchWidthOrHeight, m_matchWidthOrHeight);
+}
+
+float OvCore::ECS::Components::UI::CCanvas::GetMatchWidthOrHeight() const
+{
+	return m_matchWidthOrHeight;
+}
+
 void OvCore::ECS::Components::UI::CCanvas::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "reference_resolution", m_referenceResolution);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "scale_factor", m_scaleFactor);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "pixels_per_unit", m_pixelsPerUnit);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "scaler_mode", static_cast<int>(m_scalerMode));
+	Helpers::Serializer::SerializeInt(p_doc, p_node, "screen_match_mode", static_cast<int>(m_screenMatchMode));
+	Helpers::Serializer::SerializeFloat(p_doc, p_node, "match_width_or_height", m_matchWidthOrHeight);
 }
 
 void OvCore::ECS::Components::UI::CCanvas::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -134,6 +184,20 @@ void OvCore::ECS::Components::UI::CCanvas::OnDeserialize(tinyxml2::XMLDocument& 
 		auto scalerMode = static_cast<int>(m_scalerMode);
 		Helpers::Serializer::DeserializeInt(p_doc, p_node, "scaler_mode", scalerMode);
 		SetScalerMode(ToScalerMode(scalerMode));
+	}
+
+	if (p_node->FirstChildElement("screen_match_mode"))
+	{
+		auto screenMatchMode = static_cast<int>(m_screenMatchMode);
+		Helpers::Serializer::DeserializeInt(p_doc, p_node, "screen_match_mode", screenMatchMode);
+		SetScreenMatchMode(ToScreenMatchMode(screenMatchMode));
+	}
+
+	if (p_node->FirstChildElement("match_width_or_height"))
+	{
+		auto matchWidthOrHeight = m_matchWidthOrHeight;
+		Helpers::Serializer::DeserializeFloat(p_doc, p_node, "match_width_or_height", matchWidthOrHeight);
+		SetMatchWidthOrHeight(matchWidthOrHeight);
 	}
 }
 
@@ -174,4 +238,30 @@ void OvCore::ECS::Components::UI::CCanvas::OnInspector(OvUI::Internal::WidgetCon
 	{
 		SetScalerMode(ToScalerMode(p_choice));
 	};
+
+	if (GetScalerMode() == EScalerMode::SCALE_WITH_SCREEN_SIZE)
+	{
+		Helpers::GUIDrawer::CreateTitle(p_root, "Screen Match Mode");
+		auto& screenMatchMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetScreenMatchMode()));
+		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT), "Match Width Or Height");
+		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::EXPAND), "Expand");
+		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::SHRINK), "Shrink");
+		screenMatchMode.ValueChangedEvent += [this](int p_choice)
+		{
+			SetScreenMatchMode(ToScreenMatchMode(p_choice));
+		};
+
+		if (GetScreenMatchMode() == EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT)
+		{
+			Helpers::GUIDrawer::DrawScalar<float>(
+				p_root,
+				"Match Width Or Height",
+				std::bind(&CCanvas::GetMatchWidthOrHeight, this),
+				std::bind(&CCanvas::SetMatchWidthOrHeight, this, std::placeholders::_1),
+				0.01f,
+				kMinimumMatchWidthOrHeight,
+				kMaximumMatchWidthOrHeight
+			);
+		}
+	}
 }

@@ -31,6 +31,7 @@
 #include <OvCore/Rendering/SkinningDrawableDescriptor.h>
 #include <OvCore/Rendering/SkinningRenderFeature.h>
 #include <OvCore/Rendering/SkinningUtils.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Features/LightingRenderFeature.h>
@@ -174,23 +175,17 @@ namespace
 
 	OvMaths::FVector2 ClampCanvasSize(const OvMaths::FVector2& p_canvasSize)
 	{
-		return {
-			std::max(p_canvasSize.x, 1.0f),
-			std::max(p_canvasSize.y, 1.0f)
-		};
+		return OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_canvasSize);
 	}
 
 	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Components::UI::CCanvas& p_canvas, const OvMaths::FVector2& p_renderSize)
 	{
-		const auto fallbackSize = ClampCanvasSize(p_renderSize);
-		const auto scaleFactor = p_canvas.GetScaleFactor();
+		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_canvas, p_renderSize);
+	}
 
-		if (p_canvas.GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::CONSTANT_PIXEL_SIZE)
-		{
-			return ClampCanvasSize(fallbackSize * scaleFactor);
-		}
-
-		return ClampCanvasSize(p_canvas.GetReferenceResolution() * scaleFactor);
+	float GetCanvasScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas, const OvMaths::FVector2& p_renderSize)
+	{
+		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*p_canvas, p_renderSize) : 1.0f;
 	}
 
 	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
@@ -203,7 +198,7 @@ namespace
 
 	float GetUIWorldScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas)
 	{
-		return p_canvas ? 1.0f / p_canvas->GetPixelsPerUnit() : 1.0f;
+		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*p_canvas, false) : 1.0f;
 	}
 
 	EngineDrawableDescriptor CreateUIDrawableDescriptor(
@@ -212,25 +207,26 @@ namespace
 		const OvMaths::FVector2& p_layoutOffset,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
-		float p_worldScale
+		float p_worldScale,
+		float p_canvasScale,
+		const OvMaths::FVector2& p_elementSize
 	)
 	{
 		auto* transform2D = p_owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
 
 		EngineDrawableDescriptor descriptor{
 			.modelMatrix = transform2D ?
-				transform2D->GetMatrix(p_canvasSize, p_layoutOffset) :
+				transform2D->GetMatrix(p_canvasSize, p_layoutOffset, p_elementSize) :
 				p_owner.transform.GetFTransform().GetWorldMatrix(),
 			.userMatrix = OvMaths::FMatrix4::Identity
 		};
 
-		if (!p_screenSpace)
-		{
-			descriptor.modelMatrix =
-				OvMaths::FMatrix4::Scaling({ p_worldScale, p_worldScale, 1.0f }) *
-				descriptor.modelMatrix;
-		}
-		else
+		const auto unitsScale = p_screenSpace ? p_canvasScale : p_canvasScale * p_worldScale;
+		descriptor.modelMatrix =
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			descriptor.modelMatrix;
+
+		if (p_screenSpace)
 		{
 			descriptor.viewMatrixOverride = OvMaths::FMatrix4::Identity;
 			descriptor.projectionMatrixOverride = p_uiProjectionMatrix;
@@ -265,6 +261,7 @@ namespace
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		float p_worldScale,
+		float p_canvasScale,
 		int p_drawOrder
 	)
 	{
@@ -287,7 +284,16 @@ namespace
 		});
 
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
-			CreateUIDrawableDescriptor(owner, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, p_worldScale)
+			CreateUIDrawableDescriptor(
+				owner,
+				p_canvasSize,
+				p_layoutOffset,
+				p_uiProjectionMatrix,
+				p_screenSpace,
+				p_worldScale,
+				p_canvasScale,
+				p_image.GetSize()
+			)
 		);
 
 		p_result.drawables.push_back(drawable);
@@ -301,6 +307,7 @@ namespace
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		float p_worldScale,
+		float p_canvasScale,
 		int p_drawOrder
 	)
 	{
@@ -326,7 +333,16 @@ namespace
 		});
 
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
-			CreateUIDrawableDescriptor(owner, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, p_worldScale)
+			CreateUIDrawableDescriptor(
+				owner,
+				p_canvasSize,
+				p_layoutOffset,
+				p_uiProjectionMatrix,
+				p_screenSpace,
+				p_worldScale,
+				p_canvasScale,
+				p_text.GetSize()
+			)
 		);
 
 		p_result.drawables.push_back(drawable);
@@ -358,21 +374,43 @@ namespace
 		if (p_canvas)
 		{
 			const auto worldScale = GetUIWorldScale(p_canvas);
+			const auto canvasScale = GetCanvasScale(p_canvas, p_renderSize);
 
 			if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
 			{
-				AppendImageDrawable(p_result, *image, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, worldScale, p_drawOrder++);
+				AppendImageDrawable(
+					p_result,
+					*image,
+					p_canvasSize,
+					p_layoutOffset,
+					p_uiProjectionMatrix,
+					p_screenSpace,
+					worldScale,
+					canvasScale,
+					p_drawOrder++
+				);
 			}
 
 			if (auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
 			{
-				AppendTextDrawable(p_result, *text, p_canvasSize, p_layoutOffset, p_uiProjectionMatrix, p_screenSpace, worldScale, p_drawOrder++);
+				AppendTextDrawable(
+					p_result,
+					*text,
+					p_canvasSize,
+					p_layoutOffset,
+					p_uiProjectionMatrix,
+					p_screenSpace,
+					worldScale,
+					canvasScale,
+					p_drawOrder++
+				);
 			}
 		}
 
 		std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> childOffsets;
 		if (auto* layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
 		{
+			layout->ApplyControlledChildrenSizes();
 			childOffsets = layout->GetChildOffsets();
 		}
 
@@ -713,7 +751,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.ui.emplace(decltype(decltype(output.ui)::value_type::first){
 				.order = drawOrder,
-				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
+				.materialKey = &drawableCopy.material.value(),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}
@@ -721,7 +759,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.transparents.emplace(decltype(decltype(output.transparents)::value_type::first){
 				.order = drawOrder,
-				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
+				.materialKey = &drawableCopy.material.value(),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}
@@ -729,7 +767,7 @@ SceneRenderer::SceneFilteredDrawablesDescriptor OvCore::Rendering::SceneRenderer
 		{
 			output.opaques.emplace(decltype(decltype(output.opaques)::value_type::first){
 				.order = drawOrder,
-				.materialKey = reinterpret_cast<uintptr_t>(&drawableCopy.material.value()),
+				.materialKey = &drawableCopy.material.value(),
 				.distance = distanceToCamera
 			}, drawableCopy);
 		}

@@ -5,6 +5,8 @@
 */
 
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 
 OvCore::ECS::Components::CTransform::CTransform(ECS::Actor& p_owner, OvMaths::FVector3 p_localPosition, OvMaths::FQuaternion p_localRotation, OvMaths::FVector3 p_localScale) :
 AComponent(p_owner)
@@ -186,7 +188,20 @@ void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetCont
 		SetLocalRotation(OvMaths::FQuaternion(result));
 	};
 
-	OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Position", std::bind(&CTransform::GetLocalPosition, this), std::bind(&CTransform::SetLocalPosition, this, std::placeholders::_1), 0.05f);
+	const bool hasTransform2D = owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>() != nullptr;
+	if (hasTransform2D)
+	{
+		OvCore::Helpers::GUIDrawer::DrawReadOnlyString(
+			p_root,
+			"Position",
+			[]() { return std::string("Driven by Transform 2D (anchored px)"); }
+		);
+	}
+	else
+	{
+		OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Position", std::bind(&CTransform::GetLocalPosition, this), std::bind(&CTransform::SetLocalPosition, this, std::placeholders::_1), 0.05f);
+	}
+
 	OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Rotation", getRotation, setRotation, 0.05f);
 	OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Scale", std::bind(&CTransform::GetLocalScale, this), std::bind(&CTransform::SetLocalScale, this, std::placeholders::_1), 0.05f, 0.0001f);
 }

@@ -25,6 +25,13 @@ namespace OvCore::ECS::Components::UI
 			SCALE_WITH_SCREEN_SIZE
 		};
 
+		enum class EScreenMatchMode
+		{
+			MATCH_WIDTH_OR_HEIGHT,
+			EXPAND,
+			SHRINK
+		};
+
 		/**
 		* Constructor
 		* @param p_owner
@@ -86,6 +93,28 @@ namespace OvCore::ECS::Components::UI
 		EScalerMode GetScalerMode() const;
 
 		/**
+		* Sets the screen match mode used when scaler mode is Scale With Screen Size
+		* @param p_screenMatchMode
+		*/
+		void SetScreenMatchMode(EScreenMatchMode p_screenMatchMode);
+
+		/**
+		* Returns the screen match mode used when scaler mode is Scale With Screen Size
+		*/
+		EScreenMatchMode GetScreenMatchMode() const;
+
+		/**
+		* Sets the width/height match factor in range [0, 1]
+		* @param p_matchWidthOrHeight
+		*/
+		void SetMatchWidthOrHeight(float p_matchWidthOrHeight);
+
+		/**
+		* Returns the width/height match factor in range [0, 1]
+		*/
+		float GetMatchWidthOrHeight() const;
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node
@@ -109,7 +138,9 @@ namespace OvCore::ECS::Components::UI
 		OvMaths::FVector2 m_referenceResolution = { 1920.0f, 1080.0f };
 		float m_scaleFactor = 1.0f;
 		float m_pixelsPerUnit = 100.0f;
-		EScalerMode m_scalerMode = EScalerMode::CONSTANT_PIXEL_SIZE;
+		EScalerMode m_scalerMode = EScalerMode::SCALE_WITH_SCREEN_SIZE;
+		EScreenMatchMode m_screenMatchMode = EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT;
+		float m_matchWidthOrHeight = 0.5f;
 	};
 }
 

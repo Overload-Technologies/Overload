@@ -215,6 +215,12 @@ void BindLuaComponents(sol::state& p_luaState)
 		{"SCALE_WITH_SCREEN_SIZE", UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE}
 	});
 
+	p_luaState.new_enum<UI::CCanvas::EScreenMatchMode>("CanvasScreenMatchMode", {
+		{"MATCH_WIDTH_OR_HEIGHT", UI::CCanvas::EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT},
+		{"EXPAND", UI::CCanvas::EScreenMatchMode::EXPAND},
+		{"SHRINK", UI::CCanvas::EScreenMatchMode::SHRINK}
+	});
+
 	p_luaState.new_enum<UI::CTransform2D::EAnchorPreset>("AnchorPreset", {
 		{"TOP_LEFT", UI::CTransform2D::EAnchorPreset::TOP_LEFT},
 		{"TOP_CENTER", UI::CTransform2D::EAnchorPreset::TOP_CENTER},
@@ -272,7 +278,11 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetPixelsPerUnit", &UI::CCanvas::GetPixelsPerUnit,
 		"SetPixelsPerUnit", &UI::CCanvas::SetPixelsPerUnit,
 		"GetScalerMode", &UI::CCanvas::GetScalerMode,
-		"SetScalerMode", &UI::CCanvas::SetScalerMode
+		"SetScalerMode", &UI::CCanvas::SetScalerMode,
+		"GetScreenMatchMode", &UI::CCanvas::GetScreenMatchMode,
+		"SetScreenMatchMode", &UI::CCanvas::SetScreenMatchMode,
+		"GetMatchWidthOrHeight", &UI::CCanvas::GetMatchWidthOrHeight,
+		"SetMatchWidthOrHeight", &UI::CCanvas::SetMatchWidthOrHeight
 	);
 
 	p_luaState.new_usertype<UI::CImage>("Image",
@@ -369,6 +379,8 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetScale", &UI::CTransform2D::SetScale,
 		"GetSize", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetSize(); },
 		"SetSize", &UI::CTransform2D::SetSize,
+		"GetPivot", [](UI::CTransform2D& p_this) -> FVector2 { return p_this.GetPivot(); },
+		"SetPivot", &UI::CTransform2D::SetPivot,
 		"GetAnchorPreset", &UI::CTransform2D::GetAnchorPreset,
 		"SetAnchorPreset", &UI::CTransform2D::SetAnchorPreset
 	);

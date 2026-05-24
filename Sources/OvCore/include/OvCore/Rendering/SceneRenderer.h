@@ -11,6 +11,7 @@
 
 #include <OvMaths/FVector2.h>
 #include <OvRendering/Core/CompositeRenderer.h>
+#include <OvRendering/Data/Material.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Entities/Drawable.h>
 #include <OvRendering/HAL/UniformBuffer.h>
@@ -41,7 +42,7 @@ namespace OvCore::Rendering
 		struct DrawOrder
 		{
 			const int order;
-			const uintptr_t materialKey;
+			const OvRendering::Data::Material* materialKey;
 			const float distance;
 
 			/**

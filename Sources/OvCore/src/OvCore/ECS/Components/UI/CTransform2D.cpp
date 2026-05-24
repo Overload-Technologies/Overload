@@ -6,11 +6,11 @@
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
 
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
@@ -22,6 +22,8 @@ namespace
 	constexpr float kDegreesToRadians = 3.14159265359f / 180.0f;
 	constexpr float kMinimumScale = 0.0001f;
 	constexpr float kMinimumSize = 0.0f;
+	constexpr float kMinimumPivot = -1.0f;
+	constexpr float kMaximumPivot = 1.0f;
 
 	float ClampScaleAxis(float p_value, float p_fallback)
 	{
@@ -31,6 +33,16 @@ namespace
 	float KeepFinite(float p_value, float p_fallback)
 	{
 		return std::isfinite(p_value) ? p_value : p_fallback;
+	}
+
+	float ClampPivotAxis(float p_value, float p_fallback)
+	{
+		if (!std::isfinite(p_value))
+		{
+			return p_fallback;
+		}
+
+		return std::clamp(p_value, kMinimumPivot, kMaximumPivot);
 	}
 
 	OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset ToAnchorPreset(int p_value)
@@ -148,6 +160,12 @@ namespace
 			return true;
 		}
 	}
+
+	bool IsDrivenByLayout(const OvCore::ECS::Actor& p_owner)
+	{
+		const auto* parent = p_owner.GetParent();
+		return parent && parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>();
+	}
 }
 
 OvCore::ECS::Components::UI::CTransform2D::CTransform2D(ECS::Actor& p_owner) :
@@ -218,6 +236,17 @@ const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetSize() co
 	return m_size;
 }
 
+void OvCore::ECS::Components::UI::CTransform2D::SetPivot(const OvMaths::FVector2& p_pivot)
+{
+	m_pivot.x = ClampPivotAxis(p_pivot.x, m_pivot.x);
+	m_pivot.y = ClampPivotAxis(p_pivot.y, m_pivot.y);
+}
+
+const OvMaths::FVector2& OvCore::ECS::Components::UI::CTransform2D::GetPivot() const
+{
+	return m_pivot;
+}
+
 void OvCore::ECS::Components::UI::CTransform2D::SetAnchorPreset(EAnchorPreset p_anchorPreset)
 {
 	m_anchorPreset = ToAnchorPreset(static_cast<int>(p_anchorPreset));
@@ -228,15 +257,26 @@ OvCore::ECS::Components::UI::CTransform2D::EAnchorPreset OvCore::ECS::Components
 	return m_anchorPreset;
 }
 
-OvMaths::FMatrix4 OvCore::ECS::Components::UI::CTransform2D::GetMatrix(const OvMaths::FVector2& p_canvasSize, const OvMaths::FVector2& p_layoutOffset) const
+OvMaths::FMatrix4 OvCore::ECS::Components::UI::CTransform2D::GetMatrix(
+	const OvMaths::FVector2& p_canvasSize,
+	const OvMaths::FVector2& p_layoutOffset,
+	const OvMaths::FVector2& p_elementSize
+) const
 {
 	const auto position = GetAnchoredPosition(p_canvasSize, p_layoutOffset);
 	const auto scale = GetScale();
+	const auto effectiveSize = GetEffectiveSize(p_elementSize);
+	const auto halfSize = effectiveSize * 0.5f;
+	const OvMaths::FVector2 pivotOffset = {
+		-m_pivot.x * halfSize.x,
+		m_pivot.y * halfSize.y
+	};
 
 	return
 		OvMaths::FMatrix4::Translation({ position.x, position.y, 0.0f }) *
 		OvMaths::FMatrix4::RotationOnAxisZ(GetRotation() * kDegreesToRadians) *
-		OvMaths::FMatrix4::Scaling({ scale.x, scale.y, 1.0f });
+		OvMaths::FMatrix4::Scaling({ scale.x, scale.y, 1.0f }) *
+		OvMaths::FMatrix4::Translation({ pivotOffset.x, pivotOffset.y, 0.0f });
 }
 
 void OvCore::ECS::Components::UI::CTransform2D::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -245,6 +285,7 @@ void OvCore::ECS::Components::UI::CTransform2D::OnSerialize(tinyxml2::XMLDocumen
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "rotation", GetRotation());
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "scale", GetScale());
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
+	Helpers::Serializer::SerializeVec2(p_doc, p_node, "pivot", m_pivot);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "anchor_preset", static_cast<int>(m_anchorPreset));
 }
 
@@ -278,6 +319,13 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 		SetSize(size);
 	}
 
+	if (p_node->FirstChildElement("pivot"))
+	{
+		auto pivot = m_pivot;
+		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "pivot", pivot);
+		SetPivot(pivot);
+	}
+
 	if (p_node->FirstChildElement("anchor_preset"))
 	{
 		auto anchorPreset = static_cast<int>(m_anchorPreset);
@@ -290,7 +338,7 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 {
 	Helpers::GUIDrawer::DrawVec2(
 		p_root,
-		"Position",
+		"Anchored Position (px)",
 		[this]() { return GetPosition(); },
 		[this](OvMaths::FVector2 p_value)
 		{
@@ -312,23 +360,6 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 		1.0f
 	);
 
-	Helpers::GUIDrawer::DrawScalar<float>(
-		p_root,
-		"Rotation",
-		std::bind(&CTransform2D::GetRotation, this),
-		std::bind(&CTransform2D::SetRotation, this, std::placeholders::_1),
-		0.1f
-	);
-
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Scale",
-		[this]() { return GetScale(); },
-		[this](OvMaths::FVector2 p_value) { SetScale(p_value); },
-		0.01f,
-		kMinimumScale
-	);
-
 	Helpers::GUIDrawer::DrawVec2(
 		p_root,
 		"Size",
@@ -338,8 +369,19 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 		kMinimumSize
 	);
 
+	Helpers::GUIDrawer::DrawVec2(
+		p_root,
+		"Pivot",
+		[this]() { return GetPivot(); },
+		[this](OvMaths::FVector2 p_value) { SetPivot(p_value); },
+		0.01f,
+		kMinimumPivot,
+		kMaximumPivot
+	);
+
 	Helpers::GUIDrawer::CreateTitle(p_root, "Anchor Preset");
 	auto& anchorPreset = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetAnchorPreset()));
+	anchorPreset.disabled = IsDrivenByLayout(owner);
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::TOP_LEFT), "Top Left");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::TOP_CENTER), "Top Center");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::TOP_RIGHT), "Top Right");
@@ -376,5 +418,13 @@ OvMaths::FVector2 OvCore::ECS::Components::UI::CTransform2D::GetAnchoredPosition
 	return {
 		anchorOffset.x + p_layoutOffset.x + positionX,
 		anchorOffset.y + p_layoutOffset.y + positionY
+	};
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::UI::CTransform2D::GetEffectiveSize(const OvMaths::FVector2& p_elementSize) const
+{
+	return {
+		m_size.x > 0.0f ? m_size.x : std::max(p_elementSize.x, 0.0f),
+		m_size.y > 0.0f ? m_size.y : std::max(p_elementSize.y, 0.0f)
 	};
 }

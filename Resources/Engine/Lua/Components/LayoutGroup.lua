@@ -76,3 +76,19 @@ function LayoutGroup:GetVerticalAlignment() end
 --- Defines the vertical children alignment
 ---@param alignment LayoutVerticalAlignment
 function LayoutGroup:SetVerticalAlignment(alignment) end
+
+--- Returns whether the layout controls children width
+---@return boolean
+function LayoutGroup:GetControlChildrenWidth() end
+
+--- Defines whether the layout controls children width
+---@param value boolean
+function LayoutGroup:SetControlChildrenWidth(value) end
+
+--- Returns whether the layout controls children height
+---@return boolean
+function LayoutGroup:GetControlChildrenHeight() end
+
+--- Defines whether the layout controls children height
+---@param value boolean
+function LayoutGroup:SetControlChildrenHeight(value) end

@@ -158,6 +158,14 @@ function Actor:GetImage() end
 ---@return LayoutGroup|nil
 function Actor:GetLayoutGroup() end
 
+--- Returns the HorizontalLayout attached to this actor (If any)
+---@return HorizontalLayout|nil
+function Actor:GetHorizontalLayout() end
+
+--- Returns the VerticalLayout attached to this actor (If any)
+---@return VerticalLayout|nil
+function Actor:GetVerticalLayout() end
+
 --- Returns the Text attached to this actor (If any)
 ---@return Text|nil
 function Actor:GetText() end
@@ -251,6 +259,14 @@ function Actor:AddImage() end
 ---@return LayoutGroup
 function Actor:AddLayoutGroup() end
 
+--- Adds a HorizontalLayout component to the actor and returns it
+---@return HorizontalLayout
+function Actor:AddHorizontalLayout() end
+
+--- Adds a VerticalLayout component to the actor and returns it
+---@return VerticalLayout
+function Actor:AddVerticalLayout() end
+
 --- Adds a Text component to the actor and returns it
 ---@return Text
 function Actor:AddText() end
@@ -297,6 +313,10 @@ function Actor:RemoveCanvas() end
 function Actor:RemoveImage() end
 --- Removes the LayoutGroup component from the actor
 function Actor:RemoveLayoutGroup() end
+--- Removes the HorizontalLayout component from the actor
+function Actor:RemoveHorizontalLayout() end
+--- Removes the VerticalLayout component from the actor
+function Actor:RemoveVerticalLayout() end
 --- Removes the Text component from the actor
 function Actor:RemoveText() end
 --- Removes the Transform2D component from the actor

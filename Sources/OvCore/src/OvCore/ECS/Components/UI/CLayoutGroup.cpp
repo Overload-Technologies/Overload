@@ -161,6 +161,29 @@ namespace
 		return std::nullopt;
 	}
 
+	std::vector<LayoutChild> CollectLayoutChildren(OvCore::ECS::Actor& p_owner)
+	{
+		std::vector<LayoutChild> layoutChildren;
+
+		for (const auto child : p_owner.GetChildren())
+		{
+			if (!child || !child->IsActive())
+			{
+				continue;
+			}
+
+			const auto size = GetLayoutSize(*child);
+			if (!size)
+			{
+				continue;
+			}
+
+			layoutChildren.push_back({ child, size.value() });
+		}
+
+		return layoutChildren;
+	}
+
 	Clay_LayoutDirection ToClayDirection(OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction)
 	{
 		return p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL ?
@@ -590,23 +613,7 @@ OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffset(cons
 
 std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffsets() const
 {
-	std::vector<LayoutChild> layoutChildren;
-
-	for (const auto child : owner.GetChildren())
-	{
-		if (!child || !child->IsActive())
-		{
-			continue;
-		}
-
-		const auto size = GetLayoutSize(*child);
-		if (!size)
-		{
-			continue;
-		}
-
-		layoutChildren.push_back({ child, size.value() });
-	}
+	auto layoutChildren = CollectLayoutChildren(owner);
 
 	std::vector<ChildOffset> offsets;
 
@@ -627,7 +634,6 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 		spacing,
 		padding
 	);
-	ApplyControlledSizeToChildren(layoutChildren, m_controlChildrenWidth, m_controlChildrenHeight);
 
 	Clay_SetLayoutDimensions({ layoutSize.x, layoutSize.y });
 	Clay_BeginLayout();
@@ -646,6 +652,35 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 	}
 
 	return offsets;
+}
+
+void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()
+{
+	if (!m_controlChildrenWidth && !m_controlChildrenHeight)
+	{
+		return;
+	}
+
+	auto layoutChildren = CollectLayoutChildren(owner);
+	if (layoutChildren.empty())
+	{
+		return;
+	}
+
+	const auto spacing = ToClaySpacing(m_spacing);
+	const auto padding = ToClayPadding(m_padding);
+	const auto layoutSize = GetLayoutSize(layoutChildren, m_direction, static_cast<float>(spacing), m_size, padding);
+
+	ApplyControlledChildrenSizing(
+		layoutChildren,
+		m_direction,
+		m_controlChildrenWidth,
+		m_controlChildrenHeight,
+		layoutSize,
+		spacing,
+		padding
+	);
+	ApplyControlledSizeToChildren(layoutChildren, m_controlChildrenWidth, m_controlChildrenHeight);
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)

@@ -161,6 +161,11 @@ namespace OvCore::ECS::Components::UI
 		std::vector<ChildOffset> GetChildOffsets() const;
 
 		/**
+		* Applies controlled width/height to direct children using current layout settings
+		*/
+		void ApplyControlledChildrenSizes();
+
+		/**
 		* Serialize the component
 		* @param p_doc
 		* @param p_node

@@ -22,6 +22,7 @@
 #include <OvRendering/Geometry/Vertex.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvUI/Types/Color.h>
+#include <OvUI/Widgets/InputFields/InputText.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -337,12 +338,15 @@ void OvCore::ECS::Components::UI::CText::OnDeserialize(tinyxml2::XMLDocument& p_
 
 void OvCore::ECS::Components::UI::CText::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	Helpers::GUIDrawer::DrawString(
-		p_root,
-		"Text",
-		[this]() { return GetText(); },
-		[this](std::string p_value) { SetText(p_value); }
-	);
+	Helpers::GUIDrawer::CreateTitle(p_root, "Text");
+	auto& textInput = p_root.CreateWidget<OvUI::Widgets::InputFields::InputText>("");
+	textInput.multiline = true;
+	textInput.multilineHeight = 100.0f;
+	textInput.fullWidth = true;
+
+	auto& textDispatcher = textInput.AddPlugin<OvUI::Plugins::DataDispatcher<std::string>>();
+	textDispatcher.RegisterGatherer([this]() { return GetText(); });
+	textDispatcher.RegisterProvider([this](std::string p_value) { SetText(p_value); });
 
 	Helpers::GUIDrawer::DrawAsset(
 		p_root,
@@ -425,13 +429,20 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	m_mesh.reset();
 	m_size = ResolveTextSize(OvMaths::FVector2::Zero, m_extents);
 
-	const auto* font = GetFont();
-	if (!font || !font->IsValid() || m_text.empty())
+	auto* font = GetFont();
+	if (!font || m_text.empty() || !font->EnsurePixelSize(m_fontSize))
 	{
 		return;
 	}
 
-	const float scale = m_fontSize / font->GetPixelSize();
+	const float bakedPixelSize = font->GetPixelSize(m_fontSize);
+	if (bakedPixelSize <= 0.0f)
+	{
+		return;
+	}
+
+	const float scale = m_fontSize / bakedPixelSize;
+	const float lineHeight = font->GetLineHeight(m_fontSize);
 	std::vector<OvRendering::Geometry::Vertex> vertices;
 	std::vector<uint32_t> indices;
 	vertices.reserve(m_text.size() * 4);
@@ -444,7 +455,7 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	float maxX = std::numeric_limits<float>::lowest();
 	float maxY = std::numeric_limits<float>::lowest();
 
-	const auto* fallbackGlyph = font->GetGlyph('?');
+	const auto* fallbackGlyph = font->GetGlyph('?', m_fontSize);
 
 	for (const char character : m_text)
 	{
@@ -456,11 +467,11 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 		if (character == '\n')
 		{
 			cursorX = 0.0f;
-			baselineY -= font->GetLineHeight() * scale;
+			baselineY -= lineHeight * scale;
 			continue;
 		}
 
-		const auto* glyph = font->GetGlyph(character);
+		const auto* glyph = font->GetGlyph(character, m_fontSize);
 		if (!glyph)
 		{
 			glyph = fallbackGlyph;
@@ -521,15 +532,14 @@ void OvCore::ECS::Components::UI::CText::RefreshMaterial()
 		!defaultMaterial ||
 		!defaultMaterial->HasShader() ||
 		!font ||
-		!font->IsValid() ||
-		!font->EnsureEmbeddedMaterial(defaultMaterial->GetShader())
+		!font->EnsureEmbeddedMaterial(defaultMaterial->GetShader(), m_fontSize)
 	)
 	{
 		m_material->SetShader(nullptr);
 		return;
 	}
 
-	auto* embeddedMaterial = font->GetEmbeddedMaterial();
+	auto* embeddedMaterial = font->GetEmbeddedMaterial(m_fontSize);
 	if (!embeddedMaterial || !embeddedMaterial->IsValid())
 	{
 		m_material->SetShader(nullptr);

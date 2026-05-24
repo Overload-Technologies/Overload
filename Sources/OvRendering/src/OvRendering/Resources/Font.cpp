@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -25,8 +26,21 @@ namespace
 	constexpr uint32_t kAtlasWidth = 512;
 	constexpr uint32_t kAtlasHeight = 512;
 	constexpr float kDefaultPixelSize = 32.0f;
+	constexpr float kMinimumPixelSize = 1.0f;
+	constexpr float kMaximumPixelSize = 256.0f;
 	constexpr uint32_t kGlyphPadding = 1;
 	constexpr const char* kFontAtlasUniform = "u_FontAtlas";
+
+	uint32_t ToPixelSizeKey(float p_pixelSize)
+	{
+		if (!std::isfinite(p_pixelSize))
+		{
+			return static_cast<uint32_t>(kDefaultPixelSize);
+		}
+
+		const auto clamped = std::clamp(p_pixelSize, kMinimumPixelSize, kMaximumPixelSize);
+		return std::max<uint32_t>(1, static_cast<uint32_t>(std::lround(clamped)));
+	}
 
 	void ConfigureEmbeddedMaterial(OvRendering::Data::Material& p_material)
 	{
@@ -49,6 +63,7 @@ namespace
 	struct BakedFont
 	{
 		bool valid = false;
+		float pixelSize = kDefaultPixelSize;
 		float lineHeight = kDefaultPixelSize;
 		std::array<OvRendering::Resources::Font::Glyph, OvRendering::Resources::Font::kGlyphCount> glyphs = {};
 		std::vector<uint8_t> atlasData;
@@ -137,7 +152,7 @@ namespace
 		return true;
 	}
 
-	BakedFont BakeFont(const std::filesystem::path& p_realPath)
+	BakedFont BakeFont(const std::filesystem::path& p_realPath, float p_pixelSize)
 	{
 		using namespace OvRendering::Resources;
 
@@ -170,11 +185,13 @@ namespace
 			return result;
 		}
 
-		if (FT_Set_Pixel_Sizes(face.handle, 0, static_cast<FT_UInt>(kDefaultPixelSize)) != 0)
+		if (FT_Set_Pixel_Sizes(face.handle, 0, static_cast<FT_UInt>(ToPixelSizeKey(p_pixelSize))) != 0)
 		{
 			OVLOG_WARNING("Unable to set font pixel size: " + p_realPath.string());
 			return result;
 		}
+
+		result.pixelSize = static_cast<float>(ToPixelSizeKey(p_pixelSize));
 
 		if (face.handle->size)
 		{
@@ -263,23 +280,268 @@ OvRendering::Resources::Font::Font(const std::string& p_path, const std::filesys
 
 OvRendering::Resources::Font::~Font()
 {
-	Loaders::TextureLoader::Destroy(m_atlasTexture);
+	DestroyAtlasVariants();
 }
 
 bool OvRendering::Resources::Font::Reload(const std::filesystem::path& p_realPath)
 {
+	m_realPath = p_realPath;
+	m_activePixelSize = ToPixelSizeKey(kDefaultPixelSize);
+	m_valid = false;
+	DestroyAtlasVariants();
+	m_atlasVariants.clear();
+
+	return SetActivePixelSize(static_cast<float>(m_activePixelSize));
+}
+
+bool OvRendering::Resources::Font::SetActivePixelSize(float p_pixelSize)
+{
+	const auto pixelSize = ToPixelSizeKey(p_pixelSize);
+	auto* variant = GetOrCreateVariant(pixelSize);
+	if (!variant)
+	{
+		m_valid = false;
+		return false;
+	}
+
+	m_activePixelSize = pixelSize;
+	m_valid = variant->valid && variant->atlasTexture;
+	return m_valid;
+}
+
+bool OvRendering::Resources::Font::EnsurePixelSize(float p_pixelSize)
+{
+	return GetOrCreateVariant(ToPixelSizeKey(p_pixelSize)) != nullptr;
+}
+
+bool OvRendering::Resources::Font::IsValid() const
+{
+	const auto* variant = GetActiveVariant();
+	return m_valid && variant && variant->atlasTexture;
+}
+
+float OvRendering::Resources::Font::GetPixelSize() const
+{
+	if (const auto* variant = GetActiveVariant(); variant)
+	{
+		return variant->pixelSize;
+	}
+
+	return static_cast<float>(m_activePixelSize);
+}
+
+float OvRendering::Resources::Font::GetPixelSize(float p_pixelSize) const
+{
+	if (const auto* variant = GetVariant(ToPixelSizeKey(p_pixelSize)); variant)
+	{
+		return variant->pixelSize;
+	}
+
+	return static_cast<float>(ToPixelSizeKey(p_pixelSize));
+}
+
+float OvRendering::Resources::Font::GetLineHeight() const
+{
+	if (const auto* variant = GetActiveVariant(); variant)
+	{
+		return variant->lineHeight;
+	}
+
+	return static_cast<float>(m_activePixelSize);
+}
+
+float OvRendering::Resources::Font::GetLineHeight(float p_pixelSize) const
+{
+	if (const auto* variant = GetVariant(ToPixelSizeKey(p_pixelSize)); variant)
+	{
+		return variant->lineHeight;
+	}
+
+	return static_cast<float>(ToPixelSizeKey(p_pixelSize));
+}
+
+const OvRendering::Resources::Font::Glyph* OvRendering::Resources::Font::GetGlyph(char p_character) const
+{
+	const auto character = static_cast<uint8_t>(p_character);
+	if (character < kFirstGlyph || character >= kFirstGlyph + kGlyphCount)
+	{
+		return nullptr;
+	}
+
+	if (const auto* variant = GetActiveVariant(); variant)
+	{
+		return &variant->glyphs[character - kFirstGlyph];
+	}
+
+	return nullptr;
+}
+
+const OvRendering::Resources::Font::Glyph* OvRendering::Resources::Font::GetGlyph(char p_character, float p_pixelSize) const
+{
+	const auto character = static_cast<uint8_t>(p_character);
+	if (character < kFirstGlyph || character >= kFirstGlyph + kGlyphCount)
+	{
+		return nullptr;
+	}
+
+	const auto* variant = GetVariant(ToPixelSizeKey(p_pixelSize));
+	return variant ? &variant->glyphs[character - kFirstGlyph] : nullptr;
+}
+
+OvRendering::Resources::Texture* OvRendering::Resources::Font::GetAtlasTexture() const
+{
+	if (const auto* variant = GetActiveVariant(); variant)
+	{
+		return variant->atlasTexture;
+	}
+
+	return nullptr;
+}
+
+OvRendering::Resources::Texture* OvRendering::Resources::Font::GetAtlasTexture(float p_pixelSize)
+{
+	if (auto* variant = GetOrCreateVariant(ToPixelSizeKey(p_pixelSize)); variant)
+	{
+		return variant->atlasTexture;
+	}
+
+	return nullptr;
+}
+
+bool OvRendering::Resources::Font::EnsureEmbeddedMaterial(Shader* p_shader)
+{
+	return EnsureEmbeddedMaterial(p_shader, static_cast<float>(m_activePixelSize));
+}
+
+bool OvRendering::Resources::Font::EnsureEmbeddedMaterial(Shader* p_shader, float p_pixelSize)
+{
+	auto* variant = GetOrCreateVariant(ToPixelSizeKey(p_pixelSize));
+	if (!variant)
+	{
+		return false;
+	}
+
+	if (!p_shader || !variant->atlasTexture)
+	{
+		variant->embeddedMaterial.reset();
+		return false;
+	}
+
+	if (!variant->embeddedMaterial)
+	{
+		variant->embeddedMaterial = std::make_unique<Data::Material>(p_shader);
+		ConfigureEmbeddedMaterial(*variant->embeddedMaterial);
+	}
+	else if (variant->embeddedMaterial->GetShader() != p_shader)
+	{
+		variant->embeddedMaterial->SetShader(p_shader);
+		ConfigureEmbeddedMaterial(*variant->embeddedMaterial);
+	}
+
+	if (!variant->embeddedMaterial->IsValid())
+	{
+		return false;
+	}
+
+	variant->embeddedMaterial->TrySetProperty(kFontAtlasUniform, variant->atlasTexture);
+	return true;
+}
+
+OvRendering::Data::Material* OvRendering::Resources::Font::GetEmbeddedMaterial() const
+{
+	if (const auto* variant = GetActiveVariant(); variant)
+	{
+		return variant->embeddedMaterial.get();
+	}
+
+	return nullptr;
+}
+
+OvRendering::Data::Material* OvRendering::Resources::Font::GetEmbeddedMaterial(float p_pixelSize)
+{
+	if (auto* variant = GetOrCreateVariant(ToPixelSizeKey(p_pixelSize)); variant)
+	{
+		return variant->embeddedMaterial.get();
+	}
+
+	return nullptr;
+}
+
+OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetActiveVariant()
+{
+	return GetVariant(m_activePixelSize);
+}
+
+const OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetActiveVariant() const
+{
+	return GetVariant(m_activePixelSize);
+}
+
+OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetVariant(uint32_t p_pixelSize)
+{
+	const auto found = m_atlasVariants.find(p_pixelSize);
+	return found != m_atlasVariants.end() ? &found->second : nullptr;
+}
+
+const OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetVariant(uint32_t p_pixelSize) const
+{
+	const auto found = m_atlasVariants.find(p_pixelSize);
+	return found != m_atlasVariants.end() ? &found->second : nullptr;
+}
+
+OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetOrCreateVariant(uint32_t p_pixelSize)
+{
+	if (auto* variant = GetVariant(p_pixelSize))
+	{
+		return variant;
+	}
+
+	if (!CreateAtlasVariant(p_pixelSize))
+	{
+		return nullptr;
+	}
+
+	return GetVariant(p_pixelSize);
+}
+
+void OvRendering::Resources::Font::DestroyAtlasVariants()
+{
+	for (auto& [_, variant] : m_atlasVariants)
+	{
+		Loaders::TextureLoader::Destroy(variant.atlasTexture);
+		variant.atlasTexture = nullptr;
+		variant.embeddedMaterial.reset();
+		variant.valid = false;
+	}
+}
+
+bool OvRendering::Resources::Font::CreateAtlasVariant(uint32_t p_pixelSize)
+{
 	using namespace OvRendering::Settings;
 
-	auto bakedFont = BakeFont(p_realPath);
+	if (m_realPath.empty())
+	{
+		return false;
+	}
+
+	auto bakedFont = BakeFont(m_realPath, static_cast<float>(p_pixelSize));
 	if (!bakedFont.valid)
 	{
 		return false;
 	}
 
-	if (m_atlasTexture)
+	auto it = m_atlasVariants.find(p_pixelSize);
+	if (it == m_atlasVariants.end())
+	{
+		it = m_atlasVariants.emplace(p_pixelSize, AtlasVariant{}).first;
+	}
+
+	auto& variant = it->second;
+
+	if (variant.atlasTexture)
 	{
 		Loaders::TextureLoader::ReloadFromMemory(
-			*m_atlasTexture,
+			*variant.atlasTexture,
 			bakedFont.atlasData.data(),
 			kAtlasWidth,
 			kAtlasHeight,
@@ -292,7 +554,7 @@ bool OvRendering::Resources::Font::Reload(const std::filesystem::path& p_realPat
 	}
 	else
 	{
-		m_atlasTexture = Loaders::TextureLoader::CreateFromMemory(
+		variant.atlasTexture = Loaders::TextureLoader::CreateFromMemory(
 			bakedFont.atlasData.data(),
 			kAtlasWidth,
 			kAtlasHeight,
@@ -303,87 +565,21 @@ bool OvRendering::Resources::Font::Reload(const std::filesystem::path& p_realPat
 			false
 		);
 
-		if (!m_atlasTexture)
+		if (!variant.atlasTexture)
 		{
-			OVLOG_WARNING("Unable to create font atlas texture: " + p_realPath.string());
+			OVLOG_WARNING("Unable to create font atlas texture: " + m_realPath.string());
 			return false;
 		}
-
-		const_cast<std::string&>(m_atlasTexture->path) = path;
 	}
 
-	m_valid = true;
-	m_pixelSize = kDefaultPixelSize;
-	m_lineHeight = bakedFont.lineHeight;
-	m_glyphs = bakedFont.glyphs;
-	if (m_embeddedMaterial && m_embeddedMaterial->IsValid())
+	variant.valid = true;
+	variant.pixelSize = bakedFont.pixelSize;
+	variant.lineHeight = bakedFont.lineHeight;
+	variant.glyphs = bakedFont.glyphs;
+	if (variant.embeddedMaterial && variant.embeddedMaterial->IsValid())
 	{
-		m_embeddedMaterial->TrySetProperty(kFontAtlasUniform, m_atlasTexture);
+		variant.embeddedMaterial->TrySetProperty(kFontAtlasUniform, variant.atlasTexture);
 	}
 
 	return true;
-}
-
-bool OvRendering::Resources::Font::IsValid() const
-{
-	return m_valid && m_atlasTexture;
-}
-
-float OvRendering::Resources::Font::GetPixelSize() const
-{
-	return m_pixelSize;
-}
-
-float OvRendering::Resources::Font::GetLineHeight() const
-{
-	return m_lineHeight;
-}
-
-const OvRendering::Resources::Font::Glyph* OvRendering::Resources::Font::GetGlyph(char p_character) const
-{
-	const auto character = static_cast<uint8_t>(p_character);
-	if (character < kFirstGlyph || character >= kFirstGlyph + kGlyphCount)
-	{
-		return nullptr;
-	}
-
-	return &m_glyphs[character - kFirstGlyph];
-}
-
-OvRendering::Resources::Texture* OvRendering::Resources::Font::GetAtlasTexture() const
-{
-	return m_atlasTexture;
-}
-
-bool OvRendering::Resources::Font::EnsureEmbeddedMaterial(Shader* p_shader)
-{
-	if (!p_shader || !m_atlasTexture)
-	{
-		m_embeddedMaterial.reset();
-		return false;
-	}
-
-	if (!m_embeddedMaterial)
-	{
-		m_embeddedMaterial = std::make_unique<Data::Material>(p_shader);
-		ConfigureEmbeddedMaterial(*m_embeddedMaterial);
-	}
-	else if (m_embeddedMaterial->GetShader() != p_shader)
-	{
-		m_embeddedMaterial->SetShader(p_shader);
-		ConfigureEmbeddedMaterial(*m_embeddedMaterial);
-	}
-
-	if (!m_embeddedMaterial->IsValid())
-	{
-		return false;
-	}
-
-	m_embeddedMaterial->TrySetProperty(kFontAtlasUniform, m_atlasTexture);
-	return true;
-}
-
-OvRendering::Data::Material* OvRendering::Resources::Font::GetEmbeddedMaterial() const
-{
-	return m_embeddedMaterial.get();
 }

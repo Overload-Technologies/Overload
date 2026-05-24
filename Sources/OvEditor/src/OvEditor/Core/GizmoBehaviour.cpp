@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
+
 #include "OvEditor/Core/GizmoBehaviour.h"
 #include "OvEditor/Core/EditorActions.h"
 #include "OvEditor/Settings/EditorSettings.h"
@@ -41,6 +43,15 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(OvCore::ECS::Actor& p_target, 
 	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_target->transform.GetWorldPosition());
 	m_currentOperation = p_operation;
 	m_direction = p_direction;
+
+	if (const auto* transform2D = p_target.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+	{
+		m_originalUIPosition = transform2D->GetPosition();
+	}
+	else
+	{
+		m_originalUIPosition = OvMaths::FVector2::Zero;
+	}
 }
 
 void OvEditor::Core::GizmoBehaviour::StopPicking()
@@ -122,6 +133,35 @@ OvMaths::FVector2 OvEditor::Core::GizmoBehaviour::GetScreenDirection(const OvMat
 
 void OvEditor::Core::GizmoBehaviour::ApplyTranslation(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector3& p_cameraPosition, const OvMaths::FVector2& p_viewSize)
 {
+	if (auto* transform2D = m_target->GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+	{
+		auto axisDirection = GetScreenDirection(p_viewMatrix, p_projectionMatrix, p_viewSize);
+		auto totalDisplacement = m_currentMouse - m_originMouse;
+		totalDisplacement.y *= -1.0f;
+		auto translationPixels = OvMaths::FVector2::Dot(totalDisplacement, axisDirection);
+
+		if (IsSnappedBehaviourEnabled())
+		{
+			translationPixels = SnapValue(translationPixels, OvEditor::Settings::EditorSettings::TranslationSnapUnit);
+		}
+
+		OvMaths::FVector2 axisDelta = OvMaths::FVector2::Zero;
+		switch (m_direction)
+		{
+		case EDirection::X:
+			axisDelta.x = translationPixels;
+			break;
+		case EDirection::Y:
+			axisDelta.y = translationPixels;
+			break;
+		case EDirection::Z:
+			break;
+		}
+
+		transform2D->SetPosition(m_originalUIPosition + axisDelta);
+		return;
+	}
+
 	auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
 
 	const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(GetRealDirection(true), m_target->transform.GetWorldPosition() - p_cameraPosition);

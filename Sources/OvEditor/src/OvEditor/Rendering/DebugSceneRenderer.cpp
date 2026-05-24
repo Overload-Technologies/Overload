@@ -22,6 +22,7 @@
 #include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/ReflectionRenderFeature.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvDebug/Assertion.h>
 
@@ -52,6 +53,7 @@ namespace
 	const OvMaths::FVector3 kLightVolumeColor = { 1.0f, 1.0f, 0.0f };
 	const OvMaths::FVector3 kColliderColor = { 0.0f, 1.0f, 0.0f };
 	const OvMaths::FVector3 kFrustumColor = { 1.0f, 1.0f, 1.0f };
+	const OvMaths::FVector3 kCanvasBoundsColor = { 1.0f, 0.35f, 0.0f };
 	const OvMaths::FVector3 kUIBoundsColor = { 0.0f, 0.75f, 1.0f };
 
 	const OvMaths::FVector4 kHoveredOutlineColor{ 1.0f, 1.0f, 0.0f, 1.0f };
@@ -120,67 +122,29 @@ namespace
 		return lightBuffer;
 	}
 
-	OvMaths::FVector2 ClampCanvasSize(const OvMaths::FVector2& p_canvasSize)
-	{
-		return {
-			std::max(p_canvasSize.x, 1.0f),
-			std::max(p_canvasSize.y, 1.0f)
-		};
-	}
-
 	const OvCore::ECS::Components::UI::CCanvas* FindCanvas(const OvCore::ECS::Actor& p_owner)
 	{
-		const auto* current = &p_owner;
-
-		while (current)
-		{
-			if (const auto* canvas = current->GetComponent<OvCore::ECS::Components::UI::CCanvas>(); canvas)
-			{
-				return canvas;
-			}
-
-			current = current->GetParent();
-		}
-
-		return nullptr;
+		return OvCore::Rendering::UIRenderingUtils::FindCanvas(p_owner);
 	}
 
 	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
 	{
-		const auto fallbackSize = ClampCanvasSize(p_renderSize);
-		const auto* canvas = FindCanvas(p_owner);
+		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_owner, p_renderSize);
+	}
 
-		if (!canvas)
+	float GetCanvasScale(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
+	{
+		if (const auto* canvas = FindCanvas(p_owner))
 		{
-			return fallbackSize;
+			return OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
 		}
 
-		const auto scaleFactor = canvas->GetScaleFactor();
-
-		if (canvas->GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE)
-		{
-			return ClampCanvasSize(fallbackSize * scaleFactor);
-		}
-
-		return ClampCanvasSize(canvas->GetReferenceResolution() * scaleFactor);
+		return 1.0f;
 	}
 
 	OvMaths::FVector2 GetLayoutOffset(const OvCore::ECS::Actor& p_owner)
 	{
-		OvMaths::FVector2 result = OvMaths::FVector2::Zero;
-		const auto* child = &p_owner;
-
-		while (const auto* parent = child->GetParent())
-		{
-			if (const auto* layout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
-			{
-				result += layout->GetChildOffset(*child);
-			}
-
-			child = parent;
-		}
-
-		return result;
+		return OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_owner);
 	}
 
 	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
@@ -194,12 +158,7 @@ namespace
 		const OvCore::ECS::Components::UI::CCanvas& p_canvas
 	)
 	{
-		if (p_sceneDescriptor.renderUIInScreenSpace)
-		{
-			return 1.0f;
-		}
-
-		return 1.0f / p_canvas.GetPixelsPerUnit();
+		return OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(p_canvas, p_sceneDescriptor.renderUIInScreenSpace);
 	}
 }
 
@@ -457,6 +416,11 @@ protected:
 	{
 		if (p_actor.IsActive())
 		{
+			if (auto layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+			{
+				layout->ApplyControlledChildrenSizes();
+			}
+
 			/* Render static mesh outline and bounding spheres */
 			if (OvEditor::Settings::EditorSettings::ShowGeometryBounds)
 			{
@@ -518,6 +482,11 @@ protected:
 				DrawUIBounds(p_actor, text->GetSize());
 			}
 
+			if (auto canvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				DrawCanvasBounds(p_actor, *canvas);
+			}
+
 			for (auto& child : p_actor.GetChildren())
 			{
 				DrawActorDebugElements(*child);
@@ -553,12 +522,14 @@ protected:
 		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
+		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
 		auto matrix = transform2D ?
-			transform2D->GetMatrix(canvasSize, layoutOffset) :
+			transform2D->GetMatrix(canvasSize, layoutOffset, p_size) :
 			p_actor.transform.GetFTransform().GetWorldMatrix();
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, *canvas);
-		matrix = OvMaths::FMatrix4::Scaling({ worldScale, worldScale, 1.0f }) * matrix;
+		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
+		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
 
 		const auto halfSize = p_size * 0.5f;
 		const auto corners = std::to_array<OvMaths::FVector3>({
@@ -573,6 +544,52 @@ protected:
 		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kUIBoundsColor, kUIBoundsWidth, false);
+	}
+
+	void DrawCanvasBounds(OvCore::ECS::Actor& p_actor, OvCore::ECS::Components::UI::CCanvas& p_canvas)
+	{
+		const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+		if (!sceneDescriptor.includeUI)
+		{
+			return;
+		}
+
+		const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
+		const auto renderSize = OvMaths::FVector2{
+			static_cast<float>(frameDescriptor.renderWidth),
+			static_cast<float>(frameDescriptor.renderHeight)
+		};
+
+		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
+		if (canvasSize.x <= 0.0f || canvasSize.y <= 0.0f)
+		{
+			return;
+		}
+
+		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		const auto layoutOffset = GetLayoutOffset(p_actor);
+		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
+		auto matrix = transform2D ?
+			transform2D->GetMatrix(canvasSize, layoutOffset, canvasSize) :
+			p_actor.transform.GetFTransform().GetWorldMatrix();
+
+		const auto worldScale = GetUIWorldScale(sceneDescriptor, p_canvas);
+		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
+		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+
+		const auto halfSize = canvasSize * 0.5f;
+		const auto corners = std::to_array<OvMaths::FVector3>({
+			TransformPoint(matrix, { -halfSize.x, -halfSize.y }),
+			TransformPoint(matrix, {  halfSize.x, -halfSize.y }),
+			TransformPoint(matrix, {  halfSize.x,  halfSize.y }),
+			TransformPoint(matrix, { -halfSize.x,  halfSize.y })
+		});
+
+		auto pso = m_renderer.CreatePipelineState();
+		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kCanvasBoundsColor, kUIBoundsWidth, false);
 	}
 
 	void DrawFrustumLines(

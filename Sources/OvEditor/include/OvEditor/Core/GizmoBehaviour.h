@@ -143,6 +143,7 @@ namespace OvEditor::Core
 		EDirection m_direction;
 		OvMaths::FTransform m_originalTransform;
 		OvMaths::FVector3 m_initialOffset;
+		OvMaths::FVector2 m_originalUIPosition = OvMaths::FVector2::Zero;
 		OvMaths::FVector2 m_originMouse;
 		OvMaths::FVector2 m_currentMouse;
 		OvMaths::FVector2 m_screenDirection;

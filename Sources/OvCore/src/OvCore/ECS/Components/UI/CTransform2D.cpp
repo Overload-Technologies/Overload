@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 #include <tinyxml2.h>
@@ -15,6 +16,7 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
+#include <OvUI/Widgets/Drags/DragMultipleScalars.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -336,29 +338,49 @@ void OvCore::ECS::Components::UI::CTransform2D::OnDeserialize(tinyxml2::XMLDocum
 
 void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Anchored Position (px)",
-		[this]() { return GetPosition(); },
-		[this](OvMaths::FVector2 p_value)
-		{
-			auto position = GetPosition();
-			const auto anchorPreset = GetAnchorPreset();
-
-			if (IsHorizontalPositionEditable(anchorPreset))
-			{
-				position.x = p_value.x;
-			}
-
-			if (IsVerticalPositionEditable(anchorPreset))
-			{
-				position.y = p_value.y;
-			}
-
-			SetPosition(position);
-		},
-		1.0f
+	Helpers::GUIDrawer::CreateTitle(p_root, "Anchored Position (px)");
+	auto& anchoredPosition = p_root.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 2>>(
+		Helpers::GUIDrawer::GetDataType<float>(),
+		Helpers::GUIDrawer::_MIN_FLOAT,
+		Helpers::GUIDrawer::_MAX_FLOAT,
+		0.0f,
+		1.0f,
+		"",
+		Helpers::GUIDrawer::GetFormat<float>()
 	);
+	auto& anchoredPositionDispatcher = anchoredPosition.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 2>>>();
+	anchoredPositionDispatcher.RegisterGatherer([this]()
+	{
+		const auto value = GetPosition();
+		return std::array<float, 2>{ value.x, value.y };
+	});
+	anchoredPositionDispatcher.RegisterProvider([this](std::array<float, 2> p_value)
+	{
+		auto position = GetPosition();
+		const auto anchorPreset = GetAnchorPreset();
+
+		if (IsHorizontalPositionEditable(anchorPreset))
+		{
+			position.x = p_value[0];
+		}
+
+		if (IsVerticalPositionEditable(anchorPreset))
+		{
+			position.y = p_value[1];
+		}
+
+		SetPosition(position);
+	});
+
+	const auto updateAnchoredPositionEditability = [this, anchoredPositionWidget = &anchoredPosition]()
+	{
+		const auto anchorPreset = GetAnchorPreset();
+		const bool isHorizontalEditable = IsHorizontalPositionEditable(anchorPreset);
+		const bool isVerticalEditable = IsVerticalPositionEditable(anchorPreset);
+
+		anchoredPositionWidget->disabled = IsDrivenByLayout(owner) || (!isHorizontalEditable && !isVerticalEditable);
+	};
+	updateAnchoredPositionEditability();
 
 	Helpers::GUIDrawer::DrawVec2(
 		p_root,
@@ -399,9 +421,10 @@ void OvCore::ECS::Components::UI::CTransform2D::OnInspector(OvUI::Internal::Widg
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::VERTICAL_STRETCH_RIGHT), "Vertical Stretch Right");
 	anchorPreset.choices.emplace(static_cast<int>(EAnchorPreset::STRETCH_BOTH), "Stretch Both");
 
-	anchorPreset.ValueChangedEvent += [this](int p_choice)
+	anchorPreset.ValueChangedEvent += [this, updateAnchoredPositionEditability](int p_choice)
 	{
 		SetAnchorPreset(ToAnchorPreset(p_choice));
+		updateAnchoredPositionEditability();
 	};
 }
 

@@ -75,6 +75,11 @@ OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetCanvasSize(
 	const OvMaths::FVector2& p_renderSize
 )
 {
+	if (p_canvas.GetScalerMode() == OvCore::ECS::Components::UI::CCanvas::EScalerMode::CONSTANT_PIXEL_SIZE)
+	{
+		return ClampCanvasSize(p_canvas.GetReferenceResolution());
+	}
+
 	const auto renderSize = ClampCanvasSize(p_renderSize);
 	const auto canvasScale = GetCanvasScale(p_canvas, renderSize);
 	return ClampCanvasSize(renderSize / canvasScale);

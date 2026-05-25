@@ -244,6 +244,10 @@ namespace
 		return [p_parent, p_name, p_onItemClicked]()
 		{
 			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
+			if (!instance.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+			{
+				instance.AddComponent<OvCore::ECS::Components::UI::CTransform2D>();
+			}
 			instance.AddComponent<TLayout>();
 			instance.SetName(p_name);
 

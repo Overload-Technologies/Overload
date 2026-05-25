@@ -119,43 +119,6 @@ namespace
 			return p_textHeight * 0.5f - p_contentHeight * 0.5f;
 		}
 	}
-
-	void AddGlyphGeometry(
-		std::vector<OvRendering::Geometry::Vertex>& p_vertices,
-		std::vector<uint32_t>& p_indices,
-		const OvRendering::Resources::Font::Glyph& p_glyph,
-		float p_cursorX,
-		float p_baselineY,
-		float p_scale,
-		float& p_minX,
-		float& p_minY,
-		float& p_maxX,
-		float& p_maxY
-	)
-	{
-		const float x0 = p_cursorX + p_glyph.xOffset * p_scale;
-		const float topY = p_baselineY - p_glyph.yOffset * p_scale;
-		const float x1 = x0 + p_glyph.width * p_scale;
-		const float bottomY = topY - p_glyph.height * p_scale;
-
-		const uint32_t firstVertex = static_cast<uint32_t>(p_vertices.size());
-		p_vertices.push_back({ { x0, bottomY, 0.0f }, { p_glyph.uMin, p_glyph.vMax }, { 0.0f, 0.0f, 1.0f }, {}, {} });
-		p_vertices.push_back({ { x1, bottomY, 0.0f }, { p_glyph.uMax, p_glyph.vMax }, { 0.0f, 0.0f, 1.0f }, {}, {} });
-		p_vertices.push_back({ { x1, topY,    0.0f }, { p_glyph.uMax, p_glyph.vMin }, { 0.0f, 0.0f, 1.0f }, {}, {} });
-		p_vertices.push_back({ { x0, topY,    0.0f }, { p_glyph.uMin, p_glyph.vMin }, { 0.0f, 0.0f, 1.0f }, {}, {} });
-
-		p_indices.push_back(firstVertex + 0);
-		p_indices.push_back(firstVertex + 1);
-		p_indices.push_back(firstVertex + 2);
-		p_indices.push_back(firstVertex + 0);
-		p_indices.push_back(firstVertex + 2);
-		p_indices.push_back(firstVertex + 3);
-
-		p_minX = std::min(p_minX, x0);
-		p_minY = std::min(p_minY, bottomY);
-		p_maxX = std::max(p_maxX, x1);
-		p_maxY = std::max(p_maxY, topY);
-	}
 }
 
 OvCore::ECS::Components::UI::CText::CText(ECS::Actor& p_owner) :
@@ -448,6 +411,19 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	vertices.reserve(m_text.size() * 4);
 	indices.reserve(m_text.size() * 6);
 
+	struct LineInfo
+	{
+		size_t firstVertex = 0;
+		size_t lastVertex = 0;
+		float minX = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::lowest();
+		bool hasGeometry = false;
+	};
+
+	std::vector<LineInfo> lines;
+	lines.push_back({});
+	lines.back().firstVertex = 0;
+
 	float cursorX = 0.0f;
 	float baselineY = 0.0f;
 	float minX = std::numeric_limits<float>::max();
@@ -466,6 +442,9 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 
 		if (character == '\n')
 		{
+			lines.back().lastVertex = vertices.size();
+			lines.push_back({});
+			lines.back().firstVertex = vertices.size();
 			cursorX = 0.0f;
 			baselineY -= lineHeight * scale;
 			continue;
@@ -482,9 +461,39 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 			continue;
 		}
 
-		AddGlyphGeometry(vertices, indices, *glyph, cursorX, baselineY, scale, minX, minY, maxX, maxY);
+		const float x0 = cursorX + glyph->xOffset * scale;
+		const float topY = baselineY - glyph->yOffset * scale;
+		const float x1 = x0 + glyph->width * scale;
+		const float bottomY = topY - glyph->height * scale;
+
+		const uint32_t firstVertex = static_cast<uint32_t>(vertices.size());
+		vertices.push_back({ { x0, bottomY, 0.0f }, { glyph->uMin, glyph->vMax }, { 0.0f, 0.0f, 1.0f }, {}, {} });
+		vertices.push_back({ { x1, bottomY, 0.0f }, { glyph->uMax, glyph->vMax }, { 0.0f, 0.0f, 1.0f }, {}, {} });
+		vertices.push_back({ { x1, topY,    0.0f }, { glyph->uMax, glyph->vMin }, { 0.0f, 0.0f, 1.0f }, {}, {} });
+		vertices.push_back({ { x0, topY,    0.0f }, { glyph->uMin, glyph->vMin }, { 0.0f, 0.0f, 1.0f }, {}, {} });
+
+		indices.push_back(firstVertex + 0);
+		indices.push_back(firstVertex + 1);
+		indices.push_back(firstVertex + 2);
+		indices.push_back(firstVertex + 0);
+		indices.push_back(firstVertex + 2);
+		indices.push_back(firstVertex + 3);
+
+		minX = std::min(minX, x0);
+		minY = std::min(minY, bottomY);
+		maxX = std::max(maxX, x1);
+		maxY = std::max(maxY, topY);
+
+		auto& line = lines.back();
+		line.hasGeometry = true;
+		line.minX = std::min(line.minX, x0);
+		line.maxX = std::max(line.maxX, x1);
+		line.lastVertex = vertices.size();
+
 		cursorX += glyph->xAdvance * scale;
 	}
+
+	lines.back().lastVertex = vertices.size();
 
 	if (vertices.empty() || indices.empty())
 	{
@@ -499,20 +508,31 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	const auto contentSize = m_size;
 	m_size = ResolveTextSize(contentSize, m_extents);
 
-	const OvMaths::FVector2 center = {
-		minX + contentSize.x * 0.5f,
-		minY + contentSize.y * 0.5f
-	};
+	for (const auto& line : lines)
+	{
+		if (!line.hasGeometry || line.lastVertex <= line.firstVertex)
+		{
+			continue;
+		}
 
-	const OvMaths::FVector2 alignedCenter = {
-		GetAlignedCenterX(m_size.x, contentSize.x, m_horizontalAlignment),
-		GetAlignedCenterY(m_size.y, contentSize.y, m_verticalAlignment)
-	};
+		const float lineWidth = std::max(line.maxX - line.minX, 0.0f);
+		const float lineCenterX = line.minX + lineWidth * 0.5f;
+		const float alignedLineCenterX = GetAlignedCenterX(m_size.x, lineWidth, m_horizontalAlignment);
+		const float lineOffsetX = alignedLineCenterX - lineCenterX;
+
+		for (size_t vertexIndex = line.firstVertex; vertexIndex < line.lastVertex; ++vertexIndex)
+		{
+			vertices[vertexIndex].position[0] += lineOffsetX;
+		}
+	}
+
+	const float contentCenterY = minY + contentSize.y * 0.5f;
+	const float alignedCenterY = GetAlignedCenterY(m_size.y, contentSize.y, m_verticalAlignment);
+	const float globalOffsetY = alignedCenterY - contentCenterY;
 
 	for (auto& vertex : vertices)
 	{
-		vertex.position[0] += alignedCenter.x - center.x;
-		vertex.position[1] += alignedCenter.y - center.y;
+		vertex.position[1] += globalOffsetY;
 	}
 
 	m_mesh = std::make_unique<OvRendering::Resources::Mesh>(vertices, indices);

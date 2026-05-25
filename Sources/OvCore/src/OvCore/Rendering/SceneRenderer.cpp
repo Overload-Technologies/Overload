@@ -201,6 +201,26 @@ namespace
 		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*p_canvas, false) : 1.0f;
 	}
 
+	OvMaths::FVector2 GetResolvedElementSize(
+		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		if (!p_transform2D)
+		{
+			return {
+				std::max(p_elementSize.x, 0.0f),
+				std::max(p_elementSize.y, 0.0f)
+			};
+		}
+
+		const auto sizeOverride = p_transform2D->GetSize();
+		return {
+			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
+			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
+		};
+	}
+
 	EngineDrawableDescriptor CreateUIDrawableDescriptor(
 		OvCore::ECS::Actor& p_owner,
 		const OvMaths::FVector2& p_canvasSize,
@@ -220,6 +240,16 @@ namespace
 				p_owner.transform.GetFTransform().GetWorldMatrix(),
 			.userMatrix = OvMaths::FMatrix4::Identity
 		};
+
+		if (transform2D && p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
+		{
+			const auto resolvedSize = GetResolvedElementSize(transform2D, p_elementSize);
+			descriptor.modelMatrix = descriptor.modelMatrix * OvMaths::FMatrix4::Scaling({
+				resolvedSize.x / p_elementSize.x,
+				resolvedSize.y / p_elementSize.y,
+				1.0f
+			});
+		}
 
 		const auto unitsScale = p_screenSpace ? p_canvasScale : p_canvasScale * p_worldScale;
 		descriptor.modelMatrix =

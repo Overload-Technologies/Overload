@@ -73,6 +73,20 @@ namespace
 
 		void AddComponent(Actor& p_actor) const override
 		{
+			if constexpr (
+				std::is_same_v<TComponent, UI::CImage> ||
+				std::is_same_v<TComponent, UI::CText> ||
+				std::is_same_v<TComponent, UI::CLayoutGroup> ||
+				std::is_same_v<TComponent, UI::CHorizontalLayout> ||
+				std::is_same_v<TComponent, UI::CVerticalLayout>
+			)
+			{
+				if (!p_actor.GetComponent<UI::CTransform2D>())
+				{
+					p_actor.AddComponent<UI::CTransform2D>();
+				}
+			}
+
 			p_actor.AddComponent<TComponent>();
 		}
 

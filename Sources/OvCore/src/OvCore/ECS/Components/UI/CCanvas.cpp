@@ -14,6 +14,7 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
+#include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
 namespace
@@ -66,6 +67,59 @@ namespace
 		case static_cast<int>(EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT):
 		default:
 			return EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT;
+		}
+	}
+
+	void RebuildScaleWithScreenSettings(
+		OvCore::ECS::Components::UI::CCanvas& p_canvas,
+		OvUI::Internal::WidgetContainer& p_root
+	)
+	{
+		p_root.RemoveAllWidgets();
+
+		if (p_canvas.GetScalerMode() != OvCore::ECS::Components::UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE)
+		{
+			return;
+		}
+
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Screen Match Mode");
+		auto& screenMatchMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(p_canvas.GetScreenMatchMode()));
+		screenMatchMode.choices.emplace(
+			static_cast<int>(OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT),
+			"Match Width Or Height"
+		);
+		screenMatchMode.choices.emplace(
+			static_cast<int>(OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode::EXPAND),
+			"Expand"
+		);
+		screenMatchMode.choices.emplace(
+			static_cast<int>(OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode::SHRINK),
+			"Shrink"
+		);
+
+		auto* canvas = &p_canvas;
+		auto& screenMatchModeDispatcher = screenMatchMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
+		screenMatchModeDispatcher.RegisterGatherer([canvas]() { return static_cast<int>(canvas->GetScreenMatchMode()); });
+		screenMatchModeDispatcher.RegisterProvider([canvas](int p_choice) { canvas->SetScreenMatchMode(ToScreenMatchMode(p_choice)); });
+
+		auto* scaleWithScreenSettings = &p_root;
+		screenMatchMode.ValueChangedEvent += [canvas, scaleWithScreenSettings](int p_choice)
+		{
+			canvas->SetScreenMatchMode(ToScreenMatchMode(p_choice));
+			RebuildScaleWithScreenSettings(*canvas, *scaleWithScreenSettings);
+		};
+
+		if (p_canvas.GetScreenMatchMode() == OvCore::ECS::Components::UI::CCanvas::EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT)
+		{
+			OvCore::Helpers::GUIDrawer::DrawScalar<float>(
+				p_root,
+				"Match Width Or Height",
+				[canvas]() { return canvas->GetMatchWidthOrHeight(); },
+				[canvas](float p_value) { canvas->SetMatchWidthOrHeight(p_value); },
+				0.01f,
+				kMinimumMatchWidthOrHeight,
+				kMaximumMatchWidthOrHeight
+			);
 		}
 	}
 }
@@ -234,34 +288,18 @@ void OvCore::ECS::Components::UI::CCanvas::OnInspector(OvUI::Internal::WidgetCon
 	auto& scalerMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetScalerMode()));
 	scalerMode.choices.emplace(static_cast<int>(EScalerMode::CONSTANT_PIXEL_SIZE), "Constant Pixel Size");
 	scalerMode.choices.emplace(static_cast<int>(EScalerMode::SCALE_WITH_SCREEN_SIZE), "Scale With Screen Size");
-	scalerMode.ValueChangedEvent += [this](int p_choice)
+	auto& scalerModeDispatcher = scalerMode.AddPlugin<OvUI::Plugins::DataDispatcher<int>>();
+	scalerModeDispatcher.RegisterGatherer([this]() { return static_cast<int>(GetScalerMode()); });
+	scalerModeDispatcher.RegisterProvider([this](int p_choice) { SetScalerMode(ToScalerMode(p_choice)); });
+
+	auto& scaleWithScreenSettings = p_root.CreateWidget<OvUI::Widgets::Layout::Group>();
+	auto* scaleWithScreenSettingsWidget = &scaleWithScreenSettings;
+	auto* canvas = this;
+	scalerMode.ValueChangedEvent += [canvas, scaleWithScreenSettingsWidget](int p_choice)
 	{
-		SetScalerMode(ToScalerMode(p_choice));
+		canvas->SetScalerMode(ToScalerMode(p_choice));
+		RebuildScaleWithScreenSettings(*canvas, *scaleWithScreenSettingsWidget);
 	};
 
-	if (GetScalerMode() == EScalerMode::SCALE_WITH_SCREEN_SIZE)
-	{
-		Helpers::GUIDrawer::CreateTitle(p_root, "Screen Match Mode");
-		auto& screenMatchMode = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetScreenMatchMode()));
-		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT), "Match Width Or Height");
-		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::EXPAND), "Expand");
-		screenMatchMode.choices.emplace(static_cast<int>(EScreenMatchMode::SHRINK), "Shrink");
-		screenMatchMode.ValueChangedEvent += [this](int p_choice)
-		{
-			SetScreenMatchMode(ToScreenMatchMode(p_choice));
-		};
-
-		if (GetScreenMatchMode() == EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT)
-		{
-			Helpers::GUIDrawer::DrawScalar<float>(
-				p_root,
-				"Match Width Or Height",
-				std::bind(&CCanvas::GetMatchWidthOrHeight, this),
-				std::bind(&CCanvas::SetMatchWidthOrHeight, this, std::placeholders::_1),
-				0.01f,
-				kMinimumMatchWidthOrHeight,
-				kMaximumMatchWidthOrHeight
-			);
-		}
-	}
+	RebuildScaleWithScreenSettings(*this, scaleWithScreenSettings);
 }

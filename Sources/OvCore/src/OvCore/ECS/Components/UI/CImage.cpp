@@ -11,7 +11,9 @@
 
 #include <tinyxml2.h>
 
+#include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
@@ -146,14 +148,25 @@ void OvCore::ECS::Components::UI::CImage::OnInspector(OvUI::Internal::WidgetCont
 {
 	Helpers::GUIDrawer::DrawTexture(p_root, "Texture", m_texture);
 
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Size",
-		[this]() { return GetSize(); },
-		[this](OvMaths::FVector2 p_value) { SetSize(p_value); },
-		1.0f,
-		kMinimumSize
-	);
+	if (!owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+	{
+		Helpers::GUIDrawer::DrawVec2(
+			p_root,
+			"Size",
+			[this]() { return GetSize(); },
+			[this](OvMaths::FVector2 p_value) { SetSize(p_value); },
+			1.0f,
+			kMinimumSize
+		);
+	}
+	else
+	{
+		Helpers::GUIDrawer::DrawReadOnlyString(
+			p_root,
+			"Size",
+			[]() { return std::string("Driven by Transform 2D"); }
+		);
+	}
 
 	Helpers::GUIDrawer::DrawColor(
 		p_root,

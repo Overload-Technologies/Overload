@@ -4,15 +4,21 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <ranges>
 #include <string>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/SkinningDrawableDescriptor.h>
 #include <OvCore/Rendering/SkinningUtils.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Rendering/DebugModelRenderFeature.h>
@@ -43,6 +49,138 @@ namespace
 		{
 			p_material.SetProperty(p_uniformName, color, true);
 		}
+	}
+
+	const OvCore::ECS::Components::UI::CCanvas* FindCanvas(const OvCore::ECS::Actor& p_owner)
+	{
+		return OvCore::Rendering::UIRenderingUtils::FindCanvas(p_owner);
+	}
+
+	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
+	{
+		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_owner, p_renderSize);
+	}
+
+	float GetCanvasScale(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
+	{
+		if (const auto* canvas = FindCanvas(p_owner))
+		{
+			return OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
+		}
+
+		return 1.0f;
+	}
+
+	OvMaths::FVector2 GetLayoutOffset(const OvCore::ECS::Actor& p_owner)
+	{
+		return OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_owner);
+	}
+
+	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
+	{
+		const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
+		return { result.x, result.y, result.z };
+	}
+
+	OvMaths::FVector2 GetResolvedElementSize(
+		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		if (!p_transform2D)
+		{
+			return {
+				std::max(p_elementSize.x, 0.0f),
+				std::max(p_elementSize.y, 0.0f)
+			};
+		}
+
+		const auto sizeOverride = p_transform2D->GetSize();
+		return {
+			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
+			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
+		};
+	}
+
+	void ApplyTransform2DSizeOverride(
+		OvMaths::FMatrix4& p_matrix,
+		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		if (!p_transform2D || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		{
+			return;
+		}
+
+		const auto resolvedSize = GetResolvedElementSize(p_transform2D, p_elementSize);
+		p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
+			resolvedSize.x / p_elementSize.x,
+			resolvedSize.y / p_elementSize.y,
+			1.0f
+		});
+	}
+
+	bool TryGetUIActorGizmoTransform(
+		const bool p_includeUI,
+		const bool p_renderUIInScreenSpace,
+		const uint32_t p_renderWidth,
+		const uint32_t p_renderHeight,
+		OvCore::ECS::Actor& p_actor,
+		OvMaths::FVector3& p_position,
+		OvMaths::FQuaternion& p_rotation
+	)
+	{
+		if (!p_includeUI)
+		{
+			return false;
+		}
+
+		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		const auto* canvas = transform2D ? FindCanvas(p_actor) : nullptr;
+		if (!transform2D || !canvas)
+		{
+			return false;
+		}
+
+		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
+		if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
+		{
+			elementSize = image->GetSize();
+		}
+		else if (auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
+		{
+			elementSize = text->GetSize();
+		}
+		else if (auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, {
+				static_cast<float>(p_renderWidth),
+				static_cast<float>(p_renderHeight)
+			});
+		}
+		else
+		{
+			elementSize = transform2D->GetSize();
+		}
+
+		const auto renderSize = OvMaths::FVector2{
+			static_cast<float>(p_renderWidth),
+			static_cast<float>(p_renderHeight)
+		};
+		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
+		const auto layoutOffset = GetLayoutOffset(p_actor);
+		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
+		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
+		ApplyTransform2DSizeOverride(matrix, transform2D, elementSize);
+
+		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
+		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
+		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+
+		p_position = TransformPoint(matrix, OvMaths::FVector2::Zero);
+		p_rotation = p_actor.transform.GetWorldRotation();
+		return true;
 	}
 }
 
@@ -141,11 +279,22 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 	if (debugSceneDescriptor.selectedActor)
 	{
 		auto& selectedActor = debugSceneDescriptor.selectedActor.value();
+		auto gizmoPosition = selectedActor.transform.GetWorldPosition();
+		auto gizmoRotation = selectedActor.transform.GetWorldRotation();
+		TryGetUIActorGizmoTransform(
+			sceneDescriptor.includeUI,
+			sceneDescriptor.renderUIInScreenSpace,
+			frameDescriptor.renderWidth,
+			frameDescriptor.renderHeight,
+			selectedActor,
+			gizmoPosition,
+			gizmoRotation
+		);
 
 		DrawPickableGizmo(
 			pso,
-			selectedActor.transform.GetWorldPosition(),
-			selectedActor.transform.GetWorldRotation(),
+			gizmoPosition,
+			gizmoRotation,
 			debugSceneDescriptor.gizmoOperation
 		);
 	}

@@ -34,13 +34,23 @@ bool OvEditor::Core::GizmoBehaviour::IsSnappedBehaviourEnabled() const
 	return inputManager->GetKeyState(EKey::KEY_LEFT_CONTROL) == EKeyState::KEY_DOWN || inputManager->GetKeyState(EKey::KEY_RIGHT_CONTROL) == EKeyState::KEY_DOWN;
 }
 
-void OvEditor::Core::GizmoBehaviour::StartPicking(OvCore::ECS::Actor& p_target, const OvMaths::FVector3& p_cameraPosition, EGizmoOperation p_operation, EDirection p_direction)
+void OvEditor::Core::GizmoBehaviour::StartPicking(
+	OvCore::ECS::Actor& p_target,
+	const OvMaths::FVector3& p_cameraPosition,
+	EGizmoOperation p_operation,
+	EDirection p_direction,
+	const OvMaths::FVector3* p_overrideWorldPosition
+)
 {
 	m_target = &p_target;
 	m_firstMouse = true;
 	m_firstPick = true;
 	m_originalTransform = p_target.transform.GetFTransform();
-	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_target->transform.GetWorldPosition());
+	if (p_overrideWorldPosition)
+	{
+		m_originalTransform.SetWorldPosition(*p_overrideWorldPosition);
+	}
+	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_originalTransform.GetWorldPosition());
 	m_currentOperation = p_operation;
 	m_direction = p_direction;
 

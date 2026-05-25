@@ -42,8 +42,15 @@ namespace OvEditor::Core
 		* @param p_cameraPosition
 		* @param p_operation
 		* @param p_direction
+		* @param p_overrideWorldPosition
 		*/
-		void StartPicking(OvCore::ECS::Actor& p_target, const OvMaths::FVector3& p_cameraPosition, EGizmoOperation p_operation, EDirection p_direction);
+		void StartPicking(
+			OvCore::ECS::Actor& p_target,
+			const OvMaths::FVector3& p_cameraPosition,
+			EGizmoOperation p_operation,
+			EDirection p_direction,
+			const OvMaths::FVector3* p_overrideWorldPosition = nullptr
+		);
 
 		/**
 		* Stops the gizmo picking behaviour

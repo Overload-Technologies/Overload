@@ -160,6 +160,105 @@ namespace
 	{
 		return OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(p_canvas, p_sceneDescriptor.renderUIInScreenSpace);
 	}
+
+	OvMaths::FVector2 GetResolvedElementSize(
+		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		if (!p_transform2D)
+		{
+			return {
+				std::max(p_elementSize.x, 0.0f),
+				std::max(p_elementSize.y, 0.0f)
+			};
+		}
+
+		const auto sizeOverride = p_transform2D->GetSize();
+		return {
+			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
+			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
+		};
+	}
+
+	void ApplyTransform2DSizeOverride(
+		OvMaths::FMatrix4& p_matrix,
+		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		if (!p_transform2D || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		{
+			return;
+		}
+
+		const auto resolvedSize = GetResolvedElementSize(p_transform2D, p_elementSize);
+		p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
+			resolvedSize.x / p_elementSize.x,
+			resolvedSize.y / p_elementSize.y,
+			1.0f
+		});
+	}
+
+	bool TryGetUIActorGizmoTransform(
+		const OvCore::Rendering::SceneRenderer::SceneDescriptor& p_sceneDescriptor,
+		const OvRendering::Data::FrameDescriptor& p_frameDescriptor,
+		OvCore::ECS::Actor& p_actor,
+		OvMaths::FVector3& p_position,
+		OvMaths::FQuaternion& p_rotation
+	)
+	{
+		if (!p_sceneDescriptor.includeUI)
+		{
+			return false;
+		}
+
+		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		const auto* canvas = transform2D ? FindCanvas(p_actor) : nullptr;
+		if (!transform2D || !canvas)
+		{
+			return false;
+		}
+
+		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
+		if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
+		{
+			elementSize = image->GetSize();
+		}
+		else if (auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
+		{
+			elementSize = text->GetSize();
+		}
+		else if (auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, {
+				static_cast<float>(p_frameDescriptor.renderWidth),
+				static_cast<float>(p_frameDescriptor.renderHeight)
+			});
+		}
+		else
+		{
+			elementSize = transform2D->GetSize();
+		}
+
+		const auto renderSize = OvMaths::FVector2{
+			static_cast<float>(p_frameDescriptor.renderWidth),
+			static_cast<float>(p_frameDescriptor.renderHeight)
+		};
+		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
+		const auto layoutOffset = GetLayoutOffset(p_actor);
+		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
+		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
+		ApplyTransform2DSizeOverride(matrix, transform2D, elementSize);
+
+		const auto worldScale = GetUIWorldScale(p_sceneDescriptor, *canvas);
+		const auto unitsScale = p_sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
+		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+
+		p_position = TransformPoint(matrix, OvMaths::FVector2::Zero);
+		p_rotation = p_actor.transform.GetWorldRotation();
+		return true;
+	}
 }
 
 class DebugCamerasRenderPass : public OvRendering::Core::ARenderPass
@@ -383,17 +482,26 @@ protected:
 			const bool isActorHovered = debugSceneDescriptor.highlightedActor && debugSceneDescriptor.highlightedActor->GetID() == selectedActor.GetID();
 
 			DrawActorDebugElements(selectedActor);
+			auto gizmoPosition = selectedActor.transform.GetWorldPosition();
+			auto gizmoRotation = selectedActor.transform.GetWorldRotation();
+			TryGetUIActorGizmoTransform(
+				m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>(),
+				m_renderer.GetFrameDescriptor(),
+				selectedActor,
+				gizmoPosition,
+				gizmoRotation
+			);
 			m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
 				selectedActor,
 				isActorHovered ?
-				kHoveredOutlineColor :
-				kSelectedOutlineColor,
+					kHoveredOutlineColor :
+					kSelectedOutlineColor,
 				kSelectedOutlineWidth
 			);
 			m_renderer.Clear(false, true, false, OvMaths::FVector3::Zero);
 			m_renderer.GetFeature<OvEditor::Rendering::GizmoRenderFeature>().DrawGizmo(
-				selectedActor.transform.GetWorldPosition(),
-				selectedActor.transform.GetWorldRotation(),
+				gizmoPosition,
+				gizmoRotation,
 				debugSceneDescriptor.gizmoOperation,
 				false,
 				debugSceneDescriptor.highlightedGizmoDirection
@@ -520,18 +628,20 @@ protected:
 		};
 
 		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		const auto resolvedSize = GetResolvedElementSize(transform2D, p_size);
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
 		auto matrix = transform2D ?
 			transform2D->GetMatrix(canvasSize, layoutOffset, p_size) :
 			p_actor.transform.GetFTransform().GetWorldMatrix();
+		ApplyTransform2DSizeOverride(matrix, transform2D, p_size);
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, *canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
 		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
 
-		const auto halfSize = p_size * 0.5f;
+		const auto halfSize = resolvedSize * 0.5f;
 		const auto corners = std::to_array<OvMaths::FVector3>({
 			TransformPoint(matrix, { -halfSize.x, -halfSize.y }),
 			TransformPoint(matrix, {  halfSize.x, -halfSize.y }),
@@ -572,6 +682,7 @@ protected:
 		auto matrix = transform2D ?
 			transform2D->GetMatrix(canvasSize, layoutOffset, canvasSize) :
 			p_actor.transform.GetFTransform().GetWorldMatrix();
+		ApplyTransform2DSizeOverride(matrix, transform2D, canvasSize);
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, p_canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;

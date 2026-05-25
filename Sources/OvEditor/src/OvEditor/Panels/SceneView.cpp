@@ -4,7 +4,15 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <optional>
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Rendering/DebugSceneRenderer.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
@@ -17,6 +25,18 @@
 
 namespace
 {
+	OvMaths::FVector2 GetResolvedElementSize(
+		const OvCore::ECS::Components::UI::CTransform2D& p_transform2D,
+		const OvMaths::FVector2& p_elementSize
+	)
+	{
+		const auto sizeOverride = p_transform2D.GetSize();
+		return {
+			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
+			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
+		};
+	}
+
 	OvTools::Utils::OptRef<OvCore::ECS::Actor> GetActorFromPickingResult(
 		OvEditor::Rendering::PickingRenderPass::PickingResult p_result
 	)
@@ -30,6 +50,70 @@ namespace
 		}
 
 		return std::nullopt;
+	}
+
+	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
+	{
+		const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
+		return { result.x, result.y, result.z };
+	}
+
+	std::optional<OvMaths::FVector3> ResolveUIGizmoOrigin(
+		OvCore::ECS::Actor& p_actor,
+		const OvMaths::FVector2& p_renderSize,
+		bool p_renderUIInScreenSpace
+	)
+	{
+		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		if (!transform2D)
+		{
+			return std::nullopt;
+		}
+
+		const auto* canvas = OvCore::Rendering::UIRenderingUtils::FindCanvas(p_actor);
+		if (!canvas)
+		{
+			return std::nullopt;
+		}
+
+		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
+		if (const auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
+		{
+			elementSize = image->GetSize();
+		}
+		else if (const auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
+		{
+			elementSize = text->GetSize();
+		}
+		else if (const auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, p_renderSize);
+		}
+		else
+		{
+			elementSize = transform2D->GetSize();
+		}
+
+		const auto canvasSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_actor, p_renderSize);
+		const auto layoutOffset = OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_actor);
+		const auto canvasScale = OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
+		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
+		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
+
+		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
+		if (elementSize.x > 0.0f && elementSize.y > 0.0f)
+		{
+			const auto resolvedSize = GetResolvedElementSize(*transform2D, elementSize);
+
+			matrix = matrix * OvMaths::FMatrix4::Scaling({
+				resolvedSize.x / elementSize.x,
+				resolvedSize.y / elementSize.y,
+				1.0f
+			});
+		}
+		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+
+		return TransformPoint(matrix, OvMaths::FVector2::Zero);
 	}
 }
 
@@ -224,11 +308,25 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 		{
 			if (m_highlightedGizmoDirection)
 			{
+				auto& selectedActor = EDITOR_EXEC(GetSelectedActor());
+				auto [winWidth, winHeight] = GetSafeSize();
+				const auto renderSize = OvMaths::FVector2{
+					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+				};
+				const auto uiGizmoOrigin = ResolveUIGizmoOrigin(
+					selectedActor,
+					renderSize,
+					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				);
+
 				m_gizmoOperations.StartPicking(
-					EDITOR_EXEC(GetSelectedActor()),
+					selectedActor,
 					m_camera.GetPosition(),
 					m_currentOperation,
-					m_highlightedGizmoDirection.value());
+					m_highlightedGizmoDirection.value(),
+					uiGizmoOrigin ? &uiGizmoOrigin.value() : nullptr
+				);
 			}
 			else if (m_highlightedActor)
 			{

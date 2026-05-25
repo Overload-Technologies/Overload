@@ -154,6 +154,8 @@ namespace OvRendering::Resources
 			bool valid = false;
 			float pixelSize = 32.0f;
 			float lineHeight = 32.0f;
+			uint32_t atlasWidth = 0;
+			uint32_t atlasHeight = 0;
 			std::array<Glyph, kGlyphCount> glyphs = {};
 			Texture* atlasTexture = nullptr;
 			std::unique_ptr<Data::Material> embeddedMaterial;

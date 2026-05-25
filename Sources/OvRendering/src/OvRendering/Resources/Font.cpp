@@ -23,8 +23,8 @@
 
 namespace
 {
-	constexpr uint32_t kAtlasWidth = 512;
-	constexpr uint32_t kAtlasHeight = 512;
+	constexpr uint32_t kMinimumAtlasSize = 512;
+	constexpr uint32_t kMaximumAtlasSize = 4096;
 	constexpr float kDefaultPixelSize = 32.0f;
 	constexpr float kMinimumPixelSize = 1.0f;
 	constexpr float kMaximumPixelSize = 256.0f;
@@ -65,6 +65,8 @@ namespace
 		bool valid = false;
 		float pixelSize = kDefaultPixelSize;
 		float lineHeight = kDefaultPixelSize;
+		uint32_t atlasWidth = 0;
+		uint32_t atlasHeight = 0;
 		std::array<OvRendering::Resources::Font::Glyph, OvRendering::Resources::Font::kGlyphCount> glyphs = {};
 		std::vector<uint8_t> atlasData;
 	};
@@ -128,6 +130,7 @@ namespace
 		const FT_Bitmap& p_bitmap,
 		uint32_t p_x,
 		uint32_t p_y,
+		uint32_t p_atlasWidth,
 		std::vector<uint8_t>& p_alphaAtlas
 	)
 	{
@@ -145,7 +148,7 @@ namespace
 		{
 			const uint32_t sourceRow = pitch >= 0 ? row : glyphHeight - 1 - row;
 			const uint8_t* source = p_bitmap.buffer + static_cast<size_t>(sourceRow) * pitchAbs;
-			const size_t destinationOffset = (static_cast<size_t>(p_y) + row) * kAtlasWidth + p_x;
+			const size_t destinationOffset = (static_cast<size_t>(p_y) + row) * p_atlasWidth + p_x;
 			std::copy(source, source + glyphWidth, p_alphaAtlas.begin() + destinationOffset);
 		}
 
@@ -198,76 +201,91 @@ namespace
 			result.lineHeight = static_cast<float>(face.handle->size->metrics.height) / 64.0f;
 		}
 
-		std::vector<uint8_t> alphaAtlas(kAtlasWidth * kAtlasHeight);
-		uint32_t cursorX = 0;
-		uint32_t cursorY = 0;
-		uint32_t rowHeight = 0;
-
-		for (uint32_t i = 0; i < Font::kGlyphCount; ++i)
+		for (uint32_t atlasSize = kMinimumAtlasSize; atlasSize <= kMaximumAtlasSize; atlasSize *= 2)
 		{
-			const uint32_t character = Font::kFirstGlyph + i;
-			if (FT_Load_Char(face.handle, character, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0)
+			std::vector<uint8_t> alphaAtlas(static_cast<size_t>(atlasSize) * atlasSize);
+			uint32_t cursorX = 0;
+			uint32_t cursorY = 0;
+			uint32_t rowHeight = 0;
+			bool fits = true;
+
+			for (uint32_t i = 0; i < Font::kGlyphCount; ++i)
 			{
-				OVLOG_WARNING("Unable to load glyph from font atlas: " + p_realPath.string());
-				return result;
+				const uint32_t character = Font::kFirstGlyph + i;
+				if (FT_Load_Char(face.handle, character, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL) != 0)
+				{
+					OVLOG_WARNING("Unable to load glyph from font atlas: " + p_realPath.string());
+					return result;
+				}
+
+				const FT_GlyphSlot glyphSlot = face.handle->glyph;
+				const FT_Bitmap& bitmap = glyphSlot->bitmap;
+				const uint32_t glyphWidth = static_cast<uint32_t>(bitmap.width);
+				const uint32_t glyphHeight = static_cast<uint32_t>(bitmap.rows);
+				auto& glyph = result.glyphs[i];
+
+				glyph.xOffset = static_cast<float>(glyphSlot->bitmap_left);
+				glyph.yOffset = -static_cast<float>(glyphSlot->bitmap_top);
+				glyph.xAdvance = static_cast<float>(glyphSlot->advance.x) / 64.0f;
+				glyph.width = static_cast<float>(glyphWidth);
+				glyph.height = static_cast<float>(glyphHeight);
+
+				if (glyphWidth == 0 || glyphHeight == 0)
+				{
+					continue;
+				}
+
+				if (cursorX + glyphWidth + kGlyphPadding > atlasSize)
+				{
+					cursorX = 0;
+					cursorY += rowHeight + kGlyphPadding;
+					rowHeight = 0;
+				}
+
+				if (cursorY + glyphHeight + kGlyphPadding > atlasSize)
+				{
+					fits = false;
+					break;
+				}
+
+				if (!CopyGlyphBitmap(bitmap, cursorX, cursorY, atlasSize, alphaAtlas))
+				{
+					OVLOG_WARNING("Unsupported glyph bitmap format in font: " + p_realPath.string());
+					return result;
+				}
+
+				glyph.uMin = static_cast<float>(cursorX) / static_cast<float>(atlasSize);
+				glyph.vMin = static_cast<float>(cursorY) / static_cast<float>(atlasSize);
+				glyph.uMax = static_cast<float>(cursorX + glyphWidth) / static_cast<float>(atlasSize);
+				glyph.vMax = static_cast<float>(cursorY + glyphHeight) / static_cast<float>(atlasSize);
+
+				cursorX += glyphWidth + kGlyphPadding;
+				rowHeight = std::max(rowHeight, glyphHeight);
 			}
 
-			const FT_GlyphSlot glyphSlot = face.handle->glyph;
-			const FT_Bitmap& bitmap = glyphSlot->bitmap;
-			const uint32_t glyphWidth = static_cast<uint32_t>(bitmap.width);
-			const uint32_t glyphHeight = static_cast<uint32_t>(bitmap.rows);
-			auto& glyph = result.glyphs[i];
-
-			glyph.xOffset = static_cast<float>(glyphSlot->bitmap_left);
-			glyph.yOffset = -static_cast<float>(glyphSlot->bitmap_top);
-			glyph.xAdvance = static_cast<float>(glyphSlot->advance.x) / 64.0f;
-			glyph.width = static_cast<float>(glyphWidth);
-			glyph.height = static_cast<float>(glyphHeight);
-
-			if (glyphWidth == 0 || glyphHeight == 0)
+			if (!fits)
 			{
 				continue;
 			}
 
-			if (cursorX + glyphWidth + kGlyphPadding > kAtlasWidth)
+			result.atlasWidth = atlasSize;
+			result.atlasHeight = atlasSize;
+			result.atlasData.resize(static_cast<size_t>(atlasSize) * atlasSize * 4);
+
+			for (size_t i = 0; i < alphaAtlas.size(); ++i)
 			{
-				cursorX = 0;
-				cursorY += rowHeight + kGlyphPadding;
-				rowHeight = 0;
+				const size_t offset = i * 4;
+				result.atlasData[offset + 0] = 255;
+				result.atlasData[offset + 1] = 255;
+				result.atlasData[offset + 2] = 255;
+				result.atlasData[offset + 3] = alphaAtlas[i];
 			}
 
-			if (cursorY + glyphHeight + kGlyphPadding > kAtlasHeight)
-			{
-				OVLOG_WARNING("Font atlas is too small for: " + p_realPath.string());
-				return result;
-			}
-
-			if (!CopyGlyphBitmap(bitmap, cursorX, cursorY, alphaAtlas))
-			{
-				OVLOG_WARNING("Unsupported glyph bitmap format in font: " + p_realPath.string());
-				return result;
-			}
-
-			glyph.uMin = static_cast<float>(cursorX) / static_cast<float>(kAtlasWidth);
-			glyph.vMin = static_cast<float>(cursorY) / static_cast<float>(kAtlasHeight);
-			glyph.uMax = static_cast<float>(cursorX + glyphWidth) / static_cast<float>(kAtlasWidth);
-			glyph.vMax = static_cast<float>(cursorY + glyphHeight) / static_cast<float>(kAtlasHeight);
-
-			cursorX += glyphWidth + kGlyphPadding;
-			rowHeight = std::max(rowHeight, glyphHeight);
+			result.valid = true;
+			return result;
 		}
 
-		result.atlasData.resize(kAtlasWidth * kAtlasHeight * 4);
-		for (size_t i = 0; i < alphaAtlas.size(); ++i)
-		{
-			const size_t offset = i * 4;
-			result.atlasData[offset + 0] = 255;
-			result.atlasData[offset + 1] = 255;
-			result.atlasData[offset + 2] = 255;
-			result.atlasData[offset + 3] = alphaAtlas[i];
-		}
-
-		result.valid = true;
+		OVLOG_WARNING("Font atlas is too small for: " + p_realPath.string());
 		return result;
 	}
 }
@@ -493,15 +511,23 @@ OvRendering::Resources::Font::AtlasVariant* OvRendering::Resources::Font::GetOrC
 {
 	if (auto* variant = GetVariant(p_pixelSize))
 	{
-		return variant;
+		return variant->valid ? variant : nullptr;
 	}
 
 	if (!CreateAtlasVariant(p_pixelSize))
 	{
+		auto& failedVariant = m_atlasVariants[p_pixelSize];
+		failedVariant.valid = false;
+		failedVariant.pixelSize = static_cast<float>(p_pixelSize);
 		return nullptr;
 	}
 
-	return GetVariant(p_pixelSize);
+	if (auto* variant = GetVariant(p_pixelSize))
+	{
+		return variant->valid ? variant : nullptr;
+	}
+
+	return nullptr;
 }
 
 void OvRendering::Resources::Font::DestroyAtlasVariants()
@@ -510,6 +536,8 @@ void OvRendering::Resources::Font::DestroyAtlasVariants()
 	{
 		Loaders::TextureLoader::Destroy(variant.atlasTexture);
 		variant.atlasTexture = nullptr;
+		variant.atlasWidth = 0;
+		variant.atlasHeight = 0;
 		variant.embeddedMaterial.reset();
 		variant.valid = false;
 	}
@@ -540,24 +568,33 @@ bool OvRendering::Resources::Font::CreateAtlasVariant(uint32_t p_pixelSize)
 
 	if (variant.atlasTexture)
 	{
-		Loaders::TextureLoader::ReloadFromMemory(
-			*variant.atlasTexture,
-			bakedFont.atlasData.data(),
-			kAtlasWidth,
-			kAtlasHeight,
-			ETextureFilteringMode::LINEAR,
-			ETextureFilteringMode::LINEAR,
-			ETextureWrapMode::CLAMP_TO_EDGE,
-			ETextureWrapMode::CLAMP_TO_EDGE,
-			false
-		);
+		if (variant.atlasWidth == bakedFont.atlasWidth && variant.atlasHeight == bakedFont.atlasHeight)
+		{
+			Loaders::TextureLoader::ReloadFromMemory(
+				*variant.atlasTexture,
+				bakedFont.atlasData.data(),
+				bakedFont.atlasWidth,
+				bakedFont.atlasHeight,
+				ETextureFilteringMode::LINEAR,
+				ETextureFilteringMode::LINEAR,
+				ETextureWrapMode::CLAMP_TO_EDGE,
+				ETextureWrapMode::CLAMP_TO_EDGE,
+				false
+			);
+		}
+		else
+		{
+			Loaders::TextureLoader::Destroy(variant.atlasTexture);
+			variant.atlasTexture = nullptr;
+		}
 	}
-	else
+
+	if (!variant.atlasTexture)
 	{
 		variant.atlasTexture = Loaders::TextureLoader::CreateFromMemory(
 			bakedFont.atlasData.data(),
-			kAtlasWidth,
-			kAtlasHeight,
+			bakedFont.atlasWidth,
+			bakedFont.atlasHeight,
 			ETextureFilteringMode::LINEAR,
 			ETextureFilteringMode::LINEAR,
 			ETextureWrapMode::CLAMP_TO_EDGE,
@@ -575,6 +612,8 @@ bool OvRendering::Resources::Font::CreateAtlasVariant(uint32_t p_pixelSize)
 	variant.valid = true;
 	variant.pixelSize = bakedFont.pixelSize;
 	variant.lineHeight = bakedFont.lineHeight;
+	variant.atlasWidth = bakedFont.atlasWidth;
+	variant.atlasHeight = bakedFont.atlasHeight;
 	variant.glyphs = bakedFont.glyphs;
 	if (variant.embeddedMaterial && variant.embeddedMaterial->IsValid())
 	{

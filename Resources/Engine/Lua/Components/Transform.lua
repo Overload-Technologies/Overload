@@ -4,6 +4,27 @@
 ---@class Transform : Component
 Transform = {}
 
+--- Defines the anchor preset used by Transform UI data
+---@enum AnchorPreset
+AnchorPreset = {
+	TOP_LEFT = 0,
+	TOP_CENTER = 1,
+	TOP_RIGHT = 2,
+	MIDDLE_LEFT = 3,
+	CENTER = 4,
+	MIDDLE_RIGHT = 5,
+	BOTTOM_LEFT = 6,
+	BOTTOM_CENTER = 7,
+	BOTTOM_RIGHT = 8,
+	HORIZONTAL_STRETCH_TOP = 9,
+	HORIZONTAL_STRETCH_MIDDLE = 10,
+	HORIZONTAL_STRETCH_BOTTOM = 11,
+	VERTICAL_STRETCH_LEFT = 12,
+	VERTICAL_STRETCH_CENTER = 13,
+	VERTICAL_STRETCH_RIGHT = 14,
+	STRETCH_BOTH = 15
+}
+
 --- Alias for SetLocalPosition
 ---@param position Vector3
 function Transform:SetPosition(position) end
@@ -111,6 +132,64 @@ function Transform:GetWorldUp() end
 --- Returns the transform world right
 ---@return Vector3
 function Transform:GetWorldRight() end
+
+--- Enables UI transform data on this transform
+function Transform:EnableUIData() end
+
+--- Disables UI transform data on this transform
+function Transform:DisableUIData() end
+
+--- Returns whether this transform carries UI data
+---@return boolean
+function Transform:HasUIData() end
+
+--- Returns the anchored UI position
+---@return Vector2
+function Transform:GetUIPosition() end
+
+--- Defines the anchored UI position
+---@param position Vector2
+function Transform:SetUIPosition(position) end
+
+--- Returns the UI rotation in degrees
+---@return number
+function Transform:GetUIRotation() end
+
+--- Defines the UI rotation in degrees
+---@param rotation number
+function Transform:SetUIRotation(rotation) end
+
+--- Returns the UI scale
+---@return Vector2
+function Transform:GetUIScale() end
+
+--- Defines the UI scale
+---@param scale Vector2
+function Transform:SetUIScale(scale) end
+
+--- Returns the UI size
+---@return Vector2
+function Transform:GetUISize() end
+
+--- Defines the UI size
+---@param size Vector2
+function Transform:SetUISize(size) end
+
+--- Returns the normalized pivot in range [-1, 1]
+---@return Vector2
+function Transform:GetUIPivot() end
+
+--- Defines the normalized pivot in range [-1, 1]
+---@param pivot Vector2
+function Transform:SetUIPivot(pivot) end
+
+--- Returns the UI anchor preset
+---@return AnchorPreset
+function Transform:GetUIAnchorPreset() end
+
+--- Defines the UI anchor preset
+---@param anchorPreset AnchorPreset
+function Transform:SetUIAnchorPreset(anchorPreset) end
 
 --- Returns the actor that owns this component
 ---@return Actor

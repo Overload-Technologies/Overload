@@ -23,7 +23,6 @@
 #include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 
@@ -31,6 +30,7 @@
 #include <OvEditor/Utils/ActorCreationMenu.h>
 
 #include <algorithm>
+#include <type_traits>
 
 #include <OvUI/Widgets/Menu/MenuItem.h>
 #include <OvUI/Widgets/Menu/MenuList.h>
@@ -137,7 +137,17 @@ namespace
 	{
 		return [p_parent, p_onItemClicked]()
 		{
-			EDITOR_EXEC(CreateMonoComponentActor<T>(true, ResolveAliveParent(p_parent)));
+			auto& instance = EDITOR_EXEC(CreateMonoComponentActor<T>(true, ResolveAliveParent(p_parent)));
+			if constexpr (
+				std::is_same_v<T, OvCore::ECS::Components::UI::CCanvas> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CImage> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CText> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CHorizontalLayout> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CVerticalLayout>
+			)
+			{
+				instance.transform.EnableUIData();
+			}
 
 			if (p_onItemClicked.has_value())
 			{
@@ -203,7 +213,7 @@ namespace
 		return [p_parent, p_onItemClicked]()
 		{
 			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
-			instance.AddComponent<OvCore::ECS::Components::UI::CTransform2D>();
+			instance.transform.EnableUIData();
 			instance.AddComponent<OvCore::ECS::Components::UI::CImage>();
 			instance.SetName("Image");
 
@@ -221,7 +231,7 @@ namespace
 		return [p_parent, p_onItemClicked]()
 		{
 			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
-			instance.AddComponent<OvCore::ECS::Components::UI::CTransform2D>();
+			instance.transform.EnableUIData();
 			instance.AddComponent<OvCore::ECS::Components::UI::CText>();
 			instance.SetName("Text");
 
@@ -244,10 +254,7 @@ namespace
 		return [p_parent, p_name, p_onItemClicked]()
 		{
 			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
-			if (!instance.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
-			{
-				instance.AddComponent<OvCore::ECS::Components::UI::CTransform2D>();
-			}
+			instance.transform.EnableUIData();
 			instance.AddComponent<TLayout>();
 			instance.SetName(p_name);
 
@@ -343,7 +350,6 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	ui.CreateWidget<MenuItem>("Text").ClickedEvent += CreateTextHandler(p_parent, p_onItemClicked);
 	ui.CreateWidget<MenuItem>("Horizontal Layout").ClickedEvent += CreateLayoutHandler<UI::CHorizontalLayout>(p_parent, "Horizontal Layout", p_onItemClicked);
 	ui.CreateWidget<MenuItem>("Vertical Layout").ClickedEvent += CreateLayoutHandler<UI::CVerticalLayout>(p_parent, "Vertical Layout", p_onItemClicked);
-	ui.CreateWidget<MenuItem>("Transform 2D").ClickedEvent += ActorWithComponentCreationHandler<UI::CTransform2D>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Camera").ClickedEvent += ActorWithComponentCreationHandler<CCamera>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Post Process Stack").ClickedEvent += ActorWithComponentCreationHandler<CPostProcessStack>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Reflection Probe").ClickedEvent += ActorWithComponentCreationHandler<CReflectionProbe>(p_parent, p_onItemClicked);

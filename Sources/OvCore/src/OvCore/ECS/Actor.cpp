@@ -30,7 +30,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 
 #include <iostream>
@@ -618,7 +617,6 @@ void OvCore::ECS::Actor::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::
 				else if (IsType<UI::CImage>(componentType)) component = &AddComponent<UI::CImage>();
 				else if (IsType<UI::CLayoutGroup>(componentType)) component = &AddComponent<UI::CLayoutGroup>();
 				else if (IsType<UI::CText>(componentType)) component = &AddComponent<UI::CText>();
-				else if (IsType<UI::CTransform2D>(componentType)) component = &AddComponent<UI::CTransform2D>();
 				else if (IsType<UI::CVerticalLayout>(componentType)) component = &AddComponent<UI::CVerticalLayout>();
 
 				if (component)

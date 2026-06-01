@@ -4,9 +4,56 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <functional>
+
+#include <tinyxml2.h>
+
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Actor.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/Helpers/GUIDrawer.h>
+#include <OvCore/Helpers/Serializer.h>
+#include <OvUI/Widgets/Drags/DragMultipleScalars.h>
+#include <OvUI/Widgets/Selection/ComboBox.h>
+
+namespace
+{
+	constexpr float kDegreesToRadians = 3.14159265359f / 180.0f;
+	constexpr float kMinimumScale = 0.0001f;
+	constexpr float kMinimumSize = 0.0f;
+	constexpr float kMinimumPivot = -1.0f;
+	constexpr float kMaximumPivot = 1.0f;
+
+	float ClampScaleAxis(float p_value, float p_fallback)
+	{
+		return std::isfinite(p_value) ? std::max(p_value, kMinimumScale) : p_fallback;
+	}
+
+	float KeepFinite(float p_value, float p_fallback)
+	{
+		return std::isfinite(p_value) ? p_value : p_fallback;
+	}
+
+	float ClampPivotAxis(float p_value, float p_fallback)
+	{
+		if (!std::isfinite(p_value))
+		{
+			return p_fallback;
+		}
+
+		return std::clamp(p_value, kMinimumPivot, kMaximumPivot);
+	}
+
+	bool IsDrivenByLayout(const OvCore::ECS::Actor& p_owner)
+	{
+		const auto* parent = p_owner.GetParent();
+		return parent && parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>();
+	}
+}
 
 OvCore::ECS::Components::CTransform::CTransform(ECS::Actor& p_owner, OvMaths::FVector3 p_localPosition, OvMaths::FQuaternion p_localRotation, OvMaths::FVector3 p_localScale) :
 AComponent(p_owner)
@@ -159,11 +206,335 @@ OvMaths::FVector3 OvCore::ECS::Components::CTransform::GetLocalRight() const
 	return m_transform.GetLocalRight();
 }
 
+OvCore::ECS::Components::CTransform::EUIAnchorPreset OvCore::ECS::Components::CTransform::ToUIAnchorPreset(int p_value)
+{
+	switch (p_value)
+	{
+	case static_cast<int>(EUIAnchorPreset::TOP_LEFT):
+		return EUIAnchorPreset::TOP_LEFT;
+	case static_cast<int>(EUIAnchorPreset::TOP_CENTER):
+		return EUIAnchorPreset::TOP_CENTER;
+	case static_cast<int>(EUIAnchorPreset::TOP_RIGHT):
+		return EUIAnchorPreset::TOP_RIGHT;
+	case static_cast<int>(EUIAnchorPreset::MIDDLE_LEFT):
+		return EUIAnchorPreset::MIDDLE_LEFT;
+	case static_cast<int>(EUIAnchorPreset::MIDDLE_RIGHT):
+		return EUIAnchorPreset::MIDDLE_RIGHT;
+	case static_cast<int>(EUIAnchorPreset::BOTTOM_LEFT):
+		return EUIAnchorPreset::BOTTOM_LEFT;
+	case static_cast<int>(EUIAnchorPreset::BOTTOM_CENTER):
+		return EUIAnchorPreset::BOTTOM_CENTER;
+	case static_cast<int>(EUIAnchorPreset::BOTTOM_RIGHT):
+		return EUIAnchorPreset::BOTTOM_RIGHT;
+	case static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_TOP):
+		return EUIAnchorPreset::HORIZONTAL_STRETCH_TOP;
+	case static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE):
+		return EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE;
+	case static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM):
+		return EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM;
+	case static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_LEFT):
+		return EUIAnchorPreset::VERTICAL_STRETCH_LEFT;
+	case static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_CENTER):
+		return EUIAnchorPreset::VERTICAL_STRETCH_CENTER;
+	case static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_RIGHT):
+		return EUIAnchorPreset::VERTICAL_STRETCH_RIGHT;
+	case static_cast<int>(EUIAnchorPreset::STRETCH_BOTH):
+		return EUIAnchorPreset::STRETCH_BOTH;
+	case static_cast<int>(EUIAnchorPreset::CENTER):
+	default:
+		return EUIAnchorPreset::CENTER;
+	}
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::CTransform::GetUIAnchorRatio(EUIAnchorPreset p_anchorPreset)
+{
+	switch (p_anchorPreset)
+	{
+	case EUIAnchorPreset::TOP_LEFT:
+		return { -0.5f, 0.5f };
+	case EUIAnchorPreset::TOP_CENTER:
+		return { 0.0f, 0.5f };
+	case EUIAnchorPreset::TOP_RIGHT:
+		return { 0.5f, 0.5f };
+	case EUIAnchorPreset::MIDDLE_LEFT:
+		return { -0.5f, 0.0f };
+	case EUIAnchorPreset::MIDDLE_RIGHT:
+		return { 0.5f, 0.0f };
+	case EUIAnchorPreset::BOTTOM_LEFT:
+		return { -0.5f, -0.5f };
+	case EUIAnchorPreset::BOTTOM_CENTER:
+		return { 0.0f, -0.5f };
+	case EUIAnchorPreset::BOTTOM_RIGHT:
+		return { 0.5f, -0.5f };
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_TOP:
+		return { 0.0f, 0.5f };
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE:
+		return { 0.0f, 0.0f };
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM:
+		return { 0.0f, -0.5f };
+	case EUIAnchorPreset::VERTICAL_STRETCH_LEFT:
+		return { -0.5f, 0.0f };
+	case EUIAnchorPreset::VERTICAL_STRETCH_CENTER:
+		return { 0.0f, 0.0f };
+	case EUIAnchorPreset::VERTICAL_STRETCH_RIGHT:
+		return { 0.5f, 0.0f };
+	case EUIAnchorPreset::STRETCH_BOTH:
+		return { 0.0f, 0.0f };
+	case EUIAnchorPreset::CENTER:
+	default:
+		return { 0.0f, 0.0f };
+	}
+}
+
+bool OvCore::ECS::Components::CTransform::IsHorizontalUIPositionEditable(EUIAnchorPreset p_anchorPreset)
+{
+	switch (p_anchorPreset)
+	{
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_TOP:
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE:
+	case EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM:
+	case EUIAnchorPreset::STRETCH_BOTH:
+		return false;
+	default:
+		return true;
+	}
+}
+
+bool OvCore::ECS::Components::CTransform::IsVerticalUIPositionEditable(EUIAnchorPreset p_anchorPreset)
+{
+	switch (p_anchorPreset)
+	{
+	case EUIAnchorPreset::VERTICAL_STRETCH_LEFT:
+	case EUIAnchorPreset::VERTICAL_STRETCH_CENTER:
+	case EUIAnchorPreset::VERTICAL_STRETCH_RIGHT:
+	case EUIAnchorPreset::STRETCH_BOTH:
+		return false;
+	default:
+		return true;
+	}
+}
+
+OvCore::ECS::Components::CTransform::UIData& OvCore::ECS::Components::CTransform::GetOrCreateUIData()
+{
+	if (!m_uiData)
+	{
+		m_uiData = UIData{};
+	}
+
+	return m_uiData.value();
+}
+
+const OvCore::ECS::Components::CTransform::UIData& OvCore::ECS::Components::CTransform::GetUIDataOrDefault() const
+{
+	static const UIData kDefaultUIData{};
+	return m_uiData ? m_uiData.value() : kDefaultUIData;
+}
+
+void OvCore::ECS::Components::CTransform::EnableUIData()
+{
+	GetOrCreateUIData();
+}
+
+void OvCore::ECS::Components::CTransform::DisableUIData()
+{
+	m_uiData.reset();
+}
+
+bool OvCore::ECS::Components::CTransform::HasUIData() const
+{
+	return m_uiData.has_value();
+}
+
+const std::optional<OvCore::ECS::Components::CTransform::UIData>& OvCore::ECS::Components::CTransform::GetUIData() const
+{
+	return m_uiData;
+}
+
+void OvCore::ECS::Components::CTransform::SetUIPosition(const OvMaths::FVector2& p_position)
+{
+	auto& uiData = GetOrCreateUIData();
+	uiData.position.x = KeepFinite(p_position.x, uiData.position.x);
+	uiData.position.y = KeepFinite(p_position.y, uiData.position.y);
+}
+
+const OvMaths::FVector2& OvCore::ECS::Components::CTransform::GetUIPosition() const
+{
+	return GetUIDataOrDefault().position;
+}
+
+void OvCore::ECS::Components::CTransform::SetUIRotation(float p_rotation)
+{
+	const auto rotation = KeepFinite(p_rotation, GetUIRotation());
+	auto eulerRotation = OvMaths::FQuaternion::EulerAngles(GetLocalRotation());
+	eulerRotation.z = rotation;
+	SetLocalRotation(OvMaths::FQuaternion(eulerRotation));
+}
+
+float OvCore::ECS::Components::CTransform::GetUIRotation() const
+{
+	const auto eulerRotation = OvMaths::FQuaternion::EulerAngles(GetLocalRotation());
+	return KeepFinite(eulerRotation.z, 0.0f);
+}
+
+void OvCore::ECS::Components::CTransform::SetUIScale(const OvMaths::FVector2& p_scale)
+{
+	auto localScale = GetLocalScale();
+	localScale.x = ClampScaleAxis(p_scale.x, localScale.x);
+	localScale.y = ClampScaleAxis(p_scale.y, localScale.y);
+	SetLocalScale(localScale);
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::CTransform::GetUIScale() const
+{
+	const auto& localScale = GetLocalScale();
+	return {
+		ClampScaleAxis(localScale.x, kMinimumScale),
+		ClampScaleAxis(localScale.y, kMinimumScale)
+	};
+}
+
+void OvCore::ECS::Components::CTransform::SetUISize(const OvMaths::FVector2& p_size)
+{
+	auto& uiData = GetOrCreateUIData();
+	uiData.size.x = std::isfinite(p_size.x) ? std::max(p_size.x, kMinimumSize) : uiData.size.x;
+	uiData.size.y = std::isfinite(p_size.y) ? std::max(p_size.y, kMinimumSize) : uiData.size.y;
+
+	if (const auto* image = owner.GetComponent<OvCore::ECS::Components::UI::CImage>())
+	{
+		const auto imageSize = image->GetSize();
+		if (uiData.size.x <= 0.0f)
+		{
+			uiData.size.x = std::max(imageSize.x, kMinimumSize);
+		}
+		if (uiData.size.y <= 0.0f)
+		{
+			uiData.size.y = std::max(imageSize.y, kMinimumSize);
+		}
+	}
+}
+
+const OvMaths::FVector2& OvCore::ECS::Components::CTransform::GetUISize() const
+{
+	return GetUIDataOrDefault().size;
+}
+
+void OvCore::ECS::Components::CTransform::SetUIPivot(const OvMaths::FVector2& p_pivot)
+{
+	auto& uiData = GetOrCreateUIData();
+	uiData.pivot.x = ClampPivotAxis(p_pivot.x, uiData.pivot.x);
+	uiData.pivot.y = ClampPivotAxis(p_pivot.y, uiData.pivot.y);
+}
+
+const OvMaths::FVector2& OvCore::ECS::Components::CTransform::GetUIPivot() const
+{
+	return GetUIDataOrDefault().pivot;
+}
+
+void OvCore::ECS::Components::CTransform::SetUIAnchorPreset(EUIAnchorPreset p_anchorPreset)
+{
+	GetOrCreateUIData().anchorPreset = ToUIAnchorPreset(static_cast<int>(p_anchorPreset));
+}
+
+OvCore::ECS::Components::CTransform::EUIAnchorPreset OvCore::ECS::Components::CTransform::GetUIAnchorPreset() const
+{
+	return GetUIDataOrDefault().anchorPreset;
+}
+
+bool OvCore::ECS::Components::CTransform::IsHorizontalUIPositionEditable() const
+{
+	return IsHorizontalUIPositionEditable(GetUIAnchorPreset());
+}
+
+bool OvCore::ECS::Components::CTransform::IsVerticalUIPositionEditable() const
+{
+	return IsVerticalUIPositionEditable(GetUIAnchorPreset());
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::CTransform::GetUIAnchoredPosition(
+	const OvMaths::FVector2& p_canvasSize,
+	const OvMaths::FVector2& p_layoutOffset
+) const
+{
+	if (IsDrivenByLayout(owner))
+	{
+		const auto* parent = owner.GetParent();
+		if (!parent)
+		{
+			return p_layoutOffset;
+		}
+
+		if (const auto* parentLayout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+		{
+			const auto childLayoutOffset = parentLayout->GetChildOffset(owner);
+			const auto parentLayoutOffset = p_layoutOffset - childLayoutOffset;
+			const auto parentAnchoredPosition = parent->transform.GetUIAnchoredPosition(p_canvasSize, parentLayoutOffset);
+
+			return parentAnchoredPosition + childLayoutOffset;
+		}
+
+		return p_layoutOffset;
+	}
+
+	const auto anchorRatio = GetUIAnchorRatio(GetUIAnchorPreset());
+	const OvMaths::FVector2 anchorOffset = {
+		KeepFinite(p_canvasSize.x, 0.0f) * anchorRatio.x,
+		KeepFinite(p_canvasSize.y, 0.0f) * anchorRatio.y
+	};
+	const float positionX = IsHorizontalUIPositionEditable() ? GetUIPosition().x : 0.0f;
+	const float positionY = IsVerticalUIPositionEditable() ? GetUIPosition().y : 0.0f;
+
+	return {
+		anchorOffset.x + p_layoutOffset.x + positionX,
+		anchorOffset.y + p_layoutOffset.y + positionY
+	};
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::CTransform::GetUIEffectiveSize(const OvMaths::FVector2& p_elementSize) const
+{
+	const auto& size = GetUISize();
+	return {
+		size.x > 0.0f ? size.x : std::max(p_elementSize.x, 0.0f),
+		size.y > 0.0f ? size.y : std::max(p_elementSize.y, 0.0f)
+	};
+}
+
+OvMaths::FMatrix4 OvCore::ECS::Components::CTransform::GetUIMatrix(
+	const OvMaths::FVector2& p_canvasSize,
+	const OvMaths::FVector2& p_layoutOffset,
+	const OvMaths::FVector2& p_elementSize
+) const
+{
+	const auto position = GetUIAnchoredPosition(p_canvasSize, p_layoutOffset);
+	const auto scale = GetUIScale();
+	const auto effectiveSize = GetUIEffectiveSize(p_elementSize);
+	const auto halfSize = effectiveSize * 0.5f;
+	const auto& pivot = GetUIPivot();
+	const OvMaths::FVector2 pivotOffset = {
+		-pivot.x * halfSize.x,
+		pivot.y * halfSize.y
+	};
+
+	return
+		OvMaths::FMatrix4::Translation({ position.x, position.y, 0.0f }) *
+		OvMaths::FMatrix4::RotationOnAxisZ(GetUIRotation() * kDegreesToRadians) *
+		OvMaths::FMatrix4::Scaling({ scale.x, scale.y, 1.0f }) *
+		OvMaths::FMatrix4::Translation({ pivotOffset.x, pivotOffset.y, 0.0f });
+}
+
 void OvCore::ECS::Components::CTransform::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
 	OvCore::Helpers::Serializer::SerializeVec3(p_doc, p_node, "position", GetLocalPosition());
 	OvCore::Helpers::Serializer::SerializeQuat(p_doc, p_node, "rotation", GetLocalRotation());
 	OvCore::Helpers::Serializer::SerializeVec3(p_doc, p_node, "scale", GetLocalScale());
+
+	if (HasUIData())
+	{
+		OvCore::Helpers::Serializer::SerializeBoolean(p_doc, p_node, "ui_enabled", true);
+		OvCore::Helpers::Serializer::SerializeVec2(p_doc, p_node, "ui_position", GetUIPosition());
+		OvCore::Helpers::Serializer::SerializeVec2(p_doc, p_node, "ui_size", GetUISize());
+		OvCore::Helpers::Serializer::SerializeVec2(p_doc, p_node, "ui_pivot", GetUIPivot());
+		OvCore::Helpers::Serializer::SerializeInt(p_doc, p_node, "ui_anchor_preset", static_cast<int>(GetUIAnchorPreset()));
+	}
 }
 
 void OvCore::ECS::Components::CTransform::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
@@ -174,6 +545,48 @@ void OvCore::ECS::Components::CTransform::OnDeserialize(tinyxml2::XMLDocument & 
 		OvCore::Helpers::Serializer::DeserializeQuat(p_doc, p_node, "rotation"),
 		OvCore::Helpers::Serializer::DeserializeVec3(p_doc, p_node, "scale")
 	);
+
+	bool uiEnabled = true;
+	if (p_node->FirstChildElement("ui_enabled"))
+	{
+		OvCore::Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "ui_enabled", uiEnabled);
+		if (uiEnabled)
+		{
+			EnableUIData();
+		}
+		else
+		{
+			DisableUIData();
+		}
+	}
+
+	if (uiEnabled && p_node->FirstChildElement("ui_position"))
+	{
+		auto position = GetUIPosition();
+		OvCore::Helpers::Serializer::DeserializeVec2(p_doc, p_node, "ui_position", position);
+		SetUIPosition(position);
+	}
+
+	if (uiEnabled && p_node->FirstChildElement("ui_size"))
+	{
+		auto size = GetUISize();
+		OvCore::Helpers::Serializer::DeserializeVec2(p_doc, p_node, "ui_size", size);
+		SetUISize(size);
+	}
+
+	if (uiEnabled && p_node->FirstChildElement("ui_pivot"))
+	{
+		auto pivot = GetUIPivot();
+		OvCore::Helpers::Serializer::DeserializeVec2(p_doc, p_node, "ui_pivot", pivot);
+		SetUIPivot(pivot);
+	}
+
+	if (uiEnabled && p_node->FirstChildElement("ui_anchor_preset"))
+	{
+		auto anchorPreset = static_cast<int>(GetUIAnchorPreset());
+		OvCore::Helpers::Serializer::DeserializeInt(p_doc, p_node, "ui_anchor_preset", anchorPreset);
+		SetUIAnchorPreset(ToUIAnchorPreset(anchorPreset));
+	}
 }
 
 void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetContainer& p_root)
@@ -188,14 +601,96 @@ void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetCont
 		SetLocalRotation(OvMaths::FQuaternion(result));
 	};
 
-	const bool hasTransform2D = owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>() != nullptr;
-	if (hasTransform2D)
+	if (HasUIData())
 	{
-		OvCore::Helpers::GUIDrawer::DrawReadOnlyString(
-			p_root,
-			"Position",
-			[]() { return std::string("Driven by Transform 2D (anchored px)"); }
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Anchored Position (px)");
+		auto& anchoredPosition = p_root.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 2>>(
+			OvCore::Helpers::GUIDrawer::GetDataType<float>(),
+			OvCore::Helpers::GUIDrawer::_MIN_FLOAT,
+			OvCore::Helpers::GUIDrawer::_MAX_FLOAT,
+			0.0f,
+			1.0f,
+			"",
+			OvCore::Helpers::GUIDrawer::GetFormat<float>()
 		);
+		auto& anchoredPositionDispatcher = anchoredPosition.AddPlugin<OvUI::Plugins::DataDispatcher<std::array<float, 2>>>();
+		anchoredPositionDispatcher.RegisterGatherer([this]()
+		{
+			const auto value = GetUIPosition();
+			return std::array<float, 2>{ value.x, value.y };
+		});
+		anchoredPositionDispatcher.RegisterProvider([this](std::array<float, 2> p_value)
+		{
+			auto position = GetUIPosition();
+			const auto anchorPreset = GetUIAnchorPreset();
+
+			if (IsHorizontalUIPositionEditable(anchorPreset))
+			{
+				position.x = p_value[0];
+			}
+
+			if (IsVerticalUIPositionEditable(anchorPreset))
+			{
+				position.y = p_value[1];
+			}
+
+			SetUIPosition(position);
+		});
+
+		const auto updateAnchoredPositionEditability = [this, anchoredPositionWidget = &anchoredPosition]()
+		{
+			const auto anchorPreset = GetUIAnchorPreset();
+			const bool isHorizontalEditable = IsHorizontalUIPositionEditable(anchorPreset);
+			const bool isVerticalEditable = IsVerticalUIPositionEditable(anchorPreset);
+
+			anchoredPositionWidget->disabled = IsDrivenByLayout(owner) || (!isHorizontalEditable && !isVerticalEditable);
+		};
+		updateAnchoredPositionEditability();
+
+		OvCore::Helpers::GUIDrawer::DrawVec2(
+			p_root,
+			"Size",
+			[this]() { return GetUISize(); },
+			[this](OvMaths::FVector2 p_value) { SetUISize(p_value); },
+			1.0f,
+			kMinimumSize
+		);
+
+		OvCore::Helpers::GUIDrawer::DrawVec2(
+			p_root,
+			"Pivot",
+			[this]() { return GetUIPivot(); },
+			[this](OvMaths::FVector2 p_value) { SetUIPivot(p_value); },
+			0.01f,
+			kMinimumPivot,
+			kMaximumPivot
+		);
+
+		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Anchor Preset");
+		auto& anchorPreset = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetUIAnchorPreset()));
+		anchorPreset.disabled = IsDrivenByLayout(owner);
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::TOP_LEFT), "Top Left");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::TOP_CENTER), "Top Center");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::TOP_RIGHT), "Top Right");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::MIDDLE_LEFT), "Middle Left");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::CENTER), "Center");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::MIDDLE_RIGHT), "Middle Right");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::BOTTOM_LEFT), "Bottom Left");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::BOTTOM_CENTER), "Bottom Center");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::BOTTOM_RIGHT), "Bottom Right");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_TOP), "Horizontal Stretch Top");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE), "Horizontal Stretch Middle");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM), "Horizontal Stretch Bottom");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_LEFT), "Vertical Stretch Left");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_CENTER), "Vertical Stretch Center");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::VERTICAL_STRETCH_RIGHT), "Vertical Stretch Right");
+		anchorPreset.choices.emplace(static_cast<int>(EUIAnchorPreset::STRETCH_BOTH), "Stretch Both");
+
+		anchorPreset.ValueChangedEvent += [this, updateAnchoredPositionEditability](int p_choice)
+		{
+			SetUIAnchorPreset(ToUIAnchorPreset(p_choice));
+			updateAnchoredPositionEditability();
+		};
 	}
 	else
 	{

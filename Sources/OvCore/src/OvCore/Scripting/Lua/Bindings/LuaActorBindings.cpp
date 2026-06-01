@@ -31,7 +31,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
@@ -84,7 +83,6 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetImage", &Actor::GetComponent<UI::CImage>,
 		"GetLayoutGroup", &Actor::GetComponent<UI::CLayoutGroup>,
 		"GetText", &Actor::GetComponent<UI::CText>,
-		"GetTransform2D", &Actor::GetComponent<UI::CTransform2D>,
 		"GetVerticalLayout", &Actor::GetComponent<UI::CVerticalLayout>,
 
 		/* Behaviours relatives */
@@ -144,7 +142,6 @@ void BindLuaActor(sol::state& p_luaState)
 		"AddImage", &Actor::AddComponent<UI::CImage>,
 		"AddLayoutGroup", &Actor::AddComponent<UI::CLayoutGroup>,
 		"AddText", &Actor::AddComponent<UI::CText>,
-		"AddTransform2D", &Actor::AddComponent<UI::CTransform2D>,
 		"AddVerticalLayout", &Actor::AddComponent<UI::CVerticalLayout>,
 
 		/* Components Destructors */
@@ -169,7 +166,6 @@ void BindLuaActor(sol::state& p_luaState)
 		"RemoveImage", &Actor::RemoveComponent<UI::CImage>,
 		"RemoveLayoutGroup", &Actor::RemoveComponent<UI::CLayoutGroup>,
 		"RemoveText", &Actor::RemoveComponent<UI::CText>,
-		"RemoveTransform2D", &Actor::RemoveComponent<UI::CTransform2D>,
 		"RemoveVerticalLayout", &Actor::RemoveComponent<UI::CVerticalLayout>,
 
 		/* Behaviour management */

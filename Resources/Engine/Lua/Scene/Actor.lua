@@ -170,10 +170,6 @@ function Actor:GetVerticalLayout() end
 ---@return Text|nil
 function Actor:GetText() end
 
---- Returns the Transform2D attached to this actor (If any)
----@return Transform2D|nil
-function Actor:GetTransform2D() end
-
 --- Returns the Behaviour of the given type attached to this actor (If any)
 ---@param name string
 ---@return table|nil
@@ -271,10 +267,6 @@ function Actor:AddVerticalLayout() end
 ---@return Text
 function Actor:AddText() end
 
---- Adds a Transform2D component to the actor and returns it
----@return Transform2D
-function Actor:AddTransform2D() end
-
 --- Removes the ModelRenderer component from the actor
 function Actor:RemoveModelRenderer() end
 --- Removes the PhysicalBox component from the actor
@@ -319,9 +311,6 @@ function Actor:RemoveHorizontalLayout() end
 function Actor:RemoveVerticalLayout() end
 --- Removes the Text component from the actor
 function Actor:RemoveText() end
---- Removes the Transform2D component from the actor
-function Actor:RemoveTransform2D() end
-
 --- Adds a behaviour of given type to the actor and returns it
 ---@param name string
 ---@param scriptPath string

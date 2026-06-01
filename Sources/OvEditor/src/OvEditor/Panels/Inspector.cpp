@@ -31,7 +31,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
@@ -74,6 +73,7 @@ namespace
 		void AddComponent(Actor& p_actor) const override
 		{
 			if constexpr (
+				std::is_same_v<TComponent, UI::CCanvas> ||
 				std::is_same_v<TComponent, UI::CImage> ||
 				std::is_same_v<TComponent, UI::CText> ||
 				std::is_same_v<TComponent, UI::CLayoutGroup> ||
@@ -81,10 +81,7 @@ namespace
 				std::is_same_v<TComponent, UI::CVerticalLayout>
 			)
 			{
-				if (!p_actor.GetComponent<UI::CTransform2D>())
-				{
-					p_actor.AddComponent<UI::CTransform2D>();
-				}
+				p_actor.transform.EnableUIData();
 			}
 
 			p_actor.AddComponent<TComponent>();
@@ -139,7 +136,6 @@ namespace
 		CreateComponentInfo<UI::CImage>("Image"),
 		CreateComponentInfo<UI::CLayoutGroup>("Layout Group"),
 		CreateComponentInfo<UI::CText>("Text"),
-		CreateComponentInfo<UI::CTransform2D>("Transform 2D"),
 		CreateComponentInfo<UI::CVerticalLayout>("Vertical Layout"),
 	});
 

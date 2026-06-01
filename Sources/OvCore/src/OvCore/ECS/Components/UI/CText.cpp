@@ -13,6 +13,7 @@
 
 #include <tinyxml2.h>
 
+#include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -124,6 +125,7 @@ namespace
 OvCore::ECS::Components::UI::CText::CText(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	owner.transform.EnableUIData();
 }
 
 std::string OvCore::ECS::Components::UI::CText::GetName()

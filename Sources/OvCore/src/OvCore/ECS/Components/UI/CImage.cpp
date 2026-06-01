@@ -13,7 +13,6 @@
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
@@ -52,6 +51,8 @@ namespace
 OvCore::ECS::Components::UI::CImage::CImage(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	owner.transform.EnableUIData();
+	SyncTransformUISizeIfUnset();
 	RebuildMesh();
 }
 
@@ -80,6 +81,7 @@ void OvCore::ECS::Components::UI::CImage::SetSize(const OvMaths::FVector2& p_siz
 {
 	m_size.x = ClampFinite(p_size.x, kMinimumSize);
 	m_size.y = ClampFinite(p_size.y, kMinimumSize);
+	SyncTransformUISizeIfUnset();
 	RebuildMesh();
 }
 
@@ -148,26 +150,6 @@ void OvCore::ECS::Components::UI::CImage::OnInspector(OvUI::Internal::WidgetCont
 {
 	Helpers::GUIDrawer::DrawTexture(p_root, "Texture", m_texture);
 
-	if (!owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
-	{
-		Helpers::GUIDrawer::DrawVec2(
-			p_root,
-			"Size",
-			[this]() { return GetSize(); },
-			[this](OvMaths::FVector2 p_value) { SetSize(p_value); },
-			1.0f,
-			kMinimumSize
-		);
-	}
-	else
-	{
-		Helpers::GUIDrawer::DrawReadOnlyString(
-			p_root,
-			"Size",
-			[]() { return std::string("Driven by Transform 2D"); }
-		);
-	}
-
 	Helpers::GUIDrawer::DrawColor(
 		p_root,
 		"Tint",
@@ -230,4 +212,32 @@ void OvCore::ECS::Components::UI::CImage::RefreshMaterial()
 
 	m_material->TrySetProperty(kTextureUniform, m_texture);
 	m_material->TrySetProperty(kTintUniform, m_tint);
+}
+
+void OvCore::ECS::Components::UI::CImage::SyncTransformUISizeIfUnset()
+{
+	if (!owner.transform.HasUIData())
+	{
+		return;
+	}
+
+	auto uiSize = owner.transform.GetUISize();
+	bool hasChanges = false;
+
+	if (uiSize.x <= 0.0f)
+	{
+		uiSize.x = m_size.x;
+		hasChanges = true;
+	}
+
+	if (uiSize.y <= 0.0f)
+	{
+		uiSize.y = m_size.y;
+		hasChanges = true;
+	}
+
+	if (hasChanges)
+	{
+		owner.transform.SetUISize(uiSize);
+	}
 }

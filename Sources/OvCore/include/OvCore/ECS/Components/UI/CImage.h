@@ -107,6 +107,7 @@ namespace OvCore::ECS::Components::UI
 	private:
 		void RebuildMesh();
 		void RefreshMaterial();
+		void SyncTransformUISizeIfUnset();
 
 	private:
 		OvRendering::Resources::Texture* m_texture = nullptr;

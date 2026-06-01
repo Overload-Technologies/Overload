@@ -10,6 +10,7 @@
 
 #include <tinyxml2.h>
 
+#include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
@@ -127,6 +128,7 @@ namespace
 OvCore::ECS::Components::UI::CCanvas::CCanvas(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	owner.transform.EnableUIData();
 }
 
 std::string OvCore::ECS::Components::UI::CCanvas::GetName()

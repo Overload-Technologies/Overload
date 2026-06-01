@@ -30,7 +30,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
@@ -149,9 +148,9 @@ namespace
 			return text->GetSize();
 		}
 
-		if (const auto* transform2D = p_child.GetComponent<OvCore::ECS::Components::UI::CTransform2D>(); transform2D)
+		if (p_child.transform.HasUIData())
 		{
-			const auto& size = transform2D->GetSize();
+			const auto& size = p_child.transform.GetUISize();
 			if (size.x > 0.0f && size.y > 0.0f)
 			{
 				return size;
@@ -426,9 +425,9 @@ namespace
 				}
 			}
 
-			if (auto* transform2D = child.actor->GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+			if (child.actor->transform.HasUIData())
 			{
-				auto nextSize = transform2D->GetSize();
+				auto nextSize = child.actor->transform.GetUISize();
 				if (p_controlChildrenWidth)
 				{
 					nextSize.x = child.size.x;
@@ -438,9 +437,9 @@ namespace
 					nextSize.y = child.size.y;
 				}
 
-				if (ShouldUpdateControlledSize(transform2D->GetSize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
+				if (ShouldUpdateControlledSize(child.actor->transform.GetUISize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
 				{
-					transform2D->SetSize(nextSize);
+					child.actor->transform.SetUISize(nextSize);
 				}
 			}
 		}
@@ -492,6 +491,7 @@ namespace
 OvCore::ECS::Components::UI::CLayoutGroup::CLayoutGroup(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	owner.transform.EnableUIData();
 }
 
 std::string OvCore::ECS::Components::UI::CLayoutGroup::GetName()

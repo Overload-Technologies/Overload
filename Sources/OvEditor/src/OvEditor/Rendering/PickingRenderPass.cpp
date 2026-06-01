@@ -9,11 +9,11 @@
 #include <string>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/SkinningDrawableDescriptor.h>
@@ -83,11 +83,11 @@ namespace
 	}
 
 	OvMaths::FVector2 GetResolvedElementSize(
-		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform2D)
+		if (!p_transform.HasUIData())
 		{
 			return {
 				std::max(p_elementSize.x, 0.0f),
@@ -95,25 +95,21 @@ namespace
 			};
 		}
 
-		const auto sizeOverride = p_transform2D->GetSize();
-		return {
-			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
-			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
-		};
+		return p_transform.GetUIEffectiveSize(p_elementSize);
 	}
 
-	void ApplyTransform2DSizeOverride(
+	void ApplyUISizeOverride(
 		OvMaths::FMatrix4& p_matrix,
-		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform2D || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		if (!p_transform.HasUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
 		{
 			return;
 		}
 
-		const auto resolvedSize = GetResolvedElementSize(p_transform2D, p_elementSize);
+		const auto resolvedSize = GetResolvedElementSize(p_transform, p_elementSize);
 		p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
 			resolvedSize.x / p_elementSize.x,
 			resolvedSize.y / p_elementSize.y,
@@ -136,9 +132,9 @@ namespace
 			return false;
 		}
 
-		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
-		const auto* canvas = transform2D ? FindCanvas(p_actor) : nullptr;
-		if (!transform2D || !canvas)
+		auto& transform = p_actor.transform;
+		const auto* canvas = transform.HasUIData() ? FindCanvas(p_actor) : nullptr;
+		if (!transform.HasUIData() || !canvas)
 		{
 			return false;
 		}
@@ -161,7 +157,7 @@ namespace
 		}
 		else
 		{
-			elementSize = transform2D->GetSize();
+			elementSize = transform.GetUISize();
 		}
 
 		const auto renderSize = OvMaths::FVector2{
@@ -171,8 +167,8 @@ namespace
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
-		ApplyTransform2DSizeOverride(matrix, transform2D, elementSize);
+		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+		ApplyUISizeOverride(matrix, transform, elementSize);
 
 		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
 		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;

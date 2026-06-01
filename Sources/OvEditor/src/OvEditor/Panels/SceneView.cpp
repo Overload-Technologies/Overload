@@ -8,10 +8,10 @@
 #include <optional>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Rendering/DebugSceneRenderer.h>
@@ -25,16 +25,18 @@
 
 namespace
 {
+	struct UIGizmoContext
+	{
+		OvMaths::FVector3 origin = OvMaths::FVector3::Zero;
+		float unitsScale = 1.0f;
+	};
+
 	OvMaths::FVector2 GetResolvedElementSize(
-		const OvCore::ECS::Components::UI::CTransform2D& p_transform2D,
+		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		const auto sizeOverride = p_transform2D.GetSize();
-		return {
-			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
-			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
-		};
+		return p_transform.GetUIEffectiveSize(p_elementSize);
 	}
 
 	OvTools::Utils::OptRef<OvCore::ECS::Actor> GetActorFromPickingResult(
@@ -58,14 +60,14 @@ namespace
 		return { result.x, result.y, result.z };
 	}
 
-	std::optional<OvMaths::FVector3> ResolveUIGizmoOrigin(
+	std::optional<UIGizmoContext> ResolveUIGizmoContext(
 		OvCore::ECS::Actor& p_actor,
 		const OvMaths::FVector2& p_renderSize,
 		bool p_renderUIInScreenSpace
 	)
 	{
-		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
-		if (!transform2D)
+		auto& transform = p_actor.transform;
+		if (!transform.HasUIData())
 		{
 			return std::nullopt;
 		}
@@ -91,7 +93,7 @@ namespace
 		}
 		else
 		{
-			elementSize = transform2D->GetSize();
+			elementSize = transform.GetUISize();
 		}
 
 		const auto canvasSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_actor, p_renderSize);
@@ -100,10 +102,10 @@ namespace
 		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
 		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
 
-		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
+		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
 		if (elementSize.x > 0.0f && elementSize.y > 0.0f)
 		{
-			const auto resolvedSize = GetResolvedElementSize(*transform2D, elementSize);
+			const auto resolvedSize = GetResolvedElementSize(transform, elementSize);
 
 			matrix = matrix * OvMaths::FMatrix4::Scaling({
 				resolvedSize.x / elementSize.x,
@@ -113,7 +115,10 @@ namespace
 		}
 		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
 
-		return TransformPoint(matrix, OvMaths::FVector2::Zero);
+		return UIGizmoContext{
+			TransformPoint(matrix, OvMaths::FVector2::Zero),
+			unitsScale
+		};
 	}
 }
 
@@ -314,18 +319,21 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
 					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
 				};
-				const auto uiGizmoOrigin = ResolveUIGizmoOrigin(
+				const auto uiGizmoContext = ResolveUIGizmoContext(
 					selectedActor,
 					renderSize,
 					EDITOR_EXEC(IsSceneUIRenderingEnabled())
 				);
+				const auto* uiOrigin = uiGizmoContext ? &uiGizmoContext->origin : nullptr;
+				const auto* uiUnitsScale = uiGizmoContext ? &uiGizmoContext->unitsScale : nullptr;
 
 				m_gizmoOperations.StartPicking(
 					selectedActor,
 					m_camera.GetPosition(),
 					m_currentOperation,
 					m_highlightedGizmoDirection.value(),
-					uiGizmoOrigin ? &uiGizmoOrigin.value() : nullptr
+					uiOrigin,
+					uiUnitsScale
 				);
 			}
 			else if (m_highlightedActor)

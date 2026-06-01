@@ -18,7 +18,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
@@ -201,26 +200,6 @@ namespace
 		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*p_canvas, false) : 1.0f;
 	}
 
-	OvMaths::FVector2 GetResolvedElementSize(
-		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
-		const OvMaths::FVector2& p_elementSize
-	)
-	{
-		if (!p_transform2D)
-		{
-			return {
-				std::max(p_elementSize.x, 0.0f),
-				std::max(p_elementSize.y, 0.0f)
-			};
-		}
-
-		const auto sizeOverride = p_transform2D->GetSize();
-		return {
-			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
-			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
-		};
-	}
-
 	EngineDrawableDescriptor CreateUIDrawableDescriptor(
 		OvCore::ECS::Actor& p_owner,
 		const OvMaths::FVector2& p_canvasSize,
@@ -232,18 +211,19 @@ namespace
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		auto* transform2D = p_owner.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		auto& transform = p_owner.transform;
+		const bool hasUIData = transform.HasUIData();
 
 		EngineDrawableDescriptor descriptor{
-			.modelMatrix = transform2D ?
-				transform2D->GetMatrix(p_canvasSize, p_layoutOffset, p_elementSize) :
-				p_owner.transform.GetFTransform().GetWorldMatrix(),
+			.modelMatrix = hasUIData ?
+				transform.GetUIMatrix(p_canvasSize, p_layoutOffset, p_elementSize) :
+				transform.GetFTransform().GetWorldMatrix(),
 			.userMatrix = OvMaths::FMatrix4::Identity
 		};
 
-		if (transform2D && p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
+		if (hasUIData && p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
 		{
-			const auto resolvedSize = GetResolvedElementSize(transform2D, p_elementSize);
+			const auto resolvedSize = transform.GetUIEffectiveSize(p_elementSize);
 			descriptor.modelMatrix = descriptor.modelMatrix * OvMaths::FMatrix4::Scaling({
 				resolvedSize.x / p_elementSize.x,
 				resolvedSize.y / p_elementSize.y,

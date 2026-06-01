@@ -8,6 +8,7 @@
 #include <array>
 
 #include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CPhysicalBox.h>
@@ -19,7 +20,6 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/ReflectionRenderFeature.h>
 #include <OvCore/Rendering/UIRenderingUtils.h>
@@ -111,10 +111,10 @@ namespace
 	{
 		auto lightBuffer = std::make_unique<OvRendering::HAL::ShaderStorageBuffer>();
 
-		const auto lightMatrices = std::to_array<OvMaths::FMatrix4>({
+		const std::array<OvMaths::FMatrix4, 2> lightMatrices = {
 			CreateDebugDirectionalLight(),
 			CreateDebugAmbientLight()
-		});
+		};
 
 		lightBuffer->Allocate(sizeof(lightMatrices), OvRendering::Settings::EAccessSpecifier::STATIC_READ);
 		lightBuffer->Upload(lightMatrices.data());
@@ -125,6 +125,23 @@ namespace
 	const OvCore::ECS::Components::UI::CCanvas* FindCanvas(const OvCore::ECS::Actor& p_owner)
 	{
 		return OvCore::Rendering::UIRenderingUtils::FindCanvas(p_owner);
+	}
+
+	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
+	{
+		auto* current = &p_actor;
+
+		while (current)
+		{
+			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				return current;
+			}
+
+			current = current->GetParent();
+		}
+
+		return nullptr;
 	}
 
 	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
@@ -162,11 +179,11 @@ namespace
 	}
 
 	OvMaths::FVector2 GetResolvedElementSize(
-		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform2D)
+		if (!p_transform.HasUIData())
 		{
 			return {
 				std::max(p_elementSize.x, 0.0f),
@@ -174,25 +191,21 @@ namespace
 			};
 		}
 
-		const auto sizeOverride = p_transform2D->GetSize();
-		return {
-			sizeOverride.x > 0.0f ? sizeOverride.x : std::max(p_elementSize.x, 0.0f),
-			sizeOverride.y > 0.0f ? sizeOverride.y : std::max(p_elementSize.y, 0.0f)
-		};
+		return p_transform.GetUIEffectiveSize(p_elementSize);
 	}
 
-	void ApplyTransform2DSizeOverride(
+	void ApplyUISizeOverride(
 		OvMaths::FMatrix4& p_matrix,
-		const OvCore::ECS::Components::UI::CTransform2D* p_transform2D,
+		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform2D || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		if (!p_transform.HasUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
 		{
 			return;
 		}
 
-		const auto resolvedSize = GetResolvedElementSize(p_transform2D, p_elementSize);
+		const auto resolvedSize = GetResolvedElementSize(p_transform, p_elementSize);
 		p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
 			resolvedSize.x / p_elementSize.x,
 			resolvedSize.y / p_elementSize.y,
@@ -213,9 +226,9 @@ namespace
 			return false;
 		}
 
-		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
-		const auto* canvas = transform2D ? FindCanvas(p_actor) : nullptr;
-		if (!transform2D || !canvas)
+		auto& transform = p_actor.transform;
+		const auto* canvas = transform.HasUIData() ? FindCanvas(p_actor) : nullptr;
+		if (!transform.HasUIData() || !canvas)
 		{
 			return false;
 		}
@@ -238,7 +251,7 @@ namespace
 		}
 		else
 		{
-			elementSize = transform2D->GetSize();
+			elementSize = transform.GetUISize();
 		}
 
 		const auto renderSize = OvMaths::FVector2{
@@ -248,8 +261,8 @@ namespace
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform2D->GetMatrix(canvasSize, layoutOffset, elementSize);
-		ApplyTransform2DSizeOverride(matrix, transform2D, elementSize);
+		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+		ApplyUISizeOverride(matrix, transform, elementSize);
 
 		const auto worldScale = GetUIWorldScale(p_sceneDescriptor, *canvas);
 		const auto unitsScale = p_sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
@@ -482,6 +495,16 @@ protected:
 			const bool isActorHovered = debugSceneDescriptor.highlightedActor && debugSceneDescriptor.highlightedActor->GetID() == selectedActor.GetID();
 
 			DrawActorDebugElements(selectedActor);
+			if (!selectedActor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				if (auto* canvasOwner = FindNearestCanvasOwner(selectedActor))
+				{
+					if (auto* canvas = canvasOwner->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+					{
+						DrawCanvasBounds(*canvasOwner, *canvas);
+					}
+				}
+			}
 			auto gizmoPosition = selectedActor.transform.GetWorldPosition();
 			auto gizmoRotation = selectedActor.transform.GetWorldRotation();
 			TryGetUIActorGizmoTransform(
@@ -627,27 +650,26 @@ protected:
 			static_cast<float>(frameDescriptor.renderHeight)
 		};
 
-		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
-		const auto resolvedSize = GetResolvedElementSize(transform2D, p_size);
+		const auto& transform = p_actor.transform;
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform2D ?
-			transform2D->GetMatrix(canvasSize, layoutOffset, p_size) :
-			p_actor.transform.GetFTransform().GetWorldMatrix();
-		ApplyTransform2DSizeOverride(matrix, transform2D, p_size);
+		auto matrix = transform.HasUIData() ?
+			transform.GetUIMatrix(canvasSize, layoutOffset, p_size) :
+			transform.GetWorldMatrix();
+		ApplyUISizeOverride(matrix, transform, p_size);
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, *canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
 		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
 
-		const auto halfSize = resolvedSize * 0.5f;
-		const auto corners = std::to_array<OvMaths::FVector3>({
+		const auto halfSize = p_size * 0.5f;
+		const std::array<OvMaths::FVector3, 4> corners = {
 			TransformPoint(matrix, { -halfSize.x, -halfSize.y }),
 			TransformPoint(matrix, {  halfSize.x, -halfSize.y }),
 			TransformPoint(matrix, {  halfSize.x,  halfSize.y }),
 			TransformPoint(matrix, { -halfSize.x,  halfSize.y })
-		});
+		};
 
 		auto pso = m_renderer.CreatePipelineState();
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kUIBoundsColor, kUIBoundsWidth, false);
@@ -676,25 +698,25 @@ protected:
 			return;
 		}
 
-		auto* transform2D = p_actor.GetComponent<OvCore::ECS::Components::UI::CTransform2D>();
+		const auto& transform = p_actor.transform;
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform2D ?
-			transform2D->GetMatrix(canvasSize, layoutOffset, canvasSize) :
-			p_actor.transform.GetFTransform().GetWorldMatrix();
-		ApplyTransform2DSizeOverride(matrix, transform2D, canvasSize);
+		auto matrix = transform.HasUIData() ?
+			transform.GetUIMatrix(canvasSize, layoutOffset, canvasSize) :
+			transform.GetWorldMatrix();
+		ApplyUISizeOverride(matrix, transform, canvasSize);
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, p_canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
 		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
 
 		const auto halfSize = canvasSize * 0.5f;
-		const auto corners = std::to_array<OvMaths::FVector3>({
+		const std::array<OvMaths::FVector3, 4> corners = {
 			TransformPoint(matrix, { -halfSize.x, -halfSize.y }),
 			TransformPoint(matrix, {  halfSize.x, -halfSize.y }),
 			TransformPoint(matrix, {  halfSize.x,  halfSize.y }),
 			TransformPoint(matrix, { -halfSize.x,  halfSize.y })
-		});
+		};
 
 		auto pso = m_renderer.CreatePipelineState();
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kCanvasBoundsColor, kUIBoundsWidth, false);

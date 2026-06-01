@@ -5,8 +5,7 @@
 */
 
 #include <cmath>
-
-#include <OvCore/ECS/Components/UI/CTransform2D.h>
+#include <algorithm>
 
 #include "OvEditor/Core/GizmoBehaviour.h"
 #include "OvEditor/Core/EditorActions.h"
@@ -39,7 +38,8 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(
 	const OvMaths::FVector3& p_cameraPosition,
 	EGizmoOperation p_operation,
 	EDirection p_direction,
-	const OvMaths::FVector3* p_overrideWorldPosition
+	const OvMaths::FVector3* p_overrideWorldPosition,
+	const float* p_uiUnitsScale
 )
 {
 	m_target = &p_target;
@@ -53,10 +53,12 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(
 	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_originalTransform.GetWorldPosition());
 	m_currentOperation = p_operation;
 	m_direction = p_direction;
+	m_isUITranslation = p_target.transform.HasUIData() && p_uiUnitsScale != nullptr;
+	m_uiUnitsScale = p_uiUnitsScale ? std::max(std::abs(*p_uiUnitsScale), 0.0001f) : 1.0f;
 
-	if (const auto* transform2D = p_target.GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+	if (m_isUITranslation)
 	{
-		m_originalUIPosition = transform2D->GetPosition();
+		m_originalUIPosition = p_target.transform.GetUIPosition();
 	}
 	else
 	{
@@ -67,6 +69,8 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(
 void OvEditor::Core::GizmoBehaviour::StopPicking()
 {
 	m_target = nullptr;
+	m_isUITranslation = false;
+	m_uiUnitsScale = 1.0f;
 }
 
 OvMaths::FVector3 OvEditor::Core::GizmoBehaviour::GetFakeDirection() const
@@ -143,12 +147,38 @@ OvMaths::FVector2 OvEditor::Core::GizmoBehaviour::GetScreenDirection(const OvMat
 
 void OvEditor::Core::GizmoBehaviour::ApplyTranslation(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector3& p_cameraPosition, const OvMaths::FVector2& p_viewSize)
 {
-	if (auto* transform2D = m_target->GetComponent<OvCore::ECS::Components::UI::CTransform2D>())
+	if (m_isUITranslation)
 	{
-		auto axisDirection = GetScreenDirection(p_viewMatrix, p_projectionMatrix, p_viewSize);
-		auto totalDisplacement = m_currentMouse - m_originMouse;
-		totalDisplacement.y *= -1.0f;
-		auto translationPixels = OvMaths::FVector2::Dot(totalDisplacement, axisDirection);
+		const auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
+		const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(GetRealDirection(true), m_target->transform.GetWorldPosition() - p_cameraPosition);
+		const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Cross(GetRealDirection(true), planeTangent);
+		const OvMaths::FVector3 direction = GetRealDirection(true);
+		const OvMaths::FVector3 planePoint = m_originalTransform.GetWorldPosition();
+
+		const float denom = OvMaths::FVector3::Dot(ray, planeNormal);
+
+		if (std::abs(denom) <= 0.001f)
+		{
+			return;
+		}
+
+		const float t = OvMaths::FVector3::Dot(planePoint - p_cameraPosition, planeNormal) / denom;
+
+		if (t <= 0.001f)
+		{
+			return;
+		}
+
+		const OvMaths::FVector3 point = p_cameraPosition + ray * t;
+
+		if (m_firstPick)
+		{
+			m_initialOffset = m_originalTransform.GetWorldPosition() - point;
+			m_firstPick = false;
+		}
+
+		const auto translationVector = point - planePoint + m_initialOffset;
+		auto translationPixels = OvMaths::FVector3::Dot(translationVector, direction) / m_uiUnitsScale;
 
 		if (IsSnappedBehaviourEnabled())
 		{
@@ -168,7 +198,7 @@ void OvEditor::Core::GizmoBehaviour::ApplyTranslation(const OvMaths::FMatrix4& p
 			break;
 		}
 
-		transform2D->SetPosition(m_originalUIPosition + axisDelta);
+		m_target->transform.SetUIPosition(m_originalUIPosition + axisDelta);
 		return;
 	}
 

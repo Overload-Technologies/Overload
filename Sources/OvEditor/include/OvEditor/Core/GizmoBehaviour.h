@@ -43,13 +43,15 @@ namespace OvEditor::Core
 		* @param p_operation
 		* @param p_direction
 		* @param p_overrideWorldPosition
+		* @param p_uiUnitsScale
 		*/
 		void StartPicking(
 			OvCore::ECS::Actor& p_target,
 			const OvMaths::FVector3& p_cameraPosition,
 			EGizmoOperation p_operation,
 			EDirection p_direction,
-			const OvMaths::FVector3* p_overrideWorldPosition = nullptr
+			const OvMaths::FVector3* p_overrideWorldPosition = nullptr,
+			const float* p_uiUnitsScale = nullptr
 		);
 
 		/**
@@ -151,6 +153,8 @@ namespace OvEditor::Core
 		OvMaths::FTransform m_originalTransform;
 		OvMaths::FVector3 m_initialOffset;
 		OvMaths::FVector2 m_originalUIPosition = OvMaths::FVector2::Zero;
+		float m_uiUnitsScale = 1.0f;
+		bool m_isUITranslation = false;
 		OvMaths::FVector2 m_originMouse;
 		OvMaths::FVector2 m_currentMouse;
 		OvMaths::FVector2 m_screenDirection;

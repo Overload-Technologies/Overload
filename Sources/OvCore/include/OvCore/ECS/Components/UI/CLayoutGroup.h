@@ -150,6 +150,28 @@ namespace OvCore::ECS::Components::UI
 		bool GetControlChildrenHeight() const;
 
 		/**
+		* Sets whether the layout should expand children width to fill available space
+		* @param p_forceExpandWidth
+		*/
+		void SetForceExpandWidth(bool p_forceExpandWidth);
+
+		/**
+		* Returns whether the layout expands children width
+		*/
+		bool GetForceExpandWidth() const;
+
+		/**
+		* Sets whether the layout should expand children height to fill available space
+		* @param p_forceExpandHeight
+		*/
+		void SetForceExpandHeight(bool p_forceExpandHeight);
+
+		/**
+		* Returns whether the layout expands children height
+		*/
+		bool GetForceExpandHeight() const;
+
+		/**
 		* Returns the layout offset for a direct child
 		* @param p_child
 		*/
@@ -197,6 +219,8 @@ namespace OvCore::ECS::Components::UI
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::CENTER;
 		bool m_controlChildrenWidth = false;
 		bool m_controlChildrenHeight = false;
+		bool m_forceExpandWidth = false;
+		bool m_forceExpandHeight = false;
 	};
 }
 

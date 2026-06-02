@@ -138,23 +138,32 @@ namespace
 
 	std::optional<OvMaths::FVector2> GetLayoutSize(const OvCore::ECS::Actor& p_child)
 	{
+		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
+		bool hasElementSize = false;
+
 		if (const auto* image = p_child.GetComponent<OvCore::ECS::Components::UI::CImage>(); image)
 		{
-			return image->GetSize();
+			elementSize = image->GetSize();
+			hasElementSize = true;
+		}
+		else if (const auto* text = p_child.GetComponent<OvCore::ECS::Components::UI::CText>(); text)
+		{
+			elementSize = text->GetSize();
+			hasElementSize = true;
 		}
 
-		if (const auto* text = p_child.GetComponent<OvCore::ECS::Components::UI::CText>(); text)
+		if (p_child.transform.HasActiveUIData())
 		{
-			return text->GetSize();
-		}
-
-		if (p_child.transform.HasUIData())
-		{
-			const auto& size = p_child.transform.GetUISize();
+			const auto size = p_child.transform.GetUIEffectiveSize(elementSize);
 			if (size.x > 0.0f && size.y > 0.0f)
 			{
 				return size;
 			}
+		}
+
+		if (hasElementSize && elementSize.x > 0.0f && elementSize.y > 0.0f)
+		{
+			return elementSize;
 		}
 
 		return std::nullopt;
@@ -309,6 +318,8 @@ namespace
 		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
 		bool p_controlChildrenWidth,
 		bool p_controlChildrenHeight,
+		bool p_forceExpandWidth,
+		bool p_forceExpandHeight,
 		const OvMaths::FVector2& p_layoutSize,
 		uint16_t p_spacing,
 		Clay_Padding p_padding
@@ -319,7 +330,7 @@ namespace
 			return;
 		}
 
-		if (!p_controlChildrenWidth && !p_controlChildrenHeight)
+		if (!p_controlChildrenWidth && !p_controlChildrenHeight && !p_forceExpandWidth && !p_forceExpandHeight)
 		{
 			return;
 		}
@@ -332,11 +343,20 @@ namespace
 		const float availableHeight = std::max(p_layoutSize.y - verticalPadding, 0.0f);
 
 		float controlledWidth = 0.0f;
-		if (p_controlChildrenWidth)
+		if (p_controlChildrenWidth || p_forceExpandWidth)
 		{
 			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
 			{
-				controlledWidth = std::max((availableWidth - std::max(childCount - 1.0f, 0.0f) * spacing) / childCount, 0.0f);
+				float occupiedWidth = 0.0f;
+				for (const auto& child : p_children)
+				{
+					occupiedWidth += child.size.x;
+				}
+
+				const float availableChildWidth = std::max(availableWidth - std::max(childCount - 1.0f, 0.0f) * spacing, 0.0f);
+				controlledWidth = p_controlChildrenWidth ?
+					availableChildWidth / childCount :
+					std::max((availableChildWidth - occupiedWidth) / childCount, 0.0f);
 			}
 			else
 			{
@@ -345,11 +365,20 @@ namespace
 		}
 
 		float controlledHeight = 0.0f;
-		if (p_controlChildrenHeight)
+		if (p_controlChildrenHeight || p_forceExpandHeight)
 		{
 			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::VERTICAL)
 			{
-				controlledHeight = std::max((availableHeight - std::max(childCount - 1.0f, 0.0f) * spacing) / childCount, 0.0f);
+				float occupiedHeight = 0.0f;
+				for (const auto& child : p_children)
+				{
+					occupiedHeight += child.size.y;
+				}
+
+				const float availableChildHeight = std::max(availableHeight - std::max(childCount - 1.0f, 0.0f) * spacing, 0.0f);
+				controlledHeight = p_controlChildrenHeight ?
+					availableChildHeight / childCount :
+					std::max((availableChildHeight - occupiedHeight) / childCount, 0.0f);
 			}
 			else
 			{
@@ -363,10 +392,22 @@ namespace
 			{
 				child.size.x = controlledWidth;
 			}
+			else if (p_forceExpandWidth)
+			{
+				child.size.x = p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL ?
+					child.size.x + controlledWidth :
+					std::max(child.size.x, controlledWidth);
+			}
 
 			if (p_controlChildrenHeight)
 			{
 				child.size.y = controlledHeight;
+			}
+			else if (p_forceExpandHeight)
+			{
+				child.size.y = p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::VERTICAL ?
+					child.size.y + controlledHeight :
+					std::max(child.size.y, controlledHeight);
 			}
 		}
 	}
@@ -374,10 +415,15 @@ namespace
 	void ApplyControlledSizeToChildren(
 		const std::vector<LayoutChild>& p_children,
 		bool p_controlChildrenWidth,
-		bool p_controlChildrenHeight
+		bool p_controlChildrenHeight,
+		bool p_forceExpandWidth,
+		bool p_forceExpandHeight
 	)
 	{
-		if (!p_controlChildrenWidth && !p_controlChildrenHeight)
+		const bool appliesWidth = p_controlChildrenWidth || p_forceExpandWidth;
+		const bool appliesHeight = p_controlChildrenHeight || p_forceExpandHeight;
+
+		if (!appliesWidth && !appliesHeight)
 		{
 			return;
 		}
@@ -392,16 +438,16 @@ namespace
 			if (auto* image = child.actor->GetComponent<OvCore::ECS::Components::UI::CImage>())
 			{
 				auto nextSize = image->GetSize();
-				if (p_controlChildrenWidth)
+				if (appliesWidth)
 				{
 					nextSize.x = child.size.x;
 				}
-				if (p_controlChildrenHeight)
+				if (appliesHeight)
 				{
 					nextSize.y = child.size.y;
 				}
 
-				if (ShouldUpdateControlledSize(image->GetSize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
+				if (ShouldUpdateControlledSize(image->GetSize(), nextSize, appliesWidth, appliesHeight))
 				{
 					image->SetSize(nextSize);
 				}
@@ -410,34 +456,34 @@ namespace
 			if (auto* text = child.actor->GetComponent<OvCore::ECS::Components::UI::CText>())
 			{
 				auto nextExtents = text->GetExtents();
-				if (p_controlChildrenWidth)
+				if (appliesWidth)
 				{
 					nextExtents.x = child.size.x;
 				}
-				if (p_controlChildrenHeight)
+				if (appliesHeight)
 				{
 					nextExtents.y = child.size.y;
 				}
 
-				if (ShouldUpdateControlledSize(text->GetExtents(), nextExtents, p_controlChildrenWidth, p_controlChildrenHeight))
+				if (ShouldUpdateControlledSize(text->GetExtents(), nextExtents, appliesWidth, appliesHeight))
 				{
 					text->SetExtents(nextExtents);
 				}
 			}
 
-			if (child.actor->transform.HasUIData())
+			if (child.actor->transform.HasActiveUIData())
 			{
 				auto nextSize = child.actor->transform.GetUISize();
-				if (p_controlChildrenWidth)
+				if (appliesWidth)
 				{
 					nextSize.x = child.size.x;
 				}
-				if (p_controlChildrenHeight)
+				if (appliesHeight)
 				{
 					nextSize.y = child.size.y;
 				}
 
-				if (ShouldUpdateControlledSize(child.actor->transform.GetUISize(), nextSize, p_controlChildrenWidth, p_controlChildrenHeight))
+				if (ShouldUpdateControlledSize(child.actor->transform.GetUISize(), nextSize, appliesWidth, appliesHeight))
 				{
 					child.actor->transform.SetUISize(nextSize);
 				}
@@ -588,6 +634,26 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
 	return m_controlChildrenHeight;
 }
 
+void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandWidth(bool p_forceExpandWidth)
+{
+	m_forceExpandWidth = p_forceExpandWidth;
+}
+
+bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandWidth() const
+{
+	return m_forceExpandWidth;
+}
+
+void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandHeight(bool p_forceExpandHeight)
+{
+	m_forceExpandHeight = p_forceExpandHeight;
+}
+
+bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandHeight() const
+{
+	return m_forceExpandHeight;
+}
+
 bool OvCore::ECS::Components::UI::CLayoutGroup::IsDirectionEditable() const
 {
 	return true;
@@ -630,6 +696,8 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 		m_direction,
 		m_controlChildrenWidth,
 		m_controlChildrenHeight,
+		m_forceExpandWidth,
+		m_forceExpandHeight,
 		layoutSize,
 		spacing,
 		padding
@@ -656,7 +724,7 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 
 void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()
 {
-	if (!m_controlChildrenWidth && !m_controlChildrenHeight)
+	if (!m_controlChildrenWidth && !m_controlChildrenHeight && !m_forceExpandWidth && !m_forceExpandHeight)
 	{
 		return;
 	}
@@ -676,11 +744,19 @@ void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()
 		m_direction,
 		m_controlChildrenWidth,
 		m_controlChildrenHeight,
+		m_forceExpandWidth,
+		m_forceExpandHeight,
 		layoutSize,
 		spacing,
 		padding
 	);
-	ApplyControlledSizeToChildren(layoutChildren, m_controlChildrenWidth, m_controlChildrenHeight);
+	ApplyControlledSizeToChildren(
+		layoutChildren,
+		m_controlChildrenWidth,
+		m_controlChildrenHeight,
+		m_forceExpandWidth,
+		m_forceExpandHeight
+	);
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -693,6 +769,8 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocumen
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "vertical_alignment", static_cast<int>(m_verticalAlignment));
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "control_children_width", m_controlChildrenWidth);
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "control_children_height", m_controlChildrenHeight);
+	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "force_expand_width", m_forceExpandWidth);
+	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "force_expand_height", m_forceExpandHeight);
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -751,6 +829,20 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocum
 		auto controlChildrenHeight = m_controlChildrenHeight;
 		Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "control_children_height", controlChildrenHeight);
 		SetControlChildrenHeight(controlChildrenHeight);
+	}
+
+	if (p_node->FirstChildElement("force_expand_width"))
+	{
+		auto forceExpandWidth = m_forceExpandWidth;
+		Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "force_expand_width", forceExpandWidth);
+		SetForceExpandWidth(forceExpandWidth);
+	}
+
+	if (p_node->FirstChildElement("force_expand_height"))
+	{
+		auto forceExpandHeight = m_forceExpandHeight;
+		Helpers::Serializer::DeserializeBoolean(p_doc, p_node, "force_expand_height", forceExpandHeight);
+		SetForceExpandHeight(forceExpandHeight);
 	}
 }
 
@@ -829,5 +921,19 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnInspector(OvUI::Internal::Widg
 		"Control Children Height",
 		[this]() { return GetControlChildrenHeight(); },
 		[this](bool p_value) { SetControlChildrenHeight(p_value); }
+	);
+
+	Helpers::GUIDrawer::DrawBoolean(
+		p_root,
+		"Force Expand Width",
+		[this]() { return GetForceExpandWidth(); },
+		[this](bool p_value) { SetForceExpandWidth(p_value); }
+	);
+
+	Helpers::GUIDrawer::DrawBoolean(
+		p_root,
+		"Force Expand Height",
+		[this]() { return GetForceExpandHeight(); },
+		[this](bool p_value) { SetForceExpandHeight(p_value); }
 	);
 }

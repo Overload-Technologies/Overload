@@ -327,7 +327,11 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetControlChildrenWidth", &UI::CLayoutGroup::GetControlChildrenWidth,
 		"SetControlChildrenWidth", &UI::CLayoutGroup::SetControlChildrenWidth,
 		"GetControlChildrenHeight", &UI::CLayoutGroup::GetControlChildrenHeight,
-		"SetControlChildrenHeight", &UI::CLayoutGroup::SetControlChildrenHeight
+		"SetControlChildrenHeight", &UI::CLayoutGroup::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CLayoutGroup::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CLayoutGroup::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CLayoutGroup::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CLayoutGroup::SetForceExpandHeight
 	);
 
 	p_luaState.new_usertype<UI::CHorizontalLayout>("HorizontalLayout",
@@ -345,7 +349,11 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetControlChildrenWidth", &UI::CHorizontalLayout::GetControlChildrenWidth,
 		"SetControlChildrenWidth", &UI::CHorizontalLayout::SetControlChildrenWidth,
 		"GetControlChildrenHeight", &UI::CHorizontalLayout::GetControlChildrenHeight,
-		"SetControlChildrenHeight", &UI::CHorizontalLayout::SetControlChildrenHeight
+		"SetControlChildrenHeight", &UI::CHorizontalLayout::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CHorizontalLayout::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CHorizontalLayout::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CHorizontalLayout::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CHorizontalLayout::SetForceExpandHeight
 	);
 
 	p_luaState.new_usertype<UI::CVerticalLayout>("VerticalLayout",
@@ -363,7 +371,11 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetControlChildrenWidth", &UI::CVerticalLayout::GetControlChildrenWidth,
 		"SetControlChildrenWidth", &UI::CVerticalLayout::SetControlChildrenWidth,
 		"GetControlChildrenHeight", &UI::CVerticalLayout::GetControlChildrenHeight,
-		"SetControlChildrenHeight", &UI::CVerticalLayout::SetControlChildrenHeight
+		"SetControlChildrenHeight", &UI::CVerticalLayout::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CVerticalLayout::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CVerticalLayout::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CVerticalLayout::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CVerticalLayout::SetForceExpandHeight
 	);
 
 	p_luaState.new_usertype<UI::CText>("Text",

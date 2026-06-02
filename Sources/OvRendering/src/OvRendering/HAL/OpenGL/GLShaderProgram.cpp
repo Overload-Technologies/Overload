@@ -91,12 +91,9 @@ template<> \
 type OvRendering::HAL::GLShaderProgram::GetUniform<type>(const std::string& p_name) \
 { \
 	type result{}; \
-	if (m_context.uniformsLocationCache.contains(p_name)) \
+	if (auto it = m_context.uniformsLocationCache.find(p_name); it != m_context.uniformsLocationCache.end()) \
 	{ \
-		if (const uint32_t location = m_context.uniformsLocationCache.at(p_name)) \
-		{ \
-			func(m_context.id, location, reinterpret_cast<glType*>(&result)); \
-		} \
+		func(m_context.id, it->second, reinterpret_cast<glType*>(&result)); \
 	} \
 	return result; \
 }

@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <optional>
+
+#include <OvMaths/FMatrix4.h>
 #include <OvRendering/Entities/Camera.h>
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
 
@@ -50,7 +53,9 @@ namespace OvEditor::Rendering
 			const OvMaths::FQuaternion& p_rotation,
 			OvEditor::Core::EGizmoOperation p_operation,
 			bool p_pickable,
-			std::optional<OvEditor::Core::GizmoBehaviour::EDirection> p_highlightedDirection
+			std::optional<OvEditor::Core::GizmoBehaviour::EDirection> p_highlightedDirection,
+			std::optional<OvMaths::FMatrix4> p_viewMatrixOverride = std::nullopt,
+			std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride = std::nullopt
 		);
 
 	private:

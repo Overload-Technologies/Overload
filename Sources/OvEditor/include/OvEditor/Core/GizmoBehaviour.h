@@ -51,7 +51,8 @@ namespace OvEditor::Core
 			EGizmoOperation p_operation,
 			EDirection p_direction,
 			const OvMaths::FVector3* p_overrideWorldPosition = nullptr,
-			const float* p_uiUnitsScale = nullptr
+			const float* p_uiUnitsScale = nullptr,
+			bool p_uiScreenSpace = false
 		);
 
 		/**
@@ -155,6 +156,7 @@ namespace OvEditor::Core
 		OvMaths::FVector2 m_originalUIPosition = OvMaths::FVector2::Zero;
 		float m_uiUnitsScale = 1.0f;
 		bool m_isUITranslation = false;
+		bool m_isUIScreenSpace = false;
 		OvMaths::FVector2 m_originMouse;
 		OvMaths::FVector2 m_currentMouse;
 		OvMaths::FVector2 m_screenDirection;

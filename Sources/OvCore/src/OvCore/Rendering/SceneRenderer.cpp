@@ -195,6 +195,13 @@ namespace
 		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
 	}
 
+	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
+	{
+		return
+			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
+			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+	}
+
 	float GetUIWorldScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas)
 	{
 		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*p_canvas, false) : 1.0f;
@@ -204,6 +211,7 @@ namespace
 		OvCore::ECS::Actor& p_owner,
 		const OvMaths::FVector2& p_canvasSize,
 		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_canvasMatrix,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		float p_worldScale,
@@ -212,7 +220,7 @@ namespace
 	)
 	{
 		auto& transform = p_owner.transform;
-		const bool hasUIData = transform.HasUIData();
+		const bool hasUIData = transform.HasActiveUIData();
 
 		EngineDrawableDescriptor descriptor{
 			.modelMatrix = hasUIData ?
@@ -233,6 +241,7 @@ namespace
 
 		const auto unitsScale = p_screenSpace ? p_canvasScale : p_canvasScale * p_worldScale;
 		descriptor.modelMatrix =
+			(hasUIData ? p_canvasMatrix : OvMaths::FMatrix4::Identity) *
 			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
 			descriptor.modelMatrix;
 
@@ -268,6 +277,7 @@ namespace
 		OvCore::ECS::Components::UI::CImage& p_image,
 		const OvMaths::FVector2& p_canvasSize,
 		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_canvasMatrix,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		float p_worldScale,
@@ -298,6 +308,7 @@ namespace
 				owner,
 				p_canvasSize,
 				p_layoutOffset,
+				p_canvasMatrix,
 				p_uiProjectionMatrix,
 				p_screenSpace,
 				p_worldScale,
@@ -314,6 +325,7 @@ namespace
 		OvCore::ECS::Components::UI::CText& p_text,
 		const OvMaths::FVector2& p_canvasSize,
 		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FMatrix4& p_canvasMatrix,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		float p_worldScale,
@@ -347,6 +359,7 @@ namespace
 				owner,
 				p_canvasSize,
 				p_layoutOffset,
+				p_canvasMatrix,
 				p_uiProjectionMatrix,
 				p_screenSpace,
 				p_worldScale,
@@ -365,6 +378,7 @@ namespace
 		const OvCore::ECS::Components::UI::CCanvas* p_canvas,
 		OvMaths::FVector2 p_canvasSize,
 		OvMaths::FVector2 p_layoutOffset,
+		OvMaths::FMatrix4 p_canvasMatrix,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		int& p_drawOrder
@@ -379,6 +393,7 @@ namespace
 		{
 			p_canvas = canvas;
 			p_canvasSize = GetCanvasSize(*canvas, p_renderSize);
+			p_canvasMatrix = p_screenSpace ? OvMaths::FMatrix4::Identity : CalculateUnscaledModelMatrix(p_actor);
 		}
 
 		if (p_canvas)
@@ -393,6 +408,7 @@ namespace
 					*image,
 					p_canvasSize,
 					p_layoutOffset,
+					p_canvasMatrix,
 					p_uiProjectionMatrix,
 					p_screenSpace,
 					worldScale,
@@ -408,6 +424,7 @@ namespace
 					*text,
 					p_canvasSize,
 					p_layoutOffset,
+					p_canvasMatrix,
 					p_uiProjectionMatrix,
 					p_screenSpace,
 					worldScale,
@@ -437,6 +454,7 @@ namespace
 					p_canvas,
 					p_canvasSize,
 					childLayoutOffset,
+					p_canvasMatrix,
 					p_uiProjectionMatrix,
 					p_screenSpace,
 					p_drawOrder
@@ -466,6 +484,7 @@ namespace
 					nullptr,
 					OvMaths::FVector2::Zero,
 					OvMaths::FVector2::Zero,
+					OvMaths::FMatrix4::Identity,
 					uiProjectionMatrix,
 					p_screenSpace,
 					drawOrder

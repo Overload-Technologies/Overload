@@ -4,13 +4,18 @@
 * @licence: MIT
 */
 
+#include <algorithm>
 #include <imgui.h>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Core/CameraController.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -27,68 +32,212 @@ OvEditor::Core::CameraController::CameraController(
 	m_camera.SetFov(60.0f);
 }
 
-float GetActorFocusDist(OvCore::ECS::Actor& p_actor)
+namespace
 {
-	float distance = 4.0f;
-
-	if (p_actor.IsActive())
+	struct ActorFocusTarget
 	{
-		if (auto pb = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalBox>())
-		{
-			distance = std::max(distance, std::max
-			(
-				std::max
-				(
-					pb->GetSize().x * p_actor.transform.GetWorldScale().x,
-					pb->GetSize().y * p_actor.transform.GetWorldScale().y
-				),
-				pb->GetSize().z * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
-		}
+		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
+		float distance = 4.0f;
+	};
 
-		if (auto ps = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalSphere>())
-		{
-			distance = std::max(distance, std::max
-			(
-				std::max
-				(
-					ps->GetRadius() * p_actor.transform.GetWorldScale().x,
-					ps->GetRadius() * p_actor.transform.GetWorldScale().y
-				),
-				ps->GetRadius() * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
-		}
-
-		if (auto pc = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalCapsule>())
-		{
-			distance = std::max(distance, std::max
-			(
-				std::max
-				(
-					pc->GetRadius() * p_actor.transform.GetWorldScale().x,
-					pc->GetHeight() * p_actor.transform.GetWorldScale().y
-				),
-				pc->GetRadius() * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
-		}
-
-		if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>())
-		{
-			const bool hasCustomBoundingSphere = modelRenderer->GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CUSTOM_BOUNDS;
-			const bool hasModel = modelRenderer->GetModel();
-			const auto boundingSphere = hasCustomBoundingSphere ? &modelRenderer->GetCustomBoundingSphere() : hasModel ? &modelRenderer->GetModel()->GetBoundingSphere() : nullptr;
-			const auto& actorPosition = p_actor.transform.GetWorldPosition();
-			const auto& actorScale = p_actor.transform.GetWorldScale();
-			const auto scaleFactor = std::max(std::max(actorScale.x, actorScale.y), actorScale.z);
-
-			distance = std::max(distance, boundingSphere ? (boundingSphere->radius + OvMaths::FVector3::Length(boundingSphere->position)) * scaleFactor * 2.0f : 10.0f);
-		}
-
-		for (auto child : p_actor.GetChildren())
-			distance = std::max(distance, GetActorFocusDist(*child));
+	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
+	{
+		const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
+		return { result.x, result.y, result.z };
 	}
 
-	return distance;
+	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
+	{
+		auto* current = &p_actor;
+
+		while (current)
+		{
+			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				return current;
+			}
+
+			current = current->GetParent();
+		}
+
+		return nullptr;
+	}
+
+	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
+	{
+		return
+			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
+			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+	}
+
+	OvMaths::FMatrix4 GetCanvasMatrix(
+		OvCore::ECS::Actor& p_actor,
+		bool p_screenSpace
+	)
+	{
+		if (p_screenSpace)
+		{
+			return OvMaths::FMatrix4::Identity;
+		}
+
+		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
+		{
+			return CalculateUnscaledModelMatrix(*canvasOwner);
+		}
+
+		return OvMaths::FMatrix4::Identity;
+	}
+
+	float GetActor3DFocusDist(OvCore::ECS::Actor& p_actor)
+	{
+		float distance = 4.0f;
+
+		if (p_actor.IsActive())
+		{
+			if (auto pb = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalBox>())
+			{
+				distance = std::max(distance, std::max
+				(
+					std::max
+					(
+						pb->GetSize().x * p_actor.transform.GetWorldScale().x,
+						pb->GetSize().y * p_actor.transform.GetWorldScale().y
+					),
+					pb->GetSize().z * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
+
+			if (auto ps = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalSphere>())
+			{
+				distance = std::max(distance, std::max
+				(
+					std::max
+					(
+						ps->GetRadius() * p_actor.transform.GetWorldScale().x,
+						ps->GetRadius() * p_actor.transform.GetWorldScale().y
+					),
+					ps->GetRadius() * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
+
+			if (auto pc = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalCapsule>())
+			{
+				distance = std::max(distance, std::max
+				(
+					std::max
+					(
+						pc->GetRadius() * p_actor.transform.GetWorldScale().x,
+						pc->GetHeight() * p_actor.transform.GetWorldScale().y
+					),
+					pc->GetRadius() * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
+
+			if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>())
+			{
+				const bool hasCustomBoundingSphere = modelRenderer->GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CUSTOM_BOUNDS;
+				const bool hasModel = modelRenderer->GetModel();
+				const auto boundingSphere = hasCustomBoundingSphere ? &modelRenderer->GetCustomBoundingSphere() : hasModel ? &modelRenderer->GetModel()->GetBoundingSphere() : nullptr;
+				const auto& actorScale = p_actor.transform.GetWorldScale();
+				const auto scaleFactor = std::max(std::max(actorScale.x, actorScale.y), actorScale.z);
+
+				distance = std::max(distance, boundingSphere ? (boundingSphere->radius + OvMaths::FVector3::Length(boundingSphere->position)) * scaleFactor * 2.0f : 10.0f);
+			}
+
+			for (auto child : p_actor.GetChildren())
+				distance = std::max(distance, GetActor3DFocusDist(*child));
+		}
+
+		return distance;
+	}
+
+	bool TryGetUIFocusTarget(
+		OvCore::ECS::Actor& p_actor,
+		const OvMaths::FVector2& p_renderSize,
+		bool p_screenSpace,
+		ActorFocusTarget& p_outTarget
+	)
+	{
+		auto& transform = p_actor.transform;
+		if (!transform.HasActiveUIData())
+		{
+			return false;
+		}
+
+		const auto* canvas = OvCore::Rendering::UIRenderingUtils::FindCanvas(p_actor);
+		if (!canvas)
+		{
+			return false;
+		}
+
+		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
+		if (const auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
+		{
+			elementSize = image->GetSize();
+		}
+		else if (const auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
+		{
+			elementSize = text->GetSize();
+		}
+		else if (const auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, p_renderSize);
+		}
+		else
+		{
+			elementSize = transform.GetUISize();
+		}
+
+		const auto canvasSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_actor, p_renderSize);
+		const auto layoutOffset = OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_actor);
+		const auto canvasScale = OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
+		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_screenSpace);
+		const auto unitsScale = p_screenSpace ? canvasScale : canvasScale * worldScale;
+
+		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
+		auto matrix = isCanvas ?
+			OvMaths::FMatrix4::Identity :
+			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+
+		if (!isCanvas && elementSize.x > 0.0f && elementSize.y > 0.0f)
+		{
+			const auto resolvedSize = transform.GetUIEffectiveSize(elementSize);
+			matrix = matrix * OvMaths::FMatrix4::Scaling({
+				resolvedSize.x / elementSize.x,
+				resolvedSize.y / elementSize.y,
+				1.0f
+			});
+		}
+
+		matrix =
+			GetCanvasMatrix(p_actor, p_screenSpace) *
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			matrix;
+
+		const auto effectiveSize = isCanvas ? elementSize : transform.GetUIEffectiveSize(elementSize);
+		const auto focusedSize = effectiveSize * unitsScale;
+		p_outTarget.position = TransformPoint(matrix, OvMaths::FVector2::Zero);
+		p_outTarget.distance = p_screenSpace ? 4.0f : std::max(4.0f, std::max(focusedSize.x, focusedSize.y) * 2.0f);
+		return true;
+	}
+
+	ActorFocusTarget GetActorFocusTarget(
+		OvCore::ECS::Actor& p_actor,
+		const OvMaths::FVector2& p_renderSize,
+		bool p_screenSpace
+	)
+	{
+		ActorFocusTarget target;
+		if (TryGetUIFocusTarget(p_actor, p_renderSize, p_screenSpace, target))
+		{
+			return target;
+		}
+
+		return {
+			p_actor.transform.GetWorldPosition(),
+			GetActor3DFocusDist(p_actor)
+		};
+	}
 }
 
 void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
@@ -106,19 +255,26 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 		{
 			if (auto target = GetTargetActor())
 			{
-				auto targetPos = target.value().get().transform.GetWorldPosition();
-
-				float dist = GetActorFocusDist(target.value().get());
+				auto [winWidth, winHeight] = m_view.GetSafeSize();
+				const auto renderSize = OvMaths::FVector2{
+					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+				};
+				const auto focusTarget = GetActorFocusTarget(
+					target.value().get(),
+					renderSize,
+					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				);
 
 				if (m_inputManager.IsKeyPressed(OvWindowing::Inputs::EKey::KEY_F))
 				{
 					MoveToTarget(target.value().get());
 				}
 
-				auto focusObjectFromAngle = [this, &targetPos, &dist]( const OvMaths::FVector3& offset)
+				auto focusObjectFromAngle = [this, focusTarget]( const OvMaths::FVector3& offset)
 				{
-					auto camPos = targetPos + offset * dist;
-					auto direction = OvMaths::FVector3::Normalize(targetPos - camPos);
+					auto camPos = focusTarget.position + offset * focusTarget.distance;
+					auto direction = OvMaths::FVector3::Normalize(focusTarget.position - camPos);
 					m_camera.SetRotation(OvMaths::FQuaternion::LookAt(direction, std::abs(direction.y) == 1.0f ? OvMaths::FVector3::Right : OvMaths::FVector3::Up));
 					m_cameraDestinations.push({ camPos, m_camera.GetRotation() });
 				};
@@ -215,11 +371,22 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 
 void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target)
 {
+	auto [winWidth, winHeight] = m_view.GetSafeSize();
+	const auto renderSize = OvMaths::FVector2{
+		winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+		winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+	};
+	const auto focusTarget = GetActorFocusTarget(
+		p_target,
+		renderSize,
+		EDITOR_EXEC(IsSceneUIRenderingEnabled())
+	);
+
 	m_cameraDestinations.push({
-		p_target.transform.GetWorldPosition() -
+		focusTarget.position -
 		m_camera.GetRotation() *
 		OvMaths::FVector3::Forward *
-		GetActorFocusDist(p_target),
+		focusTarget.distance,
 		m_camera.GetRotation()
 	});
 }

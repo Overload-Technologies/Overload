@@ -144,6 +144,24 @@ namespace
 		return nullptr;
 	}
 
+	OvMaths::FMatrix4 GetCanvasMatrix(
+		OvCore::ECS::Actor& p_actor,
+		bool p_screenSpace
+	)
+	{
+		if (p_screenSpace)
+		{
+			return OvMaths::FMatrix4::Identity;
+		}
+
+		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
+		{
+			return CalculateUnscaledModelMatrix(*canvasOwner);
+		}
+
+		return OvMaths::FMatrix4::Identity;
+	}
+
 	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
 	{
 		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_owner, p_renderSize);
@@ -178,12 +196,20 @@ namespace
 		return OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(p_canvas, p_sceneDescriptor.renderUIInScreenSpace);
 	}
 
+	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
+	{
+		const auto renderSize = OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_renderSize);
+		const auto aspectRatio = renderSize.x / renderSize.y;
+
+		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
+	}
+
 	OvMaths::FVector2 GetResolvedElementSize(
 		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform.HasUIData())
+		if (!p_transform.HasActiveUIData())
 		{
 			return {
 				std::max(p_elementSize.x, 0.0f),
@@ -200,7 +226,7 @@ namespace
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform.HasUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		if (!p_transform.HasActiveUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
 		{
 			return;
 		}
@@ -227,8 +253,8 @@ namespace
 		}
 
 		auto& transform = p_actor.transform;
-		const auto* canvas = transform.HasUIData() ? FindCanvas(p_actor) : nullptr;
-		if (!transform.HasUIData() || !canvas)
+		const auto* canvas = transform.HasActiveUIData() ? FindCanvas(p_actor) : nullptr;
+		if (!transform.HasActiveUIData() || !canvas)
 		{
 			return false;
 		}
@@ -261,12 +287,21 @@ namespace
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
-		ApplyUISizeOverride(matrix, transform, elementSize);
+		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
+		auto matrix = isCanvas ?
+			OvMaths::FMatrix4::Identity :
+			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+		if (!isCanvas)
+		{
+			ApplyUISizeOverride(matrix, transform, elementSize);
+		}
 
 		const auto worldScale = GetUIWorldScale(p_sceneDescriptor, *canvas);
 		const auto unitsScale = p_sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
-		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+		matrix =
+			GetCanvasMatrix(p_actor, p_sceneDescriptor.renderUIInScreenSpace) *
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			matrix;
 
 		p_position = TransformPoint(matrix, OvMaths::FVector2::Zero);
 		p_rotation = p_actor.transform.GetWorldRotation();
@@ -507,13 +542,26 @@ protected:
 			}
 			auto gizmoPosition = selectedActor.transform.GetWorldPosition();
 			auto gizmoRotation = selectedActor.transform.GetWorldRotation();
-			TryGetUIActorGizmoTransform(
-				m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>(),
+			const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+			const bool hasUIGizmoTransform = TryGetUIActorGizmoTransform(
+				sceneDescriptor,
 				m_renderer.GetFrameDescriptor(),
 				selectedActor,
 				gizmoPosition,
 				gizmoRotation
 			);
+			std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
+			std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
+			if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
+			{
+				const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
+				const auto renderSize = OvMaths::FVector2{
+					static_cast<float>(frameDescriptor.renderWidth),
+					static_cast<float>(frameDescriptor.renderHeight)
+				};
+				gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
+				gizmoProjectionMatrixOverride = CreateUIProjectionMatrix(renderSize);
+			}
 			m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
 				selectedActor,
 				isActorHovered ?
@@ -527,7 +575,9 @@ protected:
 				gizmoRotation,
 				debugSceneDescriptor.gizmoOperation,
 				false,
-				debugSceneDescriptor.highlightedGizmoDirection
+				debugSceneDescriptor.highlightedGizmoDirection,
+				gizmoViewMatrixOverride,
+				gizmoProjectionMatrixOverride
 			);
 		}
 		
@@ -654,14 +704,17 @@ protected:
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform.HasUIData() ?
+		auto matrix = transform.HasActiveUIData() ?
 			transform.GetUIMatrix(canvasSize, layoutOffset, p_size) :
 			transform.GetWorldMatrix();
 		ApplyUISizeOverride(matrix, transform, p_size);
 
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, *canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
-		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+		matrix =
+			(transform.HasActiveUIData() ? GetCanvasMatrix(p_actor, sceneDescriptor.renderUIInScreenSpace) : OvMaths::FMatrix4::Identity) *
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			matrix;
 
 		const auto halfSize = p_size * 0.5f;
 		const std::array<OvMaths::FVector3, 4> corners = {
@@ -672,10 +725,21 @@ protected:
 		};
 
 		auto pso = m_renderer.CreatePipelineState();
+		if (sceneDescriptor.renderUIInScreenSpace)
+		{
+			m_debugShapeFeature.SetViewProjection(CreateUIProjectionMatrix(renderSize));
+		}
+
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kUIBoundsColor, kUIBoundsWidth, false);
+
+		if (sceneDescriptor.renderUIInScreenSpace)
+		{
+			const auto& camera = frameDescriptor.camera;
+			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());
+		}
 	}
 
 	void DrawCanvasBounds(OvCore::ECS::Actor& p_actor, OvCore::ECS::Components::UI::CCanvas& p_canvas)
@@ -698,17 +762,13 @@ protected:
 			return;
 		}
 
-		const auto& transform = p_actor.transform;
-		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform.HasUIData() ?
-			transform.GetUIMatrix(canvasSize, layoutOffset, canvasSize) :
-			transform.GetWorldMatrix();
-		ApplyUISizeOverride(matrix, transform, canvasSize);
-
 		const auto worldScale = GetUIWorldScale(sceneDescriptor, p_canvas);
 		const auto unitsScale = sceneDescriptor.renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
-		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+		const auto canvasUnitsScale = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f });
+		const auto matrix = sceneDescriptor.renderUIInScreenSpace ?
+			canvasUnitsScale :
+			CalculateUnscaledModelMatrix(p_actor) * canvasUnitsScale;
 
 		const auto halfSize = canvasSize * 0.5f;
 		const std::array<OvMaths::FVector3, 4> corners = {
@@ -719,10 +779,21 @@ protected:
 		};
 
 		auto pso = m_renderer.CreatePipelineState();
+		if (sceneDescriptor.renderUIInScreenSpace)
+		{
+			m_debugShapeFeature.SetViewProjection(CreateUIProjectionMatrix(renderSize));
+		}
+
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kCanvasBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kCanvasBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kCanvasBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kCanvasBoundsColor, kUIBoundsWidth, false);
+
+		if (sceneDescriptor.renderUIInScreenSpace)
+		{
+			const auto& camera = frameDescriptor.camera;
+			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());
+		}
 	}
 
 	void DrawFrustumLines(

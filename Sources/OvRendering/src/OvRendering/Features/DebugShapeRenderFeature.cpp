@@ -85,7 +85,12 @@ void OvRendering::Features::DebugShapeRenderFeature::OnBeginFrame(const Data::Fr
 		p_frameDescriptor.camera->GetProjectionMatrix() *
 		p_frameDescriptor.camera->GetViewMatrix();
 
-	m_lineMaterial->SetProperty("viewProjection", viewProjection);
+	SetViewProjection(viewProjection);
+}
+
+void OvRendering::Features::DebugShapeRenderFeature::SetViewProjection(const OvMaths::FMatrix4& p_viewProjection)
+{
+	m_lineMaterial->SetProperty("viewProjection", p_viewProjection);
 }
 
 void OvRendering::Features::DebugShapeRenderFeature::DrawLine(

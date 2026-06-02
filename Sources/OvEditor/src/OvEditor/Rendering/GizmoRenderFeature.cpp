@@ -67,7 +67,9 @@ void OvEditor::Rendering::GizmoRenderFeature::DrawGizmo(
 	const OvMaths::FQuaternion& p_rotation,
 	OvEditor::Core::EGizmoOperation p_operation,
 	bool p_pickable,
-	std::optional<OvEditor::Core::GizmoBehaviour::EDirection> p_highlightedDirection
+	std::optional<OvEditor::Core::GizmoBehaviour::EDirection> p_highlightedDirection,
+	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
+	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride
 )
 {
 	auto pso = m_renderer.CreatePipelineState();
@@ -85,7 +87,9 @@ void OvEditor::Rendering::GizmoRenderFeature::DrawGizmo(
 			pso,
 			*sphereModel,
 			m_gizmoBallMaterial,
-			sphereModelMatrix
+			sphereModelMatrix,
+			p_viewMatrixOverride,
+			p_projectionMatrixOverride
 		);
 	}
 	
@@ -101,7 +105,9 @@ void OvEditor::Rendering::GizmoRenderFeature::DrawGizmo(
 			pso,
 			*arrowModel,
 			m_gizmoArrowMaterial,
-			modelMatrix
+			modelMatrix,
+			p_viewMatrixOverride,
+			p_projectionMatrixOverride
 		);
 	}
 }

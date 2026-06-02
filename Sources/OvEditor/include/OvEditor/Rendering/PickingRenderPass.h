@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <optional>
+
+#include <OvMaths/FMatrix4.h>
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
@@ -62,7 +65,9 @@ namespace OvEditor::Rendering
 			OvRendering::Data::PipelineState p_pso,
 			const OvMaths::FVector3& p_position,
 			const OvMaths::FQuaternion& p_rotation,
-			OvEditor::Core::EGizmoOperation p_operation
+			OvEditor::Core::EGizmoOperation p_operation,
+			std::optional<OvMaths::FMatrix4> p_viewMatrixOverride = std::nullopt,
+			std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride = std::nullopt
 		);
 
 	private:

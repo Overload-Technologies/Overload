@@ -56,6 +56,48 @@ namespace
 		return OvCore::Rendering::UIRenderingUtils::FindCanvas(p_owner);
 	}
 
+	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
+	{
+		auto* current = &p_actor;
+
+		while (current)
+		{
+			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				return current;
+			}
+
+			current = current->GetParent();
+		}
+
+		return nullptr;
+	}
+
+	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
+	{
+		return
+			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
+			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+	}
+
+	OvMaths::FMatrix4 GetCanvasMatrix(
+		OvCore::ECS::Actor& p_actor,
+		bool p_screenSpace
+	)
+	{
+		if (p_screenSpace)
+		{
+			return OvMaths::FMatrix4::Identity;
+		}
+
+		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
+		{
+			return CalculateUnscaledModelMatrix(*canvasOwner);
+		}
+
+		return OvMaths::FMatrix4::Identity;
+	}
+
 	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
 	{
 		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_owner, p_renderSize);
@@ -82,12 +124,20 @@ namespace
 		return { result.x, result.y, result.z };
 	}
 
+	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
+	{
+		const auto renderSize = OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_renderSize);
+		const auto aspectRatio = renderSize.x / renderSize.y;
+
+		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
+	}
+
 	OvMaths::FVector2 GetResolvedElementSize(
 		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform.HasUIData())
+		if (!p_transform.HasActiveUIData())
 		{
 			return {
 				std::max(p_elementSize.x, 0.0f),
@@ -104,7 +154,7 @@ namespace
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		if (!p_transform.HasUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
+		if (!p_transform.HasActiveUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
 		{
 			return;
 		}
@@ -133,8 +183,8 @@ namespace
 		}
 
 		auto& transform = p_actor.transform;
-		const auto* canvas = transform.HasUIData() ? FindCanvas(p_actor) : nullptr;
-		if (!transform.HasUIData() || !canvas)
+		const auto* canvas = transform.HasActiveUIData() ? FindCanvas(p_actor) : nullptr;
+		if (!transform.HasActiveUIData() || !canvas)
 		{
 			return false;
 		}
@@ -167,12 +217,21 @@ namespace
 		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
 		const auto layoutOffset = GetLayoutOffset(p_actor);
 		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
-		ApplyUISizeOverride(matrix, transform, elementSize);
+		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
+		auto matrix = isCanvas ?
+			OvMaths::FMatrix4::Identity :
+			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+		if (!isCanvas)
+		{
+			ApplyUISizeOverride(matrix, transform, elementSize);
+		}
 
 		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
 		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
-		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+		matrix =
+			GetCanvasMatrix(p_actor, p_renderUIInScreenSpace) *
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			matrix;
 
 		p_position = TransformPoint(matrix, OvMaths::FVector2::Zero);
 		p_rotation = p_actor.transform.GetWorldRotation();
@@ -277,7 +336,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 		auto& selectedActor = debugSceneDescriptor.selectedActor.value();
 		auto gizmoPosition = selectedActor.transform.GetWorldPosition();
 		auto gizmoRotation = selectedActor.transform.GetWorldRotation();
-		TryGetUIActorGizmoTransform(
+		const bool hasUIGizmoTransform = TryGetUIActorGizmoTransform(
 			sceneDescriptor.includeUI,
 			sceneDescriptor.renderUIInScreenSpace,
 			frameDescriptor.renderWidth,
@@ -286,12 +345,25 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 			gizmoPosition,
 			gizmoRotation
 		);
+		std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
+		std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
+		if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
+		{
+			const auto renderSize = OvMaths::FVector2{
+				static_cast<float>(frameDescriptor.renderWidth),
+				static_cast<float>(frameDescriptor.renderHeight)
+			};
+			gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
+			gizmoProjectionMatrixOverride = CreateUIProjectionMatrix(renderSize);
+		}
 
 		DrawPickableGizmo(
 			pso,
 			gizmoPosition,
 			gizmoRotation,
-			debugSceneDescriptor.gizmoOperation
+			debugSceneDescriptor.gizmoOperation,
+			gizmoViewMatrixOverride,
+			gizmoProjectionMatrixOverride
 		);
 	}
 
@@ -445,7 +517,9 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableGizmo(
 	OvRendering::Data::PipelineState p_pso,
 	const OvMaths::FVector3& p_position,
 	const OvMaths::FQuaternion& p_rotation,
-	OvEditor::Core::EGizmoOperation p_operation
+	OvEditor::Core::EGizmoOperation p_operation,
+	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
+	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride
 )
 {
 	auto modelMatrix =
@@ -455,5 +529,12 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableGizmo(
 	auto arrowModel = EDITOR_CONTEXT(editorResources)->GetModel("Arrow_Picking");
 
 	m_renderer.GetFeature<DebugModelRenderFeature>()
-		.DrawModelWithSingleMaterial(p_pso, *arrowModel, m_gizmoPickingMaterial, modelMatrix);
+		.DrawModelWithSingleMaterial(
+			p_pso,
+			*arrowModel,
+			m_gizmoPickingMaterial,
+			modelMatrix,
+			p_viewMatrixOverride,
+			p_projectionMatrixOverride
+		);
 }

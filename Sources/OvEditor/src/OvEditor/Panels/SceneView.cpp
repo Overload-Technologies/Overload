@@ -15,6 +15,7 @@
 #include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Rendering/GridRenderPass.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/SceneView.h>
@@ -60,6 +61,48 @@ namespace
 		return { result.x, result.y, result.z };
 	}
 
+	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
+	{
+		auto* current = &p_actor;
+
+		while (current)
+		{
+			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				return current;
+			}
+
+			current = current->GetParent();
+		}
+
+		return nullptr;
+	}
+
+	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
+	{
+		return
+			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
+			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+	}
+
+	OvMaths::FMatrix4 GetCanvasMatrix(
+		OvCore::ECS::Actor& p_actor,
+		bool p_screenSpace
+	)
+	{
+		if (p_screenSpace)
+		{
+			return OvMaths::FMatrix4::Identity;
+		}
+
+		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
+		{
+			return CalculateUnscaledModelMatrix(*canvasOwner);
+		}
+
+		return OvMaths::FMatrix4::Identity;
+	}
+
 	std::optional<UIGizmoContext> ResolveUIGizmoContext(
 		OvCore::ECS::Actor& p_actor,
 		const OvMaths::FVector2& p_renderSize,
@@ -67,7 +110,7 @@ namespace
 	)
 	{
 		auto& transform = p_actor.transform;
-		if (!transform.HasUIData())
+		if (!transform.HasActiveUIData())
 		{
 			return std::nullopt;
 		}
@@ -102,8 +145,11 @@ namespace
 		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
 		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
 
-		auto matrix = transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
-		if (elementSize.x > 0.0f && elementSize.y > 0.0f)
+		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
+		auto matrix = isCanvas ?
+			OvMaths::FMatrix4::Identity :
+			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
+		if (!isCanvas && elementSize.x > 0.0f && elementSize.y > 0.0f)
 		{
 			const auto resolvedSize = GetResolvedElementSize(transform, elementSize);
 
@@ -113,7 +159,10 @@ namespace
 				1.0f
 			});
 		}
-		matrix = OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) * matrix;
+		matrix =
+			GetCanvasMatrix(p_actor, p_renderUIInScreenSpace) *
+			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
+			matrix;
 
 		return UIGizmoContext{
 			TransformPoint(matrix, OvMaths::FVector2::Zero),
@@ -192,6 +241,12 @@ void OvEditor::Panels::SceneView::Update(float p_deltaTime)
 void OvEditor::Panels::SceneView::InitFrame()
 {
 	AViewControllable::InitFrame();
+
+	m_renderer->SetDescriptor<Rendering::GridRenderPass::GridDescriptor>({
+		m_gridColor,
+		m_camera.GetPosition(),
+		!EDITOR_EXEC(IsSceneUIRenderingEnabled())
+	});
 
 	OvTools::Utils::OptRef<OvCore::ECS::Actor> selectedActor;
 
@@ -333,7 +388,8 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 					m_currentOperation,
 					m_highlightedGizmoDirection.value(),
 					uiOrigin,
-					uiUnitsScale
+					uiUnitsScale,
+					EDITOR_EXEC(IsSceneUIRenderingEnabled())
 				);
 			}
 			else if (m_highlightedActor)

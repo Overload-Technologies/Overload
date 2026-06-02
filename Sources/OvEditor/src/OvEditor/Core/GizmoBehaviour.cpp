@@ -39,7 +39,8 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(
 	EGizmoOperation p_operation,
 	EDirection p_direction,
 	const OvMaths::FVector3* p_overrideWorldPosition,
-	const float* p_uiUnitsScale
+	const float* p_uiUnitsScale,
+	bool p_uiScreenSpace
 )
 {
 	m_target = &p_target;
@@ -53,7 +54,8 @@ void OvEditor::Core::GizmoBehaviour::StartPicking(
 	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_originalTransform.GetWorldPosition());
 	m_currentOperation = p_operation;
 	m_direction = p_direction;
-	m_isUITranslation = p_target.transform.HasUIData() && p_uiUnitsScale != nullptr;
+	m_isUITranslation = p_target.transform.HasActiveUIData() && p_uiUnitsScale != nullptr;
+	m_isUIScreenSpace = m_isUITranslation && p_uiScreenSpace;
 	m_uiUnitsScale = p_uiUnitsScale ? std::max(std::abs(*p_uiUnitsScale), 0.0001f) : 1.0f;
 
 	if (m_isUITranslation)
@@ -70,6 +72,7 @@ void OvEditor::Core::GizmoBehaviour::StopPicking()
 {
 	m_target = nullptr;
 	m_isUITranslation = false;
+	m_isUIScreenSpace = false;
 	m_uiUnitsScale = 1.0f;
 }
 
@@ -149,11 +152,48 @@ void OvEditor::Core::GizmoBehaviour::ApplyTranslation(const OvMaths::FMatrix4& p
 {
 	if (m_isUITranslation)
 	{
+		if (m_direction == EDirection::X && !m_target->transform.IsHorizontalUIPositionEditable())
+		{
+			return;
+		}
+
+		if (m_direction == EDirection::Y && !m_target->transform.IsVerticalUIPositionEditable())
+		{
+			return;
+		}
+
+		if (m_isUIScreenSpace)
+		{
+			const auto mouseDelta = m_currentMouse - m_originMouse;
+			OvMaths::FVector2 axisDelta = OvMaths::FVector2::Zero;
+
+			switch (m_direction)
+			{
+			case EDirection::X:
+				axisDelta.x = mouseDelta.x / m_uiUnitsScale;
+				break;
+			case EDirection::Y:
+				axisDelta.y = -mouseDelta.y / m_uiUnitsScale;
+				break;
+			case EDirection::Z:
+				break;
+			}
+
+			if (IsSnappedBehaviourEnabled())
+			{
+				axisDelta.x = SnapValue(axisDelta.x, OvEditor::Settings::EditorSettings::TranslationSnapUnit);
+				axisDelta.y = SnapValue(axisDelta.y, OvEditor::Settings::EditorSettings::TranslationSnapUnit);
+			}
+
+			m_target->transform.SetUIPosition(m_originalUIPosition + axisDelta);
+			return;
+		}
+
 		const auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
-		const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(GetRealDirection(true), m_target->transform.GetWorldPosition() - p_cameraPosition);
-		const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Cross(GetRealDirection(true), planeTangent);
 		const OvMaths::FVector3 direction = GetRealDirection(true);
 		const OvMaths::FVector3 planePoint = m_originalTransform.GetWorldPosition();
+		const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(direction, planePoint - p_cameraPosition);
+		const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Cross(direction, planeTangent);
 
 		const float denom = OvMaths::FVector3::Dot(ray, planeNormal);
 

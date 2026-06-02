@@ -30,7 +30,7 @@ namespace
 {
 	constexpr float kMinimumFontSize = 1.0f;
 	constexpr float kMinimumExtent = 0.0f;
-	constexpr const char* kDefaultMaterialPath = ":Materials\\UI_Text.ovmat";
+	constexpr const char* kDefaultMaterialPath = ":Materials\\Text.ovmat";
 	constexpr const char* kColorUniform = "u_Color";
 
 	float ClampFinite(float p_value, float p_min)

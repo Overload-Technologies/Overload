@@ -1,5 +1,5 @@
 <root>
-    <shader>:Shaders\UI_Image.ovfx</shader>
+    <shader>:Shaders\Image.ovfx</shader>
     <settings>
         <support_orthographic>true</support_orthographic>
         <support_perspective>true</support_perspective>

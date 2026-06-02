@@ -23,7 +23,7 @@
 namespace
 {
 	constexpr float kMinimumSize = 0.0001f;
-	constexpr const char* kDefaultMaterialPath = ":Materials\\UI_Image.ovmat";
+	constexpr const char* kDefaultMaterialPath = ":Materials\\Image.ovmat";
 	constexpr const char* kTextureUniform = "u_Image";
 	constexpr const char* kTintUniform = "u_Tint";
 

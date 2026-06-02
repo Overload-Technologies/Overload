@@ -26,6 +26,8 @@
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ResourceManagement/FontManager.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
 
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -1531,15 +1533,17 @@ bool OvEditor::Core::EditorActions::ImportAsset(const std::string& p_initialDest
 	std::string shaderPartFormats = "*.ovfxh;";
 	std::string soundFormats = "*.mp3;*.ogg;*.wav;";
 	std::string scriptFormats = "*.lua;";
+	std::string fontFormats = "*.ttf;*.otf;";
 
 	OpenFileDialog selectAssetDialog("Select an asset to import");
-	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + shaderPartFormats + soundFormats + scriptFormats);
+	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + shaderPartFormats + soundFormats + scriptFormats + fontFormats);
 	selectAssetDialog.AddFileType("Model (.fbx, .obj)", modelFormats);
 	selectAssetDialog.AddFileType("Texture (.png, .jpeg, .jpg, .tga, .hdr)", textureFormats);
 	selectAssetDialog.AddFileType("Shader (.ovfx)", shaderFormats);
 	selectAssetDialog.AddFileType("Shader Parts (.ovfxh)", shaderPartFormats);
 	selectAssetDialog.AddFileType("Sound (.mp3, .ogg, .wav)", soundFormats);
 	selectAssetDialog.AddFileType("Script (.lua)", scriptFormats);
+	selectAssetDialog.AddFileType("Font (.ttf, .otf)", fontFormats);
 	selectAssetDialog.Show();
 
 	if (selectAssetDialog.HasSucceeded())
@@ -1616,15 +1620,17 @@ bool OvEditor::Core::EditorActions::ImportAssetAtLocation(const std::string& p_d
 	std::string shaderPartFormats = "*.ovfxh;";
 	std::string soundFormats = "*.mp3;*.ogg;*.wav;";
 	std::string scriptFormats = "*.lua;";
+	std::string fontFormats = "*.ttf;*.otf;";
 
 	OpenFileDialog selectAssetDialog("Select an asset to import");
-	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + soundFormats + scriptFormats);
+	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats + shaderFormats + soundFormats + scriptFormats + fontFormats);
 	selectAssetDialog.AddFileType("Model (.fbx, .obj)", modelFormats);
 	selectAssetDialog.AddFileType("Texture (.png, .jpeg, .jpg, .tga, .hdr)", textureFormats);
 	selectAssetDialog.AddFileType("Shader (.ovfx)", shaderFormats);
 	selectAssetDialog.AddFileType("Shader Parts (.ovfxh)", shaderPartFormats);
 	selectAssetDialog.AddFileType("Sound (.mp3, .ogg, .wav)", soundFormats);
 	selectAssetDialog.AddFileType("Script (.lua)", scriptFormats);
+	selectAssetDialog.AddFileType("Font (.ttf, .otf)", fontFormats);
 	selectAssetDialog.Show();
 
 	if (selectAssetDialog.HasSucceeded())
@@ -1879,6 +1885,12 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 			const_cast<std::string&>(resource->path) = p_newName;
 		}
 
+		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::FontManager>().MoveResource(p_previousName, p_newName))
+		{
+			OvRendering::Resources::Font* resource = OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::FontManager>()[p_newName];
+			const_cast<std::string&>(resource->path) = p_newName;
+		}
+
 		if (OvTools::Utils::PathParser::GetFileType(p_previousName) == OvTools::Utils::PathParser::EFileType::MODEL)
 		{
 			MoveAllEmbeddedResourcesForRenamedModel(p_previousName, p_newName);
@@ -1968,6 +1980,9 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 
 			OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::SoundManager>().UnloadResource(p_previousName);
 		}
+
+		if (OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::FontManager>().GetResource(p_previousName, false))
+			OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::FontManager>().UnloadResource(p_previousName);
 	}
 
 	switch (OvTools::Utils::PathParser::GetFileType(p_previousName))
@@ -2016,6 +2031,15 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
+		break;
+	case OvTools::Utils::PathParser::EFileType::FONT:
+		if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+			for (auto actor : currentScene->GetActors())
+				if (auto text = actor->GetComponent<OvCore::ECS::Components::UI::CText>(); text && text->GetFontPath() == p_previousName)
+					text->SetFontPath(p_newName);
+
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		break;

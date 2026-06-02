@@ -13,6 +13,7 @@
 
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -345,6 +346,23 @@ bool OvCore::ECS::Components::CTransform::HasUIData() const
 	return m_uiData.has_value();
 }
 
+bool OvCore::ECS::Components::CTransform::HasActiveUIData() const
+{
+	const auto* current = owner.GetParent();
+
+	while (current)
+	{
+		if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+		{
+			return true;
+		}
+
+		current = current->GetParent();
+	}
+
+	return false;
+}
+
 const std::optional<OvCore::ECS::Components::CTransform::UIData>& OvCore::ECS::Components::CTransform::GetUIData() const
 {
 	return m_uiData;
@@ -601,7 +619,7 @@ void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetCont
 		SetLocalRotation(OvMaths::FQuaternion(result));
 	};
 
-	if (HasUIData())
+	if (HasActiveUIData())
 	{
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Anchored Position (px)");
 		auto& anchoredPosition = p_root.CreateWidget<OvUI::Widgets::Drags::DragMultipleScalars<float, 2>>(

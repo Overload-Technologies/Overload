@@ -73,6 +73,7 @@ void BindLuaComponents(sol::state& p_luaState)
 		"EnableUIData", &CTransform::EnableUIData,
 		"DisableUIData", &CTransform::DisableUIData,
 		"HasUIData", &CTransform::HasUIData,
+		"HasActiveUIData", &CTransform::HasActiveUIData,
 		"GetUIPosition", [](CTransform& p_this) -> FVector2 { return p_this.GetUIPosition(); },
 		"SetUIPosition", &CTransform::SetUIPosition,
 		"GetUIRotation", &CTransform::GetUIRotation,

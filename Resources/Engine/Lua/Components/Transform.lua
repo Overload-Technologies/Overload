@@ -143,6 +143,10 @@ function Transform:DisableUIData() end
 ---@return boolean
 function Transform:HasUIData() end
 
+--- Returns whether this transform is currently driven by a parent Canvas hierarchy
+---@return boolean
+function Transform:HasActiveUIData() end
+
 --- Returns the anchored UI position
 ---@return Vector2
 function Transform:GetUIPosition() end

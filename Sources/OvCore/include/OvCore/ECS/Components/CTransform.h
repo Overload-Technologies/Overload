@@ -222,6 +222,7 @@ namespace OvCore::ECS::Components
 		void EnableUIData();
 		void DisableUIData();
 		bool HasUIData() const;
+		bool HasActiveUIData() const;
 		const std::optional<UIData>& GetUIData() const;
 
 		void SetUIPosition(const OvMaths::FVector2& p_position);

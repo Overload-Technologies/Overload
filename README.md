@@ -84,6 +84,9 @@ cd Overload
 make -j$(nproc) # build the project using all available CPU cores
 ```
 
+> [!important]
+> The editor requires `zenity` to be installed on Linux.
+
 > [!note]
 > Officially supported actions for `gen_proj.sh` are: `gmake` (default), `codelite`.<br/>
 > Refer to [premake's website](https://premake.github.io/docs/Using-Premake) for more information.

@@ -83,6 +83,12 @@ int main(int argc, char** argv)
 
 	OvEditor::Settings::EditorSettings::Load();
 
+#ifndef WIN32
+	if (std::system("command -v zenity >/dev/null 2>&1") != 0) {
+		OVLOG_ERROR("Zenity is required to run Overload!");
+	}
+#endif
+
 	std::optional<std::filesystem::path> projectPath;
 
 	if (argc < 2)

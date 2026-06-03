@@ -17,6 +17,7 @@ project "OvEditor"
 	includedirs {
 		-- Dependencies
 		dependdir .. "glad/include",
+		dependdir .. "baregl/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "tinyxml2/include",
 		dependdir .. "tracy",
@@ -38,6 +39,7 @@ project "OvEditor"
 
 	links {
 		-- Dependencies (order matters on Linux!)
+		"baregl",
 		"bullet3",
 		"freetype",
 		"glad",
@@ -124,6 +126,7 @@ project "OvEditor"
 		-- Force inclusion of all symbols from these libraries
 		linkoptions {
 			"-Wl,--whole-archive",
+			outputdir .. "%{cfg.buildcfg}/baregl/libbaregl.a",
 			outputdir .. "%{cfg.buildcfg}/ImGui/libImGui.a",
 			outputdir .. "%{cfg.buildcfg}/bullet3/libbullet3.a",
 			outputdir .. "%{cfg.buildcfg}/lua/liblua.a",

@@ -6,11 +6,12 @@
 
 #pragma once
 
+#include <baregl/Framebuffer.h>
+#include <baregl/Texture.h>
+#include <baregl/Buffer.h>
+
 #include <OvCore/ECS/Components/AComponent.h>
 #include <OvCore/Rendering/PingPongFramebuffer.h>
-#include <OvRendering/HAL/Framebuffer.h>
-#include <OvRendering/HAL/Texture.h>
-#include <OvRendering/HAL/UniformBuffer.h>
 
 namespace OvCore::ECS { class Actor; }
 
@@ -162,7 +163,7 @@ namespace OvCore::ECS::Components
 		/**
 		* Returns the last complete cubemap captured by the reflection probe
 		*/
-		std::shared_ptr<OvRendering::HAL::Texture> GetCubemap() const;
+		std::shared_ptr<baregl::Texture> GetCubemap() const;
 
 		/**
 		* Serialize the component
@@ -189,8 +190,8 @@ namespace OvCore::ECS::Components
 		void _AllocateResources();
 		void _PrepareUBO();
 		std::vector<uint32_t> _GetCaptureFaceIndices();
-		OvRendering::HAL::Framebuffer& _GetTargetFramebuffer() const;
-		OvRendering::HAL::UniformBuffer& _GetUniformBuffer() const;
+		baregl::Framebuffer& _GetTargetFramebuffer() const;
+		baregl::Buffer& _GetUniformBuffer() const;
 		bool _IsDoubleBuffered() const;
 
 		friend class OvCore::Rendering::ReflectionRenderPass;
@@ -205,9 +206,9 @@ namespace OvCore::ECS::Components
 	private:
 		// Double buffering so we can render to progressively one while reading from the other
 		Rendering::PingPongFramebuffer m_framebuffers;
-		std::array<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemaps;
-		OvTools::Utils::CircularIterator<std::shared_ptr<OvRendering::HAL::Texture>, 2> m_cubemapIterator;
-		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_uniformBuffer;
+		std::array<std::shared_ptr<baregl::Texture>, 2> m_cubemaps;
+		OvTools::Utils::CircularIterator<std::shared_ptr<baregl::Texture>, 2> m_cubemapIterator;
+		std::unique_ptr<baregl::Buffer> m_uniformBuffer;
 		uint32_t m_captureFaceIndex = 0; // Current frame index in the capture process
 		std::optional<CaptureRequestDesc> m_captureRequest = std::nullopt;
 		bool m_isAnyCubemapComplete = false;

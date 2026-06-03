@@ -4,17 +4,17 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Utils/ShaderUtil.h"
+#include <OvRendering/Utils/ShaderUtil.h>
 
 namespace OvRendering::Utils
 {
-	std::string GetShaderTypeName(Settings::EShaderType p_type)
+	std::string GetShaderTypeName(baregl::types::EShaderType p_type)
 	{
 		switch (p_type)
 		{
-		case OvRendering::Settings::EShaderType::VERTEX: return "Vertex";
-		case OvRendering::Settings::EShaderType::FRAGMENT: return "Fragment";
-		default: return "None";
+			case baregl::types::EShaderType::VERTEX: return "Vertex";
+			case baregl::types::EShaderType::FRAGMENT: return "Fragment";
+			default: return "None";
 		}
 	}
 }

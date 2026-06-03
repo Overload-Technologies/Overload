@@ -11,8 +11,8 @@
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FTransform.h>
 
-#include "OvRendering/Geometry/BoundingSphere.h"
-#include "OvRendering/Resources/Model.h"
+#include <OvRendering/Geometry/BoundingSphere.h>
+#include <OvRendering/Resources/Model.h>
 #include <OvRendering/Settings/ECullingOptions.h>
 
 namespace OvRendering::Data

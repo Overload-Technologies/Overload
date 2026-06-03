@@ -9,7 +9,7 @@
 #include <tracy/Tracy.hpp>
 
 #include <OvRendering/Core/CompositeRenderer.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 OvRendering::Core::CompositeRenderer::CompositeRenderer(Context::Driver& p_driver)
 	: ABaseRenderer(p_driver)

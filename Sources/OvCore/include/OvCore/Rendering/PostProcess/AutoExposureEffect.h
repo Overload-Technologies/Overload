@@ -50,14 +50,14 @@ namespace OvCore::Rendering::PostProcess
 		*/
 		virtual void Draw(
 			OvRendering::Data::PipelineState p_pso,
-			OvRendering::HAL::Framebuffer& p_src,
-			OvRendering::HAL::Framebuffer& p_dst,
+			baregl::Framebuffer& p_src,
+			baregl::Framebuffer& p_dst,
 			const EffectSettings& p_settings
 		) override;
 
 	private:
 		std::optional<std::chrono::high_resolution_clock::time_point> m_previousTime;
-		OvRendering::HAL::Framebuffer m_luminanceBuffer;
+		baregl::Framebuffer m_luminanceBuffer;
 		PingPongFramebuffer m_exposurePingPongBuffer;
 		OvRendering::Data::Material m_luminanceMaterial;
 		OvRendering::Data::Material m_exposureMaterial;

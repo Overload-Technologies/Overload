@@ -9,19 +9,20 @@
 
 #include <OvDebug/Assertion.h>
 #include <OvRendering/Entities/Light.h>
-#include <OvRendering/HAL/Renderbuffer.h>
+#include <baregl/Renderbuffer.h>
 
 namespace
 {
 	void SetupFramebufferForShadowMapping(
-		OvRendering::HAL::Framebuffer& p_framebuffer,
+		baregl::Framebuffer& p_framebuffer,
 		uint32_t p_resolution
 	)
 	{
-		using namespace OvRendering::HAL;
+		using namespace baregl::types;
+		using namespace baregl::data;
 		using namespace OvRendering::Settings;
 
-		const auto renderTexture = std::make_shared<Texture>(
+		const auto renderTexture = std::make_shared<baregl::Texture>(
 			ETextureType::TEXTURE_2D,
 			std::format(
 				"{}/Depth",
@@ -45,8 +46,8 @@ namespace
 		};
 
 		renderTexture->Allocate(renderTextureDesc);
-		renderTexture->SetBorderColor(OvMaths::FVector4::One);
-		p_framebuffer.Attach<Texture>(renderTexture, EFramebufferAttachment::DEPTH);
+		renderTexture->SetBorderColor(baregl::math::Vec4{0.0f, 0.0f, 0.0f});
+		p_framebuffer.Attach<baregl::Texture>(renderTexture, EFramebufferAttachment::DEPTH);
 		p_framebuffer.Validate();
 		p_framebuffer.SetTargetDrawBuffer(std::nullopt);
 		p_framebuffer.SetTargetReadBuffer(std::nullopt);
@@ -105,7 +106,7 @@ void OvRendering::Entities::Light::PrepareForShadowRendering(const OvRendering::
 
 	if (!shadowBuffer)
 	{
-		shadowBuffer = std::make_unique<OvRendering::HAL::Framebuffer>("DirectionalShadow");
+		shadowBuffer = std::make_unique<baregl::Framebuffer>("DirectionalShadow");
 		SetupFramebufferForShadowMapping(*shadowBuffer, static_cast<uint32_t>(shadowMapResolution));
 	}
 	else

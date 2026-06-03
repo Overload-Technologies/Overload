@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
-
 #include <OvPhysics/Core/PhysicsEngine.h>
 
 #include <OvWindowing/Context/Device.h>
@@ -59,7 +56,7 @@ namespace OvGame::Core
 		std::unique_ptr<OvPhysics::Core::PhysicsEngine> physicsEngine;
 		std::unique_ptr<OvAudio::Core::AudioEngine> audioEngine;
 		std::unique_ptr<OvCore::Scripting::ScriptEngine> scriptEngine;
-		std::unique_ptr<OvRendering::HAL::Framebuffer> framebuffer;
+		std::unique_ptr<baregl::Framebuffer> framebuffer;
 
 		OvCore::SceneSystem::SceneManager sceneManager;
 

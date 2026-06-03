@@ -10,20 +10,20 @@
 #include <OvCore/Helpers/GUIHelpers.h>
 #include <OvDebug/Assertion.h>
 #include <OvEditor/Core/EditorResources.h>
-#include <OvRendering/Settings/ETextureFilteringMode.h>
+#include <baregl/types/ETextureFilteringMode.h>
 #include <OvTools/Utils/PathParser.h>
 
 namespace
 {
-	template<OvRendering::Settings::ETextureFilteringMode FilteringMode>
+	template<baregl::types::ETextureFilteringMode FilteringMode>
 	auto CreateTexture(const std::filesystem::path& p_path)
 	{
 		return OvRendering::Resources::Loaders::TextureLoader::Create(
 			p_path.string(),
 			FilteringMode,
 			FilteringMode,
-			OvRendering::Settings::ETextureWrapMode::REPEAT,
-			OvRendering::Settings::ETextureWrapMode::REPEAT,
+			baregl::types::ETextureWrapMode::REPEAT,
+			baregl::types::ETextureWrapMode::REPEAT,
 			false
 		);
 	}
@@ -98,7 +98,7 @@ namespace
 OvEditor::Core::EditorResources::EditorResources(const std::string& p_editorAssetsPath)
 {
 	using namespace OvRendering::Resources::Loaders;
-	using enum OvRendering::Settings::ETextureFilteringMode;
+	using enum baregl::types::ETextureFilteringMode;
 
 	const auto editorAssetsPath = std::filesystem::path{ p_editorAssetsPath };
 	const auto texturesFolder = editorAssetsPath / "Textures";

@@ -10,7 +10,9 @@
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/PostProcess/BloomEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
+
+#include <baregl/data/TextureDesc.h>
 
 // Implementation reference: https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom
 
@@ -22,18 +24,18 @@ namespace OvCore::Rendering::PostProcess::BloomConstants
 
 namespace
 {
-	const auto kBloomTextureDesc = OvRendering::Settings::TextureDesc{
+	const auto kBloomTextureDesc = baregl::data::TextureDesc{
 		.width = 1, // Unknown size at this point
 		.height = 1,
-		.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
-		.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
-		.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-		.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-		.internalFormat = OvRendering::Settings::EInternalFormat::RGBA32F,
+		.minFilter = baregl::types::ETextureFilteringMode::LINEAR,
+		.magFilter = baregl::types::ETextureFilteringMode::LINEAR,
+		.horizontalWrap = baregl::types::ETextureWrapMode::CLAMP_TO_EDGE,
+		.verticalWrap = baregl::types::ETextureWrapMode::CLAMP_TO_EDGE,
+		.internalFormat = baregl::types::EInternalFormat::RGBA32F,
 		.useMipMaps = false,
-		.mutableDesc = OvRendering::Settings::MutableTextureDesc{
-			.format = OvRendering::Settings::EFormat::RGBA,
-			.type = OvRendering::Settings::EPixelDataType::FLOAT
+		.mutableDesc = baregl::data::MutableTextureDesc{
+			.format = baregl::types::EFormat::RGBA,
+			.type = baregl::types::EPixelDataType::FLOAT
 		}
 	};
 
@@ -41,23 +43,23 @@ namespace
 	{
 		uint16_t width;
 		uint16_t height;
-		OvRendering::HAL::Framebuffer& target;
+		baregl::Framebuffer& target;
 	};
 }
 
 OvCore::Rendering::PostProcess::BloomEffect::BloomEffect(OvRendering::Core::CompositeRenderer& p_renderer) :
 	AEffect(p_renderer),
 	m_bloomSamplingBuffers{
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer0"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer1"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer2"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer3"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer4"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer5"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer6"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer7"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer8"},
-		OvRendering::HAL::Framebuffer{"BloomSamplingBuffer9"}
+		baregl::Framebuffer{"BloomSamplingBuffer0"},
+		baregl::Framebuffer{"BloomSamplingBuffer1"},
+		baregl::Framebuffer{"BloomSamplingBuffer2"},
+		baregl::Framebuffer{"BloomSamplingBuffer3"},
+		baregl::Framebuffer{"BloomSamplingBuffer4"},
+		baregl::Framebuffer{"BloomSamplingBuffer5"},
+		baregl::Framebuffer{"BloomSamplingBuffer6"},
+		baregl::Framebuffer{"BloomSamplingBuffer7"},
+		baregl::Framebuffer{"BloomSamplingBuffer8"},
+		baregl::Framebuffer{"BloomSamplingBuffer9"}
 	},
 	m_bloomOutputBuffer{ "BloomOutputBuffer" }
 {
@@ -99,8 +101,8 @@ bool OvCore::Rendering::PostProcess::BloomEffect::IsApplicable(const EffectSetti
 
 void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::HAL::Framebuffer& p_src,
-	OvRendering::HAL::Framebuffer& p_dst,
+	baregl::Framebuffer& p_src,
+	baregl::Framebuffer& p_dst,
 	const EffectSettings& p_settings
 )
 {
@@ -149,8 +151,8 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	m_renderer.Blit(p_pso, p_src, m_bloomOutputBuffer, m_blitMaterial);
 
 	auto downsamplingPass = [&](
-		OvRendering::HAL::Framebuffer& p_src,
-		OvRendering::HAL::Framebuffer& p_dst,
+		baregl::Framebuffer& p_src,
+		baregl::Framebuffer& p_dst,
 		const OvMaths::FVector2& p_srcRes 
 	) {
 		m_downsamplingMaterial.SetProperty("_InputResolution", p_srcRes, true);
@@ -181,15 +183,15 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 
 	// Custom PSO for the upsampling pass, allowing us to use additive blending (accumulation)
 	auto upsamplingPSO = p_pso;
-	upsamplingPSO.blendingSrcFactor = OvRendering::Settings::EBlendingFactor::ONE;
-	upsamplingPSO.blendingDestFactor = OvRendering::Settings::EBlendingFactor::ONE;
-	upsamplingPSO.blendingEquation = OvRendering::Settings::EBlendingEquation::FUNC_ADD;
+	upsamplingPSO.blendingSrcFactor = baregl::types::EBlendingFactor::ONE;
+	upsamplingPSO.blendingDestFactor = baregl::types::EBlendingFactor::ONE;
+	upsamplingPSO.blendingEquation = baregl::types::EBlendingEquation::FUNC_ADD;
 
 	m_upsamplingMaterial.SetProperty("_FilterRadius", BloomConstants::kFilterRadius, true);
 
 	auto upsamplingPass = [&](
-		OvRendering::HAL::Framebuffer& p_src,
-		OvRendering::HAL::Framebuffer& p_dst
+		baregl::Framebuffer& p_src,
+		baregl::Framebuffer& p_dst
 	) {
 		m_renderer.Blit(upsamplingPSO, p_src, p_dst, m_upsamplingMaterial, (DEFAULT & ~RESIZE_DST_TO_MATCH_SRC) | USE_MATERIAL_STATE_MASK);
 	};
@@ -203,8 +205,8 @@ void OvCore::Rendering::PostProcess::BloomEffect::Draw(
 	upsamplingPass(bloomMips[0].target, m_bloomOutputBuffer);
 
 	// Final pass, interpolate bloom result with the input image
-	const auto bloomTex = m_bloomOutputBuffer.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
-	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value());
+	const auto bloomTex = m_bloomOutputBuffer.GetAttachment<baregl::Texture>(baregl::types::EFramebufferAttachment::COLOR);
+	m_bloomMaterial.SetProperty("_BloomTexture", &bloomTex.value().get());
 	m_bloomMaterial.SetProperty("_BloomStrength", std::min(bloomSettings.intensity * 0.04f, 1.0f));
 	m_renderer.Blit(p_pso, p_src, p_dst, m_bloomMaterial);
 }

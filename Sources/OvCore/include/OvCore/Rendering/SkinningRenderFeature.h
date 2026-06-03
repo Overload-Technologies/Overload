@@ -12,7 +12,7 @@
 
 #include <OvMaths/FMatrix4.h>
 #include <OvRendering/Features/ARenderFeature.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
+#include <baregl/Buffer.h>
 
 namespace OvCore::Rendering
 {
@@ -48,7 +48,7 @@ namespace OvCore::Rendering
 
 	private:
 		void BindIdentityPalette() const;
-		OvRendering::HAL::ShaderStorageBuffer& GetCurrentSkinningBuffer() const;
+		baregl::Buffer& GetCurrentSkinningBuffer() const;
 
 	private:
 		static constexpr uint32_t kSkinningBufferRingSize = 3;
@@ -77,8 +77,8 @@ namespace OvCore::Rendering
 
 		uint32_t m_bufferBindingPoint;
 		mutable uint32_t m_skinningBufferIndex = kSkinningBufferRingSize - 1;
-		std::array<std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer>, kSkinningBufferRingSize> m_skinningBuffers;
-		std::unique_ptr<OvRendering::HAL::ShaderStorageBuffer> m_identityBuffer;
+		std::array<std::unique_ptr<baregl::Buffer>, kSkinningBufferRingSize> m_skinningBuffers;
+		std::unique_ptr<baregl::Buffer> m_identityBuffer;
 
 		UploadedPaletteState m_lastUploaded;
 		mutable BoundPaletteState m_bound;

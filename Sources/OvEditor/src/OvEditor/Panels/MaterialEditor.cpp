@@ -475,7 +475,7 @@ void OvEditor::Panels::MaterialEditor::GenerateMaterialPropertiesContent()
 			{
 				GUIDrawer::DrawTexture(*m_materialPropertiesColumns, formattedType, arg);
 			}
-			// No UI for TextureHandle* since it's not handled in the original code
+			// No UI for baregl::Texture* since it's not handled in the original code
 			};
 
 		// Apply the visitor to the variant

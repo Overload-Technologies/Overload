@@ -312,6 +312,7 @@ void OvEditor::Panels::AssetProperties::CreateModelSettings()
 void OvEditor::Panels::AssetProperties::CreateTextureSettings()
 {
 	using namespace OvRendering::Settings;
+	using namespace baregl::types;
 
 	const std::string kMinFilter = "MIN_FILTER";
 	const std::string kMagFilter = "MAG_FILTER";

@@ -14,7 +14,7 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 #include <OvRendering/Core/CompositeRenderer.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 OvCore::Rendering::PostProcessRenderPass::PostProcessRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer),

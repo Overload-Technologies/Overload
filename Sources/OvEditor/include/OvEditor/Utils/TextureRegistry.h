@@ -9,8 +9,9 @@
 #include <span>
 #include <unordered_map>
 
-#include <OvRendering/HAL/Texture.h>
+#include <baregl/Texture.h>
 #include <OvTools/Utils/OptRef.h>
+#include <OvTools/Eventing/Event.h>
 
 namespace OvEditor::Utils
 {
@@ -20,7 +21,7 @@ namespace OvEditor::Utils
 	struct TextureRegistryEntryDesc
 	{
 		const uint32_t id;
-		const OvRendering::HAL::Texture* texture;
+		const baregl::Texture* texture;
 	};
 
 	/**
@@ -47,7 +48,7 @@ namespace OvEditor::Utils
 		* Returns the texture associated with the given id
 		* @param p_id
 		*/
-		OvTools::Utils::OptRef<OvRendering::HAL::Texture> GetTexture(uint32_t p_id) const;
+		OvTools::Utils::OptRef<baregl::Texture> GetTexture(uint32_t p_id) const;
 
 		/**
 		* Returns all the texture ids
@@ -57,7 +58,7 @@ namespace OvEditor::Utils
 	private:
 		OvTools::Eventing::ListenerID m_creationListenerID;
 		OvTools::Eventing::ListenerID m_destructionListenerID;
-		std::unordered_map<uint32_t, OvRendering::HAL::Texture*> m_textures;
+		std::unordered_map<uint32_t, baregl::Texture*> m_textures;
 		std::vector<uint32_t> m_quickAccessTextureIDs;
 	};
 }

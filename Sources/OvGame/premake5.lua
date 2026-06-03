@@ -16,6 +16,7 @@ project "OvGame"
 
 	includedirs {
 		-- Dependencies
+		dependdir .. "baregl/include",
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "tracy",
@@ -38,6 +39,7 @@ project "OvGame"
 	links {
 		-- Dependencies
 		"assimp",
+		"baregl",
 		"bullet3",
 		"freetype",
 		"glad",
@@ -101,6 +103,7 @@ project "OvGame"
 		-- Force inclusion of all symbols from these libraries
 		linkoptions {
 			"-Wl,--whole-archive",
+			outputdir .. "%{cfg.buildcfg}/baregl/libbaregl.a",
 			outputdir .. "%{cfg.buildcfg}/ImGui/libImGui.a",
 			outputdir .. "%{cfg.buildcfg}/bullet3/libbullet3.a",
 			outputdir .. "%{cfg.buildcfg}/lua/liblua.a",

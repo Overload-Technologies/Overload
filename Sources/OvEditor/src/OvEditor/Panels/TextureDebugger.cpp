@@ -7,11 +7,12 @@
 #include <array>
 #include <format>
 
+#include <baregl/Texture.h>
+
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 #include <OvEditor/Panels/TextureDebugger.h>
-#include <OvRendering/HAL/Texture.h>
 #include <OvTools/Utils/EnumMapper.h>
 
 template <>
@@ -59,7 +60,7 @@ struct OvTools::Utils::MappingFor<OvEditor::Panels::EScaleMode, float>
 
 namespace
 {
-	void AddOption(OvUI::Widgets::Selection::ComboBox& p_selector, const OvRendering::HAL::Texture& p_texture)
+	void AddOption(OvUI::Widgets::Selection::ComboBox& p_selector, const baregl::Texture& p_texture)
 	{
 		const auto id = p_texture.GetID();
 		p_selector.choices[id] = std::format(
@@ -69,7 +70,7 @@ namespace
 		);
 	}
 
-	float CalculateOneToOneScale(const OvMaths::FVector2& p_windowSize, OvRendering::HAL::Texture& p_texture)
+	float CalculateOneToOneScale(const OvMaths::FVector2& p_windowSize, baregl::Texture& p_texture)
 	{
 		constexpr float kPanelImageMarginX = 45.0f;
 		constexpr float kPanelImageMarginY = 120.0f; // Based on the size of the settings above the image
@@ -81,7 +82,7 @@ namespace
 		return std::min(safeSizeX / texDesc.width, safeSizeY / texDesc.height);
 	}
 
-	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, OvRendering::HAL::Texture& p_texture)
+	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, baregl::Texture& p_texture)
 	{
 		const float scale =
 			p_mode == OvEditor::Panels::EScaleMode::ONE_TO_ONE ?
@@ -94,7 +95,7 @@ namespace
 		};
 	}
 
-	bool IsValidTexture(const OvRendering::HAL::Texture* p_texture)
+	bool IsValidTexture(const baregl::Texture* p_texture)
 	{
 		return
 			p_texture != nullptr &&
@@ -103,7 +104,7 @@ namespace
 			p_texture->GetDesc().width > 0 &&
 			p_texture->GetDesc().height > 0 &&
 			// Only 2D textures are supported in the debugger
-			p_texture->GetType() == OvRendering::Settings::ETextureType::TEXTURE_2D;
+			p_texture->GetType() == baregl::types::ETextureType::TEXTURE_2D;
 	}
 }
 
@@ -221,8 +222,8 @@ namespace OvEditor::Panels
 
 	TextureDebugger::~TextureDebugger()
 	{
-		OvRendering::HAL::Texture::CreationEvent -= m_creationListenerID;
-		OvRendering::HAL::Texture::DestructionEvent -= m_destructionListenerID;
+		// baregl::Texture::CreationEvent -= m_creationListenerID;
+		// baregl::Texture::DestructionEvent -= m_destructionListenerID;
 	}
 
 	void TextureDebugger::Update(float p_deltaTime)

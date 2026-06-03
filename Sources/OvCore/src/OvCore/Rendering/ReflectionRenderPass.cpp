@@ -15,7 +15,7 @@
 #include <OvCore/Rendering/SceneRenderer.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 namespace
 {

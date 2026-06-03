@@ -7,6 +7,8 @@
 #include <sstream>
 #include <tinyxml2.h>
 
+#include <baregl/types/EUniformType.h>
+
 #include <OvCore/Resources/Material.h>
 
 void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
@@ -70,7 +72,7 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 
 		auto visitor = [&](auto&& arg) {
 			using T = std::decay_t<decltype(arg)>;
-			using enum EUniformType;
+			using enum baregl::types::EUniformType;
 
 			if constexpr (std::same_as<T, bool>)
 			{
@@ -100,7 +102,7 @@ void OvCore::Resources::Material::OnSerialize(tinyxml2::XMLDocument& p_doc, tiny
 			{
 				Serializer::SerializeTexture(p_doc, uniform, "value", arg);
 			}
-			// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
+			// No need to handle baregl::Texture* here as it's not serializable (only texture assets are)
 		};
 
 		std::visit(visitor, value);
@@ -206,7 +208,7 @@ void OvCore::Resources::Material::OnDeserialize(tinyxml2::XMLDocument& p_doc, ti
 							{
 								SetProperty(propName, Serializer::DeserializeTexture(p_doc, uniform, "value"));
 							}
-							// No need to handle TextureHandle* here as it's not serializable (only texture assets are)
+							// No need to handle baregl::Texture* here as it's not serializable (only texture assets are)
 						};
 
 						std::visit(visitor, prop->value);

@@ -18,7 +18,6 @@ workspace "Overload"
 	startproject "OvEditor"
 	defines {
 		"LUA_SCRIPTING",
-		"GRAPHICS_API_OPENGL",
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
 		"SOL_NO_LUA_HPP"
 	}
@@ -59,6 +58,7 @@ group "Dependencies"
 	include "Dependencies/assimp"
 	include "Dependencies/glfw"
 	include "Dependencies/bullet3"
+	include "Dependencies/baregl"
 group ""
 
 group "Dependencies/Prebuilt"

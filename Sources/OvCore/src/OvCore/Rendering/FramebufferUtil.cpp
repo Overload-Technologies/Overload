@@ -7,23 +7,22 @@
 #include<format>
 
 #include <OvCore/Rendering/FramebufferUtil.h>
-#include <OvRendering/HAL/Framebuffer.h>
-#include <OvRendering/HAL/Renderbuffer.h>
-#include <OvRendering/HAL/Texture.h>
+#include <baregl/Framebuffer.h>
+#include <baregl/Renderbuffer.h>
+#include <baregl/Texture.h>
 
 namespace OvCore::Rendering::FramebufferUtil
 {
 	void SetupFramebuffer(
-		OvRendering::HAL::Framebuffer& p_framebuffer,
-		const OvRendering::Settings::TextureDesc& p_textureDesc,
+		baregl::Framebuffer& p_framebuffer,
+		const baregl::data::TextureDesc& p_textureDesc,
 		bool p_useDepth,
 		bool p_useStencil
 	)
 	{
-		using namespace OvRendering::HAL;
-		using namespace OvRendering::Settings;
+		using namespace baregl::types;
 
-		const auto renderTexture = std::make_shared<Texture>(
+		const auto renderTexture = std::make_shared<baregl::Texture>(
 			ETextureType::TEXTURE_2D,
 			std::format(
 				"{}/Color",
@@ -36,7 +35,7 @@ namespace OvCore::Rendering::FramebufferUtil
 
 		if (p_useDepth || p_useStencil)
 		{
-			const auto renderbuffer = std::make_shared<Renderbuffer>();
+			const auto renderbuffer = std::make_shared<baregl::Renderbuffer>();
 			const auto internalFormat = p_useStencil ? EInternalFormat::DEPTH_STENCIL : EInternalFormat::DEPTH_COMPONENT;
 			renderbuffer->Allocate(p_textureDesc.width, p_textureDesc.height, internalFormat);
 			if (p_useStencil)
@@ -53,7 +52,7 @@ namespace OvCore::Rendering::FramebufferUtil
 	}
 
 	void SetupFramebuffer(
-		OvRendering::HAL::Framebuffer& p_framebuffer,
+		baregl::Framebuffer& p_framebuffer,
 		uint32_t p_width,
 		uint32_t p_height,
 		bool p_useDepth,
@@ -61,8 +60,8 @@ namespace OvCore::Rendering::FramebufferUtil
 		bool p_useMipMaps
 	)
 	{
-		using namespace OvRendering::HAL;
-		using namespace OvRendering::Settings;
+		using namespace baregl::types;
+		using namespace baregl::data;
 
 		p_width = static_cast<uint16_t>(std::max(1u, p_width));
 		p_height = static_cast<uint16_t>(std::max(1u, p_height));

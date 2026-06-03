@@ -13,7 +13,7 @@
 #include <OvEditor/Rendering/GridRenderPass.h>
 
 #include <OvRendering/Features/DebugShapeRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 OvEditor::Rendering::GridRenderPass::GridRenderPass(OvRendering::Core::CompositeRenderer& p_renderer) :
 	OvRendering::Core::ARenderPass(p_renderer)

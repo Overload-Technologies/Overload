@@ -17,6 +17,8 @@
 #include <OvRendering/Types/RenderFeatureType.h>
 #include <OvRendering/Types/RenderPassType.h>
 
+#include <OvTools/Eventing/Event.h>
+
 namespace OvRendering::Core
 {
 	/**

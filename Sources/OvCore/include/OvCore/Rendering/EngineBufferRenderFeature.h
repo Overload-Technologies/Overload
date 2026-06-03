@@ -10,8 +10,9 @@
 #include <map>
 #include <stack>
 
+#include <baregl/Buffer.h>
+
 #include <OvRendering/Features/ARenderFeature.h>
-#include <OvRendering/HAL/UniformBuffer.h>
 #include <OvRendering/Entities/Camera.h>
 
 namespace OvCore::Rendering
@@ -45,6 +46,6 @@ namespace OvCore::Rendering
 
 	protected:
 		std::chrono::high_resolution_clock::time_point m_startTime;
-		std::unique_ptr<OvRendering::HAL::UniformBuffer> m_engineBuffer;
+		std::unique_ptr<baregl::Buffer> m_engineBuffer;
 	};
 }

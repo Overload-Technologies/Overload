@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <variant>
 
+#include <baregl/Buffer.h>
+
 #include <OvAudio/Core/AudioEngine.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
@@ -21,8 +23,6 @@
 #include <OvEditor/Core/EditorResources.h>
 #include <OvEditor/Utils/TextureRegistry.h>
 #include <OvPhysics/Core/PhysicsEngine.h>
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvWindowing/Window.h>
 #include <OvUI/Core/UIManager.h>

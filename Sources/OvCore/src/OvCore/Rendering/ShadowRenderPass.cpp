@@ -17,7 +17,7 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 
 #include <OvRendering/Features/LightingRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 constexpr uint8_t kMaxShadowMaps = 1;
 const std::string kShadowPassName = "SHADOW_PASS";

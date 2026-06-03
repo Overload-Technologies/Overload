@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <deque>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -19,8 +20,8 @@
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
-#include <OvRendering/HAL/ShaderProgram.h>
-#include <OvRendering/HAL/ShaderStage.h>
+#include <baregl/ShaderProgram.h>
+#include <baregl/ShaderStage.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
 #include <OvRendering/Resources/Shader.h>
 #include <OvRendering/Utils/ShaderUtil.h>
@@ -80,13 +81,13 @@ namespace
 	struct ShaderStageDesc
 	{
 		const std::string source;
-		const OvRendering::Settings::EShaderType type;
+		const baregl::types::EShaderType type;
 	};
 
 	struct ProcessedShaderStage
 	{
-		const OvRendering::HAL::ShaderStage stage;
-		std::optional<OvRendering::Settings::ShaderCompilationResult> compilationResult;
+		const baregl::ShaderStage stage;
+		std::optional<baregl::data::ShaderCompilationResult> compilationResult;
 	};
 
 	std::string Trim(const std::string_view p_str)
@@ -158,7 +159,7 @@ namespace
 		return result;
 	}
 
-	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateProgram(
+	std::unique_ptr<baregl::ShaderProgram> CreateProgram(
 		const ShaderInputInfo& p_shaderInputInfo,
 		std::span<const ShaderStageDesc> p_stages,
 		const std::string_view p_pass,
@@ -167,8 +168,7 @@ namespace
 	)
 	{
 		// Process and compile all shader stages
-		std::vector<ProcessedShaderStage> processedStages;
-		processedStages.reserve(p_stages.size());
+		std::deque<ProcessedShaderStage> processedStages;
 
 		bool compilationFailed = false;
 
@@ -219,7 +219,7 @@ namespace
 		}
 
 		// Link the program
-		auto program = std::make_unique<OvRendering::HAL::ShaderProgram>();
+		auto program = std::make_unique<baregl::ShaderProgram>();
 
 		// Attach all stages
 		for (const auto& processedStage : processedStages)
@@ -267,7 +267,7 @@ namespace
 		}
 	}
 
-	std::unique_ptr<OvRendering::HAL::ShaderProgram> CreateDefaultProgram()
+	std::unique_ptr<baregl::ShaderProgram> CreateDefaultProgram()
 	{
 		const std::string vertex = R"(
 #version 450 core
@@ -292,8 +292,8 @@ void main()
 )";
 
 		auto shaders = std::array<ShaderStageDesc, 2>{
-			ShaderStageDesc{vertex, OvRendering::Settings::EShaderType::VERTEX},
-			ShaderStageDesc{fragment, OvRendering::Settings::EShaderType::FRAGMENT}
+			ShaderStageDesc{vertex, baregl::types::EShaderType::VERTEX},
+			ShaderStageDesc{fragment, baregl::types::EShaderType::FRAGMENT}
 		};
 
 		auto program = CreateProgram(
@@ -381,17 +381,15 @@ void main()
 	*/
 	ShaderParseResult ParseShader(const ShaderLoadResult& p_shaderLoadResult)
 	{
-		using namespace OvRendering::Settings;
-
 		std::istringstream stream(p_shaderLoadResult.source); // Add this line to create a stringstream from shaderCode
 		std::string line;
-		std::unordered_map<EShaderType, std::stringstream> shaderSources;
+		std::unordered_map<baregl::types::EShaderType, std::stringstream> shaderSources;
 		OvRendering::Data::FeatureSet userFeatures;
 		OvRendering::Data::FeatureSet engineFeatures;
 		std::unordered_set<std::string> passes;
 		passes.emplace(); // Default pass if none is specified (empty string)
 
-		auto currentType = EShaderType::NONE;
+		auto currentType = baregl::types::EShaderType::NONE;
 
 		while (std::getline(stream, line))
 		{
@@ -444,13 +442,13 @@ void main()
 			}
 			else if (trimmedLine.starts_with(Grammar::kVertexShaderToken))
 			{
-				currentType = EShaderType::VERTEX;
+				currentType = baregl::types::EShaderType::VERTEX;
 			}
 			else if (trimmedLine.starts_with(Grammar::kFragmentShaderToken))
 			{
-				currentType = EShaderType::FRAGMENT;
+				currentType = baregl::types::EShaderType::FRAGMENT;
 			}
-			else if (currentType != EShaderType::NONE)
+			else if (currentType != baregl::types::EShaderType::NONE)
 			{
 				shaderSources[currentType] << line << '\n';
 			}
@@ -458,8 +456,8 @@ void main()
 
 		return ShaderParseResult{
 			.inputInfo = p_shaderLoadResult.inputInfo,
-			.vertexShader = shaderSources[EShaderType::VERTEX].str(),
-			.fragmentShader = shaderSources[EShaderType::FRAGMENT].str(),
+			.vertexShader = shaderSources[baregl::types::EShaderType::VERTEX].str(),
+			.fragmentShader = shaderSources[baregl::types::EShaderType::FRAGMENT].str(),
 			.passes = passes,
 			.userFeatures = userFeatures,
 			.engineFeatures = engineFeatures
@@ -502,8 +500,8 @@ void main()
 				}
 
 				const auto stages = std::to_array<ShaderStageDesc>({
-					{ p_parseResult.vertexShader, OvRendering::Settings::EShaderType::VERTEX },
-					{ p_parseResult.fragmentShader, OvRendering::Settings::EShaderType::FRAGMENT }
+					{ p_parseResult.vertexShader, baregl::types::EShaderType::VERTEX },
+					{ p_parseResult.fragmentShader, baregl::types::EShaderType::FRAGMENT }
 					});
 
 				auto program = CreateProgram(

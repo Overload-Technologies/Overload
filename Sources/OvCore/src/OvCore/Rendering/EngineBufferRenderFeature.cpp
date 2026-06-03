@@ -27,8 +27,8 @@ OvCore::Rendering::EngineBufferRenderFeature::EngineBufferRenderFeature(
 ) : 
 	ARenderFeature(p_renderer, p_executionPolicy)
 {
-	m_engineBuffer = std::make_unique<OvRendering::HAL::UniformBuffer>();
-	m_engineBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
+	m_engineBuffer = std::make_unique<baregl::Buffer>();
+	m_engineBuffer->Allocate(kUBOSize, baregl::types::EAccessSpecifier::STREAM_DRAW);
 	m_startTime = std::chrono::high_resolution_clock::now();
 }
 
@@ -45,7 +45,7 @@ void OvCore::Rendering::EngineBufferRenderFeature::SetCamera(const OvRendering::
 		.cameraPosition = p_camera.GetPosition()
 	};
 
-	m_engineBuffer->Upload(&uboDataPage, OvRendering::HAL::BufferMemoryRange{
+	m_engineBuffer->Upload(&uboDataPage, baregl::data::BufferMemoryRange{
 		.offset = sizeof(OvMaths::FMatrix4), // Skip uploading the first matrix (Model matrix)
 		.size = sizeof(uboDataPage)
 	});
@@ -71,12 +71,12 @@ void OvCore::Rendering::EngineBufferRenderFeature::OnBeginFrame(const OvRenderin
 		.elapsedTime = elapsedTime.count()
 	};
 
-	m_engineBuffer->Upload(&uboDataPage, OvRendering::HAL::BufferMemoryRange{
+	m_engineBuffer->Upload(&uboDataPage, baregl::data::BufferMemoryRange{
 		.offset = sizeof(OvMaths::FMatrix4), // Skip uploading the first matrix (Model matrix)
 		.size = sizeof(uboDataPage)
 	});
 
-	m_engineBuffer->Bind(0);
+	m_engineBuffer->Bind(baregl::types::EBufferType::UNIFORM, 0);
 }
 
 void OvCore::Rendering::EngineBufferRenderFeature::OnEndFrame()
@@ -95,13 +95,13 @@ void OvCore::Rendering::EngineBufferRenderFeature::OnBeforeDraw(OvRendering::Dat
 		const auto modelMatrix = OvMaths::FMatrix4::Transpose(descriptor->modelMatrix);
 		
 		// Upload model matrix (First matrix in the UBO)
-		m_engineBuffer->Upload(&modelMatrix, OvRendering::HAL::BufferMemoryRange{
+		m_engineBuffer->Upload(&modelMatrix, baregl::data::BufferMemoryRange{
 			.offset = 0,
 			.size = sizeof(modelMatrix)
 		});
 
 		// Upload user matrix (Last matrix in the UBO)
-		m_engineBuffer->Upload(&descriptor->userMatrix, OvRendering::HAL::BufferMemoryRange{
+		m_engineBuffer->Upload(&descriptor->userMatrix, baregl::data::BufferMemoryRange{
 			.offset = kUBOSize - sizeof(modelMatrix),
 			.size = sizeof(modelMatrix)
 		});

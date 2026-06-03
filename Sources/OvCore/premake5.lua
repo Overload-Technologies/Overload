@@ -22,7 +22,6 @@ project "OvCore"
 	includedirs {
 		-- Dependencies
 		dependdir .. "baregl/include",
-		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "lua/include",
 		dependdir .. "sol/include",

@@ -7,6 +7,8 @@
 #include <cstdint>
 
 #include <baregl/Context.h>
+#include <baregl/utils/EnumMapper.h>
+#include <baregl/detail/Types.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
@@ -27,12 +29,13 @@ namespace
 	{
 		using namespace OvRendering::Settings;
 		using namespace baregl::types;
+		using namespace baregl::utils;
 
 		OvRendering::Data::PipelineState pso;
 
 		// Rasterization
-		pso.rasterizationMode = static_cast<ERasterizationMode>(
-			m_gfxContext->GetValue<int>(EGetParameter::POLYGON_MODE)
+		pso.rasterizationMode = ValueToEnum<ERasterizationMode>(
+			static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::POLYGON_MODE))
 		);
 		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(
 			m_gfxContext->GetValue<float>(EGetParameter::LINE_WIDTH)
@@ -61,24 +64,23 @@ namespace
 		pso.multisample           = m_gfxContext->GetCapability(ERenderingCapability::MULTISAMPLE);
 
 		// Stencil
-		pso.stencilFuncOp    = static_cast<EComparaisonAlgorithm>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FUNC));
+		pso.stencilFuncOp    = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FUNC)));
 		pso.stencilFuncRef   = m_gfxContext->GetValue<int>(EGetParameter::STENCIL_REF);
 		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_VALUE_MASK));
 		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_WRITEMASK));
-		pso.stencilOpFail    = static_cast<EOperation>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FAIL));
-		pso.depthOpFail      = static_cast<EOperation>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_FAIL));
-		pso.bothOpFail       = static_cast<EOperation>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_PASS));
+		pso.depthOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_FAIL)));
+		pso.bothOpFail       = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_PASS)));
 
 		// Depth
-		pso.depthFunc = static_cast<EComparaisonAlgorithm>(m_gfxContext->GetValue<int>(EGetParameter::DEPTH_FUNC));
+		pso.depthFunc = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::DEPTH_FUNC)));
 
 		// Culling
-		pso.cullFace = static_cast<ECullFace>(m_gfxContext->GetValue<int>(EGetParameter::CULL_FACE_MODE));
+		pso.cullFace = ValueToEnum<ECullFace>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::CULL_FACE_MODE)));
 
 		// Blending
-		pso.blendingSrcFactor  = static_cast<EBlendingFactor>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_SRC_RGB));
-		pso.blendingDestFactor = static_cast<EBlendingFactor>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_DST_RGB));
-		pso.blendingEquation   = static_cast<EBlendingEquation>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_EQUATION_RGB));
+		pso.blendingSrcFactor  = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_SRC_RGB)));
+		pso.blendingDestFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_DST_RGB)));
+		pso.blendingEquation   = ValueToEnum<EBlendingEquation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_EQUATION_RGB)));
 
 		return pso;
 	}

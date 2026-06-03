@@ -17,7 +17,6 @@ project "OvGame"
 	includedirs {
 		-- Dependencies
 		dependdir .. "baregl/include",
-		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
 		dependdir .. "tracy",
 
@@ -42,7 +41,6 @@ project "OvGame"
 		"baregl",
 		"bullet3",
 		"freetype",
-		"glad",
 		"glfw",
 		"ImGui",
 		"lua",
@@ -111,7 +109,6 @@ project "OvGame"
 			outputdir .. "%{cfg.buildcfg}/OvAudio/libOvAudio.a",
 			outputdir .. "%{cfg.buildcfg}/assimp/libassimp.a",
 			outputdir .. "%{cfg.buildcfg}/tinyxml2/libtinyxml2.a",
-			outputdir .. "%{cfg.buildcfg}/glad/libglad.a",
 			"-Wl,--no-whole-archive",
 			"-Wl,--allow-multiple-definition",  -- Tracy and Bullet3 have some duplicate symbols
 		}

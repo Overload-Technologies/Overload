@@ -8,5 +8,5 @@
 
 #include <tracy/Tracy.hpp>
 
-#include <glad.h>
+#include <baregl/detail/glad/glad.h>
 #include <tracy/TracyOpenGL.hpp>

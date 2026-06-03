@@ -67,7 +67,10 @@ namespace
 		pso.stencilFuncOp    = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FUNC)));
 		pso.stencilFuncRef   = m_gfxContext->GetValue<int>(EGetParameter::STENCIL_REF);
 		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_VALUE_MASK));
+
 		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_WRITEMASK));
+
+		pso.stencilOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FAIL)));
 		pso.depthOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_FAIL)));
 		pso.bothOpFail       = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_PASS)));
 

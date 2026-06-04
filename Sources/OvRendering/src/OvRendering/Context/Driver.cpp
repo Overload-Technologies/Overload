@@ -94,6 +94,8 @@ OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings
 	m_gfxContext = std::make_unique<baregl::Context>(baregl::data::ContextDesc{
 		p_driverSettings.debugMode
 	});
+
+	TracyGpuContext;
 	
 	auto initialPipelineState = RetrieveOpenGLPipelineState();
 
@@ -124,7 +126,7 @@ OvRendering::Context::Driver::~Driver()
 
 void OvRendering::Context::Driver::OnFrameCompleted()
 {
-	// TracyGpuCollect;
+	TracyGpuCollect;
 
 	// Prevents state leak between frames, and especially useful when external code (like ImGui)
 	// requires a "neutral" pipeline state.

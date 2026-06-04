@@ -18,6 +18,8 @@
 #include <OvTools/Profiling/TracyAllocators.h>
 #include <OvTools/Utils/String.h>
 
+#include <OvDebug/Logger.h>
+
 #ifdef _WIN32
 #undef APIENTRY
 #include "Windows.h"

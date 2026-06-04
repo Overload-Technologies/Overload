@@ -129,11 +129,11 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_ve
 		{
 			m_indexBuffer.Upload(p_indices.data());
 			m_vertexArray.SetLayout({
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // position
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        2 }, // texCoords
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // normal
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // tangent
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // bitangent
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // position
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 2 }, // texCoords
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // normal
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // tangent
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // bitangent
 			}, m_vertexBuffer, m_indexBuffer);
 		}
 		else
@@ -157,13 +157,13 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::SkinnedVerte
 		{
 			m_indexBuffer.Upload(p_indices.data());
 			m_vertexArray.SetLayout({
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // position
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        2 }, // texCoords
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // normal
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // tangent
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        3 }, // bitangent
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::UNSIGNED_INT, 4 }, // boneIDs
-				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT,        4 }  // boneWeights
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // position
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 2 }, // texCoords
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // normal
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // tangent
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // bitangent
+				baregl::data::IntegerVertexAttribute{ baregl::types::EDataType::UNSIGNED_INT, 4 }, // boneIDs
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 4 }  // boneWeights
 			}, m_vertexBuffer, m_indexBuffer);
 		}
 		else

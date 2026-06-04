@@ -64,7 +64,14 @@ namespace
 		if (auto value = as.operator()<Vec4>()) return (FVector4&)*value;
 		if (auto value = as.operator()<Mat3>()) return (FMatrix3&)*value;
 		if (auto value = as.operator()<Mat4>()) return (FMatrix4&)*value;
-		if (auto value = as.operator()<baregl::Texture*>()) return *value;
+		if (auto value = as.operator()<baregl::Texture*>())
+		{
+			// If the baregl::Texture has a value use it as is
+			if (*value) return *value;
+
+			// If it's nullptr, default to an empty OvRendering::Resources::Texture*
+			return static_cast<Resources::Texture*>(nullptr);
+		}
 		if (auto value = as.operator()<Resources::Texture*>()) return *value;
 
 		return std::monostate{};

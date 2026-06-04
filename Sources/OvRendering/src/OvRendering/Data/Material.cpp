@@ -261,11 +261,13 @@ void OvRendering::Data::Material::UploadProperties(
 		}
 		else if (uniformType == FLOAT_MAT3)
 		{
-			program.SetUniform<Mat3>(name, (Mat3&)std::get<FMatrix3>(value));
+			const auto t = FMatrix3::Transpose(std::get<FMatrix3>(value));
+			program.SetUniform<Mat3>(name, (Mat3&)t);
 		}
 		else if (uniformType == FLOAT_MAT4)
 		{
-			program.SetUniform<Mat4>(name, (Mat4&)std::get<FMatrix4>(value));
+			const auto t = FMatrix4::Transpose(std::get<FMatrix4>(value));
+			program.SetUniform<Mat4>(name, (Mat4&)t);
 		}
 		else if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
 		{

@@ -8,11 +8,11 @@
 
 #include <map>
 
+#include <baregl/Buffer.h>
+
 #include <OvRendering/Core/CompositeRenderer.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Entities/Drawable.h>
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
 #include <OvRendering/Resources/Mesh.h>
 
 #include <OvCore/ECS/Actor.h>

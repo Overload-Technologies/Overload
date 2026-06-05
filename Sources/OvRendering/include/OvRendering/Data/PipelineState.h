@@ -9,17 +9,16 @@
 #include <cstdint>
 #include <bitset>
 
-#include <OvRendering/Settings/EBlendingEquation.h>
-#include <OvRendering/Settings/EBlendingFactor.h>
-#include <OvRendering/Settings/EComparaisonAlgorithm.h>
-#include <OvRendering/Settings/ECullFace.h>
-#include <OvRendering/Settings/ECullingOptions.h>
-#include <OvRendering/Settings/EOperation.h>
-#include <OvRendering/Settings/EPixelDataFormat.h>
-#include <OvRendering/Settings/EPixelDataType.h>
-#include <OvRendering/Settings/EPrimitiveMode.h>
-#include <OvRendering/Settings/ERasterizationMode.h>
-#include <OvRendering/Settings/ERenderingCapability.h>
+#include <baregl/types/EBlendingEquation.h>
+#include <baregl/types/EBlendingFactor.h>
+#include <baregl/types/EComparaisonAlgorithm.h>
+#include <baregl/types/ECullFace.h>
+#include <baregl/types/EOperation.h>
+#include <baregl/types/EPixelDataFormat.h>
+#include <baregl/types/EPixelDataType.h>
+#include <baregl/types/EPrimitiveMode.h>
+#include <baregl/types/ERasterizationMode.h>
+#include <baregl/types/ERenderingCapability.h>
 
 namespace OvRendering::Data
 {
@@ -47,18 +46,18 @@ namespace OvRendering::Data
 				uint8_t stencilFuncMask : 8;
 
 				// B3
-				Settings::EComparaisonAlgorithm stencilFuncOp : 3;
-				Settings::EOperation stencilOpFail : 3;
-				Settings::ECullFace cullFace : 2;
+				baregl::types::EComparaisonAlgorithm stencilFuncOp : 3;
+				baregl::types::EOperation stencilOpFail : 3;
+				baregl::types::ECullFace cullFace : 2;
 
 				// B4
-				Settings::EOperation depthOpFail : 3;
-				Settings::EOperation bothOpFail : 3;
-				Settings::ERasterizationMode rasterizationMode : 2;
+				baregl::types::EOperation depthOpFail : 3;
+				baregl::types::EOperation bothOpFail : 3;
+				baregl::types::ERasterizationMode rasterizationMode : 2;
 
 				// B5
 				uint8_t lineWidthPow2 : 3;
-				Settings::EComparaisonAlgorithm depthFunc : 3;
+				baregl::types::EComparaisonAlgorithm depthFunc : 3;
 				bool depthWriting : 1;
 				bool blending : 1;
 
@@ -88,11 +87,11 @@ namespace OvRendering::Data
 				// 4 bytes left in B7
 
 				// B8
-				Settings::EBlendingFactor blendingSrcFactor : 5;
-				Settings::EBlendingEquation blendingEquation : 3;
+				baregl::types::EBlendingFactor blendingSrcFactor : 5;
+				baregl::types::EBlendingEquation blendingEquation : 3;
 
 				// B9
-				Settings::EBlendingFactor blendingDestFactor : 5;
+				baregl::types::EBlendingFactor blendingDestFactor : 5;
 				// 3 bytes left in B9
 			};
 

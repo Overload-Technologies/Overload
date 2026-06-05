@@ -55,11 +55,11 @@ void OvCore::Rendering::ShadowRenderFeature::OnBeforeDraw(OvRendering::Data::Pip
 		{
 			OVASSERT(light.IsSetupForShadowRendering(), "This light isn't setup for shadow rendering");
 
-			const auto shadowTex = light.shadowBuffer->GetAttachment<OvRendering::HAL::Texture>(
-				OvRendering::Settings::EFramebufferAttachment::DEPTH
+			const auto shadowTex = light.shadowBuffer->GetAttachment<baregl::Texture>(
+				baregl::types::EFramebufferAttachment::DEPTH
 			);
 
-			material.SetProperty("_ShadowMap", &shadowTex.value(), true);
+			material.SetProperty("_ShadowMap", &shadowTex.value().get(), true);
 			material.SetProperty("_LightSpaceMatrix", light.lightSpaceMatrix.value(), true);
 
 			++lightIndex;

@@ -12,7 +12,7 @@
 
 #include <OvDebug/Assertion.h>
 
-#include <OvRendering/HAL/Renderbuffer.h>
+#include <baregl/Renderbuffer.h>
 
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/Layout/Dummy.h>
@@ -44,8 +44,8 @@ OvCore::ECS::Components::CReflectionProbe::CReflectionProbe(ECS::Actor& p_owner)
 	m_framebuffers{ "ReflectionProbeFramebuffer" },
 	m_cubemapIterator{ m_cubemaps }
 {
-	m_uniformBuffer = std::make_unique<OvRendering::HAL::UniformBuffer>();
-	m_uniformBuffer->Allocate(kUBOSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
+	m_uniformBuffer = std::make_unique<baregl::Buffer>();
+	m_uniformBuffer->Allocate(kUBOSize, baregl::types::EAccessSpecifier::STREAM_DRAW);
 
 	_AllocateResources();
 }
@@ -178,7 +178,7 @@ void OvCore::ECS::Components::CReflectionProbe::RequestCapture(bool p_forceImmed
 	};
 }
 
-std::shared_ptr<OvRendering::HAL::Texture> OvCore::ECS::Components::CReflectionProbe::GetCubemap() const
+std::shared_ptr<baregl::Texture> OvCore::ECS::Components::CReflectionProbe::GetCubemap() const
 {
 	const auto& target =
 		_IsDoubleBuffered() ?
@@ -384,39 +384,39 @@ void OvCore::ECS::Components::CReflectionProbe::_AllocateResources()
 	for (uint8_t i = 0; i < cubemapCount; ++i)
 	{
 		auto& cubemap = m_cubemaps[i];
-		cubemap = std::make_shared<OvRendering::HAL::Texture>(
-			OvRendering::Settings::ETextureType::TEXTURE_CUBE,
+		cubemap = std::make_shared<baregl::Texture>(
+			baregl::types::ETextureType::TEXTURE_CUBE,
 			"ReflectionProbeCubemap"
 		);
 
 		cubemap->Allocate(
-			OvRendering::Settings::TextureDesc{
+			baregl::data::TextureDesc{
 				.width = m_resolution,
 				.height = m_resolution,
-				.minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR,
-				.magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR,
-				.horizontalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-				.verticalWrap = OvRendering::Settings::ETextureWrapMode::CLAMP_TO_EDGE,
-				.internalFormat = OvRendering::Settings::EInternalFormat::RGBA32F,
+				.minFilter = baregl::types::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR,
+				.magFilter = baregl::types::ETextureFilteringMode::LINEAR,
+				.horizontalWrap = baregl::types::ETextureWrapMode::CLAMP_TO_EDGE,
+				.verticalWrap = baregl::types::ETextureWrapMode::CLAMP_TO_EDGE,
+				.internalFormat = baregl::types::EInternalFormat::RGBA32F,
 				.useMipMaps = true
 			}
 		);
 
 		for (uint32_t faceIndex = 0; faceIndex < 6; ++faceIndex)
 		{
-			m_framebuffers[i].Attach<OvRendering::HAL::Texture>(
+			m_framebuffers[i].Attach<baregl::Texture>(
 				cubemap,
-				OvRendering::Settings::EFramebufferAttachment::COLOR,
+				baregl::types::EFramebufferAttachment::COLOR,
 				faceIndex, // Each color attachment is a face of the cubemap
 				faceIndex // Each face of the cubemap is accessed by its layer index
 			);
 		}
 
 		// Depth buffer
-		const auto renderbuffer = std::make_shared<OvRendering::HAL::Renderbuffer>();
-		const auto internalFormat = OvRendering::Settings::EInternalFormat::DEPTH_COMPONENT;
+		const auto renderbuffer = std::make_shared<baregl::Renderbuffer>();
+		const auto internalFormat = baregl::types::EInternalFormat::DEPTH_COMPONENT;
 		renderbuffer->Allocate(m_resolution, m_resolution, internalFormat);
-		m_framebuffers[i].Attach(renderbuffer, OvRendering::Settings::EFramebufferAttachment::DEPTH);
+		m_framebuffers[i].Attach(renderbuffer, baregl::types::EFramebufferAttachment::DEPTH);
 
 		// Validation
 		m_framebuffers[i].Validate();
@@ -513,7 +513,7 @@ std::vector<uint32_t> OvCore::ECS::Components::CReflectionProbe::_GetCaptureFace
 	return faceIndices;
 }
 
-OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetTargetFramebuffer() const
+baregl::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetTargetFramebuffer() const
 {
 	auto& framebuffer =
 		_IsDoubleBuffered() ?
@@ -524,7 +524,7 @@ OvRendering::HAL::Framebuffer& OvCore::ECS::Components::CReflectionProbe::_GetTa
 	return framebuffer;
 }
 
-OvRendering::HAL::UniformBuffer& OvCore::ECS::Components::CReflectionProbe::_GetUniformBuffer() const
+baregl::Buffer& OvCore::ECS::Components::CReflectionProbe::_GetUniformBuffer() const
 {
 	OVASSERT(m_uniformBuffer != nullptr, "Uniform buffer is not initialized");
 	return *m_uniformBuffer;

@@ -6,40 +6,111 @@
 
 #include <cstdint>
 
+#include <baregl/Context.h>
+#include <baregl/utils/EnumMapper.h>
+#include <baregl/detail/Types.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
 #include <OvDebug/Assertion.h>
 
 #include <OvRendering/Context/Driver.h>
-#include <OvRendering/HAL/Backend.h>
 #include <OvRendering/Utils/Conversions.h>
+#include <OvRendering/Utils/Profiling.h>
 
 namespace
 {
-	std::unique_ptr<OvRendering::HAL::Backend> m_gfxBackend;
+	std::unique_ptr<baregl::Context> m_gfxContext;
+
+	/**
+	* Very expensive! Call it once, and make sure you always keep track of state changes
+	*/
+	OvRendering::Data::PipelineState RetrieveOpenGLPipelineState()
+	{
+		using namespace OvRendering::Settings;
+		using namespace baregl::types;
+		using namespace baregl::utils;
+
+		OvRendering::Data::PipelineState pso;
+
+		// Rasterization
+		pso.rasterizationMode = ValueToEnum<ERasterizationMode>(
+			static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::POLYGON_MODE))
+		);
+		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(
+			m_gfxContext->GetValue<float>(EGetParameter::LINE_WIDTH)
+		);
+
+		// Color write mask
+		{
+			std::array<bool, 4> colorWriteMask;
+			m_gfxContext->GetValue<bool>(EGetParameter::COLOR_WRITEMASK, colorWriteMask);
+			pso.colorWriting.r = colorWriteMask[0];
+			pso.colorWriting.g = colorWriteMask[1];
+			pso.colorWriting.b = colorWriteMask[2];
+			pso.colorWriting.a = colorWriteMask[3];
+		}
+
+		// Capabilities
+		pso.depthWriting          = m_gfxContext->GetValue<bool>(EGetParameter::DEPTH_WRITEMASK);
+		pso.blending              = m_gfxContext->GetCapability(ERenderingCapability::BLEND);
+		pso.culling               = m_gfxContext->GetCapability(ERenderingCapability::CULL_FACE);
+		pso.dither                = m_gfxContext->GetCapability(ERenderingCapability::DITHER);
+		pso.polygonOffsetFill     = m_gfxContext->GetCapability(ERenderingCapability::POLYGON_OFFSET_FILL);
+		pso.sampleAlphaToCoverage = m_gfxContext->GetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE);
+		pso.depthTest             = m_gfxContext->GetCapability(ERenderingCapability::DEPTH_TEST);
+		pso.scissorTest           = m_gfxContext->GetCapability(ERenderingCapability::SCISSOR_TEST);
+		pso.stencilTest           = m_gfxContext->GetCapability(ERenderingCapability::STENCIL_TEST);
+		pso.multisample           = m_gfxContext->GetCapability(ERenderingCapability::MULTISAMPLE);
+
+		// Stencil
+		pso.stencilFuncOp    = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FUNC)));
+		pso.stencilFuncRef   = m_gfxContext->GetValue<int>(EGetParameter::STENCIL_REF);
+		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_VALUE_MASK));
+
+		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_WRITEMASK));
+
+		pso.stencilOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FAIL)));
+		pso.depthOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_FAIL)));
+		pso.bothOpFail       = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_PASS)));
+
+		// Depth
+		pso.depthFunc = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::DEPTH_FUNC)));
+
+		// Culling
+		pso.cullFace = ValueToEnum<ECullFace>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::CULL_FACE_MODE)));
+
+		// Blending
+		pso.blendingSrcFactor  = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_SRC_RGB)));
+		pso.blendingDestFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_DST_RGB)));
+		pso.blendingEquation   = ValueToEnum<EBlendingEquation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_EQUATION_RGB)));
+
+		return pso;
+	}
 }
 
 OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings& p_driverSettings)
 {
-	m_gfxBackend = std::make_unique<OvRendering::HAL::Backend>();
+	m_gfxContext = std::make_unique<baregl::Context>(baregl::data::ContextDesc{
+		p_driverSettings.debugMode
+	});
 
-	auto initialPipelineState = m_gfxBackend->Init(p_driverSettings.debugMode);
-
-	OVASSERT(initialPipelineState.has_value(), "Failed to initialized driver!");
+	TracyGpuContext;
+	
+	auto initialPipelineState = RetrieveOpenGLPipelineState();
 
 	if (p_driverSettings.defaultPipelineState)
 	{
 		m_defaultPipelineState = p_driverSettings.defaultPipelineState.value();
 	}
 	
-	m_pipelineState = initialPipelineState.value();
+	m_pipelineState = initialPipelineState;
 	SetPipelineState(m_defaultPipelineState);
 
-	m_vendor = m_gfxBackend->GetVendor();
-	m_hardware = m_gfxBackend->GetHardware();
-	m_version = m_gfxBackend->GetVersion();
-	m_shadingLanguageVersion = m_gfxBackend->GetShadingLanguageVersion();
+	m_vendor = m_gfxContext->GetVendor();
+	m_hardware = m_gfxContext->GetHardware();
+	m_version = m_gfxContext->GetVersion();
+	m_shadingLanguageVersion = m_gfxContext->GetShadingLanguageVersion();
 
 	OVLOG_INFO("Graphics driver initialized:");
 	OVLOG_INFO("\tVendor => " + m_vendor);
@@ -50,11 +121,12 @@ OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings
 
 OvRendering::Context::Driver::~Driver()
 {
+	m_gfxContext.reset();
 }
 
 void OvRendering::Context::Driver::OnFrameCompleted()
 {
-	m_gfxBackend->OnFrameCompleted();
+	TracyGpuCollect;
 
 	// Prevents state leak between frames, and especially useful when external code (like ImGui)
 	// requires a "neutral" pipeline state.
@@ -63,7 +135,7 @@ void OvRendering::Context::Driver::OnFrameCompleted()
 
 void OvRendering::Context::Driver::SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height)
 {
-	m_gfxBackend->SetViewport(p_x, p_y, p_width, p_height);
+	m_gfxContext->SetViewport(p_x, p_y, p_width, p_height);
 }
 
 void OvRendering::Context::Driver::Clear(
@@ -75,7 +147,7 @@ void OvRendering::Context::Driver::Clear(
 {
 	if (p_colorBuffer)
 	{
-		m_gfxBackend->SetClearColor(p_color.x, p_color.y, p_color.z, p_color.w);
+		m_gfxContext->SetClearColor(p_color.x, p_color.y, p_color.z, p_color.w);
 	}
 
 	auto pso = CreatePipelineState();
@@ -89,13 +161,13 @@ void OvRendering::Context::Driver::Clear(
 
 	SetPipelineState(pso);
 
-	m_gfxBackend->Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer);
+	m_gfxContext->Clear(p_colorBuffer, p_depthBuffer, p_stencilBuffer);
 }
 
 void OvRendering::Context::Driver::Draw(
 	Data::PipelineState p_pso,
 	const Resources::IMesh& p_mesh,
-	Settings::EPrimitiveMode p_primitiveMode,
+	baregl::types::EPrimitiveMode p_primitiveMode,
 	uint32_t p_instances
 )
 {
@@ -111,22 +183,22 @@ void OvRendering::Context::Driver::Draw(
 		{
 			if (p_instances == 1)
 			{
-				m_gfxBackend->DrawElements(p_primitiveMode, p_mesh.GetIndexCount());
+				m_gfxContext->DrawElements(p_primitiveMode, p_mesh.GetIndexCount());
 			}
 			else
 			{
-				m_gfxBackend->DrawElementsInstanced(p_primitiveMode, p_mesh.GetIndexCount(), p_instances);
+				m_gfxContext->DrawElementsInstanced(p_primitiveMode, p_mesh.GetIndexCount(), p_instances);
 			}
 		}
 		else
 		{
 			if (p_instances == 1)
 			{
-				m_gfxBackend->DrawArrays(p_primitiveMode, p_mesh.GetVertexCount());
+				m_gfxContext->DrawArrays(p_primitiveMode, p_mesh.GetVertexCount());
 			}
 			else
 			{
-				m_gfxBackend->DrawArraysInstanced(p_primitiveMode, p_mesh.GetVertexCount(), p_instances);
+				m_gfxContext->DrawArraysInstanced(p_primitiveMode, p_mesh.GetVertexCount(), p_instances);
 			}
 		}
 
@@ -136,7 +208,7 @@ void OvRendering::Context::Driver::Draw(
 
 void OvRendering::Context::Driver::SetPipelineState(OvRendering::Data::PipelineState p_state)
 {
-	using namespace OvRendering::Settings;
+	using namespace baregl::types;
 
 	if (p_state._bits != m_pipelineState._bits)
 	{
@@ -144,42 +216,42 @@ void OvRendering::Context::Driver::SetPipelineState(OvRendering::Data::PipelineS
 		auto& c = m_pipelineState;
 
 		// Rasterization
-		if (i.rasterizationMode != c.rasterizationMode) m_gfxBackend->SetRasterizationMode(i.rasterizationMode);
-		if (i.lineWidthPow2 != c.lineWidthPow2) m_gfxBackend->SetRasterizationLinesWidth(Utils::Conversions::Pow2toFloat(i.lineWidthPow2));
+		if (i.rasterizationMode != c.rasterizationMode) m_gfxContext->SetRasterizationMode(i.rasterizationMode);
+		if (i.lineWidthPow2 != c.lineWidthPow2) m_gfxContext->SetRasterizationLinesWidth(Utils::Conversions::Pow2toFloat(i.lineWidthPow2));
 
-		if (i.colorWriting.mask != c.colorWriting.mask) m_gfxBackend->SetColorWriting(i.colorWriting.r, i.colorWriting.g, i.colorWriting.b, i.colorWriting.a);
-		if (i.depthWriting != c.depthWriting) m_gfxBackend->SetDepthWriting(i.depthWriting);
+		if (i.colorWriting.mask != c.colorWriting.mask) m_gfxContext->SetColorWriting(i.colorWriting.r, i.colorWriting.g, i.colorWriting.b, i.colorWriting.a);
+		if (i.depthWriting != c.depthWriting) m_gfxContext->SetDepthWriting(i.depthWriting);
 
-		if (i.blending != c.blending) m_gfxBackend->SetCapability(ERenderingCapability::BLEND, i.blending);
-		if (i.culling != c.culling) m_gfxBackend->SetCapability(ERenderingCapability::CULL_FACE, i.culling);
-		if (i.dither != c.dither) m_gfxBackend->SetCapability(ERenderingCapability::DITHER, i.dither);
-		if (i.polygonOffsetFill != c.polygonOffsetFill) m_gfxBackend->SetCapability(ERenderingCapability::POLYGON_OFFSET_FILL, i.polygonOffsetFill);
-		if (i.sampleAlphaToCoverage != c.sampleAlphaToCoverage) m_gfxBackend->SetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE, i.sampleAlphaToCoverage);
-		if (i.depthTest != c.depthTest) m_gfxBackend->SetCapability(ERenderingCapability::DEPTH_TEST, i.depthTest);
-		if (i.scissorTest != c.scissorTest) m_gfxBackend->SetCapability(ERenderingCapability::SCISSOR_TEST, i.scissorTest);
-		if (i.stencilTest != c.stencilTest) m_gfxBackend->SetCapability(ERenderingCapability::STENCIL_TEST, i.stencilTest);
-		if (i.multisample != c.multisample) m_gfxBackend->SetCapability(ERenderingCapability::MULTISAMPLE, i.multisample);
+		if (i.blending != c.blending) m_gfxContext->SetCapability(ERenderingCapability::BLEND, i.blending);
+		if (i.culling != c.culling) m_gfxContext->SetCapability(ERenderingCapability::CULL_FACE, i.culling);
+		if (i.dither != c.dither) m_gfxContext->SetCapability(ERenderingCapability::DITHER, i.dither);
+		if (i.polygonOffsetFill != c.polygonOffsetFill) m_gfxContext->SetCapability(ERenderingCapability::POLYGON_OFFSET_FILL, i.polygonOffsetFill);
+		if (i.sampleAlphaToCoverage != c.sampleAlphaToCoverage) m_gfxContext->SetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE, i.sampleAlphaToCoverage);
+		if (i.depthTest != c.depthTest) m_gfxContext->SetCapability(ERenderingCapability::DEPTH_TEST, i.depthTest);
+		if (i.scissorTest != c.scissorTest) m_gfxContext->SetCapability(ERenderingCapability::SCISSOR_TEST, i.scissorTest);
+		if (i.stencilTest != c.stencilTest) m_gfxContext->SetCapability(ERenderingCapability::STENCIL_TEST, i.stencilTest);
+		if (i.multisample != c.multisample) m_gfxContext->SetCapability(ERenderingCapability::MULTISAMPLE, i.multisample);
 
 		// Stencil algorithm
 		if (i.stencilFuncOp != c.stencilFuncOp ||
 			i.stencilFuncRef != c.stencilFuncRef ||
 			i.stencilFuncMask != c.stencilFuncMask)
-			m_gfxBackend->SetStencilAlgorithm(i.stencilFuncOp, i.stencilFuncRef, i.stencilFuncMask);
+			m_gfxContext->SetStencilAlgorithm(i.stencilFuncOp, i.stencilFuncRef, i.stencilFuncMask);
 
-		if (i.stencilWriteMask != c.stencilWriteMask) m_gfxBackend->SetStencilMask(i.stencilWriteMask);
-		if (i.stencilOpFail != c.stencilOpFail || i.depthOpFail != c.depthOpFail || i.bothOpFail != c.bothOpFail) m_gfxBackend->SetStencilOperations(i.stencilOpFail, i.depthOpFail, i.bothOpFail);
+		if (i.stencilWriteMask != c.stencilWriteMask) m_gfxContext->SetStencilMask(i.stencilWriteMask);
+		if (i.stencilOpFail != c.stencilOpFail || i.depthOpFail != c.depthOpFail || i.bothOpFail != c.bothOpFail) m_gfxContext->SetStencilOperations(i.stencilOpFail, i.depthOpFail, i.bothOpFail);
 
 		// Blending equation & function
-		if (i.blendingEquation != c.blendingEquation) m_gfxBackend->SetBlendingEquation(i.blendingEquation);
+		if (i.blendingEquation != c.blendingEquation) m_gfxContext->SetBlendingEquation(i.blendingEquation);
 		if (i.blendingSrcFactor != c.blendingSrcFactor ||
 			i.blendingDestFactor != c.blendingDestFactor)
-			m_gfxBackend->SetBlendingFunction(i.blendingSrcFactor, i.blendingDestFactor);
+			m_gfxContext->SetBlendingFunction(i.blendingSrcFactor, i.blendingDestFactor);
 
 		// Depth
-		if (i.depthFunc != c.depthFunc) m_gfxBackend->SetDepthAlgorithm(i.depthFunc);
+		if (i.depthFunc != c.depthFunc) m_gfxContext->SetDepthAlgorithm(i.depthFunc);
 
 		// Culling
-		if (i.cullFace != c.cullFace) m_gfxBackend->SetCullFace(i.cullFace);
+		if (i.cullFace != c.cullFace) m_gfxContext->SetCullFace(i.cullFace);
 
 		m_pipelineState = p_state;
 	}

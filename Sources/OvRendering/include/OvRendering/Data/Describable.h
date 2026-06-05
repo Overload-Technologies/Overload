@@ -9,8 +9,9 @@
 #include <typeindex>
 #include <any>
 
-#include "OvRendering/HAL/Framebuffer.h"
-#include "OvRendering/Entities/Camera.h"
+#include <OvRendering/Entities/Camera.h>
+
+#include <baregl/Framebuffer.h>
 
 namespace OvRendering::Data
 {

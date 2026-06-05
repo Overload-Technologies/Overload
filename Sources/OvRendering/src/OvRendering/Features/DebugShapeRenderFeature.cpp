@@ -104,14 +104,14 @@ void OvRendering::Features::DebugShapeRenderFeature::DrawLine(
 	m_lineMaterial->SetProperty("end", p_end);
 	m_lineMaterial->SetProperty("color", p_color);
 
-	p_pso.rasterizationMode = Settings::ERasterizationMode::LINE;
+	p_pso.rasterizationMode = baregl::types::ERasterizationMode::LINE;
 	p_pso.lineWidthPow2 = Utils::Conversions::FloatToPow2(p_lineWidth);
 
 	OvRendering::Entities::Drawable drawable;
 	drawable.material = *m_lineMaterial;
 	drawable.mesh = m_lineMesh.get();
 	drawable.stateMask = m_lineMaterial->GenerateStateMask();
-	drawable.primitiveMode = Settings::EPrimitiveMode::LINES;
+	drawable.primitiveMode = baregl::types::EPrimitiveMode::LINES;
 
 	m_renderer.DrawEntity(p_pso, drawable);
 }

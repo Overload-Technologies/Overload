@@ -101,9 +101,9 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawStencilPass(OvCore::ECS::Act
 	pso.stencilWriteMask = kStencilMask;
 	pso.stencilFuncRef = kStencilReference;
 	pso.stencilFuncMask = kStencilMask;
-	pso.stencilOpFail = OvRendering::Settings::EOperation::REPLACE;
-	pso.depthOpFail = OvRendering::Settings::EOperation::REPLACE;
-	pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
+	pso.stencilOpFail = baregl::types::EOperation::REPLACE;
+	pso.depthOpFail = baregl::types::EOperation::REPLACE;
+	pso.bothOpFail = baregl::types::EOperation::REPLACE;
 	pso.colorWriting.mask = 0x00;
 
 	DrawActorToStencil(pso, p_actor);
@@ -114,13 +114,13 @@ void OvEditor::Rendering::OutlineRenderFeature::DrawOutlinePass(OvCore::ECS::Act
 	auto pso = m_renderer.CreatePipelineState();
 
 	pso.stencilTest = true;
-	pso.stencilOpFail = OvRendering::Settings::EOperation::KEEP;
-	pso.depthOpFail = OvRendering::Settings::EOperation::KEEP;
-	pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
-	pso.stencilFuncOp = OvRendering::Settings::EComparaisonAlgorithm::NOTEQUAL;
+	pso.stencilOpFail = baregl::types::EOperation::KEEP;
+	pso.depthOpFail = baregl::types::EOperation::KEEP;
+	pso.bothOpFail = baregl::types::EOperation::REPLACE;
+	pso.stencilFuncOp = baregl::types::EComparaisonAlgorithm::NOTEQUAL;
 	pso.stencilFuncRef = kStencilReference;
 	pso.stencilFuncMask = kStencilMask;
-	pso.rasterizationMode = OvRendering::Settings::ERasterizationMode::LINE;
+	pso.rasterizationMode = baregl::types::ERasterizationMode::LINE;
 	pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(p_thickness);
 
 	DrawActorOutline(pso, p_actor, p_color);

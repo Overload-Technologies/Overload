@@ -21,7 +21,7 @@ namespace
 	}
 }
 
-OvRendering::HAL::ShaderProgram& OvRendering::Resources::Shader::GetVariant(std::optional<const std::string_view> p_pass, const Data::FeatureSet& p_featureSet)
+baregl::ShaderProgram& OvRendering::Resources::Shader::GetVariant(std::optional<const std::string_view> p_pass, const Data::FeatureSet& p_featureSet)
 {
 	ZoneScoped;
 

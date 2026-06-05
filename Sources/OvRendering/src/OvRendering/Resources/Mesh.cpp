@@ -121,14 +121,6 @@ bool OvRendering::Resources::Mesh::HasSkinningData() const
 
 void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_vertices, std::span<const uint32_t> p_indices)
 {
-	const auto layout = std::to_array<Settings::VertexAttribute>({
-		{ Settings::EDataType::FLOAT, 3 }, // position
-		{ Settings::EDataType::FLOAT, 2 }, // texCoords
-		{ Settings::EDataType::FLOAT, 3 }, // normal
-		{ Settings::EDataType::FLOAT, 3 }, // tangent
-		{ Settings::EDataType::FLOAT, 3 }  // bitangent
-	});
-
 	if (m_vertexBuffer.Allocate(p_vertices.size_bytes()))
 	{
 		m_vertexBuffer.Upload(p_vertices.data());
@@ -136,7 +128,13 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_ve
 		if (m_indexBuffer.Allocate(p_indices.size_bytes()))
 		{
 			m_indexBuffer.Upload(p_indices.data());
-			m_vertexArray.SetLayout(layout, m_vertexBuffer, m_indexBuffer);
+			m_vertexArray.SetLayout({
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // position
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 2 }, // texCoords
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // normal
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // tangent
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // bitangent
+			}, m_vertexBuffer, m_indexBuffer);
 		}
 		else
 		{
@@ -151,16 +149,6 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::Vertex> p_ve
 
 void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::SkinnedVertex> p_vertices, std::span<const uint32_t> p_indices)
 {
-	const auto layout = std::to_array<Settings::VertexAttribute>({
-		{ Settings::EDataType::FLOAT,        3 }, // position
-		{ Settings::EDataType::FLOAT,        2 }, // texCoords
-		{ Settings::EDataType::FLOAT,        3 }, // normal
-		{ Settings::EDataType::FLOAT,        3 }, // tangent
-		{ Settings::EDataType::FLOAT,        3 }, // bitangent
-		{ Settings::EDataType::UNSIGNED_INT, 4 }, // boneIDs
-		{ Settings::EDataType::FLOAT,        4 }  // boneWeights
-	});
-
 	if (m_vertexBuffer.Allocate(p_vertices.size_bytes()))
 	{
 		m_vertexBuffer.Upload(p_vertices.data());
@@ -168,7 +156,15 @@ void OvRendering::Resources::Mesh::Upload(std::span<const Geometry::SkinnedVerte
 		if (m_indexBuffer.Allocate(p_indices.size_bytes()))
 		{
 			m_indexBuffer.Upload(p_indices.data());
-			m_vertexArray.SetLayout(layout, m_vertexBuffer, m_indexBuffer);
+			m_vertexArray.SetLayout({
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // position
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 2 }, // texCoords
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // normal
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // tangent
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 3 }, // bitangent
+				baregl::data::IntegerVertexAttribute{ baregl::types::EDataType::UNSIGNED_INT, 4 }, // boneIDs
+				baregl::data::FloatVertexAttribute{ baregl::types::EDataType::FLOAT, 4 }  // boneWeights
+			}, m_vertexBuffer, m_indexBuffer);
 		}
 		else
 		{

@@ -4,8 +4,9 @@
 * @licence: MIT
 */
 
-#include "OvRendering/Features/FrameInfoRenderFeature.h"
-#include "OvRendering/Core/CompositeRenderer.h"
+#include <OvRendering/Features/FrameInfoRenderFeature.h>
+#include <OvRendering/Core/CompositeRenderer.h>
+#include <OvTools/Eventing/Event.h>
 
 OvRendering::Features::FrameInfoRenderFeature::FrameInfoRenderFeature(
 	OvRendering::Core::CompositeRenderer& p_renderer,

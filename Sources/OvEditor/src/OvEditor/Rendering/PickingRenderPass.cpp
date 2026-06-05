@@ -20,7 +20,7 @@
 #include <OvEditor/Rendering/PickingRenderPass.h>
 #include <OvEditor/Settings/EditorSettings.h>
 
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 namespace
 {
@@ -82,8 +82,8 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Rendering::Picki
 
 	m_actorPickingFramebuffer.ReadPixels(
 		p_x, p_y, 1, 1,
-		OvRendering::Settings::EPixelDataFormat::RGB,
-		OvRendering::Settings::EPixelDataType::UNSIGNED_BYTE,
+		baregl::types::EPixelDataFormat::RGB,
+		baregl::types::EPixelDataType::UNSIGNED_BYTE,
 		pixel
 	);
 

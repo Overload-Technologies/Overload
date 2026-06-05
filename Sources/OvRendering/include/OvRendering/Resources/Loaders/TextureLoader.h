@@ -10,8 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "OvRendering/Resources/Texture.h"
-
+#include <OvRendering/Resources/Texture.h>
 
 namespace OvRendering::Resources::Loaders
 {
@@ -37,10 +36,10 @@ namespace OvRendering::Resources::Loaders
 		*/
 		static Texture* Create(
 			const std::string& p_filepath,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -68,10 +67,10 @@ namespace OvRendering::Resources::Loaders
 			const uint8_t* p_data,
 			uint32_t p_width,
 			uint32_t p_height,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -88,10 +87,10 @@ namespace OvRendering::Resources::Loaders
 		static Texture* CreateFromEncodedMemory(
 			const uint8_t* p_data,
 			size_t p_size,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -108,10 +107,10 @@ namespace OvRendering::Resources::Loaders
 		static void Reload(
 			Texture& p_texture,
 			const std::string& p_filePath,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -132,10 +131,10 @@ namespace OvRendering::Resources::Loaders
 			const uint8_t* p_data,
 			uint32_t p_width,
 			uint32_t p_height,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 
@@ -154,10 +153,10 @@ namespace OvRendering::Resources::Loaders
 			Texture& p_texture,
 			const uint8_t* p_data,
 			size_t p_size,
-			OvRendering::Settings::ETextureFilteringMode p_minFilter,
-			OvRendering::Settings::ETextureFilteringMode p_magFilter,
-			OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-			OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+			baregl::types::ETextureFilteringMode p_minFilter,
+			baregl::types::ETextureFilteringMode p_magFilter,
+			baregl::types::ETextureWrapMode p_horizontalWrapMode,
+			baregl::types::ETextureWrapMode p_verticalWrapMode,
 			bool p_generateMipmap
 		);
 

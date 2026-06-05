@@ -10,7 +10,7 @@
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/AView.h>
 #include <OvEditor/Settings/EditorSettings.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 OvEditor::Panels::AView::AView
 (
@@ -27,8 +27,8 @@ OvEditor::Panels::AView::AView
 		true, true, false
 	);
 
-	const auto tex = m_framebuffer.GetAttachment<OvRendering::HAL::Texture>(OvRendering::Settings::EFramebufferAttachment::COLOR);
-	m_image = &CreateWidget<OvUI::Widgets::Visual::Image>(tex->GetID(), OvMaths::FVector2{0.f, 0.f});
+	const auto tex = m_framebuffer.GetAttachment<baregl::Texture>(baregl::types::EFramebufferAttachment::COLOR);
+	m_image = &CreateWidget<OvUI::Widgets::Visual::Image>(tex.value().get().GetID(), OvMaths::FVector2{0.f, 0.f});
 	scrollable = false;
 }
 

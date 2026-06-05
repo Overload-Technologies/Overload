@@ -159,14 +159,14 @@ void OvCore::Rendering::ReflectionRenderFeature::SendProbeData(
 {
 	p_material.SetProperty(
 		"_EnvironmentMap",
-		p_reflectionProbe.has_value() ? p_reflectionProbe->GetCubemap().get() : static_cast<OvRendering::HAL::TextureHandle*>(nullptr),
+		p_reflectionProbe.has_value() ? p_reflectionProbe->GetCubemap().get() : static_cast<baregl::Texture*>(nullptr),
 		true
 	);
 }
 
 void OvCore::Rendering::ReflectionRenderFeature::BindProbe(const OvCore::ECS::Components::CReflectionProbe& p_reflectionProbe)
 {
-	p_reflectionProbe._GetUniformBuffer().Bind(1);
+	p_reflectionProbe._GetUniformBuffer().Bind(baregl::types::EBufferType::UNIFORM, 1);
 }
 
 void OvCore::Rendering::ReflectionRenderFeature::OnBeginFrame(const OvRendering::Data::FrameDescriptor& p_frameDescriptor)

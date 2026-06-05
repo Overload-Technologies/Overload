@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include <OvRendering/HAL/Texture.h>
+#include <baregl/Texture.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Panels/PanelWindow.h>
@@ -63,6 +63,6 @@ namespace OvEditor::Panels
 		OvUI::Widgets::Visual::Image& m_image;
 		OvTools::Eventing::ListenerID m_creationListenerID;
 		OvTools::Eventing::ListenerID m_destructionListenerID;
-		OvTools::Utils::OptRef<OvRendering::HAL::Texture> m_selectedTexture;
+		OvTools::Utils::OptRef<baregl::Texture> m_selectedTexture;
 	};
 }

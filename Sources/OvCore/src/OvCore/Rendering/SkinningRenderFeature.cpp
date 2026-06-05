@@ -25,10 +25,10 @@ OvCore::Rendering::SkinningRenderFeature::SkinningRenderFeature(
 {
 	for (auto& skinningBuffer : m_skinningBuffers)
 	{
-		skinningBuffer = std::make_unique<OvRendering::HAL::ShaderStorageBuffer>();
+		skinningBuffer = std::make_unique<baregl::Buffer>();
 	}
 
-	m_identityBuffer = std::make_unique<OvRendering::HAL::ShaderStorageBuffer>();
+	m_identityBuffer = std::make_unique<baregl::Buffer>();
 }
 
 uint32_t OvCore::Rendering::SkinningRenderFeature::GetBufferBindingPoint() const
@@ -47,15 +47,13 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeginFrame(const OvRendering::D
 	if (m_identityBuffer->GetSize() == 0)
 	{
 		const auto identity = OvMaths::FMatrix4::Transpose(OvMaths::FMatrix4::Identity);
-		m_identityBuffer->Allocate(sizeof(OvMaths::FMatrix4), OvRendering::Settings::EAccessSpecifier::STATIC_DRAW);
+		m_identityBuffer->Allocate(sizeof(OvMaths::FMatrix4), baregl::types::EAccessSpecifier::STATIC_DRAW);
 		m_identityBuffer->Upload(&identity);
 	}
 }
 
 void OvCore::Rendering::SkinningRenderFeature::OnEndFrame()
 {
-	GetCurrentSkinningBuffer().Unbind();
-	m_identityBuffer->Unbind();
 	m_bound = {};
 }
 
@@ -98,10 +96,10 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeforeDraw(
 		const auto uploadSize = static_cast<uint64_t>(skinningDescriptor->count) * sizeof(OvMaths::FMatrix4);
 		if (skinningBuffer.GetSize() < uploadSize)
 		{
-			skinningBuffer.Allocate(uploadSize, OvRendering::Settings::EAccessSpecifier::STREAM_DRAW);
+			skinningBuffer.Allocate(uploadSize, baregl::types::EAccessSpecifier::STREAM_DRAW);
 		}
 
-		skinningBuffer.Upload(skinningDescriptor->matrices, OvRendering::HAL::BufferMemoryRange{
+		skinningBuffer.Upload(skinningDescriptor->matrices, baregl::data::BufferMemoryRange{
 			.offset = 0,
 			.size = uploadSize
 		});
@@ -117,12 +115,12 @@ void OvCore::Rendering::SkinningRenderFeature::OnBeforeDraw(
 
 	if (mustBindSkinningPalette)
 	{
-		skinningBuffer.Bind(m_bufferBindingPoint);
+		skinningBuffer.Bind(baregl::types::EBufferType::SHADER_STORAGE, m_bufferBindingPoint);
 		m_bound = { EBoundPalette::SKINNING, skinningDescriptor->matrices, skinningDescriptor->count, skinningDescriptor->poseVersion };
 	}
 }
 
-OvRendering::HAL::ShaderStorageBuffer& OvCore::Rendering::SkinningRenderFeature::GetCurrentSkinningBuffer() const
+baregl::Buffer& OvCore::Rendering::SkinningRenderFeature::GetCurrentSkinningBuffer() const
 {
 	return *m_skinningBuffers[m_skinningBufferIndex];
 }
@@ -131,7 +129,7 @@ void OvCore::Rendering::SkinningRenderFeature::BindIdentityPalette() const
 {
 	if (m_bound.type != EBoundPalette::IDENTITY)
 	{
-		m_identityBuffer->Bind(m_bufferBindingPoint);
+		m_identityBuffer->Bind(baregl::types::EBufferType::SHADER_STORAGE, m_bufferBindingPoint);
 		m_bound = { EBoundPalette::IDENTITY };
 	}
 }

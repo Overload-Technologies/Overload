@@ -38,8 +38,8 @@ namespace OvCore::Rendering::PostProcess
 		*/
 		virtual void Draw(
 			OvRendering::Data::PipelineState p_pso,
-			OvRendering::HAL::Framebuffer& p_src,
-			OvRendering::HAL::Framebuffer& p_dst,
+			baregl::Framebuffer& p_src,
+			baregl::Framebuffer& p_dst,
 			const EffectSettings& p_settings
 		) override;
 

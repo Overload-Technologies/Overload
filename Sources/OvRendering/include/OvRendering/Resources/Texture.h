@@ -10,8 +10,8 @@
 #include <string>
 #include <memory>
 
-#include <OvRendering/Settings/ETextureFilteringMode.h>
-#include <OvRendering/HAL/Texture.h>
+#include <baregl/types/ETextureFilteringMode.h>
+#include <baregl/Texture.h>
 
 namespace OvRendering::Resources
 {
@@ -26,19 +26,19 @@ namespace OvRendering::Resources
 
 	public:
 		/**
-		* Returns the associated HAL::Texture instance
+		* Returns the associated baregl::Texture instance
 		*/
-		HAL::Texture& GetTexture();
+		baregl::Texture& GetTexture();
 
 	private:
-		Texture(const std::string p_path, std::unique_ptr<HAL::Texture>&& p_texture);
+		Texture(const std::string p_path, std::unique_ptr<baregl::Texture>&& p_texture);
 		~Texture() = default;
-		void SetTexture(std::unique_ptr<HAL::Texture>&& p_texture);
+		void SetTexture(std::unique_ptr<baregl::Texture>&& p_texture);
 
 	public:
 		const std::string path;
 
 	private:
-		std::unique_ptr<HAL::Texture> m_texture;
+		std::unique_ptr<baregl::Texture> m_texture;
 	};
 }

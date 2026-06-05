@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 #include <OvRendering/Data/FeatureSet.h>
-#include <OvRendering/HAL/ShaderProgram.h>
+#include <baregl/ShaderProgram.h>
 
 namespace OvRendering::Resources
 {
@@ -30,7 +30,7 @@ namespace OvRendering::Resources
 		// Shader programs for each feature combination
 		using FeatureVariants = std::unordered_map<
 			Data::FeatureSet,
-			std::unique_ptr<HAL::ShaderProgram>,
+			std::unique_ptr<baregl::ShaderProgram>,
 			Data::FeatureSetHash,
 			Data::FeatureSetEqual
 		>;
@@ -46,7 +46,7 @@ namespace OvRendering::Resources
 		* @param p_pass (optional) The pass to use. If not provided, the default pass will be selected.
 		* @param p_featureSet (optional) The feature set to use. If not provided, the default program will be used.
 		*/
-		HAL::ShaderProgram& GetVariant(
+		baregl::ShaderProgram& GetVariant(
 			std::optional<const std::string_view> p_pass = std::nullopt,
 			const Data::FeatureSet& p_featureSet = {}
 		);

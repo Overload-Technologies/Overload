@@ -6,14 +6,20 @@
 
 #include <ranges>
 
+#include <baregl/Buffer.h>
+#include <baregl/Texture.h>
+#include <baregl/data/UniformInfo.h>
+#include <baregl/math/Vec2.h>
+#include <baregl/math/Vec3.h>
+#include <baregl/math/Vec4.h>
+#include <baregl/math/Mat3.h>
+#include <baregl/math/Mat4.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 
 #include <OvRendering/Data/Material.h>
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/TextureHandle.h>
 #include <OvRendering/Resources/Texture.h>
 
 #include <OvTools/Utils/OptRef.h>
@@ -41,6 +47,7 @@ namespace
 
 		using namespace OvMaths;
 		using namespace OvRendering;
+		using namespace baregl::math;
 
 		auto as = [&]<typename T>() -> std::optional<T> {
 			return
@@ -52,22 +59,29 @@ namespace
 		if (auto value = as.operator()<bool>()) return *value;
 		if (auto value = as.operator()<int>()) return *value;
 		if (auto value = as.operator()<float>()) return *value;
-		if (auto value = as.operator()<FVector2>()) return *value;
-		if (auto value = as.operator()<FVector3>()) return *value;
-		if (auto value = as.operator()<FVector4>()) return *value;
-		if (auto value = as.operator()<FMatrix3>()) return *value;
-		if (auto value = as.operator()<FMatrix4>()) return *value;
-		if (auto value = as.operator()<HAL::TextureHandle*>()) return *value;
+		if (auto value = as.operator()<Vec2>()) return (FVector2&)*value;
+		if (auto value = as.operator()<Vec3>()) return (FVector3&)*value;
+		if (auto value = as.operator()<Vec4>()) return (FVector4&)*value;
+		if (auto value = as.operator()<Mat3>()) return (FMatrix3&)*value;
+		if (auto value = as.operator()<Mat4>()) return (FMatrix4&)*value;
+		if (auto value = as.operator()<baregl::Texture*>())
+		{
+			// If the baregl::Texture has a value use it as is
+			if (*value) return *value;
+
+			// If it's nullptr, default to an empty OvRendering::Resources::Texture*
+			return static_cast<Resources::Texture*>(nullptr);
+		}
 		if (auto value = as.operator()<Resources::Texture*>()) return *value;
 
 		return std::monostate{};
 	}
 
 	void BindTexture(
-		OvRendering::HAL::ShaderProgram& p_shader,
+		baregl::ShaderProgram& p_shader,
 		const std::string& p_uniformName,
-		OvRendering::HAL::TextureHandle* p_texture,
-		OvRendering::HAL::TextureHandle* p_fallback,
+		baregl::Texture* p_texture,
+		baregl::Texture* p_fallback,
 		uint32_t p_textureSlot
 	)
 	{
@@ -100,7 +114,7 @@ void OvRendering::Data::Material::SetShader(OvRendering::Resources::Shader* p_sh
 	}
 }
 
-OvTools::Utils::OptRef<OvRendering::HAL::ShaderProgram> OvRendering::Data::Material::GetVariant(
+OvTools::Utils::OptRef<baregl::ShaderProgram> OvRendering::Data::Material::GetVariant(
 	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_override
 ) const
@@ -154,8 +168,8 @@ void OvRendering::Data::Material::UpdateProperties()
 OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::Bind(
 	std::optional<const std::string_view> p_pass,
 	OvTools::Utils::OptRef<const Data::FeatureSet> p_featureSetOverride,
-	HAL::Texture* p_emptyTexture2D,
-	HAL::Texture* p_emptyTextureCube,
+	baregl::Texture* p_emptyTexture2D,
+	baregl::Texture* p_emptyTextureCube,
 	std::optional<MaterialSignatureSet> p_previousMaterialSignature
 )
 {
@@ -187,8 +201,8 @@ OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::Bind(
 void OvRendering::Data::Material::UploadProperties(
 	bool uploadStableProperties,
 	bool uploadSingleUseProperties,
-	HAL::Texture* p_emptyTexture2D,
-	HAL::Texture* p_emptyTextureCube
+	baregl::Texture* p_emptyTexture2D,
+	baregl::Texture* p_emptyTextureCube
 )
 {
 	ZoneScoped;
@@ -196,7 +210,8 @@ void OvRendering::Data::Material::UploadProperties(
 	OVASSERT(m_programInUse.has_value(), "Cannot upload properties before binding");
 
 	using namespace OvMaths;
-	using enum OvRendering::Settings::EUniformType;
+	using namespace baregl::math;
+	using enum baregl::types::EUniformType;
 
 	auto& program = m_programInUse.value();
 
@@ -214,7 +229,7 @@ void OvRendering::Data::Material::UploadProperties(
 		}
 
 		auto& value = prop.value;
-		auto uniformType = uniformData->type;
+		auto uniformType = uniformData.value().get().type;
 
 		// Iterating over the properties to set them in the shader.
 		// This could have been cleaner with a visitor, but the performance impact
@@ -234,28 +249,30 @@ void OvRendering::Data::Material::UploadProperties(
 		}
 		else if (uniformType == FLOAT_VEC2)
 		{
-			program.SetUniform<FVector2>(name, std::get<FVector2>(value));
+			program.SetUniform<Vec2>(name, (Vec2&)(std::get<FVector2>(value)));
 		}
 		else if (uniformType == FLOAT_VEC3)
 		{
-			program.SetUniform<FVector3>(name, std::get<FVector3>(value));
+			program.SetUniform<Vec3>(name, (Vec3&)std::get<FVector3>(value));
 		}
 		else if (uniformType == FLOAT_VEC4)
 		{
-			program.SetUniform<FVector4>(name, std::get<FVector4>(value));
+			program.SetUniform<Vec4>(name, (Vec4&)std::get<FVector4>(value));
 		}
 		else if (uniformType == FLOAT_MAT3)
 		{
-			program.SetUniform<FMatrix3>(name, std::get<FMatrix3>(value));
+			const auto t = FMatrix3::Transpose(std::get<FMatrix3>(value));
+			program.SetUniform<Mat3>(name, (Mat3&)t);
 		}
 		else if (uniformType == FLOAT_MAT4)
 		{
-			program.SetUniform<FMatrix4>(name, std::get<FMatrix4>(value));
+			const auto t = FMatrix4::Transpose(std::get<FMatrix4>(value));
+			program.SetUniform<Mat4>(name, (Mat4&)t);
 		}
 		else if (uniformType == SAMPLER_2D || uniformType == SAMPLER_CUBE)
 		{
-			HAL::TextureHandle* handle = nullptr;
-			if (auto textureHandle = std::get_if<HAL::TextureHandle*>(&value))
+			baregl::Texture* handle = nullptr;
+			if (auto textureHandle = std::get_if<baregl::Texture*>(&value))
 			{
 				handle = *textureHandle;
 			}
@@ -266,7 +283,15 @@ void OvRendering::Data::Material::UploadProperties(
 					handle = &(*texture)->GetTexture();
 				}
 			}
-			BindTexture(program, name, handle, uniformType == SAMPLER_2D ? p_emptyTexture2D : p_emptyTextureCube, uniformData->textureSlot);
+			BindTexture(
+				program,
+				name,
+				handle,
+				uniformType == SAMPLER_2D ?
+					p_emptyTexture2D :
+					p_emptyTextureCube,
+				uniformData.value().get().textureIndex
+			);
 		}
 
 		if (prop.singleUse)
@@ -577,9 +602,9 @@ void OvRendering::Data::Material::InvalidatePropertySignature()
 }
 
 OvRendering::Data::MaterialSignatureSet OvRendering::Data::Material::CalculateSignature(
-	OvRendering::HAL::ShaderProgram& p_selectedProgram,
-	HAL::Texture* p_emptyTexture2D,
-	HAL::Texture* p_emptyTextureCube
+	baregl::ShaderProgram& p_selectedProgram,
+	baregl::Texture* p_emptyTexture2D,
+	baregl::Texture* p_emptyTextureCube
 )
 {
 	ZoneScoped;

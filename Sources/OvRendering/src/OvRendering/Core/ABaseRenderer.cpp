@@ -6,10 +6,10 @@
 
 #include <functional>
 
+#include <baregl/Texture.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvRendering/Core/ABaseRenderer.h>
-#include <OvRendering/HAL/TextureHandle.h>
 #include <OvRendering/Resources/Loaders/TextureLoader.h>
 
 std::atomic_bool OvRendering::Core::ABaseRenderer::s_isDrawing{ false };
@@ -37,26 +37,26 @@ namespace
 OvRendering::Core::ABaseRenderer::ABaseRenderer(Context::Driver& p_driver) : 
 	m_driver(p_driver),
 	m_isDrawing(false),
-	m_emptyTexture2D{ Settings::ETextureType::TEXTURE_2D },
-	m_emptyTextureCube{ Settings::ETextureType::TEXTURE_CUBE },
+	m_emptyTexture2D{ baregl::types::ETextureType::TEXTURE_2D },
+	m_emptyTextureCube{ baregl::types::ETextureType::TEXTURE_CUBE },
 	m_unitQuad(kUnitQuadVertices, kUnitQuadIndices)
 {
-	const auto kEmptyTextureDesc = Settings::TextureDesc{
+	const auto kEmptyTextureDesc = baregl::data::TextureDesc{
 		.width = 1,
 		.height = 1,
-		.minFilter = Settings::ETextureFilteringMode::NEAREST,
-		.magFilter = Settings::ETextureFilteringMode::NEAREST,
-		.horizontalWrap = Settings::ETextureWrapMode::REPEAT,
-		.verticalWrap = Settings::ETextureWrapMode::REPEAT,
-		.internalFormat = Settings::EInternalFormat::RGBA8,
+		.minFilter = baregl::types::ETextureFilteringMode::NEAREST,
+		.magFilter = baregl::types::ETextureFilteringMode::NEAREST,
+		.horizontalWrap = baregl::types::ETextureWrapMode::REPEAT,
+		.verticalWrap = baregl::types::ETextureWrapMode::REPEAT,
+		.internalFormat = baregl::types::EInternalFormat::RGBA8,
 		.useMipMaps = false
 	};
 
 	m_emptyTexture2D.Allocate(kEmptyTextureDesc);
-	m_emptyTexture2D.Upload(kWhitePixel.data(), Settings::EFormat::RGBA, Settings::EPixelDataType::UNSIGNED_BYTE);
+	m_emptyTexture2D.Upload(kWhitePixel.data(), baregl::types::EFormat::RGBA, baregl::types::EPixelDataType::UNSIGNED_BYTE);
 
 	m_emptyTextureCube.Allocate(kEmptyTextureDesc);
-	m_emptyTextureCube.Upload(kBlackPixel.data(), Settings::EFormat::RGBA, Settings::EPixelDataType::UNSIGNED_BYTE);
+	m_emptyTextureCube.Upload(kBlackPixel.data(), baregl::types::EFormat::RGBA, baregl::types::EPixelDataType::UNSIGNED_BYTE);
 }
 
 void OvRendering::Core::ABaseRenderer::BeginFrame(const Data::FrameDescriptor& p_frameDescriptor)
@@ -140,8 +140,8 @@ void OvRendering::Core::ABaseRenderer::Clear(
 
 void OvRendering::Core::ABaseRenderer::Blit(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::HAL::Framebuffer& p_src,
-	OvRendering::HAL::Framebuffer& p_dst,
+	baregl::Framebuffer& p_src,
+	baregl::Framebuffer& p_dst,
 	OvRendering::Data::Material& p_material,
 	OvRendering::Settings::EBlitFlags p_flags
 )
@@ -157,9 +157,9 @@ void OvRendering::Core::ABaseRenderer::Blit(
 
 	if (OvRendering::Settings::IsFlagSet(OvRendering::Settings::EBlitFlags::FILL_INPUT_TEXTURE, p_flags))
 	{
-		const auto colorTex = p_src.GetAttachment<HAL::Texture>(Settings::EFramebufferAttachment::COLOR);
+		const auto colorTex = p_src.GetAttachment<baregl::Texture>(baregl::types::EFramebufferAttachment::COLOR);
 		OVASSERT(colorTex.has_value(), "Invalid color attachment");
-		p_material.SetProperty("_InputTexture", &colorTex.value());
+		p_material.SetProperty("_InputTexture", &colorTex.value().get());
 	}
 
 	OvRendering::Entities::Drawable blit;
@@ -221,14 +221,14 @@ void OvRendering::Core::ABaseRenderer::DrawEntity(
 	{
 		if (p_drawable.stateMask.backfaceCulling && p_drawable.stateMask.frontfaceCulling)
 		{
-			p_pso.cullFace = Settings::ECullFace::FRONT_AND_BACK;
+			p_pso.cullFace = baregl::types::ECullFace::FRONT_AND_BACK;
 		}
 		else
 		{
 			p_pso.cullFace =
 				p_drawable.stateMask.backfaceCulling ?
-				Settings::ECullFace::BACK :
-				Settings::ECullFace::FRONT;
+				baregl::types::ECullFace::BACK :
+				baregl::types::ECullFace::FRONT;
 		}
 	}
 

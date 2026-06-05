@@ -7,7 +7,7 @@
 #pragma once
 
 #include <OvRendering/Core/ARenderPass.h>
-#include <OvRendering/HAL/Framebuffer.h>
+#include <baregl/Framebuffer.h>
 #include <OvCore/Rendering/PingPongFramebuffer.h>
 #include <OvCore/Rendering/PostProcess/AEffect.h>
 

@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-#include <OvRendering/HAL/Framebuffer.h>
+#include <baregl/Framebuffer.h>
 
 namespace OvCore::Rendering::FramebufferUtil
 {
@@ -22,8 +22,8 @@ namespace OvCore::Rendering::FramebufferUtil
 	* @param p_useStencil
 	*/
 	void SetupFramebuffer(
-		OvRendering::HAL::Framebuffer& p_framebuffer,
-		const OvRendering::Settings::TextureDesc& p_textureDesc,
+		baregl::Framebuffer& p_framebuffer,
+		const baregl::data::TextureDesc& p_textureDesc,
 		bool p_useDepth = true,
 		bool p_useStencil = false
 	);
@@ -39,7 +39,7 @@ namespace OvCore::Rendering::FramebufferUtil
 	* @param p_useMipMaps
 	*/
 	void SetupFramebuffer(
-		OvRendering::HAL::Framebuffer& p_framebuffer,
+		baregl::Framebuffer& p_framebuffer,
 		uint32_t p_width = 0,
 		uint32_t p_height = 0,
 		bool p_useDepth = true,

@@ -18,6 +18,8 @@
 #include <OvTools/Profiling/TracyAllocators.h>
 #include <OvTools/Utils/String.h>
 
+#include <OvDebug/Logger.h>
+
 #ifdef _WIN32
 #undef APIENTRY
 #include "Windows.h"
@@ -82,6 +84,12 @@ int main(int argc, char** argv)
 	// UpdateWorkingDirectory(argv[0]);
 
 	OvEditor::Settings::EditorSettings::Load();
+
+#ifndef WIN32
+	if (std::system("command -v zenity >/dev/null 2>&1") != 0) {
+		OVLOG_ERROR("Zenity is required to run Overload!");
+	}
+#endif
 
 	std::optional<std::filesystem::path> projectPath;
 

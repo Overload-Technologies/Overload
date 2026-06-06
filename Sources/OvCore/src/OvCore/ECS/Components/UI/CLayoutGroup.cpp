@@ -186,41 +186,6 @@ namespace
 		return layoutChildren;
 	}
 
-	Clay_LayoutDirection ToClayDirection(OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction)
-	{
-		return p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL ?
-			CLAY_LEFT_TO_RIGHT :
-			CLAY_TOP_TO_BOTTOM;
-	}
-
-	Clay_LayoutAlignmentX ToClayHorizontalAlignment(OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment p_alignment)
-	{
-		switch (p_alignment)
-		{
-		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::LEFT:
-			return CLAY_ALIGN_X_LEFT;
-		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::RIGHT:
-			return CLAY_ALIGN_X_RIGHT;
-		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::CENTER:
-		default:
-			return CLAY_ALIGN_X_CENTER;
-		}
-	}
-
-	Clay_LayoutAlignmentY ToClayVerticalAlignment(OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment p_alignment)
-	{
-		switch (p_alignment)
-		{
-		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::TOP:
-			return CLAY_ALIGN_Y_TOP;
-		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::BOTTOM:
-			return CLAY_ALIGN_Y_BOTTOM;
-		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::CENTER:
-		default:
-			return CLAY_ALIGN_Y_CENTER;
-		}
-	}
-
 	uint16_t ToClaySpacing(float p_spacing)
 	{
 		return static_cast<uint16_t>(ClampSpacing(p_spacing, kMinimumSpacing));
@@ -234,30 +199,6 @@ namespace
 			.top = static_cast<uint16_t>(ClampPadding(p_padding.z, kMinimumPadding)),
 			.bottom = static_cast<uint16_t>(ClampPadding(p_padding.w, kMinimumPadding))
 		};
-	}
-
-	void HandleClayError(Clay_ErrorData)
-	{
-	}
-
-	Clay_Context* GetClayContext()
-	{
-		static std::vector<std::byte> memory;
-		static Clay_Context* context = nullptr;
-
-		if (!context)
-		{
-			memory.resize(Clay_MinMemorySize());
-			const auto arena = Clay_CreateArenaWithCapacityAndMemory(memory.size(), memory.data());
-			context = Clay_Initialize(arena, { 1.0f, 1.0f }, { HandleClayError });
-		}
-
-		if (context)
-		{
-			Clay_SetCurrentContext(context);
-		}
-
-		return context;
 	}
 
 	OvMaths::FVector2 GetIntrinsicLayoutSize(
@@ -497,45 +438,98 @@ namespace
 		}
 	}
 
-	void DeclareClayLayout(
-		const std::vector<LayoutChild>& p_children,
-		const OvMaths::FVector2& p_layoutSize,
-		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
-		uint16_t p_spacing,
-		Clay_Padding p_padding,
-		OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment p_horizontalAlignment,
-		OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment p_verticalAlignment
+	float GetHorizontalAlignmentOffset(
+		OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment p_alignment,
+		float p_availableWidth,
+		float p_contentWidth
 	)
 	{
-		CLAY(CLAY_ID("OverloadUILayoutRoot"), {
-			.layout = {
-				.sizing = { CLAY_SIZING_FIXED(p_layoutSize.x), CLAY_SIZING_FIXED(p_layoutSize.y) },
-				.padding = p_padding,
-				.childGap = p_spacing,
-				.childAlignment = { ToClayHorizontalAlignment(p_horizontalAlignment), ToClayVerticalAlignment(p_verticalAlignment) },
-				.layoutDirection = ToClayDirection(p_direction)
-			}
-		})
+		const float extraSpace = std::max(0.0f, p_availableWidth - p_contentWidth);
+
+		switch (p_alignment)
 		{
-			for (int32_t i = 0; i < static_cast<int32_t>(p_children.size()); ++i)
-			{
-				const auto& childSize = p_children[i].size;
-				CLAY(CLAY_IDI("OverloadUILayoutChild", i), {
-					.layout = {
-						.sizing = { CLAY_SIZING_FIXED(childSize.x), CLAY_SIZING_FIXED(childSize.y) }
-					}
-				})
-				{
-				}
-			}
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::LEFT:
+			return 0.0f;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::RIGHT:
+			return extraSpace;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::CENTER:
+		default:
+			return extraSpace * 0.5f;
 		}
 	}
 
-	OvMaths::FVector2 ToChildOffset(const Clay_BoundingBox& p_childBounds, const OvMaths::FVector2& p_layoutSize)
+	float GetVerticalAlignmentOffset(
+		OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment p_alignment,
+		float p_availableHeight,
+		float p_contentHeight
+	)
 	{
+		const float extraSpace = std::max(0.0f, p_availableHeight - p_contentHeight);
+
+		switch (p_alignment)
+		{
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::TOP:
+			return 0.0f;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::BOTTOM:
+			return extraSpace;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::CENTER:
+		default:
+			return extraSpace * 0.5f;
+		}
+	}
+
+	OvMaths::FVector2 GetChildrenContentSize(
+		const std::vector<LayoutChild>& p_children,
+		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
+		float p_spacing
+	)
+	{
+		if (p_children.empty())
+		{
+			return OvMaths::FVector2::Zero;
+		}
+
+		OvMaths::FVector2 result = OvMaths::FVector2::Zero;
+
+		for (const auto& child : p_children)
+		{
+			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+			{
+				result.x += child.size.x;
+				result.y = std::max(result.y, child.size.y);
+			}
+			else
+			{
+				result.x = std::max(result.x, child.size.x);
+				result.y += child.size.y;
+			}
+		}
+
+		const float gapSize = p_spacing * static_cast<float>(p_children.size() - 1);
+		if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+		{
+			result.x += gapSize;
+		}
+		else
+		{
+			result.y += gapSize;
+		}
+
+		return result;
+	}
+
+	OvMaths::FVector2 ToChildOffset(
+		const OvMaths::FVector2& p_childTopLeft,
+		const OvMaths::FVector2& p_childSize,
+		const OvMaths::FVector2& p_layoutSize
+	)
+	{
+		const float centerX = p_childTopLeft.x + p_childSize.x * 0.5f;
+		const float centerY = p_childTopLeft.y + p_childSize.y * 0.5f;
+
 		return {
-			p_childBounds.x + p_childBounds.width * 0.5f - p_layoutSize.x * 0.5f,
-			p_layoutSize.y * 0.5f - (p_childBounds.y + p_childBounds.height * 0.5f)
+			centerX - p_layoutSize.x * 0.5f,
+			p_layoutSize.y * 0.5f - centerY
 		};
 	}
 
@@ -548,6 +542,53 @@ namespace
 			-pivot.x * halfSize.x,
 			pivot.y * halfSize.y
 		};
+	}
+
+	std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> ResolveChildOffsets(
+		const std::vector<LayoutChild>& p_children,
+		const OvMaths::FVector2& p_layoutSize,
+		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
+		uint16_t p_spacing,
+		Clay_Padding p_padding,
+		OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment p_horizontalAlignment,
+		OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment p_verticalAlignment,
+		const OvMaths::FVector2& p_layoutPivotOffset
+	)
+	{
+		std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> offsets;
+		offsets.reserve(p_children.size());
+
+		const float spacing = static_cast<float>(p_spacing);
+		const float availableWidth = std::max(0.0f, p_layoutSize.x - p_padding.left - p_padding.right);
+		const float availableHeight = std::max(0.0f, p_layoutSize.y - p_padding.top - p_padding.bottom);
+		const OvMaths::FVector2 contentSize = GetChildrenContentSize(p_children, p_direction, spacing);
+
+		if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+		{
+			float childLeft = static_cast<float>(p_padding.left) + GetHorizontalAlignmentOffset(p_horizontalAlignment, availableWidth, contentSize.x);
+
+			for (const auto& child : p_children)
+			{
+				const float childTop = static_cast<float>(p_padding.top) + GetVerticalAlignmentOffset(p_verticalAlignment, availableHeight, child.size.y);
+				const OvMaths::FVector2 offset = ToChildOffset({ childLeft, childTop }, child.size, p_layoutSize) + p_layoutPivotOffset;
+				offsets.emplace_back(child.actor, offset);
+				childLeft += child.size.x + spacing;
+			}
+		}
+		else
+		{
+			float childTop = static_cast<float>(p_padding.top) + GetVerticalAlignmentOffset(p_verticalAlignment, availableHeight, contentSize.y);
+
+			for (const auto& child : p_children)
+			{
+				const float childLeft = static_cast<float>(p_padding.left) + GetHorizontalAlignmentOffset(p_horizontalAlignment, availableWidth, child.size.x);
+				const OvMaths::FVector2 offset = ToChildOffset({ childLeft, childTop }, child.size, p_layoutSize) + p_layoutPivotOffset;
+				offsets.emplace_back(child.actor, offset);
+				childTop += child.size.y + spacing;
+			}
+		}
+
+		return offsets;
 	}
 }
 
@@ -700,11 +741,9 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 {
 	auto layoutChildren = CollectLayoutChildren(owner);
 
-	std::vector<ChildOffset> offsets;
-
-	if (layoutChildren.empty() || !GetClayContext())
+	if (layoutChildren.empty())
 	{
-		return offsets;
+		return {};
 	}
 
 	const auto spacing = ToClaySpacing(m_spacing);
@@ -722,24 +761,17 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 		padding
 	);
 
-	Clay_SetLayoutDimensions({ layoutSize.x, layoutSize.y });
-	Clay_BeginLayout();
-	DeclareClayLayout(layoutChildren, layoutSize, m_direction, spacing, padding, m_horizontalAlignment, m_verticalAlignment);
-	Clay_EndLayout(0.0f);
-
-	offsets.reserve(layoutChildren.size());
 	const auto layoutPivotOffset = GetLayoutPivotOffset(owner, layoutSize);
-
-	for (int32_t i = 0; i < static_cast<int32_t>(layoutChildren.size()); ++i)
-	{
-		const auto childBounds = Clay_GetElementData(CLAY_IDI("OverloadUILayoutChild", i));
-		if (childBounds.found)
-		{
-			offsets.emplace_back(layoutChildren[i].actor, layoutPivotOffset + ToChildOffset(childBounds.boundingBox, layoutSize));
-		}
-	}
-
-	return offsets;
+	return ResolveChildOffsets(
+		layoutChildren,
+		layoutSize,
+		m_direction,
+		spacing,
+		padding,
+		m_horizontalAlignment,
+		m_verticalAlignment,
+		layoutPivotOffset
+	);
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()

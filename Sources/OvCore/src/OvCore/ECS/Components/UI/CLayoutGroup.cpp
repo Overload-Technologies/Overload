@@ -532,6 +532,17 @@ namespace
 			p_layoutSize.y * 0.5f - (p_childBounds.y + p_childBounds.height * 0.5f)
 		};
 	}
+
+	OvMaths::FVector2 GetLayoutPivotOffset(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_layoutSize)
+	{
+		const auto& pivot = p_owner.transform.GetUIPivot();
+		const auto halfSize = p_layoutSize * 0.5f;
+
+		return {
+			-pivot.x * halfSize.x,
+			pivot.y * halfSize.y
+		};
+	}
 }
 
 OvCore::ECS::Components::UI::CLayoutGroup::CLayoutGroup(ECS::Actor& p_owner) :
@@ -709,13 +720,14 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 	Clay_EndLayout(0.0f);
 
 	offsets.reserve(layoutChildren.size());
+	const auto layoutPivotOffset = GetLayoutPivotOffset(owner, layoutSize);
 
 	for (int32_t i = 0; i < static_cast<int32_t>(layoutChildren.size()); ++i)
 	{
 		const auto childBounds = Clay_GetElementData(CLAY_IDI("OverloadUILayoutChild", i));
 		if (childBounds.found)
 		{
-			offsets.emplace_back(layoutChildren[i].actor, ToChildOffset(childBounds.boundingBox, layoutSize));
+			offsets.emplace_back(layoutChildren[i].actor, layoutPivotOffset + ToChildOffset(childBounds.boundingBox, layoutSize));
 		}
 	}
 

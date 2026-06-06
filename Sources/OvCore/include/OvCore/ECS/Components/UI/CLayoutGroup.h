@@ -95,6 +95,11 @@ namespace OvCore::ECS::Components::UI
 		const OvMaths::FVector2& GetSize() const;
 
 		/**
+		* Returns the actual layout container size after children, padding and minimum size are resolved
+		*/
+		OvMaths::FVector2 GetComputedSize() const;
+
+		/**
 		* Sets the layout padding as left, right, top, bottom
 		* @param p_padding
 		*/

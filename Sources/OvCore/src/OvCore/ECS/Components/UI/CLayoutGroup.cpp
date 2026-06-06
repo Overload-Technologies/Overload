@@ -592,6 +592,19 @@ const OvMaths::FVector2& OvCore::ECS::Components::UI::CLayoutGroup::GetSize() co
 	return m_size;
 }
 
+OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetComputedSize() const
+{
+	const auto spacing = ToClaySpacing(m_spacing);
+	const auto padding = ToClayPadding(m_padding);
+	return GetLayoutSize(
+		CollectLayoutChildren(owner),
+		m_direction,
+		static_cast<float>(spacing),
+		m_size,
+		padding
+	);
+}
+
 void OvCore::ECS::Components::UI::CLayoutGroup::SetPadding(const OvMaths::FVector4& p_padding)
 {
 	m_padding.x = ClampPadding(p_padding.x, m_padding.x);

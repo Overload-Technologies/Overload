@@ -155,11 +155,21 @@ OvEditor::Panels::Inspector::Inspector(
 			UnFocus();
 		}
 	};
+
+	m_attachedListener = Actor::AttachEvent += [this](Actor& p_attached, Actor&) {
+		_RefreshIfTargetHierarchyChanged(p_attached);
+	};
+
+	m_detachedListener = Actor::DettachEvent += [this](Actor& p_detached) {
+		_RefreshIfTargetHierarchyChanged(p_detached);
+	};
 }
 
 OvEditor::Panels::Inspector::~Inspector()
 {
 	Actor::DestroyedEvent -= m_destroyedListener;
+	Actor::AttachEvent -= m_attachedListener;
+	Actor::DettachEvent -= m_detachedListener;
 	UnFocus();
 }
 
@@ -476,4 +486,20 @@ void OvEditor::Panels::Inspector::Refresh()
 		m_content->RemoveAllWidgets();
 		_Populate();
 	}
+}
+
+void OvEditor::Panels::Inspector::_RefreshIfTargetHierarchyChanged(Actor& p_changedActor)
+{
+	if (!m_targetActor)
+	{
+		return;
+	}
+
+	auto& targetActor = m_targetActor.value();
+	if (&targetActor != &p_changedActor && !targetActor.IsDescendantOf(&p_changedActor))
+	{
+		return;
+	}
+
+	EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 }

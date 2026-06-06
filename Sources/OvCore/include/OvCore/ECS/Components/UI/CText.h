@@ -182,6 +182,7 @@ namespace OvCore::ECS::Components::UI
 		OvMaths::FVector2 m_extents = OvMaths::FVector2::Zero;
 		EHorizontalAlignment m_horizontalAlignment = EHorizontalAlignment::LEFT;
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::TOP;
+		mutable std::string m_unavailableFontPath;
 
 		mutable bool m_meshDirty = true;
 		mutable OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;

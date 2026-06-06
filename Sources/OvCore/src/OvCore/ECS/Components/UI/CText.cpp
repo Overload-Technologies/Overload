@@ -152,6 +152,7 @@ const std::string& OvCore::ECS::Components::UI::CText::GetText() const
 void OvCore::ECS::Components::UI::CText::SetFontPath(const std::string& p_fontPath)
 {
 	m_fontPath = p_fontPath;
+	m_unavailableFontPath.clear();
 	MarkMeshDirty();
 	RefreshMaterial();
 }
@@ -370,12 +371,24 @@ void OvCore::ECS::Components::UI::CText::OnInspector(OvUI::Internal::WidgetConta
 
 OvRendering::Resources::Font* OvCore::ECS::Components::UI::CText::GetFont() const
 {
-	if (m_fontPath.empty())
+	if (m_fontPath.empty() || m_fontPath == "?")
 	{
 		return nullptr;
 	}
 
-	return Global::ServiceLocator::Get<ResourceManagement::FontManager>().GetResource(m_fontPath);
+	auto& fontManager = Global::ServiceLocator::Get<ResourceManagement::FontManager>();
+	if (m_unavailableFontPath == m_fontPath)
+	{
+		return fontManager.GetResource(m_fontPath, false);
+	}
+
+	auto* font = fontManager.GetResource(m_fontPath);
+	if (!font)
+	{
+		m_unavailableFontPath = m_fontPath;
+	}
+
+	return font;
 }
 
 void OvCore::ECS::Components::UI::CText::MarkMeshDirty()

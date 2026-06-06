@@ -382,8 +382,6 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetFontSize", &UI::CText::SetFontSize,
 		"GetColor", [](UI::CText& p_this) -> FVector4 { return p_this.GetColor(); },
 		"SetColor", &UI::CText::SetColor,
-		"GetExtents", [](UI::CText& p_this) -> FVector2 { return p_this.GetExtents(); },
-		"SetExtents", &UI::CText::SetExtents,
 		"GetHorizontalAlignment", &UI::CText::GetHorizontalAlignment,
 		"SetHorizontalAlignment", &UI::CText::SetHorizontalAlignment,
 		"GetVerticalAlignment", &UI::CText::GetVerticalAlignment,

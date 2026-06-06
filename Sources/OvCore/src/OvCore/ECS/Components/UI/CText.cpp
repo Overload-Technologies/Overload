@@ -29,7 +29,7 @@
 namespace
 {
 	constexpr float kMinimumFontSize = 1.0f;
-	constexpr float kMinimumExtent = 0.0f;
+	constexpr float kSizeUpdateEpsilon = 0.0001f;
 	constexpr const char* kDefaultMaterialPath = ":Materials\\Text.ovmat";
 	constexpr const char* kColorUniform = "u_Color";
 
@@ -85,11 +85,21 @@ namespace
 		}
 	}
 
-	OvMaths::FVector2 ResolveTextSize(const OvMaths::FVector2& p_contentSize, const OvMaths::FVector2& p_extents)
+	bool IsNearlyEqual(float p_left, float p_right)
+	{
+		return std::abs(p_left - p_right) <= kSizeUpdateEpsilon;
+	}
+
+	bool IsSameSize(const OvMaths::FVector2& p_left, const OvMaths::FVector2& p_right)
+	{
+		return IsNearlyEqual(p_left.x, p_right.x) && IsNearlyEqual(p_left.y, p_right.y);
+	}
+
+	OvMaths::FVector2 ResolveTextSize(const OvMaths::FVector2& p_contentSize, const OvMaths::FVector2& p_uiSize)
 	{
 		return {
-			p_extents.x > 0.0f ? p_extents.x : p_contentSize.x,
-			p_extents.y > 0.0f ? p_extents.y : p_contentSize.y
+			p_uiSize.x > 0.0f ? p_uiSize.x : p_contentSize.x,
+			p_uiSize.y > 0.0f ? p_uiSize.y : p_contentSize.y
 		};
 	}
 
@@ -187,18 +197,6 @@ const OvMaths::FVector4& OvCore::ECS::Components::UI::CText::GetColor() const
 	return m_color;
 }
 
-void OvCore::ECS::Components::UI::CText::SetExtents(const OvMaths::FVector2& p_extents)
-{
-	m_extents.x = ClampFinite(p_extents.x, kMinimumExtent);
-	m_extents.y = ClampFinite(p_extents.y, kMinimumExtent);
-	MarkMeshDirty();
-}
-
-const OvMaths::FVector2& OvCore::ECS::Components::UI::CText::GetExtents() const
-{
-	return m_extents;
-}
-
 void OvCore::ECS::Components::UI::CText::SetHorizontalAlignment(EHorizontalAlignment p_alignment)
 {
 	m_horizontalAlignment = ToHorizontalAlignment(static_cast<int>(p_alignment));
@@ -245,7 +243,6 @@ void OvCore::ECS::Components::UI::CText::OnSerialize(tinyxml2::XMLDocument& p_do
 	Helpers::Serializer::SerializeString(p_doc, p_node, "font_path", m_fontPath);
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "font_size", m_fontSize);
 	Helpers::Serializer::SerializeVec4(p_doc, p_node, "color", m_color);
-	Helpers::Serializer::SerializeVec2(p_doc, p_node, "extents", m_extents);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "horizontal_alignment", static_cast<int>(m_horizontalAlignment));
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "vertical_alignment", static_cast<int>(m_verticalAlignment));
 }
@@ -278,13 +275,6 @@ void OvCore::ECS::Components::UI::CText::OnDeserialize(tinyxml2::XMLDocument& p_
 		auto color = m_color;
 		Helpers::Serializer::DeserializeVec4(p_doc, p_node, "color", color);
 		SetColor(color);
-	}
-
-	if (p_node->FirstChildElement("extents"))
-	{
-		auto extents = m_extents;
-		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "extents", extents);
-		SetExtents(extents);
 	}
 
 	if (p_node->FirstChildElement("horizontal_alignment"))
@@ -329,15 +319,6 @@ void OvCore::ECS::Components::UI::CText::OnInspector(OvUI::Internal::WidgetConta
 		std::bind(&CText::SetFontSize, this, std::placeholders::_1),
 		1.0f,
 		kMinimumFontSize
-	);
-
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Extents",
-		[this]() { return GetExtents(); },
-		[this](OvMaths::FVector2 p_value) { SetExtents(p_value); },
-		1.0f,
-		kMinimumExtent
 	);
 
 	Helpers::GUIDrawer::CreateTitle(p_root, "Horizontal Alignment");
@@ -398,14 +379,16 @@ void OvCore::ECS::Components::UI::CText::MarkMeshDirty()
 
 void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 {
-	if (!m_meshDirty)
+	const auto uiSize = owner.transform.GetUISize();
+	if (!m_meshDirty && IsSameSize(m_lastUISize, uiSize))
 	{
 		return;
 	}
 
 	m_meshDirty = false;
+	m_lastUISize = uiSize;
 	m_mesh.reset();
-	m_size = ResolveTextSize(OvMaths::FVector2::Zero, m_extents);
+	m_size = ResolveTextSize(OvMaths::FVector2::Zero, uiSize);
 
 	auto* font = GetFont();
 	if (!font || m_text.empty() || !font->EnsurePixelSize(m_fontSize))
@@ -521,7 +504,7 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	};
 
 	const auto contentSize = m_size;
-	m_size = ResolveTextSize(contentSize, m_extents);
+	m_size = ResolveTextSize(contentSize, uiSize);
 
 	for (const auto& line : lines)
 	{

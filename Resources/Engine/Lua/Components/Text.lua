@@ -54,14 +54,6 @@ function Text:GetColor() end
 ---@param color Vector4
 function Text:SetColor(color) end
 
---- Returns the text extents in canvas pixels
----@return Vector2
-function Text:GetExtents() end
-
---- Defines the text extents in canvas pixels
----@param extents Vector2
-function Text:SetExtents(extents) end
-
 --- Returns the horizontal text alignment
 ---@return TextHorizontalAlignment
 function Text:GetHorizontalAlignment() end

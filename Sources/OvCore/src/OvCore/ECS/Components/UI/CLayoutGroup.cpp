@@ -400,24 +400,6 @@ namespace
 				}
 			}
 
-			if (auto* text = child.actor->GetComponent<OvCore::ECS::Components::UI::CText>())
-			{
-				auto nextExtents = text->GetExtents();
-				if (appliesWidth)
-				{
-					nextExtents.x = child.size.x;
-				}
-				if (appliesHeight)
-				{
-					nextExtents.y = child.size.y;
-				}
-
-				if (ShouldUpdateControlledSize(text->GetExtents(), nextExtents, appliesWidth, appliesHeight))
-				{
-					text->SetExtents(nextExtents);
-				}
-			}
-
 			if (child.actor->transform.HasActiveUIData())
 			{
 				auto nextSize = child.actor->transform.GetUISize();

@@ -101,17 +101,6 @@ namespace OvCore::ECS::Components::UI
 		const OvMaths::FVector4& GetColor() const;
 
 		/**
-		* Sets the text extents in canvas pixels
-		* @param p_extents
-		*/
-		void SetExtents(const OvMaths::FVector2& p_extents);
-
-		/**
-		* Returns the text extents in canvas pixels
-		*/
-		const OvMaths::FVector2& GetExtents() const;
-
-		/**
 		* Sets the horizontal text alignment
 		* @param p_alignment
 		*/
@@ -179,12 +168,12 @@ namespace OvCore::ECS::Components::UI
 		std::string m_fontPath = ":Fonts\\Roboto-Regular.ttf";
 		float m_fontSize = 32.0f;
 		OvMaths::FVector4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		OvMaths::FVector2 m_extents = OvMaths::FVector2::Zero;
 		EHorizontalAlignment m_horizontalAlignment = EHorizontalAlignment::LEFT;
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::TOP;
 		mutable std::string m_unavailableFontPath;
 
 		mutable bool m_meshDirty = true;
+		mutable OvMaths::FVector2 m_lastUISize = OvMaths::FVector2::Zero;
 		mutable OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		mutable std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
 		std::unique_ptr<OvRendering::Data::Material> m_material;

@@ -45,14 +45,6 @@ function LayoutGroup:GetSpacing() end
 ---@param spacing number
 function LayoutGroup:SetSpacing(spacing) end
 
---- Returns the minimum layout container size
----@return Vector2
-function LayoutGroup:GetSize() end
-
---- Defines the minimum layout container size
----@param size Vector2
-function LayoutGroup:SetSize(size) end
-
 --- Returns the layout padding as left, right, top, bottom
 ---@return Vector4
 function LayoutGroup:GetPadding() end

@@ -84,18 +84,7 @@ namespace OvCore::ECS::Components::UI
 		float GetSpacing() const;
 
 		/**
-		* Sets the minimum layout container size
-		* @param p_size
-		*/
-		void SetSize(const OvMaths::FVector2& p_size);
-
-		/**
-		* Returns the minimum layout container size
-		*/
-		const OvMaths::FVector2& GetSize() const;
-
-		/**
-		* Returns the actual layout container size after children, padding and minimum size are resolved
+		* Returns the actual layout container size after children, padding and Transform UI size are resolved
 		*/
 		OvMaths::FVector2 GetComputedSize() const;
 
@@ -218,7 +207,6 @@ namespace OvCore::ECS::Components::UI
 	private:
 		EDirection m_direction = EDirection::HORIZONTAL;
 		float m_spacing = 0.0f;
-		OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		OvMaths::FVector4 m_padding = OvMaths::FVector4::Zero;
 		EHorizontalAlignment m_horizontalAlignment = EHorizontalAlignment::CENTER;
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::CENTER;

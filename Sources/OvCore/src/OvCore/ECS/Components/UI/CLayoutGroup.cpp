@@ -44,7 +44,6 @@ namespace
 	};
 
 	constexpr float kMinimumSpacing = 0.0f;
-	constexpr float kMinimumSize = 0.0f;
 	constexpr float kMinimumPadding = 0.0f;
 	constexpr float kMaximumSpacing = static_cast<float>(std::numeric_limits<uint16_t>::max());
 	constexpr float kMaximumPadding = static_cast<float>(std::numeric_limits<uint16_t>::max());
@@ -53,11 +52,6 @@ namespace
 	float ClampSpacing(float p_value, float p_fallback)
 	{
 		return std::isfinite(p_value) ? std::clamp(p_value, kMinimumSpacing, kMaximumSpacing) : p_fallback;
-	}
-
-	float ClampSize(float p_value, float p_fallback)
-	{
-		return std::isfinite(p_value) ? std::max(p_value, kMinimumSize) : p_fallback;
 	}
 
 	float ClampPadding(float p_value, float p_fallback)
@@ -266,11 +260,10 @@ namespace
 		return context;
 	}
 
-	OvMaths::FVector2 GetLayoutSize(
+	OvMaths::FVector2 GetIntrinsicLayoutSize(
 		const std::vector<LayoutChild>& p_children,
 		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
 		float p_spacing,
-		const OvMaths::FVector2& p_minimumSize,
 		Clay_Padding p_padding
 	)
 	{
@@ -308,9 +301,22 @@ namespace
 		result.y += static_cast<float>(p_padding.top + p_padding.bottom);
 
 		return {
-			std::max({ result.x, p_minimumSize.x, 1.0f }),
-			std::max({ result.y, p_minimumSize.y, 1.0f })
+			std::max(result.x, 1.0f),
+			std::max(result.y, 1.0f)
 		};
+	}
+
+	OvMaths::FVector2 GetLayoutSize(
+		const OvCore::ECS::Actor& p_owner,
+		const std::vector<LayoutChild>& p_children,
+		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
+		float p_spacing,
+		Clay_Padding p_padding
+	)
+	{
+		return p_owner.transform.GetUIEffectiveSize(
+			GetIntrinsicLayoutSize(p_children, p_direction, p_spacing, p_padding)
+		);
 	}
 
 	void ApplyControlledChildrenSizing(
@@ -581,26 +587,15 @@ float OvCore::ECS::Components::UI::CLayoutGroup::GetSpacing() const
 	return m_spacing;
 }
 
-void OvCore::ECS::Components::UI::CLayoutGroup::SetSize(const OvMaths::FVector2& p_size)
-{
-	m_size.x = ClampSize(p_size.x, m_size.x);
-	m_size.y = ClampSize(p_size.y, m_size.y);
-}
-
-const OvMaths::FVector2& OvCore::ECS::Components::UI::CLayoutGroup::GetSize() const
-{
-	return m_size;
-}
-
 OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetComputedSize() const
 {
 	const auto spacing = ToClaySpacing(m_spacing);
 	const auto padding = ToClayPadding(m_padding);
 	return GetLayoutSize(
+		owner,
 		CollectLayoutChildren(owner),
 		m_direction,
 		static_cast<float>(spacing),
-		m_size,
 		padding
 	);
 }
@@ -714,7 +709,7 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 
 	const auto spacing = ToClaySpacing(m_spacing);
 	const auto padding = ToClayPadding(m_padding);
-	const auto layoutSize = GetLayoutSize(layoutChildren, m_direction, static_cast<float>(spacing), m_size, padding);
+	const auto layoutSize = GetLayoutSize(owner, layoutChildren, m_direction, static_cast<float>(spacing), padding);
 	ApplyControlledChildrenSizing(
 		layoutChildren,
 		m_direction,
@@ -762,7 +757,7 @@ void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()
 
 	const auto spacing = ToClaySpacing(m_spacing);
 	const auto padding = ToClayPadding(m_padding);
-	const auto layoutSize = GetLayoutSize(layoutChildren, m_direction, static_cast<float>(spacing), m_size, padding);
+	const auto layoutSize = GetLayoutSize(owner, layoutChildren, m_direction, static_cast<float>(spacing), padding);
 
 	ApplyControlledChildrenSizing(
 		layoutChildren,
@@ -788,7 +783,6 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocumen
 {
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "direction", static_cast<int>(m_direction));
 	Helpers::Serializer::SerializeFloat(p_doc, p_node, "spacing", m_spacing);
-	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
 	Helpers::Serializer::SerializeVec4(p_doc, p_node, "padding", m_padding);
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "horizontal_alignment", static_cast<int>(m_horizontalAlignment));
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "vertical_alignment", static_cast<int>(m_verticalAlignment));
@@ -812,13 +806,6 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnDeserialize(tinyxml2::XMLDocum
 		auto spacing = m_spacing;
 		Helpers::Serializer::DeserializeFloat(p_doc, p_node, "spacing", spacing);
 		SetSpacing(spacing);
-	}
-
-	if (p_node->FirstChildElement("size"))
-	{
-		auto size = m_size;
-		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "size", size);
-		SetSize(size);
 	}
 
 	if (p_node->FirstChildElement("padding"))
@@ -913,15 +900,6 @@ void OvCore::ECS::Components::UI::CLayoutGroup::OnInspector(OvUI::Internal::Widg
 		1.0f,
 		kMinimumSpacing,
 		kMaximumSpacing
-	);
-
-	Helpers::GUIDrawer::DrawVec2(
-		p_root,
-		"Size",
-		[this]() { return GetSize(); },
-		[this](OvMaths::FVector2 p_value) { SetSize(p_value); },
-		1.0f,
-		kMinimumSize
 	);
 
 	Helpers::GUIDrawer::DrawVec4(

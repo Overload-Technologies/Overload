@@ -105,6 +105,7 @@ namespace OvCore::ECS::Components::UI
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
+		void ValidateTextureReference();
 		void RebuildMesh();
 		void RefreshMaterial();
 		void SyncTransformUISizeIfUnset();

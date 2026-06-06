@@ -26,6 +26,7 @@
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ResourceManagement/FontManager.h>
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
@@ -1922,6 +1923,11 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 			if (auto pval = std::get_if<OvRendering::Resources::Texture*>(&assetViewRes); pval && *pval)
 				assetView.ClearResource();
 
+			if (auto currentScene = m_context.sceneManager.GetCurrentScene())
+				for (auto actor : currentScene->GetActors())
+					if (auto image = actor->GetComponent<OvCore::ECS::Components::UI::CImage>(); image && image->GetTexture() == texture)
+						image->SetTexture(nullptr);
+
 			OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().UnloadResource(p_previousName);
 		}
 		
@@ -2028,6 +2034,8 @@ void OvEditor::Core::EditorActions::PropagateFileRename(std::string p_previousNa
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::TEXTURE:
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::SCENE);
+		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::PREFAB);
 		PropagateFileRenameThroughSavedFilesOfType(p_previousName, p_newName, OvTools::Utils::PathParser::EFileType::MATERIAL);
 		break;
 	case OvTools::Utils::PathParser::EFileType::SOUND:

@@ -17,6 +17,7 @@
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/TextureManager.h>
 #include <OvRendering/Geometry/Vertex.h>
 #include <OvUI/Types/Color.h>
 
@@ -45,6 +46,24 @@ namespace
 	OvMaths::FVector4 ToVec4(const OvUI::Types::Color& p_value)
 	{
 		return { p_value.r, p_value.g, p_value.b, p_value.a };
+	}
+
+	bool IsRegisteredTexture(const OvRendering::Resources::Texture* p_texture)
+	{
+		if (!p_texture)
+		{
+			return false;
+		}
+
+		for (const auto& [_, texture] : OvCore::Global::ServiceLocator::Get<OvCore::ResourceManagement::TextureManager>().GetResources())
+		{
+			if (texture == p_texture)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
 
@@ -117,6 +136,7 @@ OvCore::Resources::Material* OvCore::ECS::Components::UI::CImage::GetMaterial()
 
 void OvCore::ECS::Components::UI::CImage::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)
 {
+	ValidateTextureReference();
 	Helpers::Serializer::SerializeTexture(p_doc, p_node, "texture", m_texture);
 	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
 	Helpers::Serializer::SerializeVec4(p_doc, p_node, "tint", m_tint);
@@ -148,6 +168,7 @@ void OvCore::ECS::Components::UI::CImage::OnDeserialize(tinyxml2::XMLDocument& p
 
 void OvCore::ECS::Components::UI::CImage::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
+	ValidateTextureReference();
 	Helpers::GUIDrawer::DrawTexture(p_root, "Texture", m_texture);
 
 	Helpers::GUIDrawer::DrawColor(
@@ -176,8 +197,18 @@ void OvCore::ECS::Components::UI::CImage::RebuildMesh()
 	m_mesh = std::make_unique<OvRendering::Resources::Mesh>(vertices, indices);
 }
 
+void OvCore::ECS::Components::UI::CImage::ValidateTextureReference()
+{
+	if (m_texture && !IsRegisteredTexture(m_texture))
+	{
+		m_texture = nullptr;
+	}
+}
+
 void OvCore::ECS::Components::UI::CImage::RefreshMaterial()
 {
+	ValidateTextureReference();
+
 	if (!m_material)
 	{
 		m_material = std::make_unique<OvCore::Resources::Material>();

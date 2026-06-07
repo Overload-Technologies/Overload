@@ -32,6 +32,10 @@ namespace
 {
 	const std::string kPickingPassName = "PICKING_PASS";
 	const std::string kSkinningFeatureName = std::string{ OvCore::Rendering::SkinningUtils::kFeatureName };
+	constexpr float kDistanceBasedGizmoScale = -1.0f;
+	constexpr float kUIScreenSpaceGizmoScale = 80.0f;
+	constexpr float kUIScreenSpaceGizmoDepth = 1000.0f;
+	constexpr const char* kGizmoScaleUniform = "u_GizmoScale";
 
 	void PreparePickingMaterial(
 		const OvCore::ECS::Actor& p_actor,
@@ -124,12 +128,17 @@ namespace
 		return { result.x, result.y, result.z };
 	}
 
-	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
+	OvMaths::FMatrix4 CreateUIGizmoProjectionMatrix(const OvMaths::FVector2& p_renderSize)
 	{
 		const auto renderSize = OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_renderSize);
 		const auto aspectRatio = renderSize.x / renderSize.y;
 
-		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
+		return OvMaths::FMatrix4::CreateOrthographic(
+			renderSize.y * 0.5f,
+			aspectRatio,
+			-kUIScreenSpaceGizmoDepth,
+			kUIScreenSpaceGizmoDepth
+		);
 	}
 
 	OvMaths::FVector2 GetResolvedElementSize(
@@ -256,6 +265,7 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 	m_gizmoPickingMaterial.SetGPUInstances(3);
 	m_gizmoPickingMaterial.SetProperty("u_IsBall", false);
 	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
+	m_gizmoPickingMaterial.TrySetProperty(kGizmoScaleUniform, kDistanceBasedGizmoScale);
 	m_gizmoPickingMaterial.SetDepthTest(true);
 
 	m_reflectionProbeMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
@@ -347,6 +357,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 		);
 		std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
 		std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
+		std::optional<float> gizmoScaleOverride;
 		if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
 		{
 			const auto renderSize = OvMaths::FVector2{
@@ -354,7 +365,8 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 				static_cast<float>(frameDescriptor.renderHeight)
 			};
 			gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
-			gizmoProjectionMatrixOverride = CreateUIProjectionMatrix(renderSize);
+			gizmoProjectionMatrixOverride = CreateUIGizmoProjectionMatrix(renderSize);
+			gizmoScaleOverride = kUIScreenSpaceGizmoScale;
 		}
 
 		DrawPickableGizmo(
@@ -363,7 +375,8 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 			gizmoRotation,
 			debugSceneDescriptor.gizmoOperation,
 			gizmoViewMatrixOverride,
-			gizmoProjectionMatrixOverride
+			gizmoProjectionMatrixOverride,
+			gizmoScaleOverride
 		);
 	}
 
@@ -519,9 +532,12 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableGizmo(
 	const OvMaths::FQuaternion& p_rotation,
 	OvEditor::Core::EGizmoOperation p_operation,
 	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
-	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride
+	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride,
+	std::optional<float> p_scaleOverride
 )
 {
+	m_gizmoPickingMaterial.TrySetProperty(kGizmoScaleUniform, p_scaleOverride.value_or(kDistanceBasedGizmoScale));
+
 	auto modelMatrix =
 		OvMaths::FMatrix4::Translation(p_position) *
 		OvMaths::FQuaternion::ToMatrix4(OvMaths::FQuaternion::Normalize(p_rotation));

@@ -22,6 +22,7 @@ out VS_OUT
 uniform bool u_IsBall;
 uniform bool u_IsPickable;
 uniform int u_HighlightedAxis;
+uniform float u_GizmoScale;
 
 mat4 rotationMatrix(vec3 axis, float angle)
 {
@@ -49,10 +50,11 @@ void main()
         instanceModel *= rotationMatrix(vec3(1, 0, 0), radians(90)); /* Y axis */
 
     float distanceToCamera = distance(ubo_ViewPos, instanceModel[3].xyz);
+	float gizmoScale = u_GizmoScale > 0.0 ? u_GizmoScale : distanceToCamera * 0.1f;
 
 	vec3 pos = geo_Pos;
 
-    vec3 fragPos = vec3(instanceModel * vec4(pos * distanceToCamera * 0.1f, 1.0));
+    vec3 fragPos = vec3(instanceModel * vec4(pos * gizmoScale, 1.0));
 
 	if (u_IsPickable)
 	{

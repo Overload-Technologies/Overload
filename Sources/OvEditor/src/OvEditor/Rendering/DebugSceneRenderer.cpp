@@ -62,6 +62,8 @@ namespace
 	constexpr float kHoveredOutlineWidth = 2.5f;
 	constexpr float kSelectedOutlineWidth = 5.0f;
 	constexpr float kUIBoundsWidth = 1.5f;
+	constexpr float kUIScreenSpaceGizmoScale = 80.0f;
+	constexpr float kUIScreenSpaceGizmoDepth = 1000.0f;
 
 	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
 	{
@@ -202,6 +204,19 @@ namespace
 		const auto aspectRatio = renderSize.x / renderSize.y;
 
 		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
+	}
+
+	OvMaths::FMatrix4 CreateUIGizmoProjectionMatrix(const OvMaths::FVector2& p_renderSize)
+	{
+		const auto renderSize = OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_renderSize);
+		const auto aspectRatio = renderSize.x / renderSize.y;
+
+		return OvMaths::FMatrix4::CreateOrthographic(
+			renderSize.y * 0.5f,
+			aspectRatio,
+			-kUIScreenSpaceGizmoDepth,
+			kUIScreenSpaceGizmoDepth
+		);
 	}
 
 	OvMaths::FVector2 GetResolvedElementSize(
@@ -552,6 +567,7 @@ protected:
 			);
 			std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
 			std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
+			std::optional<float> gizmoScaleOverride;
 			if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
 			{
 				const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
@@ -560,7 +576,8 @@ protected:
 					static_cast<float>(frameDescriptor.renderHeight)
 				};
 				gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
-				gizmoProjectionMatrixOverride = CreateUIProjectionMatrix(renderSize);
+				gizmoProjectionMatrixOverride = CreateUIGizmoProjectionMatrix(renderSize);
+				gizmoScaleOverride = kUIScreenSpaceGizmoScale;
 			}
 			m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
 				selectedActor,
@@ -577,7 +594,8 @@ protected:
 				false,
 				debugSceneDescriptor.highlightedGizmoDirection,
 				gizmoViewMatrixOverride,
-				gizmoProjectionMatrixOverride
+				gizmoProjectionMatrixOverride,
+				gizmoScaleOverride
 			);
 		}
 		

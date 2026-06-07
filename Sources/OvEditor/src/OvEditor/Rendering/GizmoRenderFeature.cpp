@@ -30,6 +30,7 @@ namespace
 {
 	constexpr float kDistanceBasedGizmoScale = -1.0f;
 	constexpr const char* kGizmoScaleUniform = "u_GizmoScale";
+	constexpr const char* kShowZAxisUniform = "u_ShowZAxis";
 }
 
 OvEditor::Rendering::GizmoRenderFeature::GizmoRenderFeature(
@@ -44,12 +45,14 @@ OvEditor::Rendering::GizmoRenderFeature::GizmoRenderFeature(
 	m_gizmoArrowMaterial.SetProperty("u_IsBall", false);
 	m_gizmoArrowMaterial.SetProperty("u_IsPickable", false);
 	m_gizmoArrowMaterial.TrySetProperty(kGizmoScaleUniform, kDistanceBasedGizmoScale);
+	m_gizmoArrowMaterial.TrySetProperty(kShowZAxisUniform, true);
 
 	/* Gizmo Ball Material */
 	m_gizmoBallMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("Gizmo"));
 	m_gizmoBallMaterial.SetProperty("u_IsBall", true);
 	m_gizmoBallMaterial.SetProperty("u_IsPickable", false);
 	m_gizmoBallMaterial.TrySetProperty(kGizmoScaleUniform, kDistanceBasedGizmoScale);
+	m_gizmoBallMaterial.TrySetProperty(kShowZAxisUniform, true);
 }
 
 std::string GetArrowModelName(OvEditor::Core::EGizmoOperation p_operation)
@@ -78,13 +81,16 @@ void OvEditor::Rendering::GizmoRenderFeature::DrawGizmo(
 	std::optional<OvEditor::Core::GizmoBehaviour::EDirection> p_highlightedDirection,
 	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
 	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride,
-	std::optional<float> p_scaleOverride
+	std::optional<float> p_scaleOverride,
+	bool p_showZAxis
 )
 {
 	auto pso = m_renderer.CreatePipelineState();
 	const float gizmoScale = p_scaleOverride.value_or(kDistanceBasedGizmoScale);
 	m_gizmoBallMaterial.TrySetProperty(kGizmoScaleUniform, gizmoScale);
 	m_gizmoArrowMaterial.TrySetProperty(kGizmoScaleUniform, gizmoScale);
+	m_gizmoBallMaterial.TrySetProperty(kShowZAxisUniform, p_showZAxis);
+	m_gizmoArrowMaterial.TrySetProperty(kShowZAxisUniform, p_showZAxis);
 
 	auto modelMatrix =
 		OvMaths::FMatrix4::Translation(p_position) *

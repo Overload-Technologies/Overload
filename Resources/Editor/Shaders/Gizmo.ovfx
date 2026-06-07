@@ -21,6 +21,7 @@ out VS_OUT
 
 uniform bool u_IsBall;
 uniform bool u_IsPickable;
+uniform bool u_ShowZAxis;
 uniform int u_HighlightedAxis;
 uniform float u_GizmoScale;
 
@@ -42,6 +43,13 @@ mat4 rotationMatrix(vec3 axis, float angle)
 
 void main()
 {
+	if (!u_ShowZAxis && gl_InstanceID == 0)
+	{
+		vs_out.Color = vec3(0.0f);
+		gl_Position = vec4(2.0f, 2.0f, 2.0f, 1.0f);
+		return;
+	}
+
     mat4 instanceModel = ubo_Model;
 
     if (gl_InstanceID == 1) 

@@ -568,6 +568,7 @@ protected:
 			std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
 			std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
 			std::optional<float> gizmoScaleOverride;
+			bool showGizmoZAxis = true;
 			if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
 			{
 				const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
@@ -578,6 +579,7 @@ protected:
 				gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
 				gizmoProjectionMatrixOverride = CreateUIGizmoProjectionMatrix(renderSize);
 				gizmoScaleOverride = kUIScreenSpaceGizmoScale;
+				showGizmoZAxis = false;
 			}
 			m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
 				selectedActor,
@@ -595,7 +597,8 @@ protected:
 				debugSceneDescriptor.highlightedGizmoDirection,
 				gizmoViewMatrixOverride,
 				gizmoProjectionMatrixOverride,
-				gizmoScaleOverride
+				gizmoScaleOverride,
+				showGizmoZAxis
 			);
 		}
 		

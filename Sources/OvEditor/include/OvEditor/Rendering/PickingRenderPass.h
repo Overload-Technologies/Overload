@@ -68,7 +68,8 @@ namespace OvEditor::Rendering
 			OvEditor::Core::EGizmoOperation p_operation,
 			std::optional<OvMaths::FMatrix4> p_viewMatrixOverride = std::nullopt,
 			std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride = std::nullopt,
-			std::optional<float> p_scaleOverride = std::nullopt
+			std::optional<float> p_scaleOverride = std::nullopt,
+			bool p_showZAxis = true
 		);
 
 	private:

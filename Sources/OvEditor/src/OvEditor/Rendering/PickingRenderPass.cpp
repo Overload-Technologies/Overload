@@ -36,6 +36,7 @@ namespace
 	constexpr float kUIScreenSpaceGizmoScale = 80.0f;
 	constexpr float kUIScreenSpaceGizmoDepth = 1000.0f;
 	constexpr const char* kGizmoScaleUniform = "u_GizmoScale";
+	constexpr const char* kShowZAxisUniform = "u_ShowZAxis";
 
 	void PreparePickingMaterial(
 		const OvCore::ECS::Actor& p_actor,
@@ -266,6 +267,7 @@ OvEditor::Rendering::PickingRenderPass::PickingRenderPass(OvRendering::Core::Com
 	m_gizmoPickingMaterial.SetProperty("u_IsBall", false);
 	m_gizmoPickingMaterial.SetProperty("u_IsPickable", true);
 	m_gizmoPickingMaterial.TrySetProperty(kGizmoScaleUniform, kDistanceBasedGizmoScale);
+	m_gizmoPickingMaterial.TrySetProperty(kShowZAxisUniform, true);
 	m_gizmoPickingMaterial.SetDepthTest(true);
 
 	m_reflectionProbeMaterial.SetShader(EDITOR_CONTEXT(editorResources)->GetShader("PickingFallback"));
@@ -358,6 +360,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 		std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
 		std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
 		std::optional<float> gizmoScaleOverride;
+		bool showGizmoZAxis = true;
 		if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
 		{
 			const auto renderSize = OvMaths::FVector2{
@@ -367,6 +370,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 			gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
 			gizmoProjectionMatrixOverride = CreateUIGizmoProjectionMatrix(renderSize);
 			gizmoScaleOverride = kUIScreenSpaceGizmoScale;
+			showGizmoZAxis = false;
 		}
 
 		DrawPickableGizmo(
@@ -376,7 +380,8 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 			debugSceneDescriptor.gizmoOperation,
 			gizmoViewMatrixOverride,
 			gizmoProjectionMatrixOverride,
-			gizmoScaleOverride
+			gizmoScaleOverride,
+			showGizmoZAxis
 		);
 	}
 
@@ -533,10 +538,12 @@ void OvEditor::Rendering::PickingRenderPass::DrawPickableGizmo(
 	OvEditor::Core::EGizmoOperation p_operation,
 	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
 	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride,
-	std::optional<float> p_scaleOverride
+	std::optional<float> p_scaleOverride,
+	bool p_showZAxis
 )
 {
 	m_gizmoPickingMaterial.TrySetProperty(kGizmoScaleUniform, p_scaleOverride.value_or(kDistanceBasedGizmoScale));
+	m_gizmoPickingMaterial.TrySetProperty(kShowZAxisUniform, p_showZAxis);
 
 	auto modelMatrix =
 		OvMaths::FMatrix4::Translation(p_position) *

@@ -128,6 +128,11 @@ namespace OvCore::ECS::Components::UI
 		OvRendering::Resources::Mesh* GetMesh() const;
 
 		/**
+		* Returns the generated text mesh for a resolved UI size, or nullptr if the text cannot be rendered
+		*/
+		OvRendering::Resources::Mesh* GetMesh(const OvMaths::FVector2& p_resolvedSize) const;
+
+		/**
 		* Returns the generated text material, or nullptr if it cannot be initialized
 		*/
 		OvRendering::Data::Material* GetMaterial();
@@ -136,6 +141,11 @@ namespace OvCore::ECS::Components::UI
 		* Returns the generated text bounds size
 		*/
 		const OvMaths::FVector2& GetSize() const;
+
+		/**
+		* Returns the generated text bounds size for a resolved UI size
+		*/
+		OvMaths::FVector2 GetSize(const OvMaths::FVector2& p_resolvedSize) const;
 
 		/**
 		* Serialize the component
@@ -161,6 +171,7 @@ namespace OvCore::ECS::Components::UI
 		OvRendering::Resources::Font* GetFont() const;
 		void MarkMeshDirty();
 		void RebuildMesh() const;
+		void RebuildMesh(const OvMaths::FVector2& p_uiSize) const;
 		void RefreshMaterial();
 
 	private:

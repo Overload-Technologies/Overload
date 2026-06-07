@@ -522,10 +522,22 @@ OvMaths::FMatrix4 OvCore::ECS::Components::CTransform::GetUIMatrix(
 	const OvMaths::FVector2& p_elementSize
 ) const
 {
+	return GetUIMatrixWithEffectiveSize(
+		p_canvasSize,
+		p_layoutOffset,
+		GetUIEffectiveSize(p_elementSize)
+	);
+}
+
+OvMaths::FMatrix4 OvCore::ECS::Components::CTransform::GetUIMatrixWithEffectiveSize(
+	const OvMaths::FVector2& p_canvasSize,
+	const OvMaths::FVector2& p_layoutOffset,
+	const OvMaths::FVector2& p_effectiveSize
+) const
+{
 	const auto position = GetUIAnchoredPosition(p_canvasSize, p_layoutOffset);
 	const auto scale = GetUIScale();
-	const auto effectiveSize = GetUIEffectiveSize(p_elementSize);
-	const auto halfSize = effectiveSize * 0.5f;
+	const auto halfSize = p_effectiveSize * 0.5f;
 	const auto& pivot = GetUIPivot();
 	const OvMaths::FVector2 pivotOffset = {
 		-pivot.x * halfSize.x,

@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <cstdint>
-#include <unordered_map>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -19,16 +18,6 @@ namespace OvCore::ECS { class Actor; }
 
 namespace OvCore::ECS::Components::UI
 {
-	struct LayoutDrivenChildSize
-	{
-		OvMaths::FVector2 transformSize = OvMaths::FVector2::Zero;
-		OvMaths::FVector2 imageSize = OvMaths::FVector2::Zero;
-		bool hasTransformSize = false;
-		bool hasImageSize = false;
-		bool width = false;
-		bool height = false;
-	};
-
 	/**
 	* Arranges direct user interface children along an axis
 	*/
@@ -36,6 +25,14 @@ namespace OvCore::ECS::Components::UI
 	{
 	public:
 		using ChildOffset = std::pair<const ECS::Actor*, OvMaths::FVector2>;
+
+		struct ChildLayout
+		{
+			const ECS::Actor* actor = nullptr;
+			OvMaths::FVector2 offset = OvMaths::FVector2::Zero;
+			OvMaths::FVector2 size = OvMaths::FVector2::Zero;
+			bool valid = false;
+		};
 
 		enum class EDirection
 		{
@@ -184,14 +181,20 @@ namespace OvCore::ECS::Components::UI
 		OvMaths::FVector2 GetChildOffset(const ECS::Actor& p_child) const;
 
 		/**
+		* Returns the resolved layout data for a direct child
+		* @param p_child
+		*/
+		std::optional<ChildLayout> GetChildLayout(const ECS::Actor& p_child) const;
+
+		/**
 		* Returns the layout offsets for direct children
 		*/
 		std::vector<ChildOffset> GetChildOffsets() const;
 
 		/**
-		* Applies controlled width/height to direct children using current layout settings
+		* Returns the resolved layout data for direct children
 		*/
-		void ApplyControlledChildrenSizes();
+		std::vector<ChildLayout> GetChildLayouts() const;
 
 		/**
 		* Serialize the component
@@ -217,9 +220,6 @@ namespace OvCore::ECS::Components::UI
 		virtual bool IsDirectionEditable() const;
 
 	private:
-		void RestoreReleasedChildrenSizes(bool p_restoreWidth, bool p_restoreHeight);
-
-	private:
 		EDirection m_direction = EDirection::HORIZONTAL;
 		float m_spacing = 0.0f;
 		OvMaths::FVector4 m_padding = OvMaths::FVector4::Zero;
@@ -229,7 +229,6 @@ namespace OvCore::ECS::Components::UI
 		bool m_controlChildrenHeight = false;
 		bool m_forceExpandWidth = false;
 		bool m_forceExpandHeight = false;
-		std::unordered_map<int64_t, LayoutDrivenChildSize> m_drivenChildSizes;
 	};
 }
 

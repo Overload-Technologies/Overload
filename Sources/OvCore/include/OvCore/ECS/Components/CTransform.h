@@ -254,6 +254,12 @@ namespace OvCore::ECS::Components
 			const OvMaths::FVector2& p_elementSize = OvMaths::FVector2::Zero
 		) const;
 
+		OvMaths::FMatrix4 GetUIMatrixWithEffectiveSize(
+			const OvMaths::FVector2& p_canvasSize,
+			const OvMaths::FVector2& p_layoutOffset,
+			const OvMaths::FVector2& p_effectiveSize
+		) const;
+
 		/**
 		* Serialize the component
 		* @param p_doc

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CTransform.h>
@@ -31,6 +32,60 @@ namespace
 		return
 			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
 			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
+	}
+
+	struct LayoutData
+	{
+		OvMaths::FVector2 offset = OvMaths::FVector2::Zero;
+		std::optional<OvMaths::FVector2> directSize;
+	};
+
+	LayoutData ResolveLayoutData(const OvCore::ECS::Actor& p_actor)
+	{
+		LayoutData result;
+		const auto* child = &p_actor;
+
+		while (const auto* parent = child->GetParent())
+		{
+			if (const auto* layout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+			{
+				if (const auto childLayout = layout->GetChildLayout(*child); childLayout && childLayout->valid)
+				{
+					result.offset += childLayout->offset;
+
+					if (child == &p_actor && childLayout->size.x > 0.0f && childLayout->size.y > 0.0f)
+					{
+						result.directSize = childLayout->size;
+					}
+				}
+			}
+
+			child = parent;
+		}
+
+		return result;
+	}
+
+	OvMaths::FMatrix4 CreateUIElementLocalMatrix(
+		const OvCore::ECS::Components::CTransform& p_transform,
+		const OvMaths::FVector2& p_canvasSize,
+		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FVector2& p_elementSize,
+		const OvMaths::FVector2& p_effectiveSize
+	)
+	{
+		auto result = p_transform.GetUIMatrixWithEffectiveSize(p_canvasSize, p_layoutOffset, p_effectiveSize);
+
+		if (p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
+		{
+			result = result * OvMaths::FMatrix4::Scaling({
+				p_effectiveSize.x / p_elementSize.x,
+				p_effectiveSize.y / p_elementSize.y,
+				1.0f
+			});
+		}
+
+		return result;
 	}
 }
 
@@ -199,6 +254,11 @@ OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetElementSize(
 		return text->GetSize();
 	}
 
+	if (const auto* layout = p_owner.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+	{
+		return layout->GetComputedSize();
+	}
+
 	if (const auto* canvas = p_owner.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
 	{
 		return GetCanvasSize(*canvas, p_renderSize);
@@ -209,20 +269,7 @@ OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetElementSize(
 
 OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(const OvCore::ECS::Actor& p_owner)
 {
-	OvMaths::FVector2 result = OvMaths::FVector2::Zero;
-	const auto* child = &p_owner;
-
-	while (const auto* parent = child->GetParent())
-	{
-		if (const auto* layout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
-		{
-			result += layout->GetChildOffset(*child);
-		}
-
-		child = parent;
-	}
-
-	return result;
+	return ResolveLayoutData(p_owner).offset;
 }
 
 float OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(
@@ -304,25 +351,19 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 	p_outElement.actor = &p_actor;
 	p_outElement.canvasActor = canvasOwner;
 	p_outElement.canvas = canvas;
+	const auto layoutData = ResolveLayoutData(p_actor);
 	p_outElement.canvasSize = GetCanvasSize(*canvas, p_renderSize);
-	p_outElement.layoutOffset = GetLayoutOffset(p_actor);
+	p_outElement.layoutOffset = layoutData.offset;
 	p_outElement.elementSize = p_elementSize;
-	p_outElement.effectiveSize = transform.GetUIEffectiveSize(p_elementSize);
+	p_outElement.effectiveSize = layoutData.directSize.value_or(transform.GetUIEffectiveSize(p_elementSize));
 	p_outElement.canvasMatrix = GetCanvasMatrix(p_actor, p_screenSpace);
-	p_outElement.localMatrix = transform.GetUIMatrix(
+	p_outElement.localMatrix = CreateUIElementLocalMatrix(
+		transform,
 		p_outElement.canvasSize,
 		p_outElement.layoutOffset,
-		p_elementSize
+		p_elementSize,
+		p_outElement.effectiveSize
 	);
-
-	if (p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
-	{
-		p_outElement.localMatrix = p_outElement.localMatrix * OvMaths::FMatrix4::Scaling({
-			p_outElement.effectiveSize.x / p_elementSize.x,
-			p_outElement.effectiveSize.y / p_elementSize.y,
-			1.0f
-		});
-	}
 
 	p_outElement.canvasScale = GetCanvasScale(*canvas, p_renderSize);
 	p_outElement.worldScale = GetUIWorldScale(*canvas, p_screenSpace);

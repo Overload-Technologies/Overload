@@ -15,7 +15,6 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/UI/CCanvas.h>
 #include <OvCore/ECS/Components/UI/CImage.h>
-#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/EngineBufferRenderFeature.h>
@@ -258,8 +257,20 @@ namespace
 		auto* material = p_text.GetMaterial();
 		if (!material) return;
 
-		auto* mesh = p_text.GetMesh();
+		const auto baseTextSize = p_text.GetSize();
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		const bool hasResolvedElement = OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+			owner,
+			p_renderSize,
+			p_screenSpace,
+			baseTextSize,
+			resolvedElement
+		);
+		const auto resolvedTextSize = hasResolvedElement ? resolvedElement.effectiveSize : baseTextSize;
+
+		auto* mesh = p_text.GetMesh(resolvedTextSize);
 		if (!mesh) return;
+		const auto renderedTextSize = p_text.GetSize(resolvedTextSize);
 
 		OvRendering::Entities::Drawable drawable{
 			.mesh = *mesh,
@@ -281,7 +292,7 @@ namespace
 				p_renderSize,
 				p_uiProjectionMatrix,
 				p_screenSpace,
-				p_text.GetSize()
+				renderedTextSize
 			)
 		);
 
@@ -333,11 +344,6 @@ namespace
 					p_drawOrder++
 				);
 			}
-		}
-
-		if (auto* layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
-		{
-			layout->ApplyControlledChildrenSizes();
 		}
 
 		for (auto* child : p_actor.GetChildren())

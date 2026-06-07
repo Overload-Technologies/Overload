@@ -459,7 +459,6 @@ protected:
 		{
 			if (auto layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
 			{
-				layout->ApplyControlledChildrenSizes();
 				DrawUIBounds(p_actor, layout->GetComputedSize());
 			}
 

@@ -200,16 +200,21 @@ namespace
 		return CLAY_SIZING_FIT(std::max(ClampNonNegative(p_minSize), kMinimumLayoutSize), kMaximumLayoutSize);
 	}
 
+	Clay_SizingAxis MakeGrowSizing(float p_minSize)
+	{
+		return CLAY_SIZING_GROW(ClampNonNegative(p_minSize), kMaximumLayoutSize);
+	}
+
 	Clay_SizingAxis MakeChildSizing(float p_preferredSize, bool p_controlSize, bool p_forceExpand)
 	{
 		if (p_controlSize)
 		{
-			return CLAY_SIZING_GROW(0.0f);
+			return MakeGrowSizing(0.0f);
 		}
 
 		if (p_forceExpand)
 		{
-			return CLAY_SIZING_GROW(ClampNonNegative(p_preferredSize));
+			return MakeGrowSizing(p_preferredSize);
 		}
 
 		return MakeFixedSizing(p_preferredSize);
@@ -430,6 +435,123 @@ namespace
 		return result;
 	}
 
+	float GetValidChildCount(
+		const std::vector<OvCore::ECS::Components::UI::ClayLayoutChildResult>& p_children
+	)
+	{
+		return static_cast<float>(std::count_if(p_children.begin(), p_children.end(), [](const auto& p_child)
+		{
+			return p_child.valid;
+		}));
+	}
+
+	void ApplyControlledSizing(
+		OvCore::ECS::Components::UI::ClayLayoutResult& p_result,
+		const OvCore::ECS::Components::UI::ClayLayoutSettings& p_settings
+	)
+	{
+		if (
+			!p_settings.controlChildrenWidth &&
+			!p_settings.controlChildrenHeight &&
+			!p_settings.forceExpandWidth &&
+			!p_settings.forceExpandHeight
+		)
+		{
+			return;
+		}
+
+		const auto childCount = GetValidChildCount(p_result.children);
+		if (childCount <= 0.0f)
+		{
+			return;
+		}
+
+		const auto padding = ToClayPadding(p_settings.padding);
+		const float spacing = static_cast<float>(ToClaySpacing(p_settings.spacing));
+		const float availableWidth = std::max(0.0f, p_result.size.x - padding.left - padding.right);
+		const float availableHeight = std::max(0.0f, p_result.size.y - padding.top - padding.bottom);
+
+		float controlledWidth = 0.0f;
+		if (p_settings.controlChildrenWidth || p_settings.forceExpandWidth)
+		{
+			if (p_settings.direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+			{
+				float occupiedWidth = 0.0f;
+				for (const auto& child : p_result.children)
+				{
+					if (child.valid)
+					{
+						occupiedWidth += child.size.x;
+					}
+				}
+
+				const float availableChildWidth = std::max(availableWidth - std::max(childCount - 1.0f, 0.0f) * spacing, 0.0f);
+				controlledWidth = p_settings.controlChildrenWidth ?
+					availableChildWidth / childCount :
+					std::max((availableChildWidth - occupiedWidth) / childCount, 0.0f);
+			}
+			else
+			{
+				controlledWidth = availableWidth;
+			}
+		}
+
+		float controlledHeight = 0.0f;
+		if (p_settings.controlChildrenHeight || p_settings.forceExpandHeight)
+		{
+			if (p_settings.direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::VERTICAL)
+			{
+				float occupiedHeight = 0.0f;
+				for (const auto& child : p_result.children)
+				{
+					if (child.valid)
+					{
+						occupiedHeight += child.size.y;
+					}
+				}
+
+				const float availableChildHeight = std::max(availableHeight - std::max(childCount - 1.0f, 0.0f) * spacing, 0.0f);
+				controlledHeight = p_settings.controlChildrenHeight ?
+					availableChildHeight / childCount :
+					std::max((availableChildHeight - occupiedHeight) / childCount, 0.0f);
+			}
+			else
+			{
+				controlledHeight = availableHeight;
+			}
+		}
+
+		for (auto& child : p_result.children)
+		{
+			if (!child.valid)
+			{
+				continue;
+			}
+
+			if (p_settings.controlChildrenWidth)
+			{
+				child.size.x = controlledWidth;
+			}
+			else if (p_settings.forceExpandWidth)
+			{
+				child.size.x = p_settings.direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL ?
+					child.size.x + controlledWidth :
+					std::max(child.size.x, controlledWidth);
+			}
+
+			if (p_settings.controlChildrenHeight)
+			{
+				child.size.y = controlledHeight;
+			}
+			else if (p_settings.forceExpandHeight)
+			{
+				child.size.y = p_settings.direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::VERTICAL ?
+					child.size.y + controlledHeight :
+					std::max(child.size.y, controlledHeight);
+			}
+		}
+	}
+
 	void ApplyAlignedOffsets(
 		OvCore::ECS::Components::UI::ClayLayoutResult& p_result,
 		const OvCore::ECS::Components::UI::ClayLayoutSettings& p_settings
@@ -532,7 +654,7 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 	);
 
 	ClayLayoutResult result;
-	result.size = finalPass.size;
+	result.size = GetRootSize(settings.containerSize, preferredPass.size);
 	result.children.reserve(p_children.size());
 
 	for (size_t i = 0; i < p_children.size(); ++i)
@@ -543,15 +665,20 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 			finalPass.childFound[i] &&
 			childBox.width > 0.0f &&
 			childBox.height > 0.0f;
+		const auto childSize = childValid ?
+			OvMaths::FVector2{ childBox.width, childBox.height } :
+			p_children[i].preferredSize;
+		const bool hasUsableChild = p_children[i].actor && childSize.x > 0.0f && childSize.y > 0.0f;
 
 		result.children.push_back({
 			.actor = p_children[i].actor,
 			.offset = OvMaths::FVector2::Zero,
-			.size = childValid ? OvMaths::FVector2{ childBox.width, childBox.height } : p_children[i].preferredSize,
-			.valid = childValid
+			.size = childSize,
+			.valid = hasUsableChild
 		});
 	}
 
+	ApplyControlledSizing(result, settings);
 	ApplyAlignedOffsets(result, settings);
 
 	return result;

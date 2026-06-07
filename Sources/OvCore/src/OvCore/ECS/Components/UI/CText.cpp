@@ -542,6 +542,12 @@ OvRendering::Resources::Mesh* OvCore::ECS::Components::UI::CText::GetMesh() cons
 	return m_mesh.get();
 }
 
+OvRendering::Resources::Mesh* OvCore::ECS::Components::UI::CText::GetMesh(const OvMaths::FVector2& p_resolvedSize) const
+{
+	RebuildMesh(p_resolvedSize);
+	return m_mesh.get();
+}
+
 OvRendering::Data::Material* OvCore::ECS::Components::UI::CText::GetMaterial()
 {
 	RefreshMaterial();
@@ -551,6 +557,12 @@ OvRendering::Data::Material* OvCore::ECS::Components::UI::CText::GetMaterial()
 const OvMaths::FVector2& OvCore::ECS::Components::UI::CText::GetSize() const
 {
 	RebuildMesh();
+	return m_size;
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::UI::CText::GetSize(const OvMaths::FVector2& p_resolvedSize) const
+{
+	RebuildMesh(p_resolvedSize);
 	return m_size;
 }
 
@@ -696,16 +708,20 @@ void OvCore::ECS::Components::UI::CText::MarkMeshDirty()
 
 void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 {
-	const auto uiSize = owner.transform.GetUISize();
-	if (!m_meshDirty && IsSameSize(m_lastUISize, uiSize))
+	RebuildMesh(owner.transform.GetUISize());
+}
+
+void OvCore::ECS::Components::UI::CText::RebuildMesh(const OvMaths::FVector2& p_uiSize) const
+{
+	if (!m_meshDirty && IsSameSize(m_lastUISize, p_uiSize))
 	{
 		return;
 	}
 
 	m_meshDirty = false;
-	m_lastUISize = uiSize;
+	m_lastUISize = p_uiSize;
 	m_mesh.reset();
-	m_size = ResolveTextSize(OvMaths::FVector2::Zero, uiSize);
+	m_size = ResolveTextSize(OvMaths::FVector2::Zero, p_uiSize);
 
 	auto* font = GetFont();
 	if (!font || m_text.empty() || !font->EnsurePixelSize(m_fontSize))
@@ -747,7 +763,7 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	float maxY = std::numeric_limits<float>::lowest();
 
 	const auto* fallbackGlyph = font->GetGlyph('?', m_fontSize);
-	const auto wrappedText = WrapTextToWidth(m_text, *font, fallbackGlyph, m_fontSize, scale, uiSize.x);
+	const auto wrappedText = WrapTextToWidth(m_text, *font, fallbackGlyph, m_fontSize, scale, p_uiSize.x);
 
 	for (const char character : wrappedText)
 	{
@@ -822,7 +838,7 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 	};
 
 	const auto contentSize = m_size;
-	m_size = ResolveTextSize(contentSize, uiSize);
+	m_size = ResolveTextSize(contentSize, p_uiSize);
 
 	for (const auto& line : lines)
 	{

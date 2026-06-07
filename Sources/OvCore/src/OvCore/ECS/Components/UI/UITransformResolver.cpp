@@ -211,9 +211,19 @@ OvCore::ECS::Components::UI::UITransformResolver::LayoutData OvCore::ECS::Compon
 			{
 				result.offset += childLayout->offset;
 
-				if (child == &p_owner && childLayout->size.x > 0.0f && childLayout->size.y > 0.0f)
+				if (child == &p_owner)
 				{
-					result.directSize = childLayout->size;
+					if (childLayout->size.x > 0.0f)
+					{
+						result.directSize.x = childLayout->size.x;
+						result.hasDirectWidth = true;
+					}
+
+					if (childLayout->size.y > 0.0f)
+					{
+						result.directSize.y = childLayout->size.y;
+						result.hasDirectHeight = true;
+					}
 				}
 			}
 		}

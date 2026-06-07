@@ -49,11 +49,11 @@ namespace
 			p_effectiveSize
 		);
 
-		if (p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
+		if (p_elementSize.x > 0.0f || p_elementSize.y > 0.0f)
 		{
 			result = result * OvMaths::FMatrix4::Scaling({
-				p_effectiveSize.x / p_elementSize.x,
-				p_effectiveSize.y / p_elementSize.y,
+				p_elementSize.x > 0.0f ? p_effectiveSize.x / p_elementSize.x : 1.0f,
+				p_elementSize.y > 0.0f ? p_effectiveSize.y / p_elementSize.y : 1.0f,
 				1.0f
 			});
 		}
@@ -304,9 +304,15 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 	p_outElement.canvasSize = GetCanvasSize(*canvas, p_renderSize);
 	p_outElement.layoutOffset = layoutData.offset;
 	p_outElement.elementSize = p_elementSize;
-	p_outElement.effectiveSize = layoutData.directSize.value_or(
-		OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(transform, p_elementSize)
-	);
+	p_outElement.effectiveSize = OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(transform, p_elementSize);
+	if (layoutData.hasDirectWidth)
+	{
+		p_outElement.effectiveSize.x = layoutData.directSize.x;
+	}
+	if (layoutData.hasDirectHeight)
+	{
+		p_outElement.effectiveSize.y = layoutData.directSize.y;
+	}
 	p_outElement.canvasMatrix = GetCanvasMatrix(p_actor, p_screenSpace);
 	p_outElement.localMatrix = CreateUIElementLocalMatrix(
 		transform,

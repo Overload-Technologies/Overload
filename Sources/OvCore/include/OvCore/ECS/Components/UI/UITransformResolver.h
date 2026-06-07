@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <optional>
-
 #include <OvCore/ECS/Components/CTransform.h>
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FVector2.h>
@@ -19,7 +17,9 @@ namespace OvCore::ECS::Components::UI::UITransformResolver
 	struct LayoutData
 	{
 		OvMaths::FVector2 offset = OvMaths::FVector2::Zero;
-		std::optional<OvMaths::FVector2> directSize;
+		OvMaths::FVector2 directSize = OvMaths::FVector2::Zero;
+		bool hasDirectWidth = false;
+		bool hasDirectHeight = false;
 	};
 
 	CTransform::EUIAnchorPreset ToAnchorPreset(int p_value);

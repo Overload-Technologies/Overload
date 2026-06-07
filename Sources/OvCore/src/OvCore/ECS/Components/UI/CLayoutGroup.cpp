@@ -11,6 +11,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #ifdef _MSC_VER
@@ -359,12 +360,56 @@ namespace
 		}
 	}
 
+	OvCore::ECS::Actor* FindDirectChildByID(OvCore::ECS::Actor& p_owner, int64_t p_childID)
+	{
+		for (auto* child : p_owner.GetChildren())
+		{
+			if (child && child->GetID() == p_childID)
+			{
+				return child;
+			}
+		}
+
+		return nullptr;
+	}
+
+	void CaptureDrivenChildSize(
+		OvCore::ECS::Actor& p_child,
+		OvCore::ECS::Components::UI::LayoutDrivenChildSize& p_drivenSize,
+		bool p_appliesWidth,
+		bool p_appliesHeight
+	)
+	{
+		if (p_child.transform.HasActiveUIData() && !p_drivenSize.hasTransformSize)
+		{
+			p_drivenSize.transformSize = p_child.transform.GetUISize();
+			p_drivenSize.hasTransformSize = true;
+		}
+
+		if (auto* image = p_child.GetComponent<OvCore::ECS::Components::UI::CImage>(); image && !p_drivenSize.hasImageSize)
+		{
+			p_drivenSize.imageSize = image->GetSize();
+			p_drivenSize.hasImageSize = true;
+		}
+
+		if (p_appliesWidth)
+		{
+			p_drivenSize.width = true;
+		}
+
+		if (p_appliesHeight)
+		{
+			p_drivenSize.height = true;
+		}
+	}
+
 	void ApplyControlledSizeToChildren(
 		const std::vector<LayoutChild>& p_children,
 		bool p_controlChildrenWidth,
 		bool p_controlChildrenHeight,
 		bool p_forceExpandWidth,
-		bool p_forceExpandHeight
+		bool p_forceExpandHeight,
+		std::unordered_map<int64_t, OvCore::ECS::Components::UI::LayoutDrivenChildSize>& p_drivenChildSizes
 	)
 	{
 		const bool appliesWidth = p_controlChildrenWidth || p_forceExpandWidth;
@@ -381,6 +426,9 @@ namespace
 			{
 				continue;
 			}
+
+			auto& drivenSize = p_drivenChildSizes[child.actor->GetID()];
+			CaptureDrivenChildSize(*child.actor, drivenSize, appliesWidth, appliesHeight);
 
 			if (auto* image = child.actor->GetComponent<OvCore::ECS::Components::UI::CImage>())
 			{
@@ -658,7 +706,14 @@ OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment OvCore::ECS::Compo
 
 void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenWidth(bool p_controlChildrenWidth)
 {
+	const bool wasDrivingWidth = m_controlChildrenWidth || m_forceExpandWidth;
 	m_controlChildrenWidth = p_controlChildrenWidth;
+	const bool isDrivingWidth = m_controlChildrenWidth || m_forceExpandWidth;
+
+	if (wasDrivingWidth && !isDrivingWidth)
+	{
+		RestoreReleasedChildrenSizes(true, false);
+	}
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenWidth() const
@@ -668,7 +723,14 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenWidth() const
 
 void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenHeight(bool p_controlChildrenHeight)
 {
+	const bool wasDrivingHeight = m_controlChildrenHeight || m_forceExpandHeight;
 	m_controlChildrenHeight = p_controlChildrenHeight;
+	const bool isDrivingHeight = m_controlChildrenHeight || m_forceExpandHeight;
+
+	if (wasDrivingHeight && !isDrivingHeight)
+	{
+		RestoreReleasedChildrenSizes(false, true);
+	}
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
@@ -678,7 +740,14 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
 
 void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandWidth(bool p_forceExpandWidth)
 {
+	const bool wasDrivingWidth = m_controlChildrenWidth || m_forceExpandWidth;
 	m_forceExpandWidth = p_forceExpandWidth;
+	const bool isDrivingWidth = m_controlChildrenWidth || m_forceExpandWidth;
+
+	if (wasDrivingWidth && !isDrivingWidth)
+	{
+		RestoreReleasedChildrenSizes(true, false);
+	}
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandWidth() const
@@ -688,7 +757,14 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandWidth() const
 
 void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandHeight(bool p_forceExpandHeight)
 {
+	const bool wasDrivingHeight = m_controlChildrenHeight || m_forceExpandHeight;
 	m_forceExpandHeight = p_forceExpandHeight;
+	const bool isDrivingHeight = m_controlChildrenHeight || m_forceExpandHeight;
+
+	if (wasDrivingHeight && !isDrivingHeight)
+	{
+		RestoreReleasedChildrenSizes(false, true);
+	}
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandHeight() const
@@ -699,6 +775,80 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandHeight() const
 bool OvCore::ECS::Components::UI::CLayoutGroup::IsDirectionEditable() const
 {
 	return true;
+}
+
+void OvCore::ECS::Components::UI::CLayoutGroup::RestoreReleasedChildrenSizes(bool p_restoreWidth, bool p_restoreHeight)
+{
+	if ((!p_restoreWidth && !p_restoreHeight) || m_drivenChildSizes.empty())
+	{
+		return;
+	}
+
+	for (auto it = m_drivenChildSizes.begin(); it != m_drivenChildSizes.end();)
+	{
+		auto& drivenSize = it->second;
+		auto* child = FindDirectChildByID(owner, it->first);
+
+		if (child)
+		{
+			if (drivenSize.hasImageSize)
+			{
+				if (auto* image = child->GetComponent<CImage>())
+				{
+					auto nextSize = image->GetSize();
+					if (p_restoreWidth && drivenSize.width)
+					{
+						nextSize.x = drivenSize.imageSize.x;
+					}
+					if (p_restoreHeight && drivenSize.height)
+					{
+						nextSize.y = drivenSize.imageSize.y;
+					}
+
+					if (ShouldUpdateControlledSize(image->GetSize(), nextSize, p_restoreWidth, p_restoreHeight))
+					{
+						image->SetSize(nextSize);
+					}
+				}
+			}
+
+			if (drivenSize.hasTransformSize && child->transform.HasUIData())
+			{
+				auto nextSize = child->transform.GetUISize();
+				if (p_restoreWidth && drivenSize.width)
+				{
+					nextSize.x = drivenSize.transformSize.x;
+				}
+				if (p_restoreHeight && drivenSize.height)
+				{
+					nextSize.y = drivenSize.transformSize.y;
+				}
+
+				if (ShouldUpdateControlledSize(child->transform.GetUISize(), nextSize, p_restoreWidth, p_restoreHeight))
+				{
+					child->transform.SetUISize(nextSize);
+				}
+			}
+		}
+
+		if (p_restoreWidth)
+		{
+			drivenSize.width = false;
+		}
+		if (p_restoreHeight)
+		{
+			drivenSize.height = false;
+		}
+
+		if (!drivenSize.width && !drivenSize.height)
+		{
+			it = m_drivenChildSizes.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
 }
 
 OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffset(const ECS::Actor& p_child) const
@@ -789,7 +939,8 @@ void OvCore::ECS::Components::UI::CLayoutGroup::ApplyControlledChildrenSizes()
 		m_controlChildrenWidth,
 		m_controlChildrenHeight,
 		m_forceExpandWidth,
-		m_forceExpandHeight
+		m_forceExpandHeight,
+		m_drivenChildSizes
 	);
 }
 

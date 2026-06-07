@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -17,6 +19,16 @@ namespace OvCore::ECS { class Actor; }
 
 namespace OvCore::ECS::Components::UI
 {
+	struct LayoutDrivenChildSize
+	{
+		OvMaths::FVector2 transformSize = OvMaths::FVector2::Zero;
+		OvMaths::FVector2 imageSize = OvMaths::FVector2::Zero;
+		bool hasTransformSize = false;
+		bool hasImageSize = false;
+		bool width = false;
+		bool height = false;
+	};
+
 	/**
 	* Arranges direct user interface children along an axis
 	*/
@@ -205,6 +217,9 @@ namespace OvCore::ECS::Components::UI
 		virtual bool IsDirectionEditable() const;
 
 	private:
+		void RestoreReleasedChildrenSizes(bool p_restoreWidth, bool p_restoreHeight);
+
+	private:
 		EDirection m_direction = EDirection::HORIZONTAL;
 		float m_spacing = 0.0f;
 		OvMaths::FVector4 m_padding = OvMaths::FVector4::Zero;
@@ -214,6 +229,7 @@ namespace OvCore::ECS::Components::UI
 		bool m_controlChildrenHeight = false;
 		bool m_forceExpandWidth = false;
 		bool m_forceExpandHeight = false;
+		std::unordered_map<int64_t, LayoutDrivenChildSize> m_drivenChildSizes;
 	};
 }
 

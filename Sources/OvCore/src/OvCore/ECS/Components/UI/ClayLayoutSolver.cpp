@@ -40,7 +40,6 @@ namespace
 	struct ClayLayoutPassResult
 	{
 		OvMaths::FVector2 size = OvMaths::FVector2::Zero;
-		Clay_BoundingBox containerBox = {};
 		std::vector<Clay_BoundingBox> childBoxes;
 		std::vector<bool> childFound;
 	};
@@ -299,7 +298,6 @@ namespace
 			std::max(containerData.boundingBox.width, kMinimumLayoutSize),
 			std::max(containerData.boundingBox.height, kMinimumLayoutSize)
 		};
-		result.containerBox = containerData.boundingBox;
 
 		result.childBoxes.reserve(childIds.size());
 		result.childFound.reserve(childIds.size());
@@ -322,14 +320,14 @@ namespace
 	}
 
 	OvMaths::FVector2 ToChildOffset(
-		const Clay_BoundingBox& p_childBox,
-		const Clay_BoundingBox& p_containerBox,
+		const OvMaths::FVector2& p_childTopLeft,
+		const OvMaths::FVector2& p_childSize,
 		const OvMaths::FVector2& p_layoutSize,
 		const OvMaths::FVector2& p_pivot
 	)
 	{
-		const float centerX = p_childBox.x - p_containerBox.x + p_childBox.width * 0.5f;
-		const float centerY = p_childBox.y - p_containerBox.y + p_childBox.height * 0.5f;
+		const float centerX = p_childTopLeft.x + p_childSize.x * 0.5f;
+		const float centerY = p_childTopLeft.y + p_childSize.y * 0.5f;
 		const auto halfSize = p_layoutSize * 0.5f;
 		const OvMaths::FVector2 pivotOffset = {
 			-p_pivot.x * halfSize.x,
@@ -340,6 +338,145 @@ namespace
 			centerX - halfSize.x + pivotOffset.x,
 			halfSize.y - centerY + pivotOffset.y
 		};
+	}
+
+	float GetHorizontalAlignmentOffset(
+		OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment p_alignment,
+		float p_availableWidth,
+		float p_contentWidth
+	)
+	{
+		const float extraSpace = std::max(0.0f, p_availableWidth - p_contentWidth);
+
+		switch (p_alignment)
+		{
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::LEFT:
+			return 0.0f;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::RIGHT:
+			return extraSpace;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment::CENTER:
+		default:
+			return extraSpace * 0.5f;
+		}
+	}
+
+	float GetVerticalAlignmentOffset(
+		OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment p_alignment,
+		float p_availableHeight,
+		float p_contentHeight
+	)
+	{
+		const float extraSpace = std::max(0.0f, p_availableHeight - p_contentHeight);
+
+		switch (p_alignment)
+		{
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::TOP:
+			return 0.0f;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::BOTTOM:
+			return extraSpace;
+		case OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment::CENTER:
+		default:
+			return extraSpace * 0.5f;
+		}
+	}
+
+	OvMaths::FVector2 GetChildrenContentSize(
+		const std::vector<OvCore::ECS::Components::UI::ClayLayoutChildResult>& p_children,
+		OvCore::ECS::Components::UI::CLayoutGroup::EDirection p_direction,
+		float p_spacing
+	)
+	{
+		if (p_children.empty())
+		{
+			return OvMaths::FVector2::Zero;
+		}
+
+		OvMaths::FVector2 result = OvMaths::FVector2::Zero;
+
+		for (const auto& child : p_children)
+		{
+			if (!child.valid)
+			{
+				continue;
+			}
+
+			if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+			{
+				result.x += child.size.x;
+				result.y = std::max(result.y, child.size.y);
+			}
+			else
+			{
+				result.x = std::max(result.x, child.size.x);
+				result.y += child.size.y;
+			}
+		}
+
+		const auto validChildCount = static_cast<float>(std::count_if(p_children.begin(), p_children.end(), [](const auto& p_child)
+		{
+			return p_child.valid;
+		}));
+		const float gapSize = p_spacing * std::max(validChildCount - 1.0f, 0.0f);
+
+		if (p_direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+		{
+			result.x += gapSize;
+		}
+		else
+		{
+			result.y += gapSize;
+		}
+
+		return result;
+	}
+
+	void ApplyAlignedOffsets(
+		OvCore::ECS::Components::UI::ClayLayoutResult& p_result,
+		const OvCore::ECS::Components::UI::ClayLayoutSettings& p_settings
+	)
+	{
+		const auto padding = ToClayPadding(p_settings.padding);
+		const float spacing = static_cast<float>(ToClaySpacing(p_settings.spacing));
+		const float availableWidth = std::max(0.0f, p_result.size.x - padding.left - padding.right);
+		const float availableHeight = std::max(0.0f, p_result.size.y - padding.top - padding.bottom);
+		const auto contentSize = GetChildrenContentSize(p_result.children, p_settings.direction, spacing);
+
+		if (p_settings.direction == OvCore::ECS::Components::UI::CLayoutGroup::EDirection::HORIZONTAL)
+		{
+			float childLeft = static_cast<float>(padding.left) +
+				GetHorizontalAlignmentOffset(p_settings.horizontalAlignment, availableWidth, contentSize.x);
+
+			for (auto& child : p_result.children)
+			{
+				if (!child.valid)
+				{
+					continue;
+				}
+
+				const float childTop = static_cast<float>(padding.top) +
+					GetVerticalAlignmentOffset(p_settings.verticalAlignment, availableHeight, child.size.y);
+				child.offset = ToChildOffset({ childLeft, childTop }, child.size, p_result.size, p_settings.pivot);
+				childLeft += child.size.x + spacing;
+			}
+		}
+		else
+		{
+			float childTop = static_cast<float>(padding.top) +
+				GetVerticalAlignmentOffset(p_settings.verticalAlignment, availableHeight, contentSize.y);
+
+			for (auto& child : p_result.children)
+			{
+				if (!child.valid)
+				{
+					continue;
+				}
+
+				const float childLeft = static_cast<float>(padding.left) +
+					GetHorizontalAlignmentOffset(p_settings.horizontalAlignment, availableWidth, child.size.x);
+				child.offset = ToChildOffset({ childLeft, childTop }, child.size, p_result.size, p_settings.pivot);
+				childTop += child.size.y + spacing;
+			}
+		}
 	}
 }
 
@@ -409,11 +546,13 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 
 		result.children.push_back({
 			.actor = p_children[i].actor,
-			.offset = childValid ? ToChildOffset(childBox, finalPass.containerBox, result.size, settings.pivot) : OvMaths::FVector2::Zero,
+			.offset = OvMaths::FVector2::Zero,
 			.size = childValid ? OvMaths::FVector2{ childBox.width, childBox.height } : p_children[i].preferredSize,
 			.valid = childValid
 		});
 	}
+
+	ApplyAlignedOffsets(result, settings);
 
 	return result;
 }

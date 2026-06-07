@@ -609,16 +609,6 @@ void OvCore::ECS::Components::CTransform::OnDeserialize(tinyxml2::XMLDocument & 
 
 void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
-	auto getRotation = [this]
-	{ 
-		return OvMaths::FQuaternion::EulerAngles(GetLocalRotation());
-	};
-
-	auto setRotation = [this](OvMaths::FVector3 result)
-	{
-		SetLocalRotation(OvMaths::FQuaternion(result));
-	};
-
 	if (HasActiveUIData())
 	{
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Anchored Position (px)");
@@ -684,6 +674,25 @@ void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetCont
 			kMaximumPivot
 		);
 
+		OvCore::Helpers::GUIDrawer::DrawScalar<float>(
+			p_root,
+			"Rotation",
+			[this]() { return GetUIRotation(); },
+			[this](float p_value) { SetUIRotation(p_value); },
+			0.05f,
+			OvCore::Helpers::GUIDrawer::_MIN_FLOAT,
+			OvCore::Helpers::GUIDrawer::_MAX_FLOAT
+		);
+
+		OvCore::Helpers::GUIDrawer::DrawVec2(
+			p_root,
+			"Scale",
+			[this]() { return GetUIScale(); },
+			[this](OvMaths::FVector2 p_value) { SetUIScale(p_value); },
+			0.05f,
+			kMinimumScale
+		);
+
 		OvCore::Helpers::GUIDrawer::CreateTitle(p_root, "Anchor Preset");
 		auto& anchorPreset = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetUIAnchorPreset()));
 		anchorPreset.disabled = IsDrivenByLayout(owner);
@@ -712,9 +721,18 @@ void OvCore::ECS::Components::CTransform::OnInspector(OvUI::Internal::WidgetCont
 	}
 	else
 	{
-		OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Position", std::bind(&CTransform::GetLocalPosition, this), std::bind(&CTransform::SetLocalPosition, this, std::placeholders::_1), 0.05f);
-	}
+		auto getRotation = [this]
+		{
+			return OvMaths::FQuaternion::EulerAngles(GetLocalRotation());
+		};
 
-	OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Rotation", getRotation, setRotation, 0.05f);
-	OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Scale", std::bind(&CTransform::GetLocalScale, this), std::bind(&CTransform::SetLocalScale, this, std::placeholders::_1), 0.05f, 0.0001f);
+		auto setRotation = [this](OvMaths::FVector3 result)
+		{
+			SetLocalRotation(OvMaths::FQuaternion(result));
+		};
+
+		OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Position", std::bind(&CTransform::GetLocalPosition, this), std::bind(&CTransform::SetLocalPosition, this, std::placeholders::_1), 0.05f);
+		OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Rotation", getRotation, setRotation, 0.05f);
+		OvCore::Helpers::GUIDrawer::DrawVec3(p_root, "Scale", std::bind(&CTransform::GetLocalScale, this), std::bind(&CTransform::SetLocalScale, this, std::placeholders::_1), 0.05f, 0.0001f);
+	}
 }

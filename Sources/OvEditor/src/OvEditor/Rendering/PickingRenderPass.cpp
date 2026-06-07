@@ -4,16 +4,11 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <ranges>
 #include <string>
 
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
-#include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
-#include <OvCore/ECS/Components/UI/CCanvas.h>
-#include <OvCore/ECS/Components/UI/CImage.h>
-#include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/FramebufferUtil.h>
 #include <OvCore/Rendering/SkinningDrawableDescriptor.h>
@@ -56,127 +51,6 @@ namespace
 		}
 	}
 
-	const OvCore::ECS::Components::UI::CCanvas* FindCanvas(const OvCore::ECS::Actor& p_owner)
-	{
-		return OvCore::Rendering::UIRenderingUtils::FindCanvas(p_owner);
-	}
-
-	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
-	{
-		auto* current = &p_actor;
-
-		while (current)
-		{
-			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-			{
-				return current;
-			}
-
-			current = current->GetParent();
-		}
-
-		return nullptr;
-	}
-
-	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
-	{
-		return
-			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
-			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-	}
-
-	OvMaths::FMatrix4 GetCanvasMatrix(
-		OvCore::ECS::Actor& p_actor,
-		bool p_screenSpace
-	)
-	{
-		if (p_screenSpace)
-		{
-			return OvMaths::FMatrix4::Identity;
-		}
-
-		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
-		{
-			return CalculateUnscaledModelMatrix(*canvasOwner);
-		}
-
-		return OvMaths::FMatrix4::Identity;
-	}
-
-	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
-	{
-		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_owner, p_renderSize);
-	}
-
-	float GetCanvasScale(const OvCore::ECS::Actor& p_owner, const OvMaths::FVector2& p_renderSize)
-	{
-		if (const auto* canvas = FindCanvas(p_owner))
-		{
-			return OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
-		}
-
-		return 1.0f;
-	}
-
-	OvMaths::FVector2 GetLayoutOffset(const OvCore::ECS::Actor& p_owner)
-	{
-		return OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_owner);
-	}
-
-	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
-	{
-		const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
-		return { result.x, result.y, result.z };
-	}
-
-	OvMaths::FMatrix4 CreateUIGizmoProjectionMatrix(const OvMaths::FVector2& p_renderSize)
-	{
-		const auto renderSize = OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_renderSize);
-		const auto aspectRatio = renderSize.x / renderSize.y;
-
-		return OvMaths::FMatrix4::CreateOrthographic(
-			renderSize.y * 0.5f,
-			aspectRatio,
-			-kUIScreenSpaceGizmoDepth,
-			kUIScreenSpaceGizmoDepth
-		);
-	}
-
-	OvMaths::FVector2 GetResolvedElementSize(
-		const OvCore::ECS::Components::CTransform& p_transform,
-		const OvMaths::FVector2& p_elementSize
-	)
-	{
-		if (!p_transform.HasActiveUIData())
-		{
-			return {
-				std::max(p_elementSize.x, 0.0f),
-				std::max(p_elementSize.y, 0.0f)
-			};
-		}
-
-		return p_transform.GetUIEffectiveSize(p_elementSize);
-	}
-
-	void ApplyUISizeOverride(
-		OvMaths::FMatrix4& p_matrix,
-		const OvCore::ECS::Components::CTransform& p_transform,
-		const OvMaths::FVector2& p_elementSize
-	)
-	{
-		if (!p_transform.HasActiveUIData() || p_elementSize.x <= 0.0f || p_elementSize.y <= 0.0f)
-		{
-			return;
-		}
-
-		const auto resolvedSize = GetResolvedElementSize(p_transform, p_elementSize);
-		p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
-			resolvedSize.x / p_elementSize.x,
-			resolvedSize.y / p_elementSize.y,
-			1.0f
-		});
-	}
-
 	bool TryGetUIActorGizmoTransform(
 		const bool p_includeUI,
 		const bool p_renderUIInScreenSpace,
@@ -192,58 +66,26 @@ namespace
 			return false;
 		}
 
-		auto& transform = p_actor.transform;
-		const auto* canvas = transform.HasActiveUIData() ? FindCanvas(p_actor) : nullptr;
-		if (!transform.HasActiveUIData() || !canvas)
-		{
-			return false;
-		}
-
-		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
-		if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
-		{
-			elementSize = image->GetSize();
-		}
-		else if (auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
-		{
-			elementSize = text->GetSize();
-		}
-		else if (auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-		{
-			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, {
-				static_cast<float>(p_renderWidth),
-				static_cast<float>(p_renderHeight)
-			});
-		}
-		else
-		{
-			elementSize = transform.GetUISize();
-		}
-
 		const auto renderSize = OvMaths::FVector2{
 			static_cast<float>(p_renderWidth),
 			static_cast<float>(p_renderHeight)
 		};
-		const auto canvasSize = GetCanvasSize(p_actor, renderSize);
-		const auto layoutOffset = GetLayoutOffset(p_actor);
-		const auto canvasScale = GetCanvasScale(p_actor, renderSize);
-		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
-		auto matrix = isCanvas ?
-			OvMaths::FMatrix4::Identity :
-			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
-		if (!isCanvas)
+
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+			p_actor,
+			renderSize,
+			p_renderUIInScreenSpace,
+			resolvedElement
+		))
 		{
-			ApplyUISizeOverride(matrix, transform, elementSize);
+			return false;
 		}
 
-		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_renderUIInScreenSpace);
-		const auto unitsScale = p_renderUIInScreenSpace ? canvasScale : canvasScale * worldScale;
-		matrix =
-			GetCanvasMatrix(p_actor, p_renderUIInScreenSpace) *
-			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
-			matrix;
-
-		p_position = TransformPoint(matrix, OvMaths::FVector2::Zero);
+		p_position = OvCore::Rendering::UIRenderingUtils::TransformUIPoint(
+			resolvedElement.modelMatrix,
+			OvMaths::FVector2::Zero
+		);
 		p_rotation = p_actor.transform.GetWorldRotation();
 		return true;
 	}
@@ -368,7 +210,11 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 				static_cast<float>(frameDescriptor.renderHeight)
 			};
 			gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
-			gizmoProjectionMatrixOverride = CreateUIGizmoProjectionMatrix(renderSize);
+			gizmoProjectionMatrixOverride = OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(
+				renderSize,
+				-kUIScreenSpaceGizmoDepth,
+				kUIScreenSpaceGizmoDepth
+			);
 			gizmoScaleOverride = kUIScreenSpaceGizmoScale;
 			showGizmoZAxis = false;
 		}

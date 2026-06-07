@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <algorithm>
 #include <functional>
 #include <ranges>
 #include <string>
@@ -172,116 +171,46 @@ namespace
 		return probes;
 	}
 
-	OvMaths::FVector2 ClampCanvasSize(const OvMaths::FVector2& p_canvasSize)
-	{
-		return OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(p_canvasSize);
-	}
-
-	OvMaths::FVector2 GetCanvasSize(const OvCore::ECS::Components::UI::CCanvas& p_canvas, const OvMaths::FVector2& p_renderSize)
-	{
-		return OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_canvas, p_renderSize);
-	}
-
-	float GetCanvasScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas, const OvMaths::FVector2& p_renderSize)
-	{
-		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*p_canvas, p_renderSize) : 1.0f;
-	}
-
-	OvMaths::FMatrix4 CreateUIProjectionMatrix(const OvMaths::FVector2& p_renderSize)
-	{
-		const auto renderSize = ClampCanvasSize(p_renderSize);
-		const auto aspectRatio = renderSize.x / renderSize.y;
-
-		return OvMaths::FMatrix4::CreateOrthographic(renderSize.y * 0.5f, aspectRatio, -1.0f, 1.0f);
-	}
-
-	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
-	{
-		return
-			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
-			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-	}
-
-	float GetUIWorldScale(const OvCore::ECS::Components::UI::CCanvas* p_canvas)
-	{
-		return p_canvas ? OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*p_canvas, false) : 1.0f;
-	}
-
 	EngineDrawableDescriptor CreateUIDrawableDescriptor(
 		OvCore::ECS::Actor& p_owner,
-		const OvMaths::FVector2& p_canvasSize,
-		const OvMaths::FVector2& p_layoutOffset,
-		const OvMaths::FMatrix4& p_canvasMatrix,
+		const OvMaths::FVector2& p_renderSize,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
-		float p_worldScale,
-		float p_canvasScale,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
-		auto& transform = p_owner.transform;
-		const bool hasUIData = transform.HasActiveUIData();
-
 		EngineDrawableDescriptor descriptor{
-			.modelMatrix = hasUIData ?
-				transform.GetUIMatrix(p_canvasSize, p_layoutOffset, p_elementSize) :
-				transform.GetFTransform().GetWorldMatrix(),
+			.modelMatrix = p_owner.transform.GetFTransform().GetWorldMatrix(),
 			.userMatrix = OvMaths::FMatrix4::Identity
 		};
 
-		if (hasUIData && p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		if (OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+			p_owner,
+			p_renderSize,
+			p_screenSpace,
+			p_elementSize,
+			resolvedElement
+		))
 		{
-			const auto resolvedSize = transform.GetUIEffectiveSize(p_elementSize);
-			descriptor.modelMatrix = descriptor.modelMatrix * OvMaths::FMatrix4::Scaling({
-				resolvedSize.x / p_elementSize.x,
-				resolvedSize.y / p_elementSize.y,
-				1.0f
-			});
-		}
+			descriptor.modelMatrix = resolvedElement.modelMatrix;
 
-		const auto unitsScale = p_screenSpace ? p_canvasScale : p_canvasScale * p_worldScale;
-		descriptor.modelMatrix =
-			(hasUIData ? p_canvasMatrix : OvMaths::FMatrix4::Identity) *
-			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
-			descriptor.modelMatrix;
-
-		if (p_screenSpace)
-		{
-			descriptor.viewMatrixOverride = OvMaths::FMatrix4::Identity;
-			descriptor.projectionMatrixOverride = p_uiProjectionMatrix;
+			if (p_screenSpace)
+			{
+				descriptor.viewMatrixOverride = OvMaths::FMatrix4::Identity;
+				descriptor.projectionMatrixOverride = p_uiProjectionMatrix;
+			}
 		}
 
 		return descriptor;
 	}
 
-	OvMaths::FVector2 FindLayoutOffset(
-		const std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset>& p_offsets,
-		const OvCore::ECS::Actor& p_child
-	)
-	{
-		const auto found = std::find_if(p_offsets.begin(), p_offsets.end(), [&p_child](const auto& p_offset)
-		{
-			return p_offset.first == &p_child;
-		});
-
-		if (found != p_offsets.end())
-		{
-			return found->second;
-		}
-
-		return OvMaths::FVector2::Zero;
-	}
-
 	void AppendImageDrawable(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::ECS::Components::UI::CImage& p_image,
-		const OvMaths::FVector2& p_canvasSize,
-		const OvMaths::FVector2& p_layoutOffset,
-		const OvMaths::FMatrix4& p_canvasMatrix,
+		const OvMaths::FVector2& p_renderSize,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
-		float p_worldScale,
-		float p_canvasScale,
 		int p_drawOrder
 	)
 	{
@@ -306,13 +235,9 @@ namespace
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
 			CreateUIDrawableDescriptor(
 				owner,
-				p_canvasSize,
-				p_layoutOffset,
-				p_canvasMatrix,
+				p_renderSize,
 				p_uiProjectionMatrix,
 				p_screenSpace,
-				p_worldScale,
-				p_canvasScale,
 				p_image.GetSize()
 			)
 		);
@@ -323,13 +248,9 @@ namespace
 	void AppendTextDrawable(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::ECS::Components::UI::CText& p_text,
-		const OvMaths::FVector2& p_canvasSize,
-		const OvMaths::FVector2& p_layoutOffset,
-		const OvMaths::FMatrix4& p_canvasMatrix,
+		const OvMaths::FVector2& p_renderSize,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
-		float p_worldScale,
-		float p_canvasScale,
 		int p_drawOrder
 	)
 	{
@@ -357,13 +278,9 @@ namespace
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
 			CreateUIDrawableDescriptor(
 				owner,
-				p_canvasSize,
-				p_layoutOffset,
-				p_canvasMatrix,
+				p_renderSize,
 				p_uiProjectionMatrix,
 				p_screenSpace,
-				p_worldScale,
-				p_canvasScale,
 				p_text.GetSize()
 			)
 		);
@@ -376,9 +293,6 @@ namespace
 		OvCore::ECS::Actor& p_actor,
 		const OvMaths::FVector2& p_renderSize,
 		const OvCore::ECS::Components::UI::CCanvas* p_canvas,
-		OvMaths::FVector2 p_canvasSize,
-		OvMaths::FVector2 p_layoutOffset,
-		OvMaths::FMatrix4 p_canvasMatrix,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
 		bool p_screenSpace,
 		int& p_drawOrder
@@ -392,27 +306,18 @@ namespace
 		if (auto* canvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
 		{
 			p_canvas = canvas;
-			p_canvasSize = GetCanvasSize(*canvas, p_renderSize);
-			p_canvasMatrix = p_screenSpace ? OvMaths::FMatrix4::Identity : CalculateUnscaledModelMatrix(p_actor);
 		}
 
 		if (p_canvas)
 		{
-			const auto worldScale = GetUIWorldScale(p_canvas);
-			const auto canvasScale = GetCanvasScale(p_canvas, p_renderSize);
-
 			if (auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
 			{
 				AppendImageDrawable(
 					p_result,
 					*image,
-					p_canvasSize,
-					p_layoutOffset,
-					p_canvasMatrix,
+					p_renderSize,
 					p_uiProjectionMatrix,
 					p_screenSpace,
-					worldScale,
-					canvasScale,
 					p_drawOrder++
 				);
 			}
@@ -422,39 +327,28 @@ namespace
 				AppendTextDrawable(
 					p_result,
 					*text,
-					p_canvasSize,
-					p_layoutOffset,
-					p_canvasMatrix,
+					p_renderSize,
 					p_uiProjectionMatrix,
 					p_screenSpace,
-					worldScale,
-					canvasScale,
 					p_drawOrder++
 				);
 			}
 		}
 
-		std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> childOffsets;
 		if (auto* layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
 		{
 			layout->ApplyControlledChildrenSizes();
-			childOffsets = layout->GetChildOffsets();
 		}
 
 		for (auto* child : p_actor.GetChildren())
 		{
 			if (child)
 			{
-				const auto childLayoutOffset = p_layoutOffset + FindLayoutOffset(childOffsets, *child);
-
 				AppendHierarchyUIDrawables(
 					p_result,
 					*child,
 					p_renderSize,
 					p_canvas,
-					p_canvasSize,
-					childLayoutOffset,
-					p_canvasMatrix,
 					p_uiProjectionMatrix,
 					p_screenSpace,
 					p_drawOrder
@@ -471,7 +365,7 @@ namespace
 	)
 	{
 		int drawOrder = 0;
-		const auto uiProjectionMatrix = CreateUIProjectionMatrix(p_renderSize);
+		const auto uiProjectionMatrix = OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(p_renderSize);
 
 		for (auto* actor : p_scene.GetActors())
 		{
@@ -482,9 +376,6 @@ namespace
 					*actor,
 					p_renderSize,
 					nullptr,
-					OvMaths::FVector2::Zero,
-					OvMaths::FVector2::Zero,
-					OvMaths::FMatrix4::Identity,
 					uiProjectionMatrix,
 					p_screenSpace,
 					drawOrder

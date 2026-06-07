@@ -5,13 +5,11 @@
 */
 
 #include <algorithm>
+#include <array>
 #include <imgui.h>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
-#include <OvCore/ECS/Components/UI/CCanvas.h>
-#include <OvCore/ECS/Components/UI/CImage.h>
-#include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
@@ -39,54 +37,6 @@ namespace
 		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
 		float distance = 4.0f;
 	};
-
-	OvMaths::FVector3 TransformPoint(const OvMaths::FMatrix4& p_matrix, const OvMaths::FVector2& p_point)
-	{
-		const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
-		return { result.x, result.y, result.z };
-	}
-
-	OvCore::ECS::Actor* FindNearestCanvasOwner(OvCore::ECS::Actor& p_actor)
-	{
-		auto* current = &p_actor;
-
-		while (current)
-		{
-			if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-			{
-				return current;
-			}
-
-			current = current->GetParent();
-		}
-
-		return nullptr;
-	}
-
-	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
-	{
-		return
-			OvMaths::FMatrix4::Translation(p_actor.transform.GetWorldPosition()) *
-			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
-	}
-
-	OvMaths::FMatrix4 GetCanvasMatrix(
-		OvCore::ECS::Actor& p_actor,
-		bool p_screenSpace
-	)
-	{
-		if (p_screenSpace)
-		{
-			return OvMaths::FMatrix4::Identity;
-		}
-
-		if (auto* canvasOwner = FindNearestCanvasOwner(p_actor))
-		{
-			return CalculateUnscaledModelMatrix(*canvasOwner);
-		}
-
-		return OvMaths::FMatrix4::Identity;
-	}
 
 	float GetActor3DFocusDist(OvCore::ECS::Actor& p_actor)
 	{
@@ -158,66 +108,37 @@ namespace
 		ActorFocusTarget& p_outTarget
 	)
 	{
-		auto& transform = p_actor.transform;
-		if (!transform.HasActiveUIData())
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+			p_actor,
+			p_renderSize,
+			p_screenSpace,
+			resolvedElement
+		))
 		{
 			return false;
 		}
 
-		const auto* canvas = OvCore::Rendering::UIRenderingUtils::FindCanvas(p_actor);
-		if (!canvas)
+		p_outTarget.position = OvCore::Rendering::UIRenderingUtils::TransformUIPoint(
+			resolvedElement.modelMatrix,
+			OvMaths::FVector2::Zero
+		);
+
+		const auto halfSize = resolvedElement.elementSize * 0.5f;
+		const std::array<OvMaths::FVector3, 4> corners = {
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x,  halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x,  halfSize.y })
+		};
+
+		float focusRadius = 0.0f;
+		for (const auto& corner : corners)
 		{
-			return false;
+			focusRadius = std::max(focusRadius, OvMaths::FVector3::Length(corner - p_outTarget.position));
 		}
 
-		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
-		if (const auto* image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
-		{
-			elementSize = image->GetSize();
-		}
-		else if (const auto* text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
-		{
-			elementSize = text->GetSize();
-		}
-		else if (const auto* canvasComponent = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-		{
-			elementSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(*canvasComponent, p_renderSize);
-		}
-		else
-		{
-			elementSize = transform.GetUISize();
-		}
-
-		const auto canvasSize = OvCore::Rendering::UIRenderingUtils::GetCanvasSize(p_actor, p_renderSize);
-		const auto layoutOffset = OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(p_actor);
-		const auto canvasScale = OvCore::Rendering::UIRenderingUtils::GetCanvasScale(*canvas, p_renderSize);
-		const auto worldScale = OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(*canvas, p_screenSpace);
-		const auto unitsScale = p_screenSpace ? canvasScale : canvasScale * worldScale;
-
-		const bool isCanvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>() != nullptr;
-		auto matrix = isCanvas ?
-			OvMaths::FMatrix4::Identity :
-			transform.GetUIMatrix(canvasSize, layoutOffset, elementSize);
-
-		if (!isCanvas && elementSize.x > 0.0f && elementSize.y > 0.0f)
-		{
-			const auto resolvedSize = transform.GetUIEffectiveSize(elementSize);
-			matrix = matrix * OvMaths::FMatrix4::Scaling({
-				resolvedSize.x / elementSize.x,
-				resolvedSize.y / elementSize.y,
-				1.0f
-			});
-		}
-
-		matrix =
-			GetCanvasMatrix(p_actor, p_screenSpace) *
-			OvMaths::FMatrix4::Scaling({ unitsScale, unitsScale, 1.0f }) *
-			matrix;
-
-		const auto effectiveSize = isCanvas ? elementSize : transform.GetUIEffectiveSize(elementSize);
-		const auto focusedSize = effectiveSize * unitsScale;
-		p_outTarget.position = TransformPoint(matrix, OvMaths::FVector2::Zero);
-		p_outTarget.distance = p_screenSpace ? 4.0f : std::max(4.0f, std::max(focusedSize.x, focusedSize.y) * 2.0f);
+		p_outTarget.distance = p_screenSpace ? 4.0f : std::max(4.0f, focusRadius * 2.0f);
 		return true;
 	}
 

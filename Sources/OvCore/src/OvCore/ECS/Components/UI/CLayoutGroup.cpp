@@ -18,6 +18,7 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/UITransformResolver.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/Serializer.h>
 
@@ -107,9 +108,9 @@ namespace
 			hasElementSize = true;
 		}
 
-		if (p_child.transform.HasActiveUIData())
+		if (OvCore::ECS::Components::UI::UITransformResolver::HasActiveUIData(p_child))
 		{
-			const auto size = p_child.transform.GetUIEffectiveSize(elementSize);
+			const auto size = OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(p_child.transform, elementSize);
 			if (size.x > 0.0f && size.y > 0.0f)
 			{
 				return size;

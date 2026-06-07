@@ -246,20 +246,6 @@ namespace OvCore::ECS::Components
 		bool IsHorizontalUIPositionEditable() const;
 		bool IsVerticalUIPositionEditable() const;
 
-		OvMaths::FVector2 GetUIEffectiveSize(const OvMaths::FVector2& p_elementSize) const;
-
-		OvMaths::FMatrix4 GetUIMatrix(
-			const OvMaths::FVector2& p_canvasSize,
-			const OvMaths::FVector2& p_layoutOffset = OvMaths::FVector2::Zero,
-			const OvMaths::FVector2& p_elementSize = OvMaths::FVector2::Zero
-		) const;
-
-		OvMaths::FMatrix4 GetUIMatrixWithEffectiveSize(
-			const OvMaths::FVector2& p_canvasSize,
-			const OvMaths::FVector2& p_layoutOffset,
-			const OvMaths::FVector2& p_effectiveSize
-		) const;
-
 		/**
 		* Serialize the component
 		* @param p_doc
@@ -282,13 +268,11 @@ namespace OvCore::ECS::Components
 
 	private:
 		static EUIAnchorPreset ToUIAnchorPreset(int p_value);
-		static OvMaths::FVector2 GetUIAnchorRatio(EUIAnchorPreset p_anchorPreset);
 		static bool IsHorizontalUIPositionEditable(EUIAnchorPreset p_anchorPreset);
 		static bool IsVerticalUIPositionEditable(EUIAnchorPreset p_anchorPreset);
 
 		UIData& GetOrCreateUIData();
 		const UIData& GetUIDataOrDefault() const;
-		OvMaths::FVector2 GetUIAnchoredPosition(const OvMaths::FVector2& p_canvasSize, const OvMaths::FVector2& p_layoutOffset) const;
 
 	private:
 		OvMaths::FTransform m_transform;

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <optional>
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CTransform.h>
@@ -14,6 +13,7 @@
 #include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/UITransformResolver.h>
 #include <OvCore/Rendering/UIRenderingUtils.h>
 #include <OvMaths/FQuaternion.h>
 #include <OvMaths/FVector4.h>
@@ -34,38 +34,6 @@ namespace
 			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
 	}
 
-	struct LayoutData
-	{
-		OvMaths::FVector2 offset = OvMaths::FVector2::Zero;
-		std::optional<OvMaths::FVector2> directSize;
-	};
-
-	LayoutData ResolveLayoutData(const OvCore::ECS::Actor& p_actor)
-	{
-		LayoutData result;
-		const auto* child = &p_actor;
-
-		while (const auto* parent = child->GetParent())
-		{
-			if (const auto* layout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
-			{
-				if (const auto childLayout = layout->GetChildLayout(*child); childLayout && childLayout->valid)
-				{
-					result.offset += childLayout->offset;
-
-					if (child == &p_actor && childLayout->size.x > 0.0f && childLayout->size.y > 0.0f)
-					{
-						result.directSize = childLayout->size;
-					}
-				}
-			}
-
-			child = parent;
-		}
-
-		return result;
-	}
-
 	OvMaths::FMatrix4 CreateUIElementLocalMatrix(
 		const OvCore::ECS::Components::CTransform& p_transform,
 		const OvMaths::FVector2& p_canvasSize,
@@ -74,7 +42,12 @@ namespace
 		const OvMaths::FVector2& p_effectiveSize
 	)
 	{
-		auto result = p_transform.GetUIMatrixWithEffectiveSize(p_canvasSize, p_layoutOffset, p_effectiveSize);
+		auto result = OvCore::ECS::Components::UI::UITransformResolver::GetMatrixWithEffectiveSize(
+			p_transform,
+			p_canvasSize,
+			p_layoutOffset,
+			p_effectiveSize
+		);
 
 		if (p_elementSize.x > 0.0f && p_elementSize.y > 0.0f)
 		{
@@ -176,36 +149,12 @@ const OvCore::ECS::Components::UI::CCanvas* OvCore::Rendering::UIRenderingUtils:
 
 OvCore::ECS::Actor* OvCore::Rendering::UIRenderingUtils::FindCanvasOwner(OvCore::ECS::Actor& p_owner)
 {
-	auto* current = &p_owner;
-
-	while (current)
-	{
-		if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-		{
-			return current;
-		}
-
-		current = current->GetParent();
-	}
-
-	return nullptr;
+	return OvCore::ECS::Components::UI::UITransformResolver::FindCanvasOwner(p_owner);
 }
 
 const OvCore::ECS::Actor* OvCore::Rendering::UIRenderingUtils::FindCanvasOwner(const OvCore::ECS::Actor& p_owner)
 {
-	auto* current = &p_owner;
-
-	while (current)
-	{
-		if (current->GetComponent<OvCore::ECS::Components::UI::CCanvas>())
-		{
-			return current;
-		}
-
-		current = current->GetParent();
-	}
-
-	return nullptr;
+	return OvCore::ECS::Components::UI::UITransformResolver::FindCanvasOwner(p_owner);
 }
 
 OvMaths::FMatrix4 OvCore::Rendering::UIRenderingUtils::GetCanvasMatrix(
@@ -269,7 +218,7 @@ OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetElementSize(
 
 OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetLayoutOffset(const OvCore::ECS::Actor& p_owner)
 {
-	return ResolveLayoutData(p_owner).offset;
+	return OvCore::ECS::Components::UI::UITransformResolver::ResolveLayoutData(p_owner).offset;
 }
 
 float OvCore::Rendering::UIRenderingUtils::GetUIWorldScale(
@@ -331,7 +280,7 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 )
 {
 	const auto& transform = p_actor.transform;
-	if (!transform.HasActiveUIData())
+	if (!OvCore::ECS::Components::UI::UITransformResolver::HasActiveUIData(p_actor))
 	{
 		return false;
 	}
@@ -351,11 +300,13 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 	p_outElement.actor = &p_actor;
 	p_outElement.canvasActor = canvasOwner;
 	p_outElement.canvas = canvas;
-	const auto layoutData = ResolveLayoutData(p_actor);
+	const auto layoutData = OvCore::ECS::Components::UI::UITransformResolver::ResolveLayoutData(p_actor);
 	p_outElement.canvasSize = GetCanvasSize(*canvas, p_renderSize);
 	p_outElement.layoutOffset = layoutData.offset;
 	p_outElement.elementSize = p_elementSize;
-	p_outElement.effectiveSize = layoutData.directSize.value_or(transform.GetUIEffectiveSize(p_elementSize));
+	p_outElement.effectiveSize = layoutData.directSize.value_or(
+		OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(transform, p_elementSize)
+	);
 	p_outElement.canvasMatrix = GetCanvasMatrix(p_actor, p_screenSpace);
 	p_outElement.localMatrix = CreateUIElementLocalMatrix(
 		transform,

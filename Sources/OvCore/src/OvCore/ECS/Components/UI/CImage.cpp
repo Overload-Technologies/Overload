@@ -75,6 +75,12 @@ namespace
 OvCore::ECS::Components::UI::CImage::CImage(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	m_textureChangedEvent += [this]
+	{
+		m_textureReferenceDirty = m_texture != nullptr;
+		m_materialTextureDirty = true;
+	};
+
 	owner.transform.EnableUIData();
 	EnsureTransformSize();
 	RebuildMesh();
@@ -92,8 +98,14 @@ std::string OvCore::ECS::Components::UI::CImage::GetTypeName()
 
 void OvCore::ECS::Components::UI::CImage::SetTexture(OvRendering::Resources::Texture* p_texture)
 {
+	if (m_texture == p_texture)
+	{
+		return;
+	}
+
 	m_texture = p_texture;
-	RefreshMaterial();
+	m_textureReferenceDirty = p_texture != nullptr;
+	m_materialTextureDirty = true;
 }
 
 OvRendering::Resources::Texture* OvCore::ECS::Components::UI::CImage::GetTexture() const
@@ -131,7 +143,7 @@ void OvCore::ECS::Components::UI::CImage::SetTint(const OvMaths::FVector4& p_tin
 	m_tint.y = KeepFinite(p_tint.y, m_tint.y);
 	m_tint.z = KeepFinite(p_tint.z, m_tint.z);
 	m_tint.w = KeepFinite(p_tint.w, m_tint.w);
-	RefreshMaterial();
+	m_materialTintDirty = true;
 }
 
 const OvMaths::FVector4& OvCore::ECS::Components::UI::CImage::GetTint() const
@@ -177,7 +189,7 @@ void OvCore::ECS::Components::UI::CImage::OnDeserialize(tinyxml2::XMLDocument& p
 void OvCore::ECS::Components::UI::CImage::OnInspector(OvUI::Internal::WidgetContainer& p_root)
 {
 	ValidateTextureReference();
-	Helpers::GUIDrawer::DrawTexture(p_root, "Texture", m_texture);
+	Helpers::GUIDrawer::DrawTexture(p_root, "Texture", m_texture, &m_textureChangedEvent);
 
 	Helpers::GUIDrawer::DrawColor(
 		p_root,
@@ -233,48 +245,94 @@ void OvCore::ECS::Components::UI::CImage::RebuildMesh()
 
 void OvCore::ECS::Components::UI::CImage::ValidateTextureReference()
 {
+	m_textureReferenceDirty = false;
+
 	if (m_texture && !IsRegisteredTexture(m_texture))
 	{
 		m_texture = nullptr;
+		m_materialTextureDirty = true;
 	}
 }
 
 void OvCore::ECS::Components::UI::CImage::RefreshMaterial()
 {
-	ValidateTextureReference();
-
 	if (!m_material)
 	{
 		m_material = std::make_unique<OvCore::Resources::Material>();
+		m_materialStateDirty = true;
+		m_materialTextureDirty = true;
+		m_materialTintDirty = true;
 	}
 
-	auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
-	if (!defaultMaterial || !defaultMaterial->HasShader())
+	if (m_textureReferenceDirty)
 	{
-		m_material->SetShader(nullptr);
+		ValidateTextureReference();
+	}
+
+	if (m_materialTexture != m_texture)
+	{
+		m_materialTextureDirty = true;
+	}
+
+	if (!m_materialStateDirty && !m_materialTextureDirty && !m_materialTintDirty)
+	{
 		return;
 	}
 
-	if (m_material->GetShader() != defaultMaterial->GetShader())
+	if (m_materialStateDirty)
 	{
-		m_material->SetShader(defaultMaterial->GetShader());
+		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
+		if (!defaultMaterial || !defaultMaterial->HasShader())
+		{
+			if (m_material->HasShader())
+			{
+				m_material->SetShader(nullptr);
+			}
+
+			m_materialTextureDirty = true;
+			m_materialTintDirty = true;
+			return;
+		}
+
+		if (m_material->GetShader() != defaultMaterial->GetShader())
+		{
+			m_material->SetShader(defaultMaterial->GetShader());
+			m_materialTextureDirty = true;
+			m_materialTintDirty = true;
+		}
+
+		m_material->SetOrthographicSupport(true);
+		m_material->SetPerspectiveSupport(true);
+		m_material->SetBlendable(true);
+		m_material->SetUserInterface(true);
+		m_material->SetBackfaceCulling(false);
+		m_material->SetFrontfaceCulling(false);
+		m_material->SetDepthTest(false);
+		m_material->SetDepthWriting(false);
+		m_material->SetColorWriting(true);
+		m_material->SetCastShadows(false);
+		m_material->SetReceiveShadows(false);
+		m_material->SetCapturedByReflectionProbes(false);
+		m_material->SetReceiveReflections(false);
+		m_material->SetGPUInstances(1);
+		m_materialStateDirty = false;
 	}
 
-	m_material->SetOrthographicSupport(true);
-	m_material->SetPerspectiveSupport(true);
-	m_material->SetBlendable(true);
-	m_material->SetUserInterface(true);
-	m_material->SetBackfaceCulling(false);
-	m_material->SetFrontfaceCulling(false);
-	m_material->SetDepthTest(false);
-	m_material->SetDepthWriting(false);
-	m_material->SetColorWriting(true);
-	m_material->SetCastShadows(false);
-	m_material->SetReceiveShadows(false);
-	m_material->SetCapturedByReflectionProbes(false);
-	m_material->SetReceiveReflections(false);
-	m_material->SetGPUInstances(1);
+	if (!m_material->IsValid())
+	{
+		return;
+	}
 
-	m_material->TrySetProperty(kTextureUniform, m_texture);
-	m_material->TrySetProperty(kTintUniform, m_tint);
+	if (m_materialTextureDirty)
+	{
+		m_material->TrySetProperty(kTextureUniform, m_texture);
+		m_materialTexture = m_texture;
+		m_materialTextureDirty = false;
+	}
+
+	if (m_materialTintDirty)
+	{
+		m_material->TrySetProperty(kTintUniform, m_tint);
+		m_materialTintDirty = false;
+	}
 }

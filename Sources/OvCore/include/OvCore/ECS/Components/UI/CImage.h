@@ -14,6 +14,7 @@
 #include <OvMaths/FVector4.h>
 #include <OvRendering/Resources/Mesh.h>
 #include <OvRendering/Resources/Texture.h>
+#include <OvTools/Eventing/Event.h>
 
 namespace OvCore::ECS { class Actor; }
 
@@ -121,6 +122,13 @@ namespace OvCore::ECS::Components::UI
 
 		std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
 		std::unique_ptr<OvCore::Resources::Material> m_material;
+		OvTools::Eventing::Event<> m_textureChangedEvent;
+		OvRendering::Resources::Texture* m_materialTexture = nullptr;
+
+		bool m_textureReferenceDirty = true;
+		bool m_materialStateDirty = true;
+		bool m_materialTextureDirty = true;
+		bool m_materialTintDirty = true;
 	};
 }
 

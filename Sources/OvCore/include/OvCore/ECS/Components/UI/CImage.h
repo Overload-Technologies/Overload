@@ -59,9 +59,14 @@ namespace OvCore::ECS::Components::UI
 		void SetSize(const OvMaths::FVector2& p_size);
 
 		/**
-		* Returns the image size
+		* Returns the image display size stored by the owner Transform2D
 		*/
-		const OvMaths::FVector2& GetSize() const;
+		OvMaths::FVector2 GetSize() const;
+
+		/**
+		* Returns the stable quad size used before Transform2D/layout scaling
+		*/
+		OvMaths::FVector2 GetIntrinsicSize() const;
 
 		/**
 		* Sets the image tint
@@ -106,13 +111,12 @@ namespace OvCore::ECS::Components::UI
 
 	private:
 		void ValidateTextureReference();
+		void EnsureTransformSize();
 		void RebuildMesh();
 		void RefreshMaterial();
-		void SyncTransformUISizeIfUnset();
 
 	private:
 		OvRendering::Resources::Texture* m_texture = nullptr;
-		OvMaths::FVector2 m_size = { 100.0f, 100.0f };
 		OvMaths::FVector4 m_tint = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 		std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;

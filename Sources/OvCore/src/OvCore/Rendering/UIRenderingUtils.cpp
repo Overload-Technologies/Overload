@@ -195,7 +195,7 @@ OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::GetElementSize(
 {
 	if (const auto* image = p_owner.GetComponent<OvCore::ECS::Components::UI::CImage>())
 	{
-		return image->GetSize();
+		return image->GetIntrinsicSize();
 	}
 
 	if (const auto* text = p_owner.GetComponent<OvCore::ECS::Components::UI::CText>())

@@ -237,7 +237,7 @@ namespace
 				p_renderSize,
 				p_uiProjectionMatrix,
 				p_screenSpace,
-				p_image.GetSize()
+				p_image.GetIntrinsicSize()
 			)
 		);
 

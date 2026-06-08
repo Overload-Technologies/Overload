@@ -16,11 +16,11 @@ function Image:GetTexture() end
 ---@param texture Texture|nil
 function Image:SetTexture(texture) end
 
---- Returns the image size
+--- Returns the image display size stored by Transform2D
 ---@return Vector2
 function Image:GetSize() end
 
---- Defines the image size
+--- Defines the image display size stored by Transform2D
 ---@param size Vector2
 function Image:SetSize(size) end
 

@@ -28,6 +28,11 @@ namespace
 	constexpr const char* kTextureUniform = "u_Image";
 	constexpr const char* kTintUniform = "u_Tint";
 
+	OvMaths::FVector2 GetDefaultImageSize()
+	{
+		return { 100.0f, 100.0f };
+	}
+
 	float ClampFinite(float p_value, float p_min)
 	{
 		return std::isfinite(p_value) ? std::max(p_value, p_min) : p_min;
@@ -71,7 +76,7 @@ OvCore::ECS::Components::UI::CImage::CImage(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
 	owner.transform.EnableUIData();
-	SyncTransformUISizeIfUnset();
+	EnsureTransformSize();
 	RebuildMesh();
 }
 
@@ -98,15 +103,26 @@ OvRendering::Resources::Texture* OvCore::ECS::Components::UI::CImage::GetTexture
 
 void OvCore::ECS::Components::UI::CImage::SetSize(const OvMaths::FVector2& p_size)
 {
-	m_size.x = ClampFinite(p_size.x, kMinimumSize);
-	m_size.y = ClampFinite(p_size.y, kMinimumSize);
-	SyncTransformUISizeIfUnset();
-	RebuildMesh();
+	owner.transform.SetUISize({
+		ClampFinite(p_size.x, kMinimumSize),
+		ClampFinite(p_size.y, kMinimumSize)
+	});
 }
 
-const OvMaths::FVector2& OvCore::ECS::Components::UI::CImage::GetSize() const
+OvMaths::FVector2 OvCore::ECS::Components::UI::CImage::GetSize() const
 {
-	return m_size;
+	const auto& transformSize = owner.transform.GetUISize();
+	const auto defaultSize = GetDefaultImageSize();
+
+	return {
+		transformSize.x > 0.0f ? transformSize.x : defaultSize.x,
+		transformSize.y > 0.0f ? transformSize.y : defaultSize.y
+	};
+}
+
+OvMaths::FVector2 OvCore::ECS::Components::UI::CImage::GetIntrinsicSize() const
+{
+	return GetDefaultImageSize();
 }
 
 void OvCore::ECS::Components::UI::CImage::SetTint(const OvMaths::FVector4& p_tint)
@@ -138,7 +154,6 @@ void OvCore::ECS::Components::UI::CImage::OnSerialize(tinyxml2::XMLDocument& p_d
 {
 	ValidateTextureReference();
 	Helpers::Serializer::SerializeTexture(p_doc, p_node, "texture", m_texture);
-	Helpers::Serializer::SerializeVec2(p_doc, p_node, "size", m_size);
 	Helpers::Serializer::SerializeVec4(p_doc, p_node, "tint", m_tint);
 }
 
@@ -149,13 +164,6 @@ void OvCore::ECS::Components::UI::CImage::OnDeserialize(tinyxml2::XMLDocument& p
 		OvRendering::Resources::Texture* texture = m_texture;
 		Helpers::Serializer::DeserializeTexture(p_doc, p_node, "texture", texture);
 		SetTexture(texture);
-	}
-
-	if (p_node->FirstChildElement("size"))
-	{
-		auto size = m_size;
-		Helpers::Serializer::DeserializeVec2(p_doc, p_node, "size", size);
-		SetSize(size);
 	}
 
 	if (p_node->FirstChildElement("tint"))
@@ -180,10 +188,36 @@ void OvCore::ECS::Components::UI::CImage::OnInspector(OvUI::Internal::WidgetCont
 	);
 }
 
+void OvCore::ECS::Components::UI::CImage::EnsureTransformSize()
+{
+	auto uiSize = owner.transform.GetUISize();
+	const auto defaultSize = GetDefaultImageSize();
+	bool hasChanges = false;
+
+	if (uiSize.x <= 0.0f)
+	{
+		uiSize.x = defaultSize.x;
+		hasChanges = true;
+	}
+
+	if (uiSize.y <= 0.0f)
+	{
+		uiSize.y = defaultSize.y;
+		hasChanges = true;
+	}
+
+	if (hasChanges)
+	{
+		owner.transform.SetUISize(uiSize);
+	}
+}
+
 void OvCore::ECS::Components::UI::CImage::RebuildMesh()
 {
-	const float halfWidth = m_size.x * 0.5f;
-	const float halfHeight = m_size.y * 0.5f;
+	const auto size = GetIntrinsicSize();
+
+	const float halfWidth = size.x * 0.5f;
+	const float halfHeight = size.y * 0.5f;
 
 	const std::array<OvRendering::Geometry::Vertex, 4> vertices = {
 		OvRendering::Geometry::Vertex{{ -halfWidth, -halfHeight, 0.0f }, { 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, {}, {}},
@@ -243,32 +277,4 @@ void OvCore::ECS::Components::UI::CImage::RefreshMaterial()
 
 	m_material->TrySetProperty(kTextureUniform, m_texture);
 	m_material->TrySetProperty(kTintUniform, m_tint);
-}
-
-void OvCore::ECS::Components::UI::CImage::SyncTransformUISizeIfUnset()
-{
-	if (!owner.transform.HasUIData())
-	{
-		return;
-	}
-
-	auto uiSize = owner.transform.GetUISize();
-	bool hasChanges = false;
-
-	if (uiSize.x <= 0.0f)
-	{
-		uiSize.x = m_size.x;
-		hasChanges = true;
-	}
-
-	if (uiSize.y <= 0.0f)
-	{
-		uiSize.y = m_size.y;
-		hasChanges = true;
-	}
-
-	if (hasChanges)
-	{
-		owner.transform.SetUISize(uiSize);
-	}
 }

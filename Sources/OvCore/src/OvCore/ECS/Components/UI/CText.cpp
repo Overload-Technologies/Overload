@@ -240,13 +240,13 @@ OvRendering::Data::Material* OvCore::ECS::Components::UI::CText::GetMaterial()
 
 const OvMaths::FVector2& OvCore::ECS::Components::UI::CText::GetSize() const
 {
-	RebuildMesh();
+	RebuildLayout();
 	return m_size;
 }
 
 OvMaths::FVector2 OvCore::ECS::Components::UI::CText::GetSize(const OvMaths::FVector2& p_resolvedSize) const
 {
-	RebuildMesh(p_resolvedSize);
+	RebuildLayout(p_resolvedSize);
 	return m_size;
 }
 
@@ -387,7 +387,36 @@ OvRendering::Resources::Font* OvCore::ECS::Components::UI::CText::GetFont() cons
 
 void OvCore::ECS::Components::UI::CText::MarkMeshDirty()
 {
+	m_layoutDirty = true;
 	m_meshDirty = true;
+}
+
+void OvCore::ECS::Components::UI::CText::RebuildLayout() const
+{
+	RebuildLayout(owner.transform.GetUISize());
+}
+
+void OvCore::ECS::Components::UI::CText::RebuildLayout(const OvMaths::FVector2& p_uiSize) const
+{
+	if (!m_layoutDirty && IsSameSize(m_lastLayoutUISize, p_uiSize))
+	{
+		return;
+	}
+
+	m_layoutDirty = false;
+	m_lastLayoutUISize = p_uiSize;
+
+	const auto textLayout = TextMeshBuilder::Build({
+		.text = m_text,
+		.font = GetFont(),
+		.fontSize = m_fontSize,
+		.uiSize = p_uiSize,
+		.horizontalAlignment = ToTextMeshBuilderAlignment(m_horizontalAlignment),
+		.verticalAlignment = ToTextMeshBuilderAlignment(m_verticalAlignment),
+		.buildMesh = false
+	});
+
+	m_size = textLayout.size;
 }
 
 void OvCore::ECS::Components::UI::CText::RebuildMesh() const
@@ -397,13 +426,13 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh() const
 
 void OvCore::ECS::Components::UI::CText::RebuildMesh(const OvMaths::FVector2& p_uiSize) const
 {
-	if (!m_meshDirty && IsSameSize(m_lastUISize, p_uiSize))
+	if (!m_meshDirty && IsSameSize(m_lastMeshUISize, p_uiSize))
 	{
 		return;
 	}
 
 	m_meshDirty = false;
-	m_lastUISize = p_uiSize;
+	m_lastMeshUISize = p_uiSize;
 
 	auto textMesh = TextMeshBuilder::Build({
 		.text = m_text,
@@ -416,6 +445,8 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh(const OvMaths::FVector2& p_
 	});
 
 	m_size = textMesh.size;
+	m_layoutDirty = false;
+	m_lastLayoutUISize = p_uiSize;
 	m_mesh = std::move(textMesh.mesh);
 }
 

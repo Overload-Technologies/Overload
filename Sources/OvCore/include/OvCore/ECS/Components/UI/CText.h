@@ -170,6 +170,8 @@ namespace OvCore::ECS::Components::UI
 	private:
 		OvRendering::Resources::Font* GetFont() const;
 		void MarkMeshDirty();
+		void RebuildLayout() const;
+		void RebuildLayout(const OvMaths::FVector2& p_uiSize) const;
 		void RebuildMesh() const;
 		void RebuildMesh(const OvMaths::FVector2& p_uiSize) const;
 		void RefreshMaterial();
@@ -183,8 +185,10 @@ namespace OvCore::ECS::Components::UI
 		EVerticalAlignment m_verticalAlignment = EVerticalAlignment::TOP;
 		mutable std::string m_unavailableFontPath;
 
+		mutable bool m_layoutDirty = true;
+		mutable OvMaths::FVector2 m_lastLayoutUISize = OvMaths::FVector2::Zero;
 		mutable bool m_meshDirty = true;
-		mutable OvMaths::FVector2 m_lastUISize = OvMaths::FVector2::Zero;
+		mutable OvMaths::FVector2 m_lastMeshUISize = OvMaths::FVector2::Zero;
 		mutable OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
 		mutable std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
 		std::unique_ptr<OvRendering::Data::Material> m_material;

@@ -26,6 +26,8 @@
 
 namespace OvCore::Rendering
 {
+	namespace UIRenderingUtils { class UIFrameResolver; }
+
 	/**
 	* Extension of the CompositeRenderer adding support for the scene system (parsing/drawing entities)
 	*/
@@ -98,6 +100,7 @@ namespace OvCore::Rendering
 			OvCore::SceneSystem::Scene& scene;
 			OvMaths::FVector2 renderSize = { 1.0f, 1.0f };
 			bool renderUIInScreenSpace = true;
+			const UIRenderingUtils::UIFrameResolver* uiFrameResolver = nullptr;
 		};
 
 		/**

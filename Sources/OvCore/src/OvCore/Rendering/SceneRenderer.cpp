@@ -172,9 +172,8 @@ namespace
 
 	EngineDrawableDescriptor CreateUIDrawableDescriptor(
 		OvCore::ECS::Actor& p_owner,
-		const OvMaths::FVector2& p_renderSize,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
-		bool p_screenSpace,
 		const OvMaths::FVector2& p_elementSize
 	)
 	{
@@ -184,17 +183,15 @@ namespace
 		};
 
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (p_uiFrameResolver.ResolveElement(
 			p_owner,
-			p_renderSize,
-			p_screenSpace,
 			p_elementSize,
 			resolvedElement
 		))
 		{
 			descriptor.modelMatrix = resolvedElement.modelMatrix;
 
-			if (p_screenSpace)
+			if (p_uiFrameResolver.IsScreenSpace())
 			{
 				descriptor.viewMatrixOverride = OvMaths::FMatrix4::Identity;
 				descriptor.projectionMatrixOverride = p_uiProjectionMatrix;
@@ -207,9 +204,8 @@ namespace
 	void AppendImageDrawable(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::ECS::Components::UI::CImage& p_image,
-		const OvMaths::FVector2& p_renderSize,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
-		bool p_screenSpace,
 		int p_drawOrder
 	)
 	{
@@ -234,9 +230,8 @@ namespace
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
 			CreateUIDrawableDescriptor(
 				owner,
-				p_renderSize,
+				p_uiFrameResolver,
 				p_uiProjectionMatrix,
-				p_screenSpace,
 				p_image.GetIntrinsicSize()
 			)
 		);
@@ -247,9 +242,8 @@ namespace
 	void AppendTextDrawable(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::ECS::Components::UI::CText& p_text,
-		const OvMaths::FVector2& p_renderSize,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
-		bool p_screenSpace,
 		int p_drawOrder
 	)
 	{
@@ -259,10 +253,8 @@ namespace
 
 		const auto baseTextSize = p_text.GetSize();
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		const bool hasResolvedElement = OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		const bool hasResolvedElement = p_uiFrameResolver.ResolveElement(
 			owner,
-			p_renderSize,
-			p_screenSpace,
 			baseTextSize,
 			resolvedElement
 		);
@@ -289,9 +281,8 @@ namespace
 		drawable.AddDescriptor<EngineDrawableDescriptor>(
 			CreateUIDrawableDescriptor(
 				owner,
-				p_renderSize,
+				p_uiFrameResolver,
 				p_uiProjectionMatrix,
-				p_screenSpace,
 				renderedTextSize
 			)
 		);
@@ -302,10 +293,9 @@ namespace
 	void AppendHierarchyUIDrawables(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::ECS::Actor& p_actor,
-		const OvMaths::FVector2& p_renderSize,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		const OvCore::ECS::Components::UI::CCanvas* p_canvas,
 		const OvMaths::FMatrix4& p_uiProjectionMatrix,
-		bool p_screenSpace,
 		int& p_drawOrder
 	)
 	{
@@ -326,9 +316,8 @@ namespace
 				AppendImageDrawable(
 					p_result,
 					*image,
-					p_renderSize,
+					p_uiFrameResolver,
 					p_uiProjectionMatrix,
-					p_screenSpace,
 					p_drawOrder++
 				);
 			}
@@ -338,9 +327,8 @@ namespace
 				AppendTextDrawable(
 					p_result,
 					*text,
-					p_renderSize,
+					p_uiFrameResolver,
 					p_uiProjectionMatrix,
-					p_screenSpace,
 					p_drawOrder++
 				);
 			}
@@ -353,10 +341,9 @@ namespace
 				AppendHierarchyUIDrawables(
 					p_result,
 					*child,
-					p_renderSize,
+					p_uiFrameResolver,
 					p_canvas,
 					p_uiProjectionMatrix,
-					p_screenSpace,
 					p_drawOrder
 				);
 			}
@@ -366,12 +353,11 @@ namespace
 	void AppendHierarchyUIDrawables(
 		SceneRenderer::SceneDrawablesDescriptor& p_result,
 		OvCore::SceneSystem::Scene& p_scene,
-		const OvMaths::FVector2& p_renderSize,
-		bool p_screenSpace
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver
 	)
 	{
 		int drawOrder = 0;
-		const auto uiProjectionMatrix = OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(p_renderSize);
+		const auto uiProjectionMatrix = p_uiFrameResolver.CreateProjectionMatrix();
 
 		for (auto* actor : p_scene.GetActors())
 		{
@@ -380,10 +366,9 @@ namespace
 				AppendHierarchyUIDrawables(
 					p_result,
 					*actor,
-					p_renderSize,
+					p_uiFrameResolver,
 					nullptr,
 					uiProjectionMatrix,
-					p_screenSpace,
 					drawOrder
 				);
 			}
@@ -426,6 +411,10 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 	OVASSERT(HasDescriptor<SceneDescriptor>(), "Cannot find SceneDescriptor attached to this renderer");
 
 	auto& sceneDescriptor = GetDescriptor<SceneDescriptor>();
+	const auto renderSize = OvMaths::FVector2{
+		static_cast<float>(p_frameDescriptor.renderWidth),
+		static_cast<float>(p_frameDescriptor.renderHeight)
+	};
 
 	const bool frustumLightCulling = p_frameDescriptor.camera.value().HasFrustumLightCulling();
 
@@ -438,16 +427,19 @@ void OvCore::Rendering::SceneRenderer::BeginFrame(const OvRendering::Data::Frame
 		FindActiveReflectionProbes(sceneDescriptor.scene)
 	});
 
+	SetDescriptor(OvCore::Rendering::UIRenderingUtils::UIFrameResolver{
+		renderSize,
+		sceneDescriptor.renderUIInScreenSpace
+	});
+
 	OvRendering::Core::CompositeRenderer::BeginFrame(p_frameDescriptor);
 
 	AddDescriptor<SceneDrawablesDescriptor>({
 		ParseScene(SceneParsingInput{
 			.scene = sceneDescriptor.scene,
-			.renderSize = {
-				static_cast<float>(p_frameDescriptor.renderWidth),
-				static_cast<float>(p_frameDescriptor.renderHeight)
-			},
-			.renderUIInScreenSpace = sceneDescriptor.renderUIInScreenSpace
+			.renderSize = renderSize,
+			.renderUIInScreenSpace = sceneDescriptor.renderUIInScreenSpace,
+			.uiFrameResolver = &GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>()
 		})
 	});
 
@@ -501,6 +493,13 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 	SceneRenderer::SceneDrawablesDescriptor result;
 
 	auto& scene = p_input.scene;
+	OvCore::Rendering::UIRenderingUtils::UIFrameResolver fallbackUIFrameResolver{
+		p_input.renderSize,
+		p_input.renderUIInScreenSpace
+	};
+	const auto& uiFrameResolver = p_input.uiFrameResolver ?
+		*p_input.uiFrameResolver :
+		fallbackUIFrameResolver;
 
 	for (const auto modelRenderer : scene.GetFastAccessComponents().modelRenderers)
 	{
@@ -563,7 +562,7 @@ SceneRenderer::SceneDrawablesDescriptor OvCore::Rendering::SceneRenderer::ParseS
 		}
 	}
 
-	AppendHierarchyUIDrawables(result, scene, p_input.renderSize, p_input.renderUIInScreenSpace);
+	AppendHierarchyUIDrawables(result, scene, uiFrameResolver);
 
 	return result;
 }

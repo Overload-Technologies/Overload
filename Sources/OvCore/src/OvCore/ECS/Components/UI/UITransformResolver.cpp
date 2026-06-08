@@ -213,13 +213,13 @@ OvCore::ECS::Components::UI::UITransformResolver::LayoutData OvCore::ECS::Compon
 
 				if (child == &p_owner)
 				{
-					if (childLayout->size.x > 0.0f)
+					if (childLayout->hasDirectWidth && childLayout->size.x > 0.0f)
 					{
 						result.directSize.x = childLayout->size.x;
 						result.hasDirectWidth = true;
 					}
 
-					if (childLayout->size.y > 0.0f)
+					if (childLayout->hasDirectHeight && childLayout->size.y > 0.0f)
 					{
 						result.directSize.y = childLayout->size.y;
 						result.hasDirectHeight = true;

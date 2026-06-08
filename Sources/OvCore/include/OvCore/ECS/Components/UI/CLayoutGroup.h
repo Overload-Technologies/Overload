@@ -31,6 +31,8 @@ namespace OvCore::ECS::Components::UI
 			const ECS::Actor* actor = nullptr;
 			OvMaths::FVector2 offset = OvMaths::FVector2::Zero;
 			OvMaths::FVector2 size = OvMaths::FVector2::Zero;
+			bool hasDirectWidth = false;
+			bool hasDirectHeight = false;
 			bool valid = false;
 		};
 

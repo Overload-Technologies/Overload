@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CTransform.h>
@@ -60,6 +61,258 @@ namespace
 
 		return result;
 	}
+}
+
+OvCore::Rendering::UIRenderingUtils::UIFrameResolver::UIFrameResolver(
+	const OvMaths::FVector2& p_renderSize,
+	bool p_screenSpace
+) :
+m_renderSize(ClampCanvasSize(p_renderSize)),
+m_screenSpace(p_screenSpace)
+{
+}
+
+const OvMaths::FVector2& OvCore::Rendering::UIRenderingUtils::UIFrameResolver::GetRenderSize() const
+{
+	return m_renderSize;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::IsScreenSpace() const
+{
+	return m_screenSpace;
+}
+
+OvMaths::FMatrix4 OvCore::Rendering::UIRenderingUtils::UIFrameResolver::CreateProjectionMatrix(
+	float p_near,
+	float p_far
+) const
+{
+	return CreateUIProjectionMatrix(m_renderSize, p_near, p_far);
+}
+
+OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::UIFrameResolver::GetElementSize(const OvCore::ECS::Actor& p_actor) const
+{
+	if (const auto it = m_elementSizeCache.find(&p_actor); it != m_elementSizeCache.end())
+	{
+		return it->second;
+	}
+
+	const auto elementSize = UIRenderingUtils::GetElementSize(p_actor, m_renderSize);
+	m_elementSizeCache.emplace(&p_actor, elementSize);
+	return elementSize;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveCanvas(
+	const OvCore::ECS::Actor& p_actor,
+	ResolvedUICanvas& p_outCanvas
+) const
+{
+	if (const auto it = m_canvasCache.find(&p_actor); it != m_canvasCache.end())
+	{
+		if (!it->second)
+		{
+			return false;
+		}
+
+		p_outCanvas = it->second.value();
+		return true;
+	}
+
+	ResolvedUICanvas resolvedCanvas;
+	if (!ResolveCanvasUncached(p_actor, resolvedCanvas))
+	{
+		m_canvasCache.emplace(&p_actor, std::nullopt);
+		return false;
+	}
+
+	m_canvasCache.emplace(&p_actor, resolvedCanvas);
+	p_outCanvas = resolvedCanvas;
+	return true;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveElement(
+	const OvCore::ECS::Actor& p_actor,
+	const OvMaths::FVector2& p_elementSize,
+	ResolvedUIElement& p_outElement
+) const
+{
+	const ElementKey key{
+		.actor = &p_actor,
+		.width = p_elementSize.x,
+		.height = p_elementSize.y
+	};
+
+	if (const auto it = m_elementCache.find(key); it != m_elementCache.end())
+	{
+		if (!it->second)
+		{
+			return false;
+		}
+
+		p_outElement = it->second.value();
+		return true;
+	}
+
+	ResolvedUIElement resolvedElement;
+	if (!ResolveElementUncached(p_actor, p_elementSize, resolvedElement))
+	{
+		m_elementCache.emplace(key, std::nullopt);
+		return false;
+	}
+
+	m_elementCache.emplace(key, resolvedElement);
+	p_outElement = resolvedElement;
+	return true;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveElement(
+	const OvCore::ECS::Actor& p_actor,
+	ResolvedUIElement& p_outElement
+) const
+{
+	return ResolveElement(p_actor, GetElementSize(p_actor), p_outElement);
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ElementKey::operator==(const ElementKey& p_other) const
+{
+	return actor == p_other.actor && width == p_other.width && height == p_other.height;
+}
+
+std::size_t OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ElementKeyHash::operator()(const ElementKey& p_key) const
+{
+	const auto actorHash = std::hash<const OvCore::ECS::Actor*>{}(p_key.actor);
+	const auto widthHash = std::hash<float>{}(p_key.width);
+	const auto heightHash = std::hash<float>{}(p_key.height);
+	return actorHash ^ (widthHash << 1) ^ (heightHash << 2);
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveCanvasUncached(
+	const OvCore::ECS::Actor& p_actor,
+	ResolvedUICanvas& p_outCanvas
+) const
+{
+	const auto* canvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>();
+	if (!canvas)
+	{
+		return false;
+	}
+
+	p_outCanvas.actor = &p_actor;
+	p_outCanvas.canvas = canvas;
+	p_outCanvas.size = UIRenderingUtils::GetCanvasSize(*canvas, m_renderSize);
+	p_outCanvas.matrix = m_screenSpace ? OvMaths::FMatrix4::Identity : CalculateUnscaledModelMatrix(p_actor);
+	p_outCanvas.canvasScale = UIRenderingUtils::GetCanvasScale(*canvas, m_renderSize);
+	p_outCanvas.worldScale = UIRenderingUtils::GetUIWorldScale(*canvas, m_screenSpace);
+	p_outCanvas.unitsScale = m_screenSpace ? p_outCanvas.canvasScale : p_outCanvas.canvasScale * p_outCanvas.worldScale;
+	p_outCanvas.modelMatrix =
+		p_outCanvas.matrix *
+		OvMaths::FMatrix4::Scaling({ p_outCanvas.unitsScale, p_outCanvas.unitsScale, 1.0f });
+	p_outCanvas.screenSpace = m_screenSpace;
+
+	return p_outCanvas.size.x > 0.0f && p_outCanvas.size.y > 0.0f;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveElementUncached(
+	const OvCore::ECS::Actor& p_actor,
+	const OvMaths::FVector2& p_elementSize,
+	ResolvedUIElement& p_outElement
+) const
+{
+	if (!HasActiveUIData(p_actor))
+	{
+		return false;
+	}
+
+	const auto* canvasOwner = FindCanvasOwner(p_actor);
+	if (!canvasOwner)
+	{
+		return false;
+	}
+
+	ResolvedUICanvas resolvedCanvas;
+	if (!ResolveCanvas(*canvasOwner, resolvedCanvas))
+	{
+		return false;
+	}
+
+	const auto& transform = p_actor.transform;
+	const auto layoutData = GetLayoutData(p_actor);
+
+	p_outElement.actor = &p_actor;
+	p_outElement.canvasActor = canvasOwner;
+	p_outElement.canvas = resolvedCanvas.canvas;
+	p_outElement.canvasSize = resolvedCanvas.size;
+	p_outElement.layoutOffset = layoutData.offset;
+	p_outElement.elementSize = p_elementSize;
+	p_outElement.effectiveSize = OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(transform, p_elementSize);
+	if (layoutData.hasDirectWidth)
+	{
+		p_outElement.effectiveSize.x = layoutData.directSize.x;
+	}
+	if (layoutData.hasDirectHeight)
+	{
+		p_outElement.effectiveSize.y = layoutData.directSize.y;
+	}
+	p_outElement.canvasMatrix = resolvedCanvas.matrix;
+	p_outElement.localMatrix = CreateUIElementLocalMatrix(
+		transform,
+		p_outElement.canvasSize,
+		p_outElement.layoutOffset,
+		p_elementSize,
+		p_outElement.effectiveSize
+	);
+	p_outElement.canvasScale = resolvedCanvas.canvasScale;
+	p_outElement.worldScale = resolvedCanvas.worldScale;
+	p_outElement.unitsScale = resolvedCanvas.unitsScale;
+	p_outElement.modelMatrix =
+		p_outElement.canvasMatrix *
+		OvMaths::FMatrix4::Scaling({ p_outElement.unitsScale, p_outElement.unitsScale, 1.0f }) *
+		p_outElement.localMatrix;
+	p_outElement.screenSpace = m_screenSpace;
+
+	return true;
+}
+
+bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::HasActiveUIData(const OvCore::ECS::Actor& p_actor) const
+{
+	if (const auto it = m_activeUIDataCache.find(&p_actor); it != m_activeUIDataCache.end())
+	{
+		return it->second;
+	}
+
+	const bool hasActiveUIData = OvCore::ECS::Components::UI::UITransformResolver::HasActiveUIData(p_actor);
+	m_activeUIDataCache.emplace(&p_actor, hasActiveUIData);
+	return hasActiveUIData;
+}
+
+const OvCore::ECS::Actor* OvCore::Rendering::UIRenderingUtils::UIFrameResolver::FindCanvasOwner(const OvCore::ECS::Actor& p_actor) const
+{
+	if (const auto it = m_canvasOwnerCache.find(&p_actor); it != m_canvasOwnerCache.end())
+	{
+		return it->second;
+	}
+
+	const auto* canvasOwner = UIRenderingUtils::FindCanvasOwner(p_actor);
+	m_canvasOwnerCache.emplace(&p_actor, canvasOwner);
+	return canvasOwner;
+}
+
+OvCore::Rendering::UIRenderingUtils::UIFrameResolver::CachedLayoutData OvCore::Rendering::UIRenderingUtils::UIFrameResolver::GetLayoutData(const OvCore::ECS::Actor& p_actor) const
+{
+	if (const auto it = m_layoutDataCache.find(&p_actor); it != m_layoutDataCache.end())
+	{
+		return it->second;
+	}
+
+	const auto layoutData = OvCore::ECS::Components::UI::UITransformResolver::ResolveLayoutData(p_actor);
+	const CachedLayoutData cachedLayoutData{
+		.offset = layoutData.offset,
+		.directSize = layoutData.directSize,
+		.hasDirectWidth = layoutData.hasDirectWidth,
+		.hasDirectHeight = layoutData.hasDirectHeight
+	};
+	m_layoutDataCache.emplace(&p_actor, cachedLayoutData);
+	return cachedLayoutData;
 }
 
 OvMaths::FVector2 OvCore::Rendering::UIRenderingUtils::ClampCanvasSize(const OvMaths::FVector2& p_canvasSize)
@@ -250,25 +503,7 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUICanvas(
 	ResolvedUICanvas& p_outCanvas
 )
 {
-	const auto* canvas = p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>();
-	if (!canvas)
-	{
-		return false;
-	}
-
-	p_outCanvas.actor = &p_actor;
-	p_outCanvas.canvas = canvas;
-	p_outCanvas.size = GetCanvasSize(*canvas, p_renderSize);
-	p_outCanvas.matrix = GetCanvasMatrix(p_actor, p_screenSpace);
-	p_outCanvas.canvasScale = GetCanvasScale(*canvas, p_renderSize);
-	p_outCanvas.worldScale = GetUIWorldScale(*canvas, p_screenSpace);
-	p_outCanvas.unitsScale = p_screenSpace ? p_outCanvas.canvasScale : p_outCanvas.canvasScale * p_outCanvas.worldScale;
-	p_outCanvas.modelMatrix =
-		p_outCanvas.matrix *
-		OvMaths::FMatrix4::Scaling({ p_outCanvas.unitsScale, p_outCanvas.unitsScale, 1.0f });
-	p_outCanvas.screenSpace = p_screenSpace;
-
-	return p_outCanvas.size.x > 0.0f && p_outCanvas.size.y > 0.0f;
+	return UIFrameResolver(p_renderSize, p_screenSpace).ResolveCanvas(p_actor, p_outCanvas);
 }
 
 bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
@@ -279,59 +514,7 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 	ResolvedUIElement& p_outElement
 )
 {
-	const auto& transform = p_actor.transform;
-	if (!OvCore::ECS::Components::UI::UITransformResolver::HasActiveUIData(p_actor))
-	{
-		return false;
-	}
-
-	const auto* canvasOwner = FindCanvasOwner(p_actor);
-	if (!canvasOwner)
-	{
-		return false;
-	}
-
-	const auto* canvas = canvasOwner->GetComponent<OvCore::ECS::Components::UI::CCanvas>();
-	if (!canvas)
-	{
-		return false;
-	}
-
-	p_outElement.actor = &p_actor;
-	p_outElement.canvasActor = canvasOwner;
-	p_outElement.canvas = canvas;
-	const auto layoutData = OvCore::ECS::Components::UI::UITransformResolver::ResolveLayoutData(p_actor);
-	p_outElement.canvasSize = GetCanvasSize(*canvas, p_renderSize);
-	p_outElement.layoutOffset = layoutData.offset;
-	p_outElement.elementSize = p_elementSize;
-	p_outElement.effectiveSize = OvCore::ECS::Components::UI::UITransformResolver::GetEffectiveSize(transform, p_elementSize);
-	if (layoutData.hasDirectWidth)
-	{
-		p_outElement.effectiveSize.x = layoutData.directSize.x;
-	}
-	if (layoutData.hasDirectHeight)
-	{
-		p_outElement.effectiveSize.y = layoutData.directSize.y;
-	}
-	p_outElement.canvasMatrix = GetCanvasMatrix(p_actor, p_screenSpace);
-	p_outElement.localMatrix = CreateUIElementLocalMatrix(
-		transform,
-		p_outElement.canvasSize,
-		p_outElement.layoutOffset,
-		p_elementSize,
-		p_outElement.effectiveSize
-	);
-
-	p_outElement.canvasScale = GetCanvasScale(*canvas, p_renderSize);
-	p_outElement.worldScale = GetUIWorldScale(*canvas, p_screenSpace);
-	p_outElement.unitsScale = p_screenSpace ? p_outElement.canvasScale : p_outElement.canvasScale * p_outElement.worldScale;
-	p_outElement.modelMatrix =
-		p_outElement.canvasMatrix *
-		OvMaths::FMatrix4::Scaling({ p_outElement.unitsScale, p_outElement.unitsScale, 1.0f }) *
-		p_outElement.localMatrix;
-	p_outElement.screenSpace = p_screenSpace;
-
-	return true;
+	return UIFrameResolver(p_renderSize, p_screenSpace).ResolveElement(p_actor, p_elementSize, p_outElement);
 }
 
 bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
@@ -341,11 +524,5 @@ bool OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
 	ResolvedUIElement& p_outElement
 )
 {
-	return ResolveUIElement(
-		p_actor,
-		p_renderSize,
-		p_screenSpace,
-		GetElementSize(p_actor, p_renderSize),
-		p_outElement
-	);
+	return UIFrameResolver(p_renderSize, p_screenSpace).ResolveElement(p_actor, p_outElement);
 }

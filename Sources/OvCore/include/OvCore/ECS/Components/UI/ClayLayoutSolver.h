@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
@@ -16,6 +17,24 @@ namespace OvCore::ECS { class Actor; }
 
 namespace OvCore::ECS::Components::UI
 {
+	class ClayLayoutSolverContext
+	{
+	public:
+		ClayLayoutSolverContext();
+		~ClayLayoutSolverContext();
+
+		ClayLayoutSolverContext(const ClayLayoutSolverContext&) = delete;
+		ClayLayoutSolverContext& operator=(const ClayLayoutSolverContext&) = delete;
+		ClayLayoutSolverContext(ClayLayoutSolverContext&&) noexcept;
+		ClayLayoutSolverContext& operator=(ClayLayoutSolverContext&&) noexcept;
+
+	private:
+		friend class ClayLayoutSolver;
+
+		struct Impl;
+		std::unique_ptr<Impl> m_impl;
+	};
+
 	struct ClayLayoutSettings
 	{
 		CLayoutGroup::EDirection direction = CLayoutGroup::EDirection::HORIZONTAL;
@@ -51,9 +70,44 @@ namespace OvCore::ECS::Components::UI
 		std::vector<ClayLayoutChildResult> children;
 	};
 
+	struct ClayLayoutMeasurement
+	{
+		ClayLayoutSettings settings;
+		OvMaths::FVector2 preferredSize = OvMaths::FVector2::Zero;
+		bool valid = false;
+	};
+
+	struct ClayLayoutSolution
+	{
+		ClayLayoutSettings settings;
+		OvMaths::FVector2 preferredSize = OvMaths::FVector2::Zero;
+		ClayLayoutResult result;
+		bool valid = false;
+	};
+
 	class ClayLayoutSolver
 	{
 	public:
+		static ClayLayoutMeasurement Measure(
+			ClayLayoutSolverContext& p_context,
+			const ClayLayoutSettings& p_settings,
+			const std::vector<ClayLayoutChildInput>& p_children
+		);
+
+		static ClayLayoutSolution SolveLayout(
+			ClayLayoutSolverContext& p_context,
+			const ClayLayoutMeasurement& p_measurement,
+			const std::vector<ClayLayoutChildInput>& p_children
+		);
+
+		static ClayLayoutResult Postprocess(const ClayLayoutSolution& p_solution);
+
+		static ClayLayoutResult Solve(
+			ClayLayoutSolverContext& p_context,
+			const ClayLayoutSettings& p_settings,
+			const std::vector<ClayLayoutChildInput>& p_children
+		);
+
 		static ClayLayoutResult Solve(
 			const ClayLayoutSettings& p_settings,
 			const std::vector<ClayLayoutChildInput>& p_children

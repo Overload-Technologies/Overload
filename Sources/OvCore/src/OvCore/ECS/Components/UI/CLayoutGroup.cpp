@@ -144,8 +144,11 @@ namespace
 OvCore::ECS::Components::UI::CLayoutGroup::CLayoutGroup(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	m_layoutSolverContext = std::make_unique<ClayLayoutSolverContext>();
 	owner.transform.EnableUIData();
 }
+
+OvCore::ECS::Components::UI::CLayoutGroup::~CLayoutGroup() = default;
 
 std::string OvCore::ECS::Components::UI::CLayoutGroup::GetName()
 {
@@ -391,7 +394,7 @@ const OvCore::ECS::Components::UI::CLayoutGroup::LayoutCache& OvCore::ECS::Compo
 		});
 	}
 
-	const auto layoutResult = ClayLayoutSolver::Solve(CreateLayoutSettings(*this, owner), layoutChildren);
+	const auto layoutResult = ClayLayoutSolver::Solve(*m_layoutSolverContext, CreateLayoutSettings(*this, owner), layoutChildren);
 
 	m_layoutCache.valid = true;
 	m_layoutCache.signature = input.signature;

@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,13 @@ namespace
 	constexpr float kMaximumPadding = static_cast<float>(std::numeric_limits<uint16_t>::max());
 	constexpr int32_t kMinimumElementCapacity = 64;
 	constexpr int32_t kSolverElementOverhead = 8;
+
+	std::mutex& GetClayApiMutex()
+	{
+		// Clay stores its current context globally, so isolate that mutable API behind one lock.
+		static std::mutex mutex;
+		return mutex;
+	}
 
 	struct ClayLayoutPassResult
 	{
@@ -94,6 +103,7 @@ namespace
 
 		void Initialize(int32_t p_elementCapacity)
 		{
+			std::lock_guard lock(GetClayApiMutex());
 			auto* previousContext = Clay_GetCurrentContext();
 
 			Clay_SetCurrentContext(nullptr);
@@ -263,6 +273,7 @@ namespace
 		bool p_useControlledChildSizing
 	)
 	{
+		std::lock_guard lock(GetClayApiMutex());
 		ScopedClayContext useContext(p_context);
 
 		Clay_SetLayoutDimensions({
@@ -602,33 +613,48 @@ namespace
 	}
 }
 
-OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayLayoutSolver::Solve(
+struct OvCore::ECS::Components::UI::ClayLayoutSolverContext::Impl : ClaySolverRuntime
+{
+};
+
+OvCore::ECS::Components::UI::ClayLayoutSolverContext::ClayLayoutSolverContext() :
+m_impl(std::make_unique<Impl>())
+{
+}
+
+OvCore::ECS::Components::UI::ClayLayoutSolverContext::~ClayLayoutSolverContext() = default;
+
+OvCore::ECS::Components::UI::ClayLayoutSolverContext::ClayLayoutSolverContext(ClayLayoutSolverContext&&) noexcept = default;
+
+OvCore::ECS::Components::UI::ClayLayoutSolverContext& OvCore::ECS::Components::UI::ClayLayoutSolverContext::operator=(ClayLayoutSolverContext&&) noexcept = default;
+
+OvCore::ECS::Components::UI::ClayLayoutMeasurement OvCore::ECS::Components::UI::ClayLayoutSolver::Measure(
+	ClayLayoutSolverContext& p_context,
 	const ClayLayoutSettings& p_settings,
 	const std::vector<ClayLayoutChildInput>& p_children
 )
 {
-	static ClaySolverRuntime runtime;
+	ClayLayoutMeasurement measurement;
+	measurement.settings = p_settings;
+	measurement.settings.containerSize.x = ClampNonNegative(measurement.settings.containerSize.x);
+	measurement.settings.containerSize.y = ClampNonNegative(measurement.settings.containerSize.y);
 
-	auto* context = runtime.GetContext(p_children.size());
+	auto* context = p_context.m_impl ? p_context.m_impl->GetContext(p_children.size()) : nullptr;
 	if (!context)
 	{
-		return {};
+		return measurement;
 	}
 
-	ClayLayoutSettings settings = p_settings;
-	settings.containerSize.x = ClampNonNegative(settings.containerSize.x);
-	settings.containerSize.y = ClampNonNegative(settings.containerSize.y);
-
-	const Clay_SizingAxis measuredWidthSizing = settings.containerSize.x > 0.0f ?
-		MakeFixedSizing(settings.containerSize.x) :
+	const Clay_SizingAxis measuredWidthSizing = measurement.settings.containerSize.x > 0.0f ?
+		MakeFixedSizing(measurement.settings.containerSize.x) :
 		MakeFitSizing(kMinimumLayoutSize);
-	const Clay_SizingAxis measuredHeightSizing = settings.containerSize.y > 0.0f ?
-		MakeFixedSizing(settings.containerSize.y) :
+	const Clay_SizingAxis measuredHeightSizing = measurement.settings.containerSize.y > 0.0f ?
+		MakeFixedSizing(measurement.settings.containerSize.y) :
 		MakeFitSizing(kMinimumLayoutSize);
 
 	const auto preferredPass = RunClayPass(
 		context,
-		settings,
+		measurement.settings,
 		p_children,
 		measuredWidthSizing,
 		measuredHeightSizing,
@@ -636,12 +662,40 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 		false
 	);
 
+	measurement.preferredSize = preferredPass.size;
+	measurement.valid = true;
+	return measurement;
+}
+
+OvCore::ECS::Components::UI::ClayLayoutSolution OvCore::ECS::Components::UI::ClayLayoutSolver::SolveLayout(
+	ClayLayoutSolverContext& p_context,
+	const ClayLayoutMeasurement& p_measurement,
+	const std::vector<ClayLayoutChildInput>& p_children
+)
+{
+	ClayLayoutSolution solution;
+	solution.settings = p_measurement.settings;
+	solution.preferredSize = p_measurement.preferredSize;
+
+	if (!p_measurement.valid)
+	{
+		return solution;
+	}
+
+	auto* context = p_context.m_impl ? p_context.m_impl->GetContext(p_children.size()) : nullptr;
+	if (!context)
+	{
+		return solution;
+	}
+
+	const auto& settings = p_measurement.settings;
+
 	const Clay_SizingAxis finalWidthSizing = settings.containerSize.x > 0.0f ?
 		MakeFixedSizing(settings.containerSize.x) :
-		MakeFitSizing(preferredPass.size.x);
+		MakeFitSizing(p_measurement.preferredSize.x);
 	const Clay_SizingAxis finalHeightSizing = settings.containerSize.y > 0.0f ?
 		MakeFixedSizing(settings.containerSize.y) :
-		MakeFitSizing(preferredPass.size.y);
+		MakeFitSizing(p_measurement.preferredSize.y);
 
 	const auto finalPass = RunClayPass(
 		context,
@@ -649,13 +703,12 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 		p_children,
 		finalWidthSizing,
 		finalHeightSizing,
-		GetRootSize(settings.containerSize, preferredPass.size),
+		GetRootSize(settings.containerSize, p_measurement.preferredSize),
 		true
 	);
 
-	ClayLayoutResult result;
-	result.size = GetRootSize(settings.containerSize, preferredPass.size);
-	result.children.reserve(p_children.size());
+	solution.result.size = GetRootSize(settings.containerSize, p_measurement.preferredSize);
+	solution.result.children.reserve(p_children.size());
 
 	for (size_t i = 0; i < p_children.size(); ++i)
 	{
@@ -670,7 +723,7 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 			p_children[i].preferredSize;
 		const bool hasUsableChild = p_children[i].actor && childSize.x > 0.0f && childSize.y > 0.0f;
 
-		result.children.push_back({
+		solution.result.children.push_back({
 			.actor = p_children[i].actor,
 			.offset = OvMaths::FVector2::Zero,
 			.size = childSize,
@@ -678,8 +731,41 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 		});
 	}
 
-	ApplyControlledSizing(result, settings);
-	ApplyAlignedOffsets(result, settings);
+	solution.valid = true;
+	return solution;
+}
 
+OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayLayoutSolver::Postprocess(
+	const ClayLayoutSolution& p_solution
+)
+{
+	if (!p_solution.valid)
+	{
+		return {};
+	}
+
+	auto result = p_solution.result;
+	ApplyControlledSizing(result, p_solution.settings);
+	ApplyAlignedOffsets(result, p_solution.settings);
 	return result;
+}
+
+OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayLayoutSolver::Solve(
+	ClayLayoutSolverContext& p_context,
+	const ClayLayoutSettings& p_settings,
+	const std::vector<ClayLayoutChildInput>& p_children
+)
+{
+	const auto measurement = Measure(p_context, p_settings, p_children);
+	const auto solution = SolveLayout(p_context, measurement, p_children);
+	return Postprocess(solution);
+}
+
+OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayLayoutSolver::Solve(
+	const ClayLayoutSettings& p_settings,
+	const std::vector<ClayLayoutChildInput>& p_children
+)
+{
+	ClayLayoutSolverContext context;
+	return Solve(context, p_settings, p_children);
 }

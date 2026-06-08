@@ -308,6 +308,7 @@ bool OvRendering::Resources::Font::Reload(const std::filesystem::path& p_realPat
 	m_valid = false;
 	DestroyAtlasVariants();
 	m_atlasVariants.clear();
+	++m_revision;
 
 	return SetActivePixelSize(static_cast<float>(m_activePixelSize));
 }
@@ -336,6 +337,11 @@ bool OvRendering::Resources::Font::IsValid() const
 {
 	const auto* variant = GetActiveVariant();
 	return m_valid && variant && variant->atlasTexture;
+}
+
+uint64_t OvRendering::Resources::Font::GetRevision() const
+{
+	return m_revision;
 }
 
 float OvRendering::Resources::Font::GetPixelSize() const

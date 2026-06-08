@@ -166,7 +166,7 @@ void OvCore::ECS::Components::UI::CText::SetFontPath(const std::string& p_fontPa
 	m_fontPath = p_fontPath;
 	m_unavailableFontPath.clear();
 	MarkMeshDirty();
-	RefreshMaterial();
+	MarkMaterialSourceDirty();
 }
 
 const std::string& OvCore::ECS::Components::UI::CText::GetFontPath() const
@@ -178,6 +178,7 @@ void OvCore::ECS::Components::UI::CText::SetFontSize(float p_fontSize)
 {
 	m_fontSize = ClampFinite(p_fontSize, kMinimumFontSize);
 	MarkMeshDirty();
+	MarkMaterialSourceDirty();
 }
 
 float OvCore::ECS::Components::UI::CText::GetFontSize() const
@@ -191,7 +192,7 @@ void OvCore::ECS::Components::UI::CText::SetColor(const OvMaths::FVector4& p_col
 	m_color.y = KeepFinite(p_color.y, m_color.y);
 	m_color.z = KeepFinite(p_color.z, m_color.z);
 	m_color.w = KeepFinite(p_color.w, m_color.w);
-	RefreshMaterial();
+	MarkMaterialColorDirty();
 }
 
 const OvMaths::FVector4& OvCore::ECS::Components::UI::CText::GetColor() const
@@ -392,6 +393,17 @@ void OvCore::ECS::Components::UI::CText::MarkMeshDirty()
 	m_meshDirty = true;
 }
 
+void OvCore::ECS::Components::UI::CText::MarkMaterialSourceDirty()
+{
+	m_materialSourceDirty = true;
+	m_materialColorDirty = true;
+}
+
+void OvCore::ECS::Components::UI::CText::MarkMaterialColorDirty()
+{
+	m_materialColorDirty = true;
+}
+
 void OvCore::ECS::Components::UI::CText::RebuildLayout() const
 {
 	RebuildLayout(owner.transform.GetUISize());
@@ -448,29 +460,74 @@ void OvCore::ECS::Components::UI::CText::RefreshMaterial()
 	if (!m_material)
 	{
 		m_material = std::make_unique<OvRendering::Data::Material>();
+		MarkMaterialSourceDirty();
 	}
 
-	auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
-	auto* font = GetFont();
-
-	if (
-		!defaultMaterial ||
-		!defaultMaterial->HasShader() ||
-		!font ||
-		!font->EnsureEmbeddedMaterial(defaultMaterial->GetShader(), m_fontSize)
-	)
+	if (!m_materialSourceDirty)
 	{
-		m_material->SetShader(nullptr);
+		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath, false);
+		auto* currentShader = defaultMaterial && defaultMaterial->HasShader() ? defaultMaterial->GetShader() : nullptr;
+		auto* currentFont = m_fontPath.empty() || m_fontPath == "?" ?
+			nullptr :
+			Global::ServiceLocator::Get<ResourceManagement::FontManager>().GetResource(m_fontPath, false);
+
+		if (
+			currentShader != m_materialShader ||
+			currentFont != m_materialFont ||
+			(currentFont && currentFont->GetRevision() != m_materialFontRevision)
+		)
+		{
+			MarkMaterialSourceDirty();
+		}
+	}
+
+	if (m_materialSourceDirty)
+	{
+		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
+		auto* defaultShader = defaultMaterial && defaultMaterial->HasShader() ? defaultMaterial->GetShader() : nullptr;
+		auto* font = GetFont();
+
+		m_materialFont = font;
+		m_materialShader = defaultShader;
+		m_materialFontRevision = font ? font->GetRevision() : 0;
+
+		if (!defaultShader || !font || !font->EnsureEmbeddedMaterial(defaultShader, m_fontSize))
+		{
+			if (m_material->HasShader())
+			{
+				m_material->SetShader(nullptr);
+			}
+
+			m_materialColorDirty = true;
+			return;
+		}
+
+		auto* embeddedMaterial = font->GetEmbeddedMaterial(m_fontSize);
+		if (!embeddedMaterial || !embeddedMaterial->IsValid())
+		{
+			if (m_material->HasShader())
+			{
+				m_material->SetShader(nullptr);
+			}
+
+			m_materialColorDirty = true;
+			return;
+		}
+
+		*m_material = *embeddedMaterial;
+		m_materialFontRevision = font->GetRevision();
+		m_materialSourceDirty = false;
+		m_materialColorDirty = true;
+	}
+
+	if (!m_material->IsValid())
+	{
 		return;
 	}
 
-	auto* embeddedMaterial = font->GetEmbeddedMaterial(m_fontSize);
-	if (!embeddedMaterial || !embeddedMaterial->IsValid())
+	if (m_materialColorDirty)
 	{
-		m_material->SetShader(nullptr);
-		return;
+		m_material->TrySetProperty(kColorUniform, m_color);
+		m_materialColorDirty = false;
 	}
-
-	*m_material = *embeddedMaterial;
-	m_material->TrySetProperty(kColorUniform, m_color);
 }

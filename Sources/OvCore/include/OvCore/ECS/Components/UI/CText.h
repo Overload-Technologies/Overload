@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -171,6 +172,8 @@ namespace OvCore::ECS::Components::UI
 	private:
 		OvRendering::Resources::Font* GetFont() const;
 		void MarkMeshDirty();
+		void MarkMaterialSourceDirty();
+		void MarkMaterialColorDirty();
 		void RebuildLayout() const;
 		void RebuildLayout(const OvMaths::FVector2& p_uiSize) const;
 		void RebuildMesh() const;
@@ -194,6 +197,11 @@ namespace OvCore::ECS::Components::UI
 		mutable TextLayoutEngine::Output m_layout;
 		mutable std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
 		std::unique_ptr<OvRendering::Data::Material> m_material;
+		OvRendering::Resources::Font* m_materialFont = nullptr;
+		OvRendering::Resources::Shader* m_materialShader = nullptr;
+		uint64_t m_materialFontRevision = 0;
+		bool m_materialSourceDirty = true;
+		bool m_materialColorDirty = true;
 	};
 }
 

@@ -80,6 +80,11 @@ namespace OvRendering::Resources
 		bool IsValid() const;
 
 		/**
+		* Returns the resource revision, incremented when atlas variants are rebuilt
+		*/
+		uint64_t GetRevision() const;
+
+		/**
 		* Returns the glyph atlas font size
 		*/
 		float GetPixelSize() const;
@@ -172,6 +177,7 @@ namespace OvRendering::Resources
 	private:
 		bool m_valid = false;
 		uint32_t m_activePixelSize = 32;
+		uint64_t m_revision = 0;
 		std::filesystem::path m_realPath;
 		std::unordered_map<uint32_t, AtlasVariant> m_atlasVariants;
 	};

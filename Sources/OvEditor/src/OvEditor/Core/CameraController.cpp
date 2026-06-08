@@ -103,16 +103,13 @@ namespace
 
 	bool TryGetUIFocusTarget(
 		OvCore::ECS::Actor& p_actor,
-		const OvMaths::FVector2& p_renderSize,
-		bool p_screenSpace,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		ActorFocusTarget& p_outTarget
 	)
 	{
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (!p_uiFrameResolver.ResolveElement(
 			p_actor,
-			p_renderSize,
-			p_screenSpace,
 			resolvedElement
 		))
 		{
@@ -138,18 +135,17 @@ namespace
 			focusRadius = std::max(focusRadius, OvMaths::FVector3::Length(corner - p_outTarget.position));
 		}
 
-		p_outTarget.distance = p_screenSpace ? 4.0f : std::max(4.0f, focusRadius * 2.0f);
+		p_outTarget.distance = p_uiFrameResolver.IsScreenSpace() ? 4.0f : std::max(4.0f, focusRadius * 2.0f);
 		return true;
 	}
 
 	ActorFocusTarget GetActorFocusTarget(
 		OvCore::ECS::Actor& p_actor,
-		const OvMaths::FVector2& p_renderSize,
-		bool p_screenSpace
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver
 	)
 	{
 		ActorFocusTarget target;
-		if (TryGetUIFocusTarget(p_actor, p_renderSize, p_screenSpace, target))
+		if (TryGetUIFocusTarget(p_actor, p_uiFrameResolver, target))
 		{
 			return target;
 		}
@@ -181,10 +177,13 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
 					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
 				};
-				const auto focusTarget = GetActorFocusTarget(
-					target.value().get(),
+				const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
 					renderSize,
 					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				};
+				const auto focusTarget = GetActorFocusTarget(
+					target.value().get(),
+					uiFrameResolver
 				);
 
 				if (m_inputManager.IsKeyPressed(OvWindowing::Inputs::EKey::KEY_F))
@@ -297,10 +296,13 @@ void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target
 		winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
 		winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
 	};
-	const auto focusTarget = GetActorFocusTarget(
-		p_target,
+	const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
 		renderSize,
 		EDITOR_EXEC(IsSceneUIRenderingEnabled())
+	};
+	const auto focusTarget = GetActorFocusTarget(
+		p_target,
+		uiFrameResolver
 	);
 
 	m_cameraDestinations.push({

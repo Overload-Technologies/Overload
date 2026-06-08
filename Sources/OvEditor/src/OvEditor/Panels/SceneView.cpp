@@ -44,15 +44,12 @@ namespace
 
 	std::optional<UIGizmoContext> ResolveUIGizmoContext(
 		OvCore::ECS::Actor& p_actor,
-		const OvMaths::FVector2& p_renderSize,
-		bool p_renderUIInScreenSpace
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver
 	)
 	{
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (!p_uiFrameResolver.ResolveElement(
 			p_actor,
-			p_renderSize,
-			p_renderUIInScreenSpace,
 			resolvedElement
 		))
 		{
@@ -269,10 +266,13 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
 					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
 				};
-				const auto uiGizmoContext = ResolveUIGizmoContext(
-					selectedActor,
+				const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
 					renderSize,
 					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				};
+				const auto uiGizmoContext = ResolveUIGizmoContext(
+					selectedActor,
+					uiFrameResolver
 				);
 				const auto* uiOrigin = uiGizmoContext ? &uiGizmoContext->origin : nullptr;
 				const auto* uiUnitsScale = uiGizmoContext ? &uiGizmoContext->unitsScale : nullptr;
@@ -284,7 +284,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 					m_highlightedGizmoDirection.value(),
 					uiOrigin,
 					uiUnitsScale,
-					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+					uiFrameResolver.IsScreenSpace()
 				);
 			}
 			else if (m_highlightedActor)

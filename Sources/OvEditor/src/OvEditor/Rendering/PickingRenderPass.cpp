@@ -53,9 +53,7 @@ namespace
 
 	bool TryGetUIActorGizmoTransform(
 		const bool p_includeUI,
-		const bool p_renderUIInScreenSpace,
-		const uint32_t p_renderWidth,
-		const uint32_t p_renderHeight,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		OvCore::ECS::Actor& p_actor,
 		OvMaths::FVector3& p_position,
 		OvMaths::FQuaternion& p_rotation
@@ -66,16 +64,9 @@ namespace
 			return false;
 		}
 
-		const auto renderSize = OvMaths::FVector2{
-			static_cast<float>(p_renderWidth),
-			static_cast<float>(p_renderHeight)
-		};
-
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (!p_uiFrameResolver.ResolveElement(
 			p_actor,
-			renderSize,
-			p_renderUIInScreenSpace,
 			resolvedElement
 		))
 		{
@@ -168,6 +159,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 	auto& debugSceneDescriptor = m_renderer.GetDescriptor<DebugSceneRenderer::DebugSceneDescriptor>();
 	auto& frameDescriptor = m_renderer.GetFrameDescriptor();
 	auto& scene = sceneDescriptor.scene;
+	const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
 
 	m_actorPickingFramebuffer.Resize(frameDescriptor.renderWidth, frameDescriptor.renderHeight);
 
@@ -192,9 +184,7 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 		auto gizmoRotation = selectedActor.transform.GetWorldRotation();
 		const bool hasUIGizmoTransform = TryGetUIActorGizmoTransform(
 			sceneDescriptor.includeUI,
-			sceneDescriptor.renderUIInScreenSpace,
-			frameDescriptor.renderWidth,
-			frameDescriptor.renderHeight,
+			uiFrameResolver,
 			selectedActor,
 			gizmoPosition,
 			gizmoRotation
@@ -203,15 +193,10 @@ void OvEditor::Rendering::PickingRenderPass::Draw(OvRendering::Data::PipelineSta
 		std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
 		std::optional<float> gizmoScaleOverride;
 		bool showGizmoZAxis = true;
-		if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
+		if (hasUIGizmoTransform && uiFrameResolver.IsScreenSpace())
 		{
-			const auto renderSize = OvMaths::FVector2{
-				static_cast<float>(frameDescriptor.renderWidth),
-				static_cast<float>(frameDescriptor.renderHeight)
-			};
 			gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
-			gizmoProjectionMatrixOverride = OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(
-				renderSize,
+			gizmoProjectionMatrixOverride = uiFrameResolver.CreateProjectionMatrix(
 				-kUIScreenSpaceGizmoDepth,
 				kUIScreenSpaceGizmoDepth
 			);

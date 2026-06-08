@@ -125,28 +125,21 @@ namespace
 	}
 
 	bool TryGetUIActorGizmoTransform(
-		const OvCore::Rendering::SceneRenderer::SceneDescriptor& p_sceneDescriptor,
-		const OvRendering::Data::FrameDescriptor& p_frameDescriptor,
+		bool p_includeUI,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
 		OvCore::ECS::Actor& p_actor,
 		OvMaths::FVector3& p_position,
 		OvMaths::FQuaternion& p_rotation
 	)
 	{
-		if (!p_sceneDescriptor.includeUI)
+		if (!p_includeUI)
 		{
 			return false;
 		}
 
-		const auto renderSize = OvMaths::FVector2{
-			static_cast<float>(p_frameDescriptor.renderWidth),
-			static_cast<float>(p_frameDescriptor.renderHeight)
-		};
-
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (!p_uiFrameResolver.ResolveElement(
 			p_actor,
-			renderSize,
-			p_sceneDescriptor.renderUIInScreenSpace,
 			resolvedElement
 		))
 		{
@@ -393,9 +386,10 @@ protected:
 			auto gizmoPosition = selectedActor.transform.GetWorldPosition();
 			auto gizmoRotation = selectedActor.transform.GetWorldRotation();
 			const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+			const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
 			const bool hasUIGizmoTransform = TryGetUIActorGizmoTransform(
-				sceneDescriptor,
-				m_renderer.GetFrameDescriptor(),
+				sceneDescriptor.includeUI,
+				uiFrameResolver,
 				selectedActor,
 				gizmoPosition,
 				gizmoRotation
@@ -404,16 +398,10 @@ protected:
 			std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
 			std::optional<float> gizmoScaleOverride;
 			bool showGizmoZAxis = true;
-			if (hasUIGizmoTransform && sceneDescriptor.renderUIInScreenSpace)
+			if (hasUIGizmoTransform && uiFrameResolver.IsScreenSpace())
 			{
-				const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
-				const auto renderSize = OvMaths::FVector2{
-					static_cast<float>(frameDescriptor.renderWidth),
-					static_cast<float>(frameDescriptor.renderHeight)
-				};
 				gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
-				gizmoProjectionMatrixOverride = OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(
-					renderSize,
+				gizmoProjectionMatrixOverride = uiFrameResolver.CreateProjectionMatrix(
 					-kUIScreenSpaceGizmoDepth,
 					kUIScreenSpaceGizmoDepth
 				);
@@ -549,16 +537,11 @@ protected:
 		}
 
 		const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
-		const auto renderSize = OvMaths::FVector2{
-			static_cast<float>(frameDescriptor.renderWidth),
-			static_cast<float>(frameDescriptor.renderHeight)
-		};
+		const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
 
 		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIElement(
+		if (!uiFrameResolver.ResolveElement(
 			p_actor,
-			renderSize,
-			sceneDescriptor.renderUIInScreenSpace,
 			p_size,
 			resolvedElement
 		))
@@ -575,9 +558,9 @@ protected:
 		};
 
 		auto pso = m_renderer.CreatePipelineState();
-		if (sceneDescriptor.renderUIInScreenSpace)
+		if (uiFrameResolver.IsScreenSpace())
 		{
-			m_debugShapeFeature.SetViewProjection(OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(renderSize));
+			m_debugShapeFeature.SetViewProjection(uiFrameResolver.CreateProjectionMatrix());
 		}
 
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kUIBoundsColor, kUIBoundsWidth, false);
@@ -585,7 +568,7 @@ protected:
 		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kUIBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kUIBoundsColor, kUIBoundsWidth, false);
 
-		if (sceneDescriptor.renderUIInScreenSpace)
+		if (uiFrameResolver.IsScreenSpace())
 		{
 			const auto& camera = frameDescriptor.camera;
 			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());
@@ -601,16 +584,11 @@ protected:
 		}
 
 		const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
-		const auto renderSize = OvMaths::FVector2{
-			static_cast<float>(frameDescriptor.renderWidth),
-			static_cast<float>(frameDescriptor.renderHeight)
-		};
+		const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
 
 		OvCore::Rendering::UIRenderingUtils::ResolvedUICanvas resolvedCanvas;
-		if (!OvCore::Rendering::UIRenderingUtils::ResolveUICanvas(
+		if (!uiFrameResolver.ResolveCanvas(
 			p_actor,
-			renderSize,
-			sceneDescriptor.renderUIInScreenSpace,
 			resolvedCanvas
 		))
 		{
@@ -626,9 +604,9 @@ protected:
 		};
 
 		auto pso = m_renderer.CreatePipelineState();
-		if (sceneDescriptor.renderUIInScreenSpace)
+		if (uiFrameResolver.IsScreenSpace())
 		{
-			m_debugShapeFeature.SetViewProjection(OvCore::Rendering::UIRenderingUtils::CreateUIProjectionMatrix(renderSize));
+			m_debugShapeFeature.SetViewProjection(uiFrameResolver.CreateProjectionMatrix());
 		}
 
 		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kCanvasBoundsColor, kUIBoundsWidth, false);
@@ -636,7 +614,7 @@ protected:
 		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kCanvasBoundsColor, kUIBoundsWidth, false);
 		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kCanvasBoundsColor, kUIBoundsWidth, false);
 
-		if (sceneDescriptor.renderUIInScreenSpace)
+		if (uiFrameResolver.IsScreenSpace())
 		{
 			const auto& camera = frameDescriptor.camera;
 			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());

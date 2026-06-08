@@ -14,6 +14,7 @@
 
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/TextLayoutEngine.h>
 #include <OvCore/ECS/Components/UI/TextMeshBuilder.h>
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Helpers/GUIDrawer.h>
@@ -94,41 +95,41 @@ namespace
 		return IsNearlyEqual(p_left.x, p_right.x) && IsNearlyEqual(p_left.y, p_right.y);
 	}
 
-	OvCore::ECS::Components::UI::TextMeshBuilder::EHorizontalAlignment ToTextMeshBuilderAlignment(
+	OvCore::ECS::Components::UI::TextLayoutEngine::EHorizontalAlignment ToTextLayoutAlignment(
 		OvCore::ECS::Components::UI::CText::EHorizontalAlignment p_alignment
 	)
 	{
 		using EHorizontalAlignment = OvCore::ECS::Components::UI::CText::EHorizontalAlignment;
-		using EBuilderAlignment = OvCore::ECS::Components::UI::TextMeshBuilder::EHorizontalAlignment;
+		using ELayoutAlignment = OvCore::ECS::Components::UI::TextLayoutEngine::EHorizontalAlignment;
 
 		switch (p_alignment)
 		{
 		case EHorizontalAlignment::CENTER:
-			return EBuilderAlignment::CENTER;
+			return ELayoutAlignment::CENTER;
 		case EHorizontalAlignment::RIGHT:
-			return EBuilderAlignment::RIGHT;
+			return ELayoutAlignment::RIGHT;
 		case EHorizontalAlignment::LEFT:
 		default:
-			return EBuilderAlignment::LEFT;
+			return ELayoutAlignment::LEFT;
 		}
 	}
 
-	OvCore::ECS::Components::UI::TextMeshBuilder::EVerticalAlignment ToTextMeshBuilderAlignment(
+	OvCore::ECS::Components::UI::TextLayoutEngine::EVerticalAlignment ToTextLayoutAlignment(
 		OvCore::ECS::Components::UI::CText::EVerticalAlignment p_alignment
 	)
 	{
 		using EVerticalAlignment = OvCore::ECS::Components::UI::CText::EVerticalAlignment;
-		using EBuilderAlignment = OvCore::ECS::Components::UI::TextMeshBuilder::EVerticalAlignment;
+		using ELayoutAlignment = OvCore::ECS::Components::UI::TextLayoutEngine::EVerticalAlignment;
 
 		switch (p_alignment)
 		{
 		case EVerticalAlignment::CENTER:
-			return EBuilderAlignment::CENTER;
+			return ELayoutAlignment::CENTER;
 		case EVerticalAlignment::BOTTOM:
-			return EBuilderAlignment::BOTTOM;
+			return ELayoutAlignment::BOTTOM;
 		case EVerticalAlignment::TOP:
 		default:
-			return EBuilderAlignment::TOP;
+			return ELayoutAlignment::TOP;
 		}
 	}
 }
@@ -406,17 +407,16 @@ void OvCore::ECS::Components::UI::CText::RebuildLayout(const OvMaths::FVector2& 
 	m_layoutDirty = false;
 	m_lastLayoutUISize = p_uiSize;
 
-	const auto textLayout = TextMeshBuilder::Build({
+	m_layout = TextLayoutEngine::Layout({
 		.text = m_text,
 		.font = GetFont(),
 		.fontSize = m_fontSize,
 		.uiSize = p_uiSize,
-		.horizontalAlignment = ToTextMeshBuilderAlignment(m_horizontalAlignment),
-		.verticalAlignment = ToTextMeshBuilderAlignment(m_verticalAlignment),
-		.buildMesh = false
+		.horizontalAlignment = ToTextLayoutAlignment(m_horizontalAlignment),
+		.verticalAlignment = ToTextLayoutAlignment(m_verticalAlignment)
 	});
 
-	m_size = textLayout.size;
+	m_size = m_layout.size;
 }
 
 void OvCore::ECS::Components::UI::CText::RebuildMesh() const
@@ -431,21 +431,14 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh(const OvMaths::FVector2& p_
 		return;
 	}
 
+	RebuildLayout(p_uiSize);
+
 	m_meshDirty = false;
 	m_lastMeshUISize = p_uiSize;
 
-	auto textMesh = TextMeshBuilder::Build({
-		.text = m_text,
-		.font = GetFont(),
-		.fontSize = m_fontSize,
-		.uiSize = p_uiSize,
-		.horizontalAlignment = ToTextMeshBuilderAlignment(m_horizontalAlignment),
-		.verticalAlignment = ToTextMeshBuilderAlignment(m_verticalAlignment),
-		.buildMesh = true
-	});
+	auto textMesh = TextMeshBuilder::Build(m_layout);
 
 	m_size = textMesh.size;
-	m_layoutDirty = false;
 	m_lastLayoutUISize = p_uiSize;
 	m_mesh = std::move(textMesh.mesh);
 }

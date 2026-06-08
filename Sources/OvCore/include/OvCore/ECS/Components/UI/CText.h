@@ -10,6 +10,7 @@
 #include <string>
 
 #include <OvCore/ECS/Components/AComponent.h>
+#include <OvCore/ECS/Components/UI/TextLayoutEngine.h>
 #include <OvMaths/FVector2.h>
 #include <OvMaths/FVector4.h>
 #include <OvRendering/Data/Material.h>
@@ -190,6 +191,7 @@ namespace OvCore::ECS::Components::UI
 		mutable bool m_meshDirty = true;
 		mutable OvMaths::FVector2 m_lastMeshUISize = OvMaths::FVector2::Zero;
 		mutable OvMaths::FVector2 m_size = OvMaths::FVector2::Zero;
+		mutable TextLayoutEngine::Output m_layout;
 		mutable std::unique_ptr<OvRendering::Resources::Mesh> m_mesh;
 		std::unique_ptr<OvRendering::Data::Material> m_material;
 	};

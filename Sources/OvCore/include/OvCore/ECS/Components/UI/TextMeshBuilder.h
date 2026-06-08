@@ -7,10 +7,8 @@
 #pragma once
 
 #include <memory>
-#include <string_view>
 
-#include <OvMaths/FVector2.h>
-#include <OvRendering/Resources/Font.h>
+#include <OvCore/ECS/Components/UI/TextLayoutEngine.h>
 #include <OvRendering/Resources/Mesh.h>
 
 namespace OvCore::ECS::Components::UI
@@ -21,30 +19,9 @@ namespace OvCore::ECS::Components::UI
 	class TextMeshBuilder
 	{
 	public:
-		enum class EHorizontalAlignment
-		{
-			LEFT,
-			CENTER,
-			RIGHT
-		};
-
-		enum class EVerticalAlignment
-		{
-			TOP,
-			CENTER,
-			BOTTOM
-		};
-
-		struct Input
-		{
-			std::string_view text;
-			OvRendering::Resources::Font* font = nullptr;
-			float fontSize = 1.0f;
-			OvMaths::FVector2 uiSize = OvMaths::FVector2::Zero;
-			EHorizontalAlignment horizontalAlignment = EHorizontalAlignment::LEFT;
-			EVerticalAlignment verticalAlignment = EVerticalAlignment::TOP;
-			bool buildMesh = true;
-		};
+		using EHorizontalAlignment = TextLayoutEngine::EHorizontalAlignment;
+		using EVerticalAlignment = TextLayoutEngine::EVerticalAlignment;
+		using Input = TextLayoutEngine::Input;
 
 		struct Output
 		{
@@ -53,5 +30,6 @@ namespace OvCore::ECS::Components::UI
 		};
 
 		static Output Build(const Input& p_input);
+		static Output Build(const TextLayoutEngine::Output& p_layout);
 	};
 }

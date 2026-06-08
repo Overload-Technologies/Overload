@@ -5,6 +5,7 @@
 */
 
 #include <algorithm>
+#include <cstddef>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -119,29 +120,6 @@ namespace
 		return std::nullopt;
 	}
 
-	std::vector<OvCore::ECS::Components::UI::ClayLayoutChildInput> CollectLayoutChildren(OvCore::ECS::Actor& p_owner)
-	{
-		std::vector<OvCore::ECS::Components::UI::ClayLayoutChildInput> layoutChildren;
-
-		for (const auto child : p_owner.GetChildren())
-		{
-			if (!child || !child->IsActive())
-			{
-				continue;
-			}
-
-			const auto size = GetLayoutSize(*child);
-			if (!size)
-			{
-				continue;
-			}
-
-			layoutChildren.push_back({ child, size.value() });
-		}
-
-		return layoutChildren;
-	}
-
 	OvCore::ECS::Components::UI::ClayLayoutSettings CreateLayoutSettings(
 		const OvCore::ECS::Components::UI::CLayoutGroup& p_layout,
 		const OvCore::ECS::Actor& p_owner
@@ -182,6 +160,7 @@ std::string OvCore::ECS::Components::UI::CLayoutGroup::GetTypeName()
 void OvCore::ECS::Components::UI::CLayoutGroup::SetDirection(EDirection p_direction)
 {
 	m_direction = ToDirection(static_cast<int>(p_direction));
+	InvalidateLayoutCache();
 }
 
 OvCore::ECS::Components::UI::CLayoutGroup::EDirection OvCore::ECS::Components::UI::CLayoutGroup::GetDirection() const
@@ -192,6 +171,7 @@ OvCore::ECS::Components::UI::CLayoutGroup::EDirection OvCore::ECS::Components::U
 void OvCore::ECS::Components::UI::CLayoutGroup::SetSpacing(float p_spacing)
 {
 	m_spacing = ClampSpacing(p_spacing, m_spacing);
+	InvalidateLayoutCache();
 }
 
 float OvCore::ECS::Components::UI::CLayoutGroup::GetSpacing() const
@@ -201,7 +181,7 @@ float OvCore::ECS::Components::UI::CLayoutGroup::GetSpacing() const
 
 OvMaths::FVector2 OvCore::ECS::Components::UI::CLayoutGroup::GetComputedSize() const
 {
-	return ClayLayoutSolver::Solve(CreateLayoutSettings(*this, owner), CollectLayoutChildren(owner)).size;
+	return GetResolvedLayout().size;
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::SetPadding(const OvMaths::FVector4& p_padding)
@@ -210,6 +190,7 @@ void OvCore::ECS::Components::UI::CLayoutGroup::SetPadding(const OvMaths::FVecto
 	m_padding.y = ClampPadding(p_padding.y, m_padding.y);
 	m_padding.z = ClampPadding(p_padding.z, m_padding.z);
 	m_padding.w = ClampPadding(p_padding.w, m_padding.w);
+	InvalidateLayoutCache();
 }
 
 const OvMaths::FVector4& OvCore::ECS::Components::UI::CLayoutGroup::GetPadding() const
@@ -220,6 +201,7 @@ const OvMaths::FVector4& OvCore::ECS::Components::UI::CLayoutGroup::GetPadding()
 void OvCore::ECS::Components::UI::CLayoutGroup::SetHorizontalAlignment(EHorizontalAlignment p_alignment)
 {
 	m_horizontalAlignment = ToHorizontalAlignment(static_cast<int>(p_alignment));
+	InvalidateLayoutCache();
 }
 
 OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment OvCore::ECS::Components::UI::CLayoutGroup::GetHorizontalAlignment() const
@@ -230,6 +212,7 @@ OvCore::ECS::Components::UI::CLayoutGroup::EHorizontalAlignment OvCore::ECS::Com
 void OvCore::ECS::Components::UI::CLayoutGroup::SetVerticalAlignment(EVerticalAlignment p_alignment)
 {
 	m_verticalAlignment = ToVerticalAlignment(static_cast<int>(p_alignment));
+	InvalidateLayoutCache();
 }
 
 OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment OvCore::ECS::Components::UI::CLayoutGroup::GetVerticalAlignment() const
@@ -240,6 +223,7 @@ OvCore::ECS::Components::UI::CLayoutGroup::EVerticalAlignment OvCore::ECS::Compo
 void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenWidth(bool p_controlChildrenWidth)
 {
 	m_controlChildrenWidth = p_controlChildrenWidth;
+	InvalidateLayoutCache();
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenWidth() const
@@ -250,6 +234,7 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenWidth() const
 void OvCore::ECS::Components::UI::CLayoutGroup::SetControlChildrenHeight(bool p_controlChildrenHeight)
 {
 	m_controlChildrenHeight = p_controlChildrenHeight;
+	InvalidateLayoutCache();
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
@@ -260,6 +245,7 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetControlChildrenHeight() const
 void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandWidth(bool p_forceExpandWidth)
 {
 	m_forceExpandWidth = p_forceExpandWidth;
+	InvalidateLayoutCache();
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandWidth() const
@@ -270,6 +256,7 @@ bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandWidth() const
 void OvCore::ECS::Components::UI::CLayoutGroup::SetForceExpandHeight(bool p_forceExpandHeight)
 {
 	m_forceExpandHeight = p_forceExpandHeight;
+	InvalidateLayoutCache();
 }
 
 bool OvCore::ECS::Components::UI::CLayoutGroup::GetForceExpandHeight() const
@@ -304,7 +291,7 @@ std::optional<OvCore::ECS::Components::UI::CLayoutGroup::ChildLayout> OvCore::EC
 		return std::nullopt;
 	}
 
-	for (const auto& childLayout : GetChildLayouts())
+	for (const auto& childLayout : GetResolvedLayout().children)
 	{
 		if (childLayout.actor == &p_child)
 		{
@@ -317,7 +304,7 @@ std::optional<OvCore::ECS::Components::UI::CLayoutGroup::ChildLayout> OvCore::EC
 
 std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS::Components::UI::CLayoutGroup::GetChildOffsets() const
 {
-	const auto childLayouts = GetChildLayouts();
+	const auto& childLayouts = GetResolvedLayout().children;
 
 	std::vector<ChildOffset> offsets;
 	offsets.reserve(childLayouts.size());
@@ -332,21 +319,89 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildOffset> OvCore::ECS:
 
 std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildLayout> OvCore::ECS::Components::UI::CLayoutGroup::GetChildLayouts() const
 {
-	const auto layoutChildren = CollectLayoutChildren(owner);
+	return GetResolvedLayout().children;
+}
 
-	if (layoutChildren.empty())
+OvCore::ECS::Components::UI::CLayoutGroup::LayoutCacheInput OvCore::ECS::Components::UI::CLayoutGroup::BuildLayoutCacheInput() const
+{
+	LayoutCacheInput input;
+	const auto settings = CreateLayoutSettings(*this, owner);
+
+	input.signature = {
+		.direction = settings.direction,
+		.spacing = settings.spacing,
+		.padding = settings.padding,
+		.horizontalAlignment = settings.horizontalAlignment,
+		.verticalAlignment = settings.verticalAlignment,
+		.controlChildrenWidth = settings.controlChildrenWidth,
+		.controlChildrenHeight = settings.controlChildrenHeight,
+		.forceExpandWidth = settings.forceExpandWidth,
+		.forceExpandHeight = settings.forceExpandHeight,
+		.containerSize = settings.containerSize,
+		.pivot = settings.pivot
+	};
+
+	const auto& children = owner.GetChildren();
+	input.children.reserve(children.size());
+	input.signature.children.reserve(children.size());
+
+	for (const auto child : children)
 	{
-		return {};
+		if (!child || !child->IsActive())
+		{
+			continue;
+		}
+
+		const auto size = GetLayoutSize(*child);
+		if (!size)
+		{
+			continue;
+		}
+
+		input.children.push_back({
+			.actor = child,
+			.preferredSize = size.value()
+		});
+		input.signature.children.push_back({
+			.actor = child,
+			.preferredSize = size.value()
+		});
+	}
+
+	return input;
+}
+
+const OvCore::ECS::Components::UI::CLayoutGroup::LayoutCache& OvCore::ECS::Components::UI::CLayoutGroup::GetResolvedLayout() const
+{
+	const auto input = BuildLayoutCacheInput();
+
+	if (m_layoutCache.valid && HasSameLayoutSignature(m_layoutCache.signature, input.signature))
+	{
+		return m_layoutCache;
+	}
+
+	std::vector<ClayLayoutChildInput> layoutChildren;
+	layoutChildren.reserve(input.children.size());
+
+	for (const auto& child : input.children)
+	{
+		layoutChildren.push_back({
+			.actor = child.actor,
+			.preferredSize = child.preferredSize
+		});
 	}
 
 	const auto layoutResult = ClayLayoutSolver::Solve(CreateLayoutSettings(*this, owner), layoutChildren);
 
-	std::vector<ChildLayout> childLayouts;
-	childLayouts.reserve(layoutResult.children.size());
+	m_layoutCache.valid = true;
+	m_layoutCache.signature = input.signature;
+	m_layoutCache.size = layoutResult.size;
+	m_layoutCache.children.clear();
+	m_layoutCache.children.reserve(layoutResult.children.size());
 
 	for (const auto& child : layoutResult.children)
 	{
-		childLayouts.push_back({
+		m_layoutCache.children.push_back({
 			.actor = child.actor,
 			.offset = child.offset,
 			.size = child.size,
@@ -356,7 +411,59 @@ std::vector<OvCore::ECS::Components::UI::CLayoutGroup::ChildLayout> OvCore::ECS:
 		});
 	}
 
-	return childLayouts;
+	return m_layoutCache;
+}
+
+void OvCore::ECS::Components::UI::CLayoutGroup::InvalidateLayoutCache() const
+{
+	m_layoutCache.valid = false;
+	m_layoutCache.children.clear();
+}
+
+bool OvCore::ECS::Components::UI::CLayoutGroup::HasSameLayoutSignature(
+	const OvCore::ECS::Components::UI::CLayoutGroup::LayoutCacheSignature& p_lhs,
+	const OvCore::ECS::Components::UI::CLayoutGroup::LayoutCacheSignature& p_rhs
+)
+{
+	if (
+		p_lhs.direction != p_rhs.direction ||
+		p_lhs.spacing != p_rhs.spacing ||
+		p_lhs.padding.x != p_rhs.padding.x ||
+		p_lhs.padding.y != p_rhs.padding.y ||
+		p_lhs.padding.z != p_rhs.padding.z ||
+		p_lhs.padding.w != p_rhs.padding.w ||
+		p_lhs.horizontalAlignment != p_rhs.horizontalAlignment ||
+		p_lhs.verticalAlignment != p_rhs.verticalAlignment ||
+		p_lhs.controlChildrenWidth != p_rhs.controlChildrenWidth ||
+		p_lhs.controlChildrenHeight != p_rhs.controlChildrenHeight ||
+		p_lhs.forceExpandWidth != p_rhs.forceExpandWidth ||
+		p_lhs.forceExpandHeight != p_rhs.forceExpandHeight ||
+		p_lhs.containerSize.x != p_rhs.containerSize.x ||
+		p_lhs.containerSize.y != p_rhs.containerSize.y ||
+		p_lhs.pivot.x != p_rhs.pivot.x ||
+		p_lhs.pivot.y != p_rhs.pivot.y ||
+		p_lhs.children.size() != p_rhs.children.size()
+	)
+	{
+		return false;
+	}
+
+	for (size_t i = 0; i < p_lhs.children.size(); ++i)
+	{
+		const auto& leftChild = p_lhs.children[i];
+		const auto& rightChild = p_rhs.children[i];
+
+		if (
+			leftChild.actor != rightChild.actor ||
+			leftChild.preferredSize.x != rightChild.preferredSize.x ||
+			leftChild.preferredSize.y != rightChild.preferredSize.y
+		)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void OvCore::ECS::Components::UI::CLayoutGroup::OnSerialize(tinyxml2::XMLDocument& p_doc, tinyxml2::XMLNode* p_node)

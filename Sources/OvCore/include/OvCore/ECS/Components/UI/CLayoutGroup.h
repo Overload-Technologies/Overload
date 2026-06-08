@@ -222,6 +222,53 @@ namespace OvCore::ECS::Components::UI
 		virtual bool IsDirectionEditable() const;
 
 	private:
+		struct LayoutInputChild
+		{
+			ECS::Actor* actor = nullptr;
+			OvMaths::FVector2 preferredSize = OvMaths::FVector2::Zero;
+		};
+
+		struct LayoutCacheChildSignature
+		{
+			const ECS::Actor* actor = nullptr;
+			OvMaths::FVector2 preferredSize = OvMaths::FVector2::Zero;
+		};
+
+		struct LayoutCacheSignature
+		{
+			EDirection direction = EDirection::HORIZONTAL;
+			float spacing = 0.0f;
+			OvMaths::FVector4 padding = OvMaths::FVector4::Zero;
+			EHorizontalAlignment horizontalAlignment = EHorizontalAlignment::CENTER;
+			EVerticalAlignment verticalAlignment = EVerticalAlignment::CENTER;
+			bool controlChildrenWidth = false;
+			bool controlChildrenHeight = false;
+			bool forceExpandWidth = false;
+			bool forceExpandHeight = false;
+			OvMaths::FVector2 containerSize = OvMaths::FVector2::Zero;
+			OvMaths::FVector2 pivot = OvMaths::FVector2::Zero;
+			std::vector<LayoutCacheChildSignature> children;
+		};
+
+		struct LayoutCacheInput
+		{
+			LayoutCacheSignature signature;
+			std::vector<LayoutInputChild> children;
+		};
+
+		struct LayoutCache
+		{
+			bool valid = false;
+			LayoutCacheSignature signature;
+			OvMaths::FVector2 size = OvMaths::FVector2::Zero;
+			std::vector<ChildLayout> children;
+		};
+
+		LayoutCacheInput BuildLayoutCacheInput() const;
+		const LayoutCache& GetResolvedLayout() const;
+		void InvalidateLayoutCache() const;
+		static bool HasSameLayoutSignature(const LayoutCacheSignature& p_lhs, const LayoutCacheSignature& p_rhs);
+
 		EDirection m_direction = EDirection::HORIZONTAL;
 		float m_spacing = 0.0f;
 		OvMaths::FVector4 m_padding = OvMaths::FVector4::Zero;
@@ -231,6 +278,7 @@ namespace OvCore::ECS::Components::UI
 		bool m_controlChildrenHeight = false;
 		bool m_forceExpandWidth = false;
 		bool m_forceExpandHeight = false;
+		mutable LayoutCache m_layoutCache;
 	};
 }
 

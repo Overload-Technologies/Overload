@@ -182,13 +182,13 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 					EDITOR_EXEC(IsSceneUIRenderingEnabled())
 				};
 				const auto focusTarget = GetActorFocusTarget(
-					target.value().get(),
+					target.value(),
 					uiFrameResolver
 				);
 
 				if (m_inputManager.IsKeyPressed(OvWindowing::Inputs::EKey::KEY_F))
 				{
-					MoveToTarget(target.value().get());
+					MoveToTarget(target.value());
 				}
 
 				auto focusObjectFromAngle = [this, focusTarget]( const OvMaths::FVector3& offset)
@@ -269,7 +269,7 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 					{
 						if (auto target = GetTargetActor())
 						{
-							HandleCameraOrbit(target.value().get(), mouseOffset, wasFirstMouse);
+							HandleCameraOrbit(target.value(), mouseOffset, wasFirstMouse);
 						}
 					}
 					else
@@ -356,15 +356,15 @@ bool OvEditor::Core::CameraController::IsOperating() const
 
 void OvEditor::Core::CameraController::LockTargetActor(OvCore::ECS::Actor& p_actor)
 {
-	m_lockedActor = p_actor;
+	m_lockedActor = &p_actor;
 }
 
 void OvEditor::Core::CameraController::UnlockTargetActor()
 {
-	m_lockedActor = std::nullopt;
+	m_lockedActor.reset();
 }
 
-std::optional<std::reference_wrapper<OvCore::ECS::Actor>> OvEditor::Core::CameraController::GetTargetActor() const
+OvTools::Utils::OptRef<OvCore::ECS::Actor> OvEditor::Core::CameraController::GetTargetActor() const
 {
 	if (m_lockedActor.has_value())
 	{
@@ -372,7 +372,7 @@ std::optional<std::reference_wrapper<OvCore::ECS::Actor>> OvEditor::Core::Camera
 	}
 	else if (EDITOR_EXEC(IsAnyActorSelected()))
 	{
-		return EDITOR_EXEC(GetSelectedActor());
+		return OvTools::Utils::OptRef<OvCore::ECS::Actor>{ EDITOR_EXEC(GetSelectedActor()) };
 	}
 
 	return std::nullopt;

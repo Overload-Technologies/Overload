@@ -51,7 +51,20 @@ namespace OvTools::Eventing
 	template<class... ArgTypes>
 	void Event<ArgTypes...>::Invoke(ArgTypes... p_args)
 	{
-		for (auto const& [key, value] : m_callbacks)
-			value(p_args...);
+		std::vector<Callback> callbacks;
+		callbacks.reserve(m_callbacks.size());
+
+		for (const auto& pair : m_callbacks)
+		{
+			callbacks.push_back(pair.second);
+		}
+
+		for (const auto& callback : callbacks)
+		{
+			if (callback)
+			{
+				callback(p_args...);
+			}
+		}
 	}
 }

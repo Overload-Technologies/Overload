@@ -26,6 +26,12 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Scripting/Lua/LuaScriptEngine.h>
 
 void BindLuaActor(sol::state& p_luaState)
@@ -72,6 +78,12 @@ void BindLuaActor(sol::state& p_luaState)
 		"GetAudioListener", &Actor::GetComponent<CAudioListener>,
 		"GetPostProcessStack", & Actor::GetComponent<CPostProcessStack>,
 		"GetReflectionProbe", &Actor::GetComponent<CReflectionProbe>,
+		"GetCanvas", &Actor::GetComponent<UI::CCanvas>,
+		"GetHorizontalLayout", &Actor::GetComponent<UI::CHorizontalLayout>,
+		"GetImage", &Actor::GetComponent<UI::CImage>,
+		"GetLayoutGroup", &Actor::GetComponent<UI::CLayoutGroup>,
+		"GetText", &Actor::GetComponent<UI::CText>,
+		"GetVerticalLayout", &Actor::GetComponent<UI::CVerticalLayout>,
 
 		/* Behaviours relatives */
 		"GetBehaviour", [](Actor& p_this, const std::string& p_name) -> sol::table {
@@ -125,6 +137,12 @@ void BindLuaActor(sol::state& p_luaState)
 		"AddAudioListener", &Actor::AddComponent<CAudioListener>,
 		"AddPostProcessStack", & Actor::AddComponent<CPostProcessStack>,
 		"AddReflectionProbe", &Actor::AddComponent<CReflectionProbe>,
+		"AddCanvas", &Actor::AddComponent<UI::CCanvas>,
+		"AddHorizontalLayout", &Actor::AddComponent<UI::CHorizontalLayout>,
+		"AddImage", &Actor::AddComponent<UI::CImage>,
+		"AddLayoutGroup", &Actor::AddComponent<UI::CLayoutGroup>,
+		"AddText", &Actor::AddComponent<UI::CText>,
+		"AddVerticalLayout", &Actor::AddComponent<UI::CVerticalLayout>,
 
 		/* Components Destructors */
 		"RemoveModelRenderer", &Actor::RemoveComponent<CModelRenderer>,
@@ -143,6 +161,12 @@ void BindLuaActor(sol::state& p_luaState)
 		"RemoveAudioListener", &Actor::RemoveComponent<CAudioListener>,
 		"RemovePostProcessStack", & Actor::RemoveComponent<CPostProcessStack>,
 		"RemoveReflectionProbe", &Actor::RemoveComponent<CReflectionProbe>,
+		"RemoveCanvas", &Actor::RemoveComponent<UI::CCanvas>,
+		"RemoveHorizontalLayout", &Actor::RemoveComponent<UI::CHorizontalLayout>,
+		"RemoveImage", &Actor::RemoveComponent<UI::CImage>,
+		"RemoveLayoutGroup", &Actor::RemoveComponent<UI::CLayoutGroup>,
+		"RemoveText", &Actor::RemoveComponent<UI::CText>,
+		"RemoveVerticalLayout", &Actor::RemoveComponent<UI::CVerticalLayout>,
 
 		/* Behaviour management */
 		"AddBehaviour", &Actor::AddBehaviour,

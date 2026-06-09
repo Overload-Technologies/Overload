@@ -21,9 +21,15 @@
 #include <OvCore/ECS/Components/CPointLight.h>  
 #include <OvCore/ECS/Components/CPostProcessStack.h>  
 #include <OvCore/ECS/Components/CReflectionProbe.h>  
-#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
-#include <OvCore/ECS/Components/CSpotLight.h>  
+#include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
+#include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 
 void BindLuaComponents(sol::state& p_luaState)
 {
@@ -63,7 +69,23 @@ void BindLuaComponents(sol::state& p_luaState)
 		"GetLocalRight", &CTransform::GetLocalRight,
 		"GetWorldForward", &CTransform::GetWorldForward,
 		"GetWorldUp", &CTransform::GetWorldUp,
-		"GetWorldRight", &CTransform::GetWorldRight
+		"GetWorldRight", &CTransform::GetWorldRight,
+		"EnableUIData", &CTransform::EnableUIData,
+		"DisableUIData", &CTransform::DisableUIData,
+		"HasUIData", &CTransform::HasUIData,
+		"HasActiveUIData", &CTransform::HasActiveUIData,
+		"GetUIPosition", [](CTransform& p_this) -> FVector2 { return p_this.GetUIPosition(); },
+		"SetUIPosition", &CTransform::SetUIPosition,
+		"GetUIRotation", &CTransform::GetUIRotation,
+		"SetUIRotation", &CTransform::SetUIRotation,
+		"GetUIScale", [](CTransform& p_this) -> FVector2 { return p_this.GetUIScale(); },
+		"SetUIScale", &CTransform::SetUIScale,
+		"GetUISize", [](CTransform& p_this) -> FVector2 { return p_this.GetUISize(); },
+		"SetUISize", &CTransform::SetUISize,
+		"GetUIPivot", [](CTransform& p_this) -> FVector2 { return p_this.GetUIPivot(); },
+		"SetUIPivot", &CTransform::SetUIPivot,
+		"GetUIAnchorPreset", &CTransform::GetUIAnchorPreset,
+		"SetUIAnchorPreset", &CTransform::SetUIAnchorPreset
 	);
 
 	p_luaState.new_enum<OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour>("FrustumBehaviour", {
@@ -201,6 +223,169 @@ void BindLuaComponents(sol::state& p_luaState)
 		"SetFrustumGeometryCulling", &CCamera::SetFrustumGeometryCulling,
 		"SetFrustumLightCulling", &CCamera::SetFrustumLightCulling,
 		"SetProjectionMode", &CCamera::SetProjectionMode
+	);
+
+	p_luaState.new_enum<UI::CCanvas::EScalerMode>("CanvasScalerMode", {
+		{"CONSTANT_PIXEL_SIZE", UI::CCanvas::EScalerMode::CONSTANT_PIXEL_SIZE},
+		{"SCALE_WITH_SCREEN_SIZE", UI::CCanvas::EScalerMode::SCALE_WITH_SCREEN_SIZE}
+	});
+
+	p_luaState.new_enum<UI::CCanvas::EScreenMatchMode>("CanvasScreenMatchMode", {
+		{"MATCH_WIDTH_OR_HEIGHT", UI::CCanvas::EScreenMatchMode::MATCH_WIDTH_OR_HEIGHT},
+		{"EXPAND", UI::CCanvas::EScreenMatchMode::EXPAND},
+		{"SHRINK", UI::CCanvas::EScreenMatchMode::SHRINK}
+	});
+
+	p_luaState.new_enum<CTransform::EUIAnchorPreset>("AnchorPreset", {
+		{"TOP_LEFT", CTransform::EUIAnchorPreset::TOP_LEFT},
+		{"TOP_CENTER", CTransform::EUIAnchorPreset::TOP_CENTER},
+		{"TOP_RIGHT", CTransform::EUIAnchorPreset::TOP_RIGHT},
+		{"MIDDLE_LEFT", CTransform::EUIAnchorPreset::MIDDLE_LEFT},
+		{"CENTER", CTransform::EUIAnchorPreset::CENTER},
+		{"MIDDLE_RIGHT", CTransform::EUIAnchorPreset::MIDDLE_RIGHT},
+		{"BOTTOM_LEFT", CTransform::EUIAnchorPreset::BOTTOM_LEFT},
+		{"BOTTOM_CENTER", CTransform::EUIAnchorPreset::BOTTOM_CENTER},
+		{"BOTTOM_RIGHT", CTransform::EUIAnchorPreset::BOTTOM_RIGHT},
+		{"HORIZONTAL_STRETCH_TOP", CTransform::EUIAnchorPreset::HORIZONTAL_STRETCH_TOP},
+		{"HORIZONTAL_STRETCH_MIDDLE", CTransform::EUIAnchorPreset::HORIZONTAL_STRETCH_MIDDLE},
+		{"HORIZONTAL_STRETCH_BOTTOM", CTransform::EUIAnchorPreset::HORIZONTAL_STRETCH_BOTTOM},
+		{"VERTICAL_STRETCH_LEFT", CTransform::EUIAnchorPreset::VERTICAL_STRETCH_LEFT},
+		{"VERTICAL_STRETCH_CENTER", CTransform::EUIAnchorPreset::VERTICAL_STRETCH_CENTER},
+		{"VERTICAL_STRETCH_RIGHT", CTransform::EUIAnchorPreset::VERTICAL_STRETCH_RIGHT},
+		{"STRETCH_BOTH", CTransform::EUIAnchorPreset::STRETCH_BOTH}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EDirection>("LayoutDirection", {
+		{"HORIZONTAL", UI::CLayoutGroup::EDirection::HORIZONTAL},
+		{"VERTICAL", UI::CLayoutGroup::EDirection::VERTICAL}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EHorizontalAlignment>("LayoutHorizontalAlignment", {
+		{"LEFT", UI::CLayoutGroup::EHorizontalAlignment::LEFT},
+		{"CENTER", UI::CLayoutGroup::EHorizontalAlignment::CENTER},
+		{"RIGHT", UI::CLayoutGroup::EHorizontalAlignment::RIGHT}
+	});
+
+	p_luaState.new_enum<UI::CLayoutGroup::EVerticalAlignment>("LayoutVerticalAlignment", {
+		{"TOP", UI::CLayoutGroup::EVerticalAlignment::TOP},
+		{"CENTER", UI::CLayoutGroup::EVerticalAlignment::CENTER},
+		{"BOTTOM", UI::CLayoutGroup::EVerticalAlignment::BOTTOM}
+	});
+
+	p_luaState.new_enum<UI::CText::EHorizontalAlignment>("TextHorizontalAlignment", {
+		{"LEFT", UI::CText::EHorizontalAlignment::LEFT},
+		{"CENTER", UI::CText::EHorizontalAlignment::CENTER},
+		{"RIGHT", UI::CText::EHorizontalAlignment::RIGHT}
+	});
+
+	p_luaState.new_enum<UI::CText::EVerticalAlignment>("TextVerticalAlignment", {
+		{"TOP", UI::CText::EVerticalAlignment::TOP},
+		{"CENTER", UI::CText::EVerticalAlignment::CENTER},
+		{"BOTTOM", UI::CText::EVerticalAlignment::BOTTOM}
+	});
+
+	p_luaState.new_usertype<UI::CCanvas>("Canvas",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetReferenceResolution", [](UI::CCanvas& p_this) -> FVector2 { return p_this.GetReferenceResolution(); },
+		"SetReferenceResolution", &UI::CCanvas::SetReferenceResolution,
+		"GetScaleFactor", &UI::CCanvas::GetScaleFactor,
+		"SetScaleFactor", &UI::CCanvas::SetScaleFactor,
+		"GetPixelsPerUnit", &UI::CCanvas::GetPixelsPerUnit,
+		"SetPixelsPerUnit", &UI::CCanvas::SetPixelsPerUnit,
+		"GetScalerMode", &UI::CCanvas::GetScalerMode,
+		"SetScalerMode", &UI::CCanvas::SetScalerMode,
+		"GetScreenMatchMode", &UI::CCanvas::GetScreenMatchMode,
+		"SetScreenMatchMode", &UI::CCanvas::SetScreenMatchMode,
+		"GetMatchWidthOrHeight", &UI::CCanvas::GetMatchWidthOrHeight,
+		"SetMatchWidthOrHeight", &UI::CCanvas::SetMatchWidthOrHeight
+	);
+
+	p_luaState.new_usertype<UI::CImage>("Image",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetTexture", &UI::CImage::GetTexture,
+		"SetTexture", &UI::CImage::SetTexture,
+		"GetSize", [](UI::CImage& p_this) -> FVector2 { return p_this.GetSize(); },
+		"SetSize", &UI::CImage::SetSize,
+		"GetTint", [](UI::CImage& p_this) -> FVector4 { return p_this.GetTint(); },
+		"SetTint", &UI::CImage::SetTint
+	);
+
+	p_luaState.new_usertype<UI::CLayoutGroup>("LayoutGroup",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetDirection", &UI::CLayoutGroup::GetDirection,
+		"SetDirection", &UI::CLayoutGroup::SetDirection,
+		"GetSpacing", &UI::CLayoutGroup::GetSpacing,
+		"SetSpacing", &UI::CLayoutGroup::SetSpacing,
+		"GetPadding", [](UI::CLayoutGroup& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CLayoutGroup::SetPadding,
+		"GetHorizontalAlignment", &UI::CLayoutGroup::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CLayoutGroup::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CLayoutGroup::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CLayoutGroup::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CLayoutGroup::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CLayoutGroup::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CLayoutGroup::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CLayoutGroup::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CLayoutGroup::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CLayoutGroup::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CLayoutGroup::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CLayoutGroup::SetForceExpandHeight
+	);
+
+	p_luaState.new_usertype<UI::CHorizontalLayout>("HorizontalLayout",
+		sol::base_classes, sol::bases<AComponent, UI::CLayoutGroup>(),
+		"GetSpacing", &UI::CHorizontalLayout::GetSpacing,
+		"SetSpacing", &UI::CHorizontalLayout::SetSpacing,
+		"GetPadding", [](UI::CHorizontalLayout& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CHorizontalLayout::SetPadding,
+		"GetHorizontalAlignment", &UI::CHorizontalLayout::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CHorizontalLayout::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CHorizontalLayout::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CHorizontalLayout::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CHorizontalLayout::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CHorizontalLayout::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CHorizontalLayout::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CHorizontalLayout::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CHorizontalLayout::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CHorizontalLayout::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CHorizontalLayout::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CHorizontalLayout::SetForceExpandHeight
+	);
+
+	p_luaState.new_usertype<UI::CVerticalLayout>("VerticalLayout",
+		sol::base_classes, sol::bases<AComponent, UI::CLayoutGroup>(),
+		"GetSpacing", &UI::CVerticalLayout::GetSpacing,
+		"SetSpacing", &UI::CVerticalLayout::SetSpacing,
+		"GetPadding", [](UI::CVerticalLayout& p_this) -> FVector4 { return p_this.GetPadding(); },
+		"SetPadding", &UI::CVerticalLayout::SetPadding,
+		"GetHorizontalAlignment", &UI::CVerticalLayout::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CVerticalLayout::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CVerticalLayout::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CVerticalLayout::SetVerticalAlignment,
+		"GetControlChildrenWidth", &UI::CVerticalLayout::GetControlChildrenWidth,
+		"SetControlChildrenWidth", &UI::CVerticalLayout::SetControlChildrenWidth,
+		"GetControlChildrenHeight", &UI::CVerticalLayout::GetControlChildrenHeight,
+		"SetControlChildrenHeight", &UI::CVerticalLayout::SetControlChildrenHeight,
+		"GetForceExpandWidth", &UI::CVerticalLayout::GetForceExpandWidth,
+		"SetForceExpandWidth", &UI::CVerticalLayout::SetForceExpandWidth,
+		"GetForceExpandHeight", &UI::CVerticalLayout::GetForceExpandHeight,
+		"SetForceExpandHeight", &UI::CVerticalLayout::SetForceExpandHeight
+	);
+
+	p_luaState.new_usertype<UI::CText>("Text",
+		sol::base_classes, sol::bases<AComponent>(),
+		"GetText", &UI::CText::GetText,
+		"SetText", &UI::CText::SetText,
+		"GetFontPath", &UI::CText::GetFontPath,
+		"SetFontPath", &UI::CText::SetFontPath,
+		"GetFontSize", &UI::CText::GetFontSize,
+		"SetFontSize", &UI::CText::SetFontSize,
+		"GetColor", [](UI::CText& p_this) -> FVector4 { return p_this.GetColor(); },
+		"SetColor", &UI::CText::SetColor,
+		"GetHorizontalAlignment", &UI::CText::GetHorizontalAlignment,
+		"SetHorizontalAlignment", &UI::CText::SetHorizontalAlignment,
+		"GetVerticalAlignment", &UI::CText::GetVerticalAlignment,
+		"SetVerticalAlignment", &UI::CText::SetVerticalAlignment
 	);
 
 	p_luaState.new_usertype<CLight>("Light",

@@ -4,6 +4,8 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <array>
 #include <imgui.h>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
@@ -11,6 +13,7 @@
 #include <OvCore/ECS/Components/CPhysicalBox.h>
 #include <OvCore/ECS/Components/CPhysicalCapsule.h>
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Core/CameraController.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -27,68 +30,131 @@ OvEditor::Core::CameraController::CameraController(
 	m_camera.SetFov(60.0f);
 }
 
-float GetActorFocusDist(OvCore::ECS::Actor& p_actor)
+namespace
 {
-	float distance = 4.0f;
-
-	if (p_actor.IsActive())
+	struct ActorFocusTarget
 	{
-		if (auto pb = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalBox>())
+		OvMaths::FVector3 position = OvMaths::FVector3::Zero;
+		float distance = 4.0f;
+	};
+
+	float GetActor3DFocusDist(OvCore::ECS::Actor& p_actor)
+	{
+		float distance = 4.0f;
+
+		if (p_actor.IsActive())
 		{
-			distance = std::max(distance, std::max
-			(
-				std::max
+			if (auto pb = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalBox>())
+			{
+				distance = std::max(distance, std::max
 				(
-					pb->GetSize().x * p_actor.transform.GetWorldScale().x,
-					pb->GetSize().y * p_actor.transform.GetWorldScale().y
-				),
-				pb->GetSize().z * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
-		}
+					std::max
+					(
+						pb->GetSize().x * p_actor.transform.GetWorldScale().x,
+						pb->GetSize().y * p_actor.transform.GetWorldScale().y
+					),
+					pb->GetSize().z * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
 
-		if (auto ps = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalSphere>())
-		{
-			distance = std::max(distance, std::max
-			(
-				std::max
+			if (auto ps = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalSphere>())
+			{
+				distance = std::max(distance, std::max
 				(
-					ps->GetRadius() * p_actor.transform.GetWorldScale().x,
-					ps->GetRadius() * p_actor.transform.GetWorldScale().y
-				),
-				ps->GetRadius() * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
-		}
+					std::max
+					(
+						ps->GetRadius() * p_actor.transform.GetWorldScale().x,
+						ps->GetRadius() * p_actor.transform.GetWorldScale().y
+					),
+					ps->GetRadius() * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
 
-		if (auto pc = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalCapsule>())
-		{
-			distance = std::max(distance, std::max
-			(
-				std::max
+			if (auto pc = p_actor.GetComponent<OvCore::ECS::Components::CPhysicalCapsule>())
+			{
+				distance = std::max(distance, std::max
 				(
-					pc->GetRadius() * p_actor.transform.GetWorldScale().x,
-					pc->GetHeight() * p_actor.transform.GetWorldScale().y
-				),
-				pc->GetRadius() * p_actor.transform.GetWorldScale().z
-			) * 1.5f);
+					std::max
+					(
+						pc->GetRadius() * p_actor.transform.GetWorldScale().x,
+						pc->GetHeight() * p_actor.transform.GetWorldScale().y
+					),
+					pc->GetRadius() * p_actor.transform.GetWorldScale().z
+				) * 1.5f);
+			}
+
+			if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>())
+			{
+				const bool hasCustomBoundingSphere = modelRenderer->GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CUSTOM_BOUNDS;
+				const bool hasModel = modelRenderer->GetModel();
+				const auto boundingSphere = hasCustomBoundingSphere ? &modelRenderer->GetCustomBoundingSphere() : hasModel ? &modelRenderer->GetModel()->GetBoundingSphere() : nullptr;
+				const auto& actorScale = p_actor.transform.GetWorldScale();
+				const auto scaleFactor = std::max(std::max(actorScale.x, actorScale.y), actorScale.z);
+
+				distance = std::max(distance, boundingSphere ? (boundingSphere->radius + OvMaths::FVector3::Length(boundingSphere->position)) * scaleFactor * 2.0f : 10.0f);
+			}
+
+			for (auto child : p_actor.GetChildren())
+				distance = std::max(distance, GetActor3DFocusDist(*child));
 		}
 
-		if (auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>())
-		{
-			const bool hasCustomBoundingSphere = modelRenderer->GetFrustumBehaviour() == OvCore::ECS::Components::CModelRenderer::EFrustumBehaviour::CUSTOM_BOUNDS;
-			const bool hasModel = modelRenderer->GetModel();
-			const auto boundingSphere = hasCustomBoundingSphere ? &modelRenderer->GetCustomBoundingSphere() : hasModel ? &modelRenderer->GetModel()->GetBoundingSphere() : nullptr;
-			const auto& actorPosition = p_actor.transform.GetWorldPosition();
-			const auto& actorScale = p_actor.transform.GetWorldScale();
-			const auto scaleFactor = std::max(std::max(actorScale.x, actorScale.y), actorScale.z);
-
-			distance = std::max(distance, boundingSphere ? (boundingSphere->radius + OvMaths::FVector3::Length(boundingSphere->position)) * scaleFactor * 2.0f : 10.0f);
-		}
-
-		for (auto child : p_actor.GetChildren())
-			distance = std::max(distance, GetActorFocusDist(*child));
+		return distance;
 	}
 
-	return distance;
+	bool TryGetUIFocusTarget(
+		OvCore::ECS::Actor& p_actor,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
+		ActorFocusTarget& p_outTarget
+	)
+	{
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		if (!p_uiFrameResolver.ResolveElement(
+			p_actor,
+			resolvedElement
+		))
+		{
+			return false;
+		}
+
+		p_outTarget.position = OvCore::Rendering::UIRenderingUtils::TransformUIPoint(
+			resolvedElement.modelMatrix,
+			OvMaths::FVector2::Zero
+		);
+
+		const auto halfSize = resolvedElement.elementSize * 0.5f;
+		const std::array<OvMaths::FVector3, 4> corners = {
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x,  halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x,  halfSize.y })
+		};
+
+		float focusRadius = 0.0f;
+		for (const auto& corner : corners)
+		{
+			focusRadius = std::max(focusRadius, OvMaths::FVector3::Length(corner - p_outTarget.position));
+		}
+
+		p_outTarget.distance = p_uiFrameResolver.IsScreenSpace() ? 4.0f : std::max(4.0f, focusRadius * 2.0f);
+		return true;
+	}
+
+	ActorFocusTarget GetActorFocusTarget(
+		OvCore::ECS::Actor& p_actor,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver
+	)
+	{
+		ActorFocusTarget target;
+		if (TryGetUIFocusTarget(p_actor, p_uiFrameResolver, target))
+		{
+			return target;
+		}
+
+		return {
+			p_actor.transform.GetWorldPosition(),
+			GetActor3DFocusDist(p_actor)
+		};
+	}
 }
 
 void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
@@ -106,19 +172,29 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 		{
 			if (auto target = GetTargetActor())
 			{
-				auto targetPos = target.value().get().transform.GetWorldPosition();
-
-				float dist = GetActorFocusDist(target.value().get());
+				auto [winWidth, winHeight] = m_view.GetSafeSize();
+				const auto renderSize = OvMaths::FVector2{
+					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+				};
+				const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
+					renderSize,
+					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				};
+				const auto focusTarget = GetActorFocusTarget(
+					target.value(),
+					uiFrameResolver
+				);
 
 				if (m_inputManager.IsKeyPressed(OvWindowing::Inputs::EKey::KEY_F))
 				{
-					MoveToTarget(target.value().get());
+					MoveToTarget(target.value());
 				}
 
-				auto focusObjectFromAngle = [this, &targetPos, &dist]( const OvMaths::FVector3& offset)
+				auto focusObjectFromAngle = [this, focusTarget]( const OvMaths::FVector3& offset)
 				{
-					auto camPos = targetPos + offset * dist;
-					auto direction = OvMaths::FVector3::Normalize(targetPos - camPos);
+					auto camPos = focusTarget.position + offset * focusTarget.distance;
+					auto direction = OvMaths::FVector3::Normalize(focusTarget.position - camPos);
 					m_camera.SetRotation(OvMaths::FQuaternion::LookAt(direction, std::abs(direction.y) == 1.0f ? OvMaths::FVector3::Right : OvMaths::FVector3::Up));
 					m_cameraDestinations.push({ camPos, m_camera.GetRotation() });
 				};
@@ -193,7 +269,7 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 					{
 						if (auto target = GetTargetActor())
 						{
-							HandleCameraOrbit(target.value().get(), mouseOffset, wasFirstMouse);
+							HandleCameraOrbit(target.value(), mouseOffset, wasFirstMouse);
 						}
 					}
 					else
@@ -215,11 +291,25 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 
 void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target)
 {
+	auto [winWidth, winHeight] = m_view.GetSafeSize();
+	const auto renderSize = OvMaths::FVector2{
+		winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+		winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+	};
+	const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
+		renderSize,
+		EDITOR_EXEC(IsSceneUIRenderingEnabled())
+	};
+	const auto focusTarget = GetActorFocusTarget(
+		p_target,
+		uiFrameResolver
+	);
+
 	m_cameraDestinations.push({
-		p_target.transform.GetWorldPosition() -
+		focusTarget.position -
 		m_camera.GetRotation() *
 		OvMaths::FVector3::Forward *
-		GetActorFocusDist(p_target),
+		focusTarget.distance,
 		m_camera.GetRotation()
 	});
 }
@@ -266,15 +356,15 @@ bool OvEditor::Core::CameraController::IsOperating() const
 
 void OvEditor::Core::CameraController::LockTargetActor(OvCore::ECS::Actor& p_actor)
 {
-	m_lockedActor = p_actor;
+	m_lockedActor = &p_actor;
 }
 
 void OvEditor::Core::CameraController::UnlockTargetActor()
 {
-	m_lockedActor = std::nullopt;
+	m_lockedActor.reset();
 }
 
-std::optional<std::reference_wrapper<OvCore::ECS::Actor>> OvEditor::Core::CameraController::GetTargetActor() const
+OvTools::Utils::OptRef<OvCore::ECS::Actor> OvEditor::Core::CameraController::GetTargetActor() const
 {
 	if (m_lockedActor.has_value())
 	{
@@ -282,7 +372,7 @@ std::optional<std::reference_wrapper<OvCore::ECS::Actor>> OvEditor::Core::Camera
 	}
 	else if (EDITOR_EXEC(IsAnyActorSelected()))
 	{
-		return EDITOR_EXEC(GetSelectedActor());
+		return OvTools::Utils::OptRef<OvCore::ECS::Actor>{ EDITOR_EXEC(GetSelectedActor()) };
 	}
 
 	return std::nullopt;

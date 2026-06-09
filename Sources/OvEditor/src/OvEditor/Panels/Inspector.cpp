@@ -26,6 +26,12 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -66,6 +72,18 @@ namespace
 
 		void AddComponent(Actor& p_actor) const override
 		{
+			if constexpr (
+				std::is_same_v<TComponent, UI::CCanvas> ||
+				std::is_same_v<TComponent, UI::CImage> ||
+				std::is_same_v<TComponent, UI::CText> ||
+				std::is_same_v<TComponent, UI::CLayoutGroup> ||
+				std::is_same_v<TComponent, UI::CHorizontalLayout> ||
+				std::is_same_v<TComponent, UI::CVerticalLayout>
+			)
+			{
+				p_actor.transform.EnableUIData();
+			}
+
 			p_actor.AddComponent<TComponent>();
 		}
 
@@ -74,6 +92,14 @@ namespace
 			if constexpr (std::is_base_of_v<CPhysicalObject, TComponent>)
 			{
 				return !p_actor.GetComponent<CPhysicalObject>();
+			}
+			else if constexpr (
+				std::is_same_v<TComponent, UI::CLayoutGroup> ||
+				std::is_same_v<TComponent, UI::CHorizontalLayout> ||
+				std::is_same_v<TComponent, UI::CVerticalLayout>
+			)
+			{
+				return !p_actor.GetComponent<UI::CLayoutGroup>();
 			}
 			else
 			{
@@ -105,6 +131,12 @@ namespace
 		CreateComponentInfo<CAudioListener>("Audio Listener"),
 		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
+		CreateComponentInfo<UI::CCanvas>("Canvas"),
+		CreateComponentInfo<UI::CHorizontalLayout>("Horizontal Layout"),
+		CreateComponentInfo<UI::CImage>("Image"),
+		CreateComponentInfo<UI::CLayoutGroup>("Layout Group"),
+		CreateComponentInfo<UI::CText>("Text"),
+		CreateComponentInfo<UI::CVerticalLayout>("Vertical Layout"),
 	});
 
 }
@@ -123,11 +155,21 @@ OvEditor::Panels::Inspector::Inspector(
 			UnFocus();
 		}
 	};
+
+	m_attachedListener = Actor::AttachEvent += [this](Actor& p_attached, Actor&) {
+		_RefreshIfTargetHierarchyChanged(p_attached);
+	};
+
+	m_detachedListener = Actor::DettachEvent += [this](Actor& p_detached) {
+		_RefreshIfTargetHierarchyChanged(p_detached);
+	};
 }
 
 OvEditor::Panels::Inspector::~Inspector()
 {
 	Actor::DestroyedEvent -= m_destroyedListener;
+	Actor::AttachEvent -= m_attachedListener;
+	Actor::DettachEvent -= m_detachedListener;
 	UnFocus();
 }
 
@@ -444,4 +486,20 @@ void OvEditor::Panels::Inspector::Refresh()
 		m_content->RemoveAllWidgets();
 		_Populate();
 	}
+}
+
+void OvEditor::Panels::Inspector::_RefreshIfTargetHierarchyChanged(Actor& p_changedActor)
+{
+	if (!m_targetActor)
+	{
+		return;
+	}
+
+	auto& targetActor = m_targetActor.value();
+	if (&targetActor != &p_changedActor && !targetActor.IsDescendantOf(&p_changedActor))
+	{
+		return;
+	}
+
+	EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 }

@@ -11,6 +11,7 @@
 #include <OvWindowing/Inputs/InputManager.h>
 #include <OvWindowing/Window.h>
 #include <OvRendering/Entities/Camera.h>
+#include <OvTools/Utils/OptRef.h>
 
 #include "OvEditor/Panels/Hierarchy.h"
 #include "OvEditor/Panels/AView.h"
@@ -101,7 +102,7 @@ namespace OvEditor::Core
 		void UnlockTargetActor();
 
 	private:
-		std::optional<std::reference_wrapper<OvCore::ECS::Actor>> GetTargetActor() const;
+		OvTools::Utils::OptRef<OvCore::ECS::Actor> GetTargetActor() const;
 		void HandleCameraPanning(const OvMaths::FVector2& p_mouseOffset, bool p_firstMouse);
 		void HandleCameraOrbit(OvCore::ECS::Actor& p_target, const OvMaths::FVector2& p_mouseOffset, bool p_firstMouse);
 		void HandleCameraFPSMouse(const OvMaths::FVector2& p_mouseOffset, bool p_firstMouse);
@@ -139,6 +140,6 @@ namespace OvEditor::Core
 		float m_focusDistance = 15.0f;
 		float m_focusLerpCoefficient = 8.0f;
 
-		std::optional<std::reference_wrapper<OvCore::ECS::Actor>> m_lockedActor = std::nullopt;
+		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_lockedActor;
 	};
 }

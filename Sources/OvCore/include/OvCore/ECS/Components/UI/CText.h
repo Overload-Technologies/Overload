@@ -182,7 +182,7 @@ namespace OvCore::ECS::Components::UI
 
 	private:
 		std::string m_text = "Text";
-		std::string m_fontPath = ":Fonts\\Roboto-Regular.ttf";
+		std::string m_fontPath;
 		float m_fontSize = 32.0f;
 		OvMaths::FVector4 m_color = { 1.0f, 1.0f, 1.0f, 1.0f };
 		EHorizontalAlignment m_horizontalAlignment = EHorizontalAlignment::LEFT;

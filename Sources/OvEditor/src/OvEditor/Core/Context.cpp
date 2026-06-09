@@ -91,6 +91,11 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	materialManager.ProvideStandardShaderDefinition({
 		.shaderPath = ":Shaders/Standard.ovfx"
 	});
+	uiResourceRegistry.ProvideDefinition({
+		.imageMaterialPath = ":Materials\\Image.ovmat",
+		.textMaterialPath = ":Materials\\Text.ovmat",
+		.defaultFontPath = ":Fonts\\Roboto-Regular.ttf"
+	});
 
 	/* Settings */
 	OvWindowing::Settings::DeviceSettings deviceSettings;
@@ -171,6 +176,7 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	ServiceLocator::Provide<MaterialManager>(materialManager);
 	ServiceLocator::Provide<FontManager>(fontManager);
 	ServiceLocator::Provide<SoundManager>(soundManager);
+	ServiceLocator::Provide<UIResourceRegistry>(uiResourceRegistry);
 	ServiceLocator::Provide<OvWindowing::Inputs::InputManager>(*inputManager);
 	ServiceLocator::Provide<OvWindowing::Window>(*window);
 	ServiceLocator::Provide<OvCore::SceneSystem::SceneManager>(sceneManager);

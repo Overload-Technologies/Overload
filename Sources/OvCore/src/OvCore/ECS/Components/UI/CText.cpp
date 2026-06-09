@@ -21,6 +21,7 @@
 #include <OvCore/Helpers/Serializer.h>
 #include <OvCore/ResourceManagement/FontManager.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
+#include <OvCore/ResourceManagement/UIResourceRegistry.h>
 #include <OvTools/Utils/PathParser.h>
 #include <OvUI/Types/Color.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
@@ -30,7 +31,6 @@ namespace
 {
 	constexpr float kMinimumFontSize = 1.0f;
 	constexpr float kSizeUpdateEpsilon = 0.0001f;
-	constexpr const char* kDefaultMaterialPath = ":Materials\\Text.ovmat";
 	constexpr const char* kColorUniform = "u_Color";
 
 	float ClampFinite(float p_value, float p_min)
@@ -137,6 +137,7 @@ namespace
 OvCore::ECS::Components::UI::CText::CText(ECS::Actor& p_owner) :
 AComponent(p_owner)
 {
+	m_fontPath = Global::ServiceLocator::Get<ResourceManagement::UIResourceRegistry>().GetDefinition().defaultFontPath;
 	owner.transform.EnableUIData();
 }
 
@@ -465,7 +466,10 @@ void OvCore::ECS::Components::UI::CText::RefreshMaterial()
 
 	if (!m_materialSourceDirty)
 	{
-		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath, false);
+		const auto& textMaterialPath = Global::ServiceLocator::Get<ResourceManagement::UIResourceRegistry>().GetDefinition().textMaterialPath;
+		auto* defaultMaterial = textMaterialPath.empty() ?
+			nullptr :
+			Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(textMaterialPath, false);
 		auto* currentShader = defaultMaterial && defaultMaterial->HasShader() ? defaultMaterial->GetShader() : nullptr;
 		auto* currentFont = m_fontPath.empty() || m_fontPath == "?" ?
 			nullptr :
@@ -483,7 +487,10 @@ void OvCore::ECS::Components::UI::CText::RefreshMaterial()
 
 	if (m_materialSourceDirty)
 	{
-		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
+		const auto& textMaterialPath = Global::ServiceLocator::Get<ResourceManagement::UIResourceRegistry>().GetDefinition().textMaterialPath;
+		auto* defaultMaterial = textMaterialPath.empty() ?
+			nullptr :
+			Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(textMaterialPath);
 		auto* defaultShader = defaultMaterial && defaultMaterial->HasShader() ? defaultMaterial->GetShader() : nullptr;
 		auto* font = GetFont();
 

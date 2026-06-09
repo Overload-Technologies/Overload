@@ -18,13 +18,13 @@
 #include <OvCore/Helpers/Serializer.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvCore/ResourceManagement/UIResourceRegistry.h>
 #include <OvRendering/Geometry/Vertex.h>
 #include <OvUI/Types/Color.h>
 
 namespace
 {
 	constexpr float kMinimumSize = 0.0001f;
-	constexpr const char* kDefaultMaterialPath = ":Materials\\Image.ovmat";
 	constexpr const char* kTextureUniform = "u_Image";
 	constexpr const char* kTintUniform = "u_Tint";
 
@@ -281,7 +281,11 @@ void OvCore::ECS::Components::UI::CImage::RefreshMaterial()
 
 	if (m_materialStateDirty)
 	{
-		auto* defaultMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(kDefaultMaterialPath);
+		const auto& imageMaterialPath = Global::ServiceLocator::Get<ResourceManagement::UIResourceRegistry>().GetDefinition().imageMaterialPath;
+		auto* defaultMaterial = imageMaterialPath.empty() ?
+			nullptr :
+			Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(imageMaterialPath);
+
 		if (!defaultMaterial || !defaultMaterial->HasShader())
 		{
 			if (m_material->HasShader())

@@ -107,10 +107,5 @@ namespace OvCore::ECS::Components::UI
 			const ClayLayoutSettings& p_settings,
 			const std::vector<ClayLayoutChildInput>& p_children
 		);
-
-		static ClayLayoutResult Solve(
-			const ClayLayoutSettings& p_settings,
-			const std::vector<ClayLayoutChildInput>& p_children
-		);
 	};
 }

@@ -760,12 +760,3 @@ OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayL
 	const auto solution = SolveLayout(p_context, measurement, p_children);
 	return Postprocess(solution);
 }
-
-OvCore::ECS::Components::UI::ClayLayoutResult OvCore::ECS::Components::UI::ClayLayoutSolver::Solve(
-	const ClayLayoutSettings& p_settings,
-	const std::vector<ClayLayoutChildInput>& p_children
-)
-{
-	ClayLayoutSolverContext context;
-	return Solve(context, p_settings, p_children);
-}

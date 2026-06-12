@@ -83,4 +83,8 @@ group "Overload Apps"
 	include "Sources/OvGame"
 group ""
 
+group "Overload Tests"
+	include "Tests/OvLuaApiTests"
+group ""
+
 include "Resources"

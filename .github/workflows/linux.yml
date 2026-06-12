@@ -37,3 +37,7 @@ jobs:
       run: |
         CONFIG_LOWER=$(echo "${{ matrix.configuration }}" | tr '[:upper:]' '[:lower:]')
         make -j$(nproc) config=${CONFIG_LOWER}_x64
+
+    - name: Run Lua API tests
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: ./Bin/${{ matrix.configuration }}/OvLuaApiTests/OvLuaApiTests

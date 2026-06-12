@@ -23,6 +23,7 @@
 #include "OvCore/ResourceManagement/MaterialManager.h"
 #include "OvCore/ResourceManagement/SoundManager.h"
 #include "OvCore/Scripting/Common/ScriptPropertyValue.h"
+#include <OvCore/Scripting/Lua/LuaBindings.h>
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 
@@ -30,7 +31,7 @@
 
 #include <sol/sol.hpp>
 
-void BindLuaGlobal(sol::state& p_luaState)
+void OvCore::Scripting::Lua::BindLuaGlobal(sol::state& p_luaState)
 {
 	using namespace OvWindowing;
 	using namespace OvWindowing::Inputs;

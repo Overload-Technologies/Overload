@@ -24,8 +24,9 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>  
 #include <OvCore/ECS/Components/CSpotLight.h>  
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/Scripting/Lua/LuaBindings.h>
 
-void BindLuaComponents(sol::state& p_luaState)
+void OvCore::Scripting::Lua::BindLuaComponents(sol::state& p_luaState)
 {
 	using namespace OvMaths;
 	using namespace OvCore::ECS;

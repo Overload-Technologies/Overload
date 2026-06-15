@@ -79,7 +79,7 @@ namespace
 		bool& p_lineHasContent
 	)
 	{
-		if (p_width <= p_maxWidth)
+		if (p_width <= p_maxWidth || !p_lineHasContent)
 		{
 			p_output.append(p_text.data() + p_begin, p_end - p_begin);
 			p_lineWidth += p_width;

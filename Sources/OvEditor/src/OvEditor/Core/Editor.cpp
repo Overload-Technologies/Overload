@@ -76,6 +76,15 @@ void OvEditor::Core::Editor::SetupUI()
 		}
 	);
 
+	OvCore::Helpers::GUIHelpers::SetPickerCloseProvider(
+		[this] {
+			if (m_itemPicker)
+			{
+				m_itemPicker->Close();
+			}
+		}
+	);
+
 	OvCore::Helpers::GUIHelpers::SetPickerSearchTextProvider(
 		[this]() { return m_itemPicker->GetSearchText(); }
 	);

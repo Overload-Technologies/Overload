@@ -6,13 +6,15 @@
 
 #pragma once
 
+#include <optional>
+
 #include "OvCore/ECS/Components/AComponent.h"
 
+#include <OvMaths/FMatrix4.h>
 #include <OvMaths/FTransform.h>
+#include <OvMaths/FVector2.h>
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FQuaternion.h>
-
-#include "AComponent.h"
 
 namespace OvCore::ECS { class Actor; }
 
@@ -24,6 +26,34 @@ namespace OvCore::ECS::Components
 	class CTransform : public AComponent
 	{
 	public:
+		enum class EUIAnchorPreset
+		{
+			TOP_LEFT,
+			TOP_CENTER,
+			TOP_RIGHT,
+			MIDDLE_LEFT,
+			CENTER,
+			MIDDLE_RIGHT,
+			BOTTOM_LEFT,
+			BOTTOM_CENTER,
+			BOTTOM_RIGHT,
+			HORIZONTAL_STRETCH_TOP,
+			HORIZONTAL_STRETCH_MIDDLE,
+			HORIZONTAL_STRETCH_BOTTOM,
+			VERTICAL_STRETCH_LEFT,
+			VERTICAL_STRETCH_CENTER,
+			VERTICAL_STRETCH_RIGHT,
+			STRETCH_BOTH
+		};
+
+		struct UIData
+		{
+			OvMaths::FVector2 position = OvMaths::FVector2::Zero;
+			OvMaths::FVector2 size = OvMaths::FVector2::Zero;
+			OvMaths::FVector2 pivot = OvMaths::FVector2::Zero;
+			EUIAnchorPreset anchorPreset = EUIAnchorPreset::CENTER;
+		};
+
 		/**
 		* Create a transform without setting a parent
 		* @param p_localPosition
@@ -189,6 +219,33 @@ namespace OvCore::ECS::Components
 		*/
 		OvMaths::FVector3 GetLocalRight() const;
 
+		void EnableUIData();
+		void DisableUIData();
+		bool HasUIData() const;
+		bool HasActiveUIData() const;
+		const std::optional<UIData>& GetUIData() const;
+
+		void SetUIPosition(const OvMaths::FVector2& p_position);
+		const OvMaths::FVector2& GetUIPosition() const;
+
+		void SetUIRotation(float p_rotation);
+		float GetUIRotation() const;
+
+		void SetUIScale(const OvMaths::FVector2& p_scale);
+		OvMaths::FVector2 GetUIScale() const;
+
+		void SetUISize(const OvMaths::FVector2& p_size);
+		const OvMaths::FVector2& GetUISize() const;
+
+		void SetUIPivot(const OvMaths::FVector2& p_pivot);
+		const OvMaths::FVector2& GetUIPivot() const;
+
+		void SetUIAnchorPreset(EUIAnchorPreset p_anchorPreset);
+		EUIAnchorPreset GetUIAnchorPreset() const;
+
+		bool IsHorizontalUIPositionEditable() const;
+		bool IsVerticalUIPositionEditable() const;
+
 		/**
 		* Serialize the component
 		* @param p_doc
@@ -210,7 +267,16 @@ namespace OvCore::ECS::Components
 		virtual void OnInspector(OvUI::Internal::WidgetContainer& p_root) override;
 
 	private:
+		static EUIAnchorPreset ToUIAnchorPreset(int p_value);
+		static bool IsHorizontalUIPositionEditable(EUIAnchorPreset p_anchorPreset);
+		static bool IsVerticalUIPositionEditable(EUIAnchorPreset p_anchorPreset);
+
+		UIData& GetOrCreateUIData();
+		const UIData& GetUIDataOrDefault() const;
+
+	private:
 		OvMaths::FTransform m_transform;
+		std::optional<UIData> m_uiData;
 	};
 
 	template<>

@@ -23,6 +23,7 @@ project "OvCore"
 		-- Dependencies
 		dependdir .. "glad/include",
 		dependdir .. "ImGui/include",
+		dependdir .. "clay/include",
 		dependdir .. "lua/include",
 		dependdir .. "sol/include",
 		dependdir .. "tinyxml2/include",

@@ -85,10 +85,16 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	TextureManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	ShaderManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	MaterialManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
+	FontManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 	SoundManager::ProvideAssetPaths(projectAssetsPath, engineAssetsPath);
 
 	materialManager.ProvideStandardShaderDefinition({
 		.shaderPath = ":Shaders/Standard.ovfx"
+	});
+	uiResourceRegistry.ProvideDefinition({
+		.imageMaterialPath = ":Materials\\Image.ovmat",
+		.textMaterialPath = ":Materials\\Text.ovmat",
+		.defaultFontPath = ":Fonts\\Roboto-Regular.ttf"
 	});
 
 	/* Settings */
@@ -168,7 +174,9 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	ServiceLocator::Provide<TextureManager>(textureManager);
 	ServiceLocator::Provide<ShaderManager>(shaderManager);
 	ServiceLocator::Provide<MaterialManager>(materialManager);
+	ServiceLocator::Provide<FontManager>(fontManager);
 	ServiceLocator::Provide<SoundManager>(soundManager);
+	ServiceLocator::Provide<UIResourceRegistry>(uiResourceRegistry);
 	ServiceLocator::Provide<OvWindowing::Inputs::InputManager>(*inputManager);
 	ServiceLocator::Provide<OvWindowing::Window>(*window);
 	ServiceLocator::Provide<OvCore::SceneSystem::SceneManager>(sceneManager);
@@ -185,6 +193,7 @@ OvEditor::Core::Context::~Context()
 	textureManager.UnloadResources();
 	shaderManager.UnloadResources();
 	materialManager.UnloadResources();
+	fontManager.UnloadResources();
 	soundManager.UnloadResources();
 }
 

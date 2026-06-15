@@ -68,6 +68,7 @@ namespace OvEditor::Panels
 		void _DrawAddSection();
 		void _DrawComponent(OvCore::ECS::Components::AComponent& p_component, int p_index, int p_total);
 		void _DrawBehaviour(OvCore::ECS::Components::Behaviour& p_behaviour, int p_index, int p_total);
+		void _RefreshIfTargetHierarchyChanged(OvCore::ECS::Actor& p_changedActor);
 
 	private:
 		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_targetActor = std::nullopt;
@@ -78,5 +79,7 @@ namespace OvEditor::Panels
 		uint64_t m_behaviourAddedListener	= 0;
 		uint64_t m_behaviourRemovedListener = 0;
 		uint64_t m_destroyedListener		= 0;
+		uint64_t m_attachedListener			= 0;
+		uint64_t m_detachedListener			= 0;
 	};
 }

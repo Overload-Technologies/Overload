@@ -19,12 +19,18 @@
 #include <OvCore/ECS/Components/CPostProcessStack.h>
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Utils/ActorCreationMenu.h>
 
 #include <algorithm>
+#include <type_traits>
 
 #include <OvUI/Widgets/Menu/MenuItem.h>
 #include <OvUI/Widgets/Menu/MenuList.h>
@@ -131,7 +137,17 @@ namespace
 	{
 		return [p_parent, p_onItemClicked]()
 		{
-			EDITOR_EXEC(CreateMonoComponentActor<T>(true, ResolveAliveParent(p_parent)));
+			auto& instance = EDITOR_EXEC(CreateMonoComponentActor<T>(true, ResolveAliveParent(p_parent)));
+			if constexpr (
+				std::is_same_v<T, OvCore::ECS::Components::UI::CCanvas> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CImage> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CText> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CHorizontalLayout> ||
+				std::is_same_v<T, OvCore::ECS::Components::UI::CVerticalLayout>
+			)
+			{
+				instance.transform.EnableUIData();
+			}
 
 			if (p_onItemClicked.has_value())
 			{
@@ -184,6 +200,65 @@ namespace
 		return [p_parent, p_onItemClicked]()
 		{
 			CreateCharacter(ResolveAliveParent(p_parent));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
+	}
+
+	std::function<void()> CreateImageHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
+	{
+		return [p_parent, p_onItemClicked]()
+		{
+			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
+			instance.transform.EnableUIData();
+			instance.AddComponent<OvCore::ECS::Components::UI::CImage>();
+			instance.SetName("Image");
+
+			EDITOR_EXEC(SelectActor(instance));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
+	}
+
+	std::function<void()> CreateTextHandler(OvCore::ECS::Actor* p_parent, std::optional<std::function<void()>> p_onItemClicked)
+	{
+		return [p_parent, p_onItemClicked]()
+		{
+			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
+			instance.transform.EnableUIData();
+			instance.AddComponent<OvCore::ECS::Components::UI::CText>();
+			instance.SetName("Text");
+
+			EDITOR_EXEC(SelectActor(instance));
+
+			if (p_onItemClicked.has_value())
+			{
+				p_onItemClicked.value()();
+			}
+		};
+	}
+
+	template<typename TLayout>
+	std::function<void()> CreateLayoutHandler(
+		OvCore::ECS::Actor* p_parent,
+		const std::string& p_name,
+		std::optional<std::function<void()>> p_onItemClicked
+	)
+	{
+		return [p_parent, p_name, p_onItemClicked]()
+		{
+			auto& instance = EDITOR_EXEC(CreateEmptyActor(false, ResolveAliveParent(p_parent)));
+			instance.transform.EnableUIData();
+			instance.AddComponent<TLayout>();
+			instance.SetName(p_name);
+
+			EDITOR_EXEC(SelectActor(instance));
 
 			if (p_onItemClicked.has_value())
 			{
@@ -247,6 +322,7 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	auto& physicals = p_menuList.CreateWidget<MenuList>("Physicals");
 	auto& lights = p_menuList.CreateWidget<MenuList>("Lights");
 	auto& audio = p_menuList.CreateWidget<MenuList>("Audio");
+	auto& ui = p_menuList.CreateWidget<MenuList>("UI");
 	auto& others = p_menuList.CreateWidget<MenuList>("Others");
 
 	primitives.CreateWidget<MenuItem>("Cube").ClickedEvent += ActorWithModelComponentCreationHandler(p_parent, "Cube", p_onItemClicked);
@@ -269,6 +345,11 @@ void OvEditor::Utils::ActorCreationMenu::GenerateActorCreationMenu(OvUI::Widgets
 	lights.CreateWidget<MenuItem>("Ambient Sphere").ClickedEvent += ActorWithComponentCreationHandler<CAmbientSphereLight>(p_parent, p_onItemClicked);
 	audio.CreateWidget<MenuItem>("Audio Source").ClickedEvent += ActorWithComponentCreationHandler<CAudioSource>(p_parent, p_onItemClicked);
 	audio.CreateWidget<MenuItem>("Audio Listener").ClickedEvent += ActorWithComponentCreationHandler<CAudioListener>(p_parent, p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Canvas").ClickedEvent += ActorWithComponentCreationHandler<UI::CCanvas>(p_parent, p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Image").ClickedEvent += CreateImageHandler(p_parent, p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Text").ClickedEvent += CreateTextHandler(p_parent, p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Horizontal Layout").ClickedEvent += CreateLayoutHandler<UI::CHorizontalLayout>(p_parent, "Horizontal Layout", p_onItemClicked);
+	ui.CreateWidget<MenuItem>("Vertical Layout").ClickedEvent += CreateLayoutHandler<UI::CVerticalLayout>(p_parent, "Vertical Layout", p_onItemClicked);
 	others.CreateWidget<MenuItem>("Camera").ClickedEvent += ActorWithComponentCreationHandler<CCamera>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Post Process Stack").ClickedEvent += ActorWithComponentCreationHandler<CPostProcessStack>(p_parent, p_onItemClicked);
 	others.CreateWidget<MenuItem>("Reflection Probe").ClickedEvent += ActorWithComponentCreationHandler<CReflectionProbe>(p_parent, p_onItemClicked);

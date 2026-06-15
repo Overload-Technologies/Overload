@@ -17,11 +17,13 @@
 
 #include <OvUI/Core/UIManager.h>
 
+#include <OvCore/ResourceManagement/FontManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/SoundManager.h>
+#include <OvCore/ResourceManagement/UIResourceRegistry.h>
 #include <OvCore/SceneSystem/SceneManager.h>
 #include <OvCore/Scripting/ScriptEngine.h>
 
@@ -67,7 +69,9 @@ namespace OvGame::Core
 		OvCore::ResourceManagement::TextureManager textureManager;
 		OvCore::ResourceManagement::ShaderManager shaderManager;
 		OvCore::ResourceManagement::MaterialManager materialManager;
+		OvCore::ResourceManagement::FontManager fontManager;
 		OvCore::ResourceManagement::SoundManager soundManager;
+		OvCore::ResourceManagement::UIResourceRegistry uiResourceRegistry;
 		
 		OvTools::Filesystem::IniFile projectSettings;
 	};

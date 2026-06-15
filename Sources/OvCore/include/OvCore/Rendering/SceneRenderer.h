@@ -7,8 +7,11 @@
 #pragma once
 
 #include <map>
+#include <optional>
 
+#include <OvMaths/FVector2.h>
 #include <OvRendering/Core/CompositeRenderer.h>
+#include <OvRendering/Data/Material.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Entities/Drawable.h>
 #include <OvRendering/HAL/UniformBuffer.h>
@@ -23,6 +26,8 @@
 
 namespace OvCore::Rendering
 {
+	namespace UIRenderingUtils { class UIFrameResolver; }
+
 	/**
 	* Extension of the CompositeRenderer adding support for the scene system (parsing/drawing entities)
 	*/
@@ -39,7 +44,7 @@ namespace OvCore::Rendering
 		struct DrawOrder
 		{
 			const int order;
-			const uintptr_t materialKey;
+			const OvRendering::Data::Material* materialKey;
 			const float distance;
 
 			/**
@@ -86,11 +91,16 @@ namespace OvCore::Rendering
 			OvTools::Utils::OptRef<const OvRendering::Data::Frustum> frustumOverride;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> overrideMaterial;
 			OvTools::Utils::OptRef<OvRendering::Data::Material> fallbackMaterial;
+			bool includeUI = true;
+			bool renderUIInScreenSpace = true;
 		};
 
 		struct SceneParsingInput
 		{
 			OvCore::SceneSystem::Scene& scene;
+			OvMaths::FVector2 renderSize = { 1.0f, 1.0f };
+			bool renderUIInScreenSpace = true;
+			const UIRenderingUtils::UIFrameResolver* uiFrameResolver = nullptr;
 		};
 
 		/**
@@ -109,6 +119,8 @@ namespace OvCore::Rendering
 			OvCore::ECS::Actor& actor;
 			EVisibilityFlags visibilityFlags = EVisibilityFlags::NONE;
 			std::optional<OvRendering::Geometry::BoundingSphere> bounds;
+			std::optional<int> drawOrderOverride;
+			bool isUserInterface = false;
 		};
 
 		/**

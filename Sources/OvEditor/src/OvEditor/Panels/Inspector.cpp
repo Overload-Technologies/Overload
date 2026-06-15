@@ -184,8 +184,16 @@ void OvEditor::Panels::Inspector::FocusActor(Actor& p_target)
 
 	m_componentAddedListener = m_targetActor->ComponentAddedEvent += [this] (auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
 	m_behaviourAddedListener = m_targetActor->BehaviourAddedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
-	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
-	m_behaviourRemovedListener = m_targetActor->BehaviourRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
+	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&)
+	{
+		OvCore::Helpers::GUIHelpers::ClosePicker();
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
+	m_behaviourRemovedListener = m_targetActor->BehaviourRemovedEvent += [this](auto&)
+	{
+		OvCore::Helpers::GUIHelpers::ClosePicker();
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
 
 	_Populate();
 
@@ -204,6 +212,7 @@ void OvEditor::Panels::Inspector::UnFocus()
 	m_targetActor->BehaviourAddedEvent -= m_behaviourAddedListener;
 	m_targetActor->BehaviourRemovedEvent -= m_behaviourRemovedListener;
 
+	OvCore::Helpers::GUIHelpers::ClosePicker();
 	m_content->RemoveAllWidgets();
 
 	EDITOR_EVENT(ActorUnselectedEvent).Invoke(m_targetActor.value());
@@ -408,7 +417,8 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component, int p_
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_component.GetName());
 	const bool isTransform = dynamic_cast<CTransform*>(&p_component) != nullptr;
 	header.closable = !isTransform;
-	header.CloseEvent += [this, &header, &p_component] { 
+	header.CloseEvent += [&p_component] {
+		OvCore::Helpers::GUIHelpers::ClosePicker();
 		p_component.owner.RemoveComponent(p_component);
 	};
 
@@ -445,6 +455,7 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_i
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(std::filesystem::path(p_behaviour.name).replace_extension().string());
 	header.closable = true;
 	header.CloseEvent += [&p_behaviour] {
+		OvCore::Helpers::GUIHelpers::ClosePicker();
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);
 	};
 

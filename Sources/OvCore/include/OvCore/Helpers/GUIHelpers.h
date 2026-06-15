@@ -61,6 +61,7 @@ namespace OvCore::Helpers
 		using FileItemBuilderCallback = std::function<PickerItemList(OvTools::Utils::PathParser::EFileType, std::function<void(std::string)>, bool, bool)>;
 		using OpenProviderCallback = std::function<void(const std::string&)>;
 		using PickerProviderCallback = std::function<void(PickerItemList, std::string)>;
+		using PickerCloseProviderCallback = std::function<void()>;
 		using PickerSearchTextProviderCallback = std::function<std::string()>;
 		using IconProviderCallback = std::function<uint32_t(OvTools::Utils::PathParser::EFileType)>;
 		using ActorSelectionProviderCallback = std::function<void(uint64_t)>;
@@ -86,6 +87,8 @@ namespace OvCore::Helpers
 
 		static void SetPickerProvider(PickerProviderCallback p_provider);
 		static void OpenPicker(PickerItemList p_items, std::string p_title);
+		static void SetPickerCloseProvider(PickerCloseProviderCallback p_provider);
+		static void ClosePicker();
 
 		static void SetPickerSearchTextProvider(PickerSearchTextProviderCallback p_provider);
 		static std::string GetPickerSearchText();

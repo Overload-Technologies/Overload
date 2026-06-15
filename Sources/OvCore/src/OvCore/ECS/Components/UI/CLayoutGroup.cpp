@@ -15,6 +15,7 @@
 #include <tinyxml2.h>
 
 #include <OvCore/ECS/Actor.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
 #include <OvCore/ECS/Components/UI/ClayLayoutSolver.h>
 #include <OvCore/ECS/Components/UI/CLayoutGroup.h>
 #include <OvCore/ECS/Components/UI/CText.h>
@@ -92,7 +93,12 @@ namespace
 		OvMaths::FVector2 elementSize = OvMaths::FVector2::Zero;
 		bool hasElementSize = false;
 
-		if (const auto* text = p_child.GetComponent<OvCore::ECS::Components::UI::CText>(); text)
+		if (const auto* image = p_child.GetComponent<OvCore::ECS::Components::UI::CImage>(); image)
+		{
+			elementSize = image->GetSize();
+			hasElementSize = true;
+		}
+		else if (const auto* text = p_child.GetComponent<OvCore::ECS::Components::UI::CText>(); text)
 		{
 			elementSize = text->GetSize();
 			hasElementSize = true;

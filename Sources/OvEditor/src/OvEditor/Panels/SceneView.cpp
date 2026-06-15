@@ -57,7 +57,7 @@ namespace
 		}
 
 		return UIGizmoContext{
-			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, OvMaths::FVector2::Zero),
+			OvCore::Rendering::UIRenderingUtils::TransformUIElementPivot(resolvedElement),
 			resolvedElement.unitsScale
 		};
 	}

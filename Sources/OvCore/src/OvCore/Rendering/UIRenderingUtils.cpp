@@ -21,11 +21,17 @@
 
 namespace
 {
+	constexpr float kDegreesToRadians = 3.14159265359f / 180.0f;
 	constexpr float kMinimumCanvasScale = 0.0001f;
 
 	float ClampFinite(float p_value, float p_min)
 	{
 		return std::isfinite(p_value) ? std::max(p_value, p_min) : p_min;
+	}
+
+	float KeepFinite(float p_value, float p_fallback)
+	{
+		return std::isfinite(p_value) ? p_value : p_fallback;
 	}
 
 	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(const OvCore::ECS::Actor& p_actor)
@@ -35,31 +41,82 @@ namespace
 			OvMaths::FQuaternion::ToMatrix4(p_actor.transform.GetWorldRotation());
 	}
 
-	OvMaths::FMatrix4 CreateUIElementLocalMatrix(
+	OvMaths::FVector2 GetLocalAnchoredPosition(
 		const OvCore::ECS::Components::CTransform& p_transform,
-		const OvMaths::FVector2& p_canvasSize,
+		const OvMaths::FVector2& p_parentSize,
 		const OvMaths::FVector2& p_layoutOffset,
+		bool p_drivenByLayout
+	)
+	{
+		if (p_drivenByLayout)
+		{
+			return p_layoutOffset;
+		}
+
+		const auto anchorPreset = p_transform.GetUIAnchorPreset();
+		const auto anchorRatio = OvCore::ECS::Components::UI::UITransformResolver::GetAnchorRatio(anchorPreset);
+		const OvMaths::FVector2 anchorOffset = {
+			KeepFinite(p_parentSize.x, 0.0f) * anchorRatio.x,
+			KeepFinite(p_parentSize.y, 0.0f) * anchorRatio.y
+		};
+		const float positionX = OvCore::ECS::Components::UI::UITransformResolver::IsHorizontalPositionEditable(anchorPreset) ?
+			p_transform.GetUIPosition().x :
+			0.0f;
+		const float positionY = OvCore::ECS::Components::UI::UITransformResolver::IsVerticalPositionEditable(anchorPreset) ?
+			p_transform.GetUIPosition().y :
+			0.0f;
+
+		return {
+			anchorOffset.x + p_layoutOffset.x + positionX,
+			anchorOffset.y + p_layoutOffset.y + positionY
+		};
+	}
+
+	OvMaths::FMatrix4 CreateUIElementFrameMatrix(
+		const OvCore::ECS::Components::CTransform& p_transform,
+		const OvMaths::FVector2& p_parentSize,
+		const OvMaths::FVector2& p_layoutOffset,
+		const OvMaths::FVector2& p_effectiveSize,
+		bool p_drivenByLayout
+	)
+	{
+		const auto position = GetLocalAnchoredPosition(
+			p_transform,
+			p_parentSize,
+			p_layoutOffset,
+			p_drivenByLayout
+		);
+		const auto scale = p_transform.GetUIScale();
+		const auto halfSize = p_effectiveSize * 0.5f;
+		const auto& pivot = p_transform.GetUIPivot();
+		const OvMaths::FVector2 pivotOffset = {
+			-pivot.x * halfSize.x,
+			pivot.y * halfSize.y
+		};
+
+		return
+			OvMaths::FMatrix4::Translation({ position.x, position.y, 0.0f }) *
+			OvMaths::FMatrix4::RotationOnAxisZ(p_transform.GetUIRotation() * kDegreesToRadians) *
+			OvMaths::FMatrix4::Scaling({ scale.x, scale.y, 1.0f }) *
+			OvMaths::FMatrix4::Translation({ pivotOffset.x, pivotOffset.y, 0.0f });
+	}
+
+	OvMaths::FMatrix4 ApplyElementSizeScaling(
+		OvMaths::FMatrix4 p_matrix,
 		const OvMaths::FVector2& p_elementSize,
 		const OvMaths::FVector2& p_effectiveSize
 	)
 	{
-		auto result = OvCore::ECS::Components::UI::UITransformResolver::GetMatrixWithEffectiveSize(
-			p_transform,
-			p_canvasSize,
-			p_layoutOffset,
-			p_effectiveSize
-		);
-
 		if (p_elementSize.x > 0.0f || p_elementSize.y > 0.0f)
 		{
-			result = result * OvMaths::FMatrix4::Scaling({
+			p_matrix = p_matrix * OvMaths::FMatrix4::Scaling({
 				p_elementSize.x > 0.0f ? p_effectiveSize.x / p_elementSize.x : 1.0f,
 				p_elementSize.y > 0.0f ? p_effectiveSize.y / p_elementSize.y : 1.0f,
 				1.0f
 			});
 		}
 
-		return result;
+		return p_matrix;
 	}
 }
 
@@ -237,6 +294,21 @@ bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveElementUncache
 
 	const auto& transform = p_actor.transform;
 	const auto layoutData = GetLayoutData(p_actor);
+	OvMaths::FMatrix4 parentFrameMatrix = resolvedCanvas.modelMatrix;
+	OvMaths::FVector2 parentSize = resolvedCanvas.size;
+
+	const auto* parent = p_actor.GetParent();
+	if (parent && parent != canvasOwner && HasActiveUIData(*parent))
+	{
+		ResolvedUIElement resolvedParent;
+		if (!ResolveElement(*parent, resolvedParent))
+		{
+			return false;
+		}
+
+		parentFrameMatrix = resolvedParent.frameMatrix;
+		parentSize = resolvedParent.effectiveSize;
+	}
 
 	p_outElement.actor = &p_actor;
 	p_outElement.canvasActor = canvasOwner;
@@ -254,20 +326,23 @@ bool OvCore::Rendering::UIRenderingUtils::UIFrameResolver::ResolveElementUncache
 		p_outElement.effectiveSize.y = layoutData.directSize.y;
 	}
 	p_outElement.canvasMatrix = resolvedCanvas.matrix;
-	p_outElement.localMatrix = CreateUIElementLocalMatrix(
+	const auto localFrameMatrix = CreateUIElementFrameMatrix(
 		transform,
-		p_outElement.canvasSize,
+		parentSize,
 		p_outElement.layoutOffset,
+		p_outElement.effectiveSize,
+		layoutData.drivenByLayout
+	);
+	p_outElement.localMatrix = ApplyElementSizeScaling(
+		localFrameMatrix,
 		p_elementSize,
 		p_outElement.effectiveSize
 	);
 	p_outElement.canvasScale = resolvedCanvas.canvasScale;
 	p_outElement.worldScale = resolvedCanvas.worldScale;
 	p_outElement.unitsScale = resolvedCanvas.unitsScale;
-	p_outElement.modelMatrix =
-		p_outElement.canvasMatrix *
-		OvMaths::FMatrix4::Scaling({ p_outElement.unitsScale, p_outElement.unitsScale, 1.0f }) *
-		p_outElement.localMatrix;
+	p_outElement.frameMatrix = parentFrameMatrix * localFrameMatrix;
+	p_outElement.modelMatrix = parentFrameMatrix * p_outElement.localMatrix;
 	p_outElement.screenSpace = m_screenSpace;
 
 	return true;
@@ -304,13 +379,33 @@ OvCore::Rendering::UIRenderingUtils::UIFrameResolver::CachedLayoutData OvCore::R
 		return it->second;
 	}
 
-	const auto layoutData = OvCore::ECS::Components::UI::UITransformResolver::ResolveLayoutData(p_actor);
-	const CachedLayoutData cachedLayoutData{
-		.offset = layoutData.offset,
-		.directSize = layoutData.directSize,
-		.hasDirectWidth = layoutData.hasDirectWidth,
-		.hasDirectHeight = layoutData.hasDirectHeight
-	};
+	CachedLayoutData cachedLayoutData;
+	const auto* parent = p_actor.GetParent();
+	if (parent)
+	{
+		if (const auto* layout = parent->GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+		{
+			cachedLayoutData.drivenByLayout = true;
+
+			if (const auto childLayout = layout->GetChildLayout(p_actor); childLayout && childLayout->valid)
+			{
+				cachedLayoutData.offset = childLayout->offset;
+
+				if (childLayout->hasDirectWidth && childLayout->size.x > 0.0f)
+				{
+					cachedLayoutData.directSize.x = childLayout->size.x;
+					cachedLayoutData.hasDirectWidth = true;
+				}
+
+				if (childLayout->hasDirectHeight && childLayout->size.y > 0.0f)
+				{
+					cachedLayoutData.directSize.y = childLayout->size.y;
+					cachedLayoutData.hasDirectHeight = true;
+				}
+			}
+		}
+	}
+
 	m_layoutDataCache.emplace(&p_actor, cachedLayoutData);
 	return cachedLayoutData;
 }
@@ -494,6 +589,28 @@ OvMaths::FVector3 OvCore::Rendering::UIRenderingUtils::TransformUIPoint(
 {
 	const auto result = p_matrix * OvMaths::FVector4{ p_point.x, p_point.y, 0.0f, 1.0f };
 	return { result.x, result.y, result.z };
+}
+
+OvMaths::FVector3 OvCore::Rendering::UIRenderingUtils::TransformUIElementPivot(const ResolvedUIElement& p_element)
+{
+	if (!p_element.actor)
+	{
+		return TransformUIPoint(p_element.modelMatrix, OvMaths::FVector2::Zero);
+	}
+
+	const auto& pivot = p_element.actor->transform.GetUIPivot();
+	const OvMaths::FVector2 referenceSize = {
+		p_element.elementSize.x > 0.0f ? p_element.elementSize.x : p_element.effectiveSize.x,
+		p_element.elementSize.y > 0.0f ? p_element.elementSize.y : p_element.effectiveSize.y
+	};
+
+	return TransformUIPoint(
+		p_element.modelMatrix,
+		{
+			pivot.x * referenceSize.x * 0.5f,
+			-pivot.y * referenceSize.y * 0.5f
+		}
+	);
 }
 
 bool OvCore::Rendering::UIRenderingUtils::ResolveUICanvas(

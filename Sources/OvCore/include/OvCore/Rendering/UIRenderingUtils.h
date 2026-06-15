@@ -43,6 +43,7 @@ namespace OvCore::Rendering::UIRenderingUtils
 		OvMaths::FVector2 effectiveSize = OvMaths::FVector2::Zero;
 		OvMaths::FMatrix4 canvasMatrix = OvMaths::FMatrix4::Identity;
 		OvMaths::FMatrix4 localMatrix = OvMaths::FMatrix4::Identity;
+		OvMaths::FMatrix4 frameMatrix = OvMaths::FMatrix4::Identity;
 		OvMaths::FMatrix4 modelMatrix = OvMaths::FMatrix4::Identity;
 		float canvasScale = 1.0f;
 		float worldScale = 1.0f;
@@ -105,6 +106,7 @@ namespace OvCore::Rendering::UIRenderingUtils
 			OvMaths::FVector2 directSize = OvMaths::FVector2::Zero;
 			bool hasDirectWidth = false;
 			bool hasDirectHeight = false;
+			bool drivenByLayout = false;
 		};
 
 		bool ResolveCanvasUncached(
@@ -182,6 +184,8 @@ namespace OvCore::Rendering::UIRenderingUtils
 		const OvMaths::FMatrix4& p_matrix,
 		const OvMaths::FVector2& p_point
 	);
+
+	OvMaths::FVector3 TransformUIElementPivot(const ResolvedUIElement& p_element);
 
 	bool ResolveUICanvas(
 		const OvCore::ECS::Actor& p_actor,

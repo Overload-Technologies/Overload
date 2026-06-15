@@ -146,10 +146,7 @@ namespace
 			return false;
 		}
 
-		p_position = OvCore::Rendering::UIRenderingUtils::TransformUIPoint(
-			resolvedElement.modelMatrix,
-			OvMaths::FVector2::Zero
-		);
+		p_position = OvCore::Rendering::UIRenderingUtils::TransformUIElementPivot(resolvedElement);
 		p_rotation = p_actor.transform.GetWorldRotation();
 		return true;
 	}

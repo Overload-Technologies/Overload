@@ -376,7 +376,13 @@ OvRendering::Resources::Font* OvCore::ECS::Components::UI::CText::GetFont() cons
 	auto& fontManager = Global::ServiceLocator::Get<ResourceManagement::FontManager>();
 	if (m_unavailableFontPath == m_fontPath)
 	{
-		return fontManager.GetResource(m_fontPath, false);
+		auto* font = fontManager.GetResource(m_fontPath, false);
+		if (font)
+		{
+			m_unavailableFontPath.clear();
+		}
+
+		return font;
 	}
 
 	auto* font = fontManager.GetResource(m_fontPath);
@@ -417,12 +423,23 @@ void OvCore::ECS::Components::UI::CText::RebuildLayout(const OvMaths::FVector2& 
 		return;
 	}
 
+	auto* font = GetFont();
+	if (!font)
+	{
+		m_layout = {};
+		m_size = OvMaths::FVector2::Zero;
+		m_lastLayoutUISize = p_uiSize;
+		m_layoutDirty = true;
+		m_meshDirty = true;
+		return;
+	}
+
 	m_layoutDirty = false;
 	m_lastLayoutUISize = p_uiSize;
 
 	m_layout = TextLayoutEngine::Layout({
 		.text = m_text,
-		.font = GetFont(),
+		.font = font,
 		.fontSize = m_fontSize,
 		.uiSize = p_uiSize,
 		.horizontalAlignment = ToTextLayoutAlignment(m_horizontalAlignment),
@@ -445,6 +462,11 @@ void OvCore::ECS::Components::UI::CText::RebuildMesh(const OvMaths::FVector2& p_
 	}
 
 	RebuildLayout(p_uiSize);
+	if (m_layoutDirty)
+	{
+		m_mesh.reset();
+		return;
+	}
 
 	m_meshDirty = false;
 	m_lastMeshUISize = p_uiSize;

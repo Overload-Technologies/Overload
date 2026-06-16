@@ -161,7 +161,7 @@ void ShaderProgram::SetUniform<type>(const std::string& p_name, const type& valu
 		GLint activeUniformCount = 0;
 		glGetProgramiv(m_id, GL_ACTIVE_UNIFORMS, &activeUniformCount);
 
-		uint32_t textureIndex = 0;
+		uint32_t textureIndex = 0U;
 
 		for (GLint i = 0; i < activeUniformCount; ++i)
 		{
@@ -197,13 +197,17 @@ void ShaderProgram::SetUniform<type>(const std::string& p_name, const type& valu
 				case FLOAT_MAT4: return GetUniform<math::Mat4>(name);
 				case SAMPLER_2D: return std::make_any<Texture*>(nullptr);
 				case SAMPLER_CUBE: return std::make_any<Texture*>(nullptr);
+				case IMAGE_2D: return std::make_any<Texture*>(nullptr);
+				case IMAGE_CUBE: return std::make_any<Texture*>(nullptr);
 				default: return std::nullopt;
 				}
 			}();
 
 			const bool isTexture =
 				uniformType == types::EUniformType::SAMPLER_2D ||
-				uniformType == types::EUniformType::SAMPLER_CUBE;
+				uniformType == types::EUniformType::SAMPLER_CUBE ||
+				uniformType == types::EUniformType::IMAGE_2D ||
+				uniformType == types::EUniformType::IMAGE_CUBE;
 
 			// Only add the uniform if it has a value (unsupported uniform types will be ignored)
 			if (uniformValue.has_value())
@@ -212,7 +216,7 @@ void ShaderProgram::SetUniform<type>(const std::string& p_name, const type& valu
 					.type = uniformType,
 					.name = name,
 					.defaultValue = uniformValue,
-					.textureIndex = isTexture ? textureIndex++ : 0
+					.textureIndex = isTexture ? std::make_optional(textureIndex++) : std::nullopt
 				});
 			}
 		}

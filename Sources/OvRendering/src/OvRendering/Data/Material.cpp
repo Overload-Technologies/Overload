@@ -4,6 +4,7 @@
 * @licence: MIT
 */
 
+#include <format>
 #include <ranges>
 
 #include <baregl/Buffer.h>
@@ -283,6 +284,11 @@ void OvRendering::Data::Material::UploadProperties(
 					handle = &(*texture)->GetTexture();
 				}
 			}
+			
+			const auto textureIndex = uniformData.value().get().textureIndex;
+
+			OVASSERT(textureIndex.has_value(), std::format("No texture index found for uniform: {}", name));
+
 			BindTexture(
 				program,
 				name,
@@ -290,7 +296,7 @@ void OvRendering::Data::Material::UploadProperties(
 				uniformType == SAMPLER_2D ?
 					p_emptyTexture2D :
 					p_emptyTextureCube,
-				uniformData.value().get().textureIndex
+				textureIndex.value()
 			);
 		}
 

@@ -10,6 +10,7 @@
 
 #include <any>
 #include <string>
+#include <optional>
 
 namespace baregl::data
 {
@@ -21,6 +22,6 @@ namespace baregl::data
 		types::EUniformType type;
 		std::string name;
 		std::any defaultValue;
-		uint32_t textureIndex;
+		std::optional<uint32_t> textureIndex;
 	};
 }

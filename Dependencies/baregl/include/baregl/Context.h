@@ -7,6 +7,7 @@
 #pragma once
 
 #include <baregl/data/ContextDesc.h>
+#include <baregl/data/GetResult.h>
 #include <baregl/types/EBlendingEquation.h>
 #include <baregl/types/EBlendingFactor.h>
 #include <baregl/types/EComparaisonAlgorithm.h>
@@ -19,7 +20,6 @@
 #include <baregl/types/EPrimitiveMode.h>
 #include <baregl/types/ERasterizationMode.h>
 #include <baregl/types/ERenderingCapability.h>
-#include <baregl/data/GetResult.h>
 
 #include <string>
 

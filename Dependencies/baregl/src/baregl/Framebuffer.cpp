@@ -7,6 +7,7 @@
 #include <baregl/Framebuffer.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/debug/Log.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
@@ -68,11 +69,13 @@ namespace baregl
 		m_debugName{ p_debugName }
 	{
 		glCreateFramebuffers(1, &m_id);
+		NOTIFY_FRAMEBUFFER_CREATED;
 	}
 
 	Framebuffer::~Framebuffer()
 	{
 		glDeleteFramebuffers(1, &m_id);
+		NOTIFY_FRAMEBUFFER_DESTROYED;
 	}
 
 	void Framebuffer::Bind() const

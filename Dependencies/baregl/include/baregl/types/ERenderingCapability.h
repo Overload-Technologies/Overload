@@ -24,6 +24,7 @@ namespace baregl::types
 		SAMPLE_COVERAGE,
 		SCISSOR_TEST,
 		STENCIL_TEST,
-		MULTISAMPLE
+		MULTISAMPLE,
+		LINE_SMOOTH
 	};
 }

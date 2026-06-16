@@ -7,6 +7,7 @@
 #include <baregl/VertexArray.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
 
@@ -114,11 +115,13 @@ namespace baregl
 	VertexArray::VertexArray()
 	{
 		glCreateVertexArrays(1, &m_id);
+		NOTIFY_VERTEX_ARRAY_CREATED;
 	}
 
 	VertexArray::~VertexArray()
 	{
 		glDeleteVertexArrays(1, &m_id);
+		NOTIFY_VERTEX_ARRAY_DESTROYED;
 	}
 
 	bool VertexArray::IsValid() const

@@ -7,6 +7,7 @@
 #include <baregl/Renderbuffer.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
 
@@ -15,11 +16,13 @@ namespace baregl
 	Renderbuffer::Renderbuffer()
 	{
 		glCreateRenderbuffers(1, &m_id);
+		NOTIFY_RENDERBUFFER_CREATED;
 	}
 
 	Renderbuffer::~Renderbuffer()
 	{
 		glDeleteRenderbuffers(1, &m_id);
+		NOTIFY_RENDERBUFFER_DESTROYED;
 	}
 
 	void Renderbuffer::Bind() const

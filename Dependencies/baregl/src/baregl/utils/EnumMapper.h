@@ -8,8 +8,8 @@
 
 #include <baregl/utils/BitmaskOperators.h>
 
+#include <format>
 #include <tuple>
-#include <type_traits>
 
 namespace baregl::utils
 {
@@ -54,7 +54,14 @@ namespace baregl::utils
 	{
 		if constexpr (I == tuple_size_v<Mappings>)
 		{
-			throw "Value not found in mapping";
+			if constexpr (requires { EnumType::UNKNOWN; })
+			{
+				return EnumType::UNKNOWN;
+			}
+			else
+			{
+				throw std::runtime_error(std::format("Value '{}' not found in mapping", value));
+			}
 		}
 		else
 		{

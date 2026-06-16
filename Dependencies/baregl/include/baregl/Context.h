@@ -19,23 +19,12 @@
 #include <baregl/types/EPrimitiveMode.h>
 #include <baregl/types/ERasterizationMode.h>
 #include <baregl/types/ERenderingCapability.h>
+#include <baregl/data/GetResult.h>
 
-#include <span>
 #include <string>
 
 namespace baregl
 {
-	/**
-	* Supported OpenGL Get types 
-	*/
-	template<typename T>
-	concept SupportedGetType =
-		std::same_as<T, int> || 
-		std::same_as<T, int64_t> || 
-		std::same_as<T, bool> || 
-		std::same_as<T, float> || 
-		std::same_as<T, double>;
-
 	/**
 	* High-level interface for interacting with the OpenGL context.
 	*/
@@ -243,85 +232,20 @@ namespace baregl
 		void SetViewport(uint32_t p_x, uint32_t p_y, uint32_t p_width, uint32_t p_height);
 
 		/**
-		* Retrieves the name of the graphics vendor.
-		* @return A string containing the vendor name.
+		* Returns the value or values for a given parameter
+		* @return Query result
 		*/
-		std::string GetVendor();
+		template<auto PName>
+			requires (data::GetResult<PName>::non_indexed)
+		data::GetResultType<PName> Get();
 
 		/**
-		* Retrieves the name of the graphics hardware.
-		* @return A string containing the hardware name.
+		* Returns the value or values for a given parameter at a given index
+		* @param p_index
+		* @return Query result
 		*/
-		std::string GetHardware();
-
-		/**
-		* Retrieves the version of the graphics API in use.
-		* @return A string containing the API version.
-		*/
-		std::string GetVersion();
-
-		/**
-		* Retrieves the version of the shading language.
-		* @return A string containing the shading language version.
-		*/
-		std::string GetShadingLanguageVersion();
-
-		/**
-		* Returns the value or values of a selected parameter.
-		* @param p_param Parameter to get a value from.
-		* @param p_out Value or array of values for the given parameter.
-		* @note Refer to the parameter documentation to know the output size.
-		*/
-		template<SupportedGetType T>
-		void GetValue(
-			types::EGetParameter p_param,
-			std::span<T> p_out
-		);
-
-		/**
-		* Returns the first value of a selected parameter.
-		* @param p_param Parameter to get a value from.
-		* @note BufferSize needs to match the expected parameter value count.
-		*/
-		template<SupportedGetType T, size_t BufferSize = 1>
-		T GetValue(
-			types::EGetParameter p_param
-		)
-		{
-			std::array<T, BufferSize> out;
-			GetValue<T>(p_param, out);
-			return out[0];
-		}
-
-		/**
-		* Returns the value or values of a selected parameter at a given index.
-		* @param p_param Parameter to get a value from.
-		* @param p_out Value or array of values for the given parameter.
-		* @param p_index Specifies the index to retrieve from.
-		* @note Refer to the parameter documentation to know the output size.
-		*/
-		template<SupportedGetType T>
-		void GetValueIndexed(
-			types::EGetParameter p_param,
-			std::span<T> p_out,
-			uint32_t p_index
-		);
-
-		/**
-		* Returns the first value of a selected parameter at a given index.
-		* @param p_param Parameter to get a value from.
-		* @param p_index Specifies the index to retrieve from.
-		* @note BufferSize needs to match the expected parameter value count.
-		*/
-		template<SupportedGetType T, size_t BufferSize = 1>
-		T GetValueIndexed(
-			types::EGetParameter p_param,
-			uint32_t p_index
-		)
-		{
-			std::array<T, BufferSize> out;
-			GetValueIndexed<T>(p_param, out, p_index);
-			return out[0];
-		}
+		template<auto PName>
+			requires (data::GetResult<PName>::indexed)
+		data::GetResultType<PName> Get(uint32_t p_index);
 	};
 }

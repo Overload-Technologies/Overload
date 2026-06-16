@@ -6,8 +6,13 @@
 
 #include <baregl/Context.h>
 
-#include <baregl/debug/Log.h>
+#include <concepts>
+#include <span>
+#include <vector>
+
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Log.h>
+#include <baregl/data/GetResultList.h>
 #include <baregl/detail/Types.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/math/Conversions.h>
@@ -65,86 +70,211 @@ namespace
 		}
 	}
 
-	bool GetBool(uint32_t p_parameter)
+	template<typename T>
+	concept SupportedGetType =
+		std::same_as<T, int> || 
+		std::same_as<T, int64_t> || 
+		std::same_as<T, bool> || 
+		std::same_as<T, float> || 
+		std::same_as<T, double> ||
+		std::same_as<T, std::string>;
+
+	template<typename T>
+	struct StdVectorTraits;
+
+	template<typename T, typename Alloc>
+	struct StdVectorTraits<std::vector<T, Alloc>>
 	{
-		GLboolean result;
-		glGetBooleanv(p_parameter, &result);
-		return static_cast<bool>(result);
+		using value_type = T;
+	};
+
+	template<SupportedGetType T>
+	void GetValue(
+		baregl::types::EGetParameter p_param,
+		std::span<T> p_out
+	);
+
+	template<SupportedGetType T>
+	void GetValueIndexed(
+		baregl::types::EGetParameter p_param,
+		std::span<T> p_out,
+		uint32_t p_index
+	);
+
+	template<>
+	void GetValue<int>(
+		baregl::types::EGetParameter p_param,
+		std::span<int> p_out
+	)
+	{
+		glGetIntegerv(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_out.data()
+		);
 	}
 
-	bool GetBool(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<int>(
+		baregl::types::EGetParameter p_param,
+		std::span<int> p_out,
+		uint32_t p_index
+	)
 	{
-		GLboolean result;
-		glGetBooleani_v(p_parameter, p_index, &result);
-		return static_cast<bool>(result);
+		glGetIntegeri_v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_index,
+			p_out.data()
+		);
 	}
 
-	int GetInt(uint32_t p_parameter)
+	template<>
+	void GetValue<int64_t>(
+		baregl::types::EGetParameter p_param,
+		std::span<int64_t> p_out
+	)
 	{
-		GLint result;
-		glGetIntegerv(p_parameter, &result);
-		return static_cast<int>(result);
+		glGetInteger64v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_out.data()
+		);
 	}
 
-	int GetInt(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<int64_t>(
+		baregl::types::EGetParameter p_param,
+		std::span<int64_t> p_out,
+		uint32_t p_index
+	)
 	{
-		GLint result;
-		glGetIntegeri_v(p_parameter, p_index, &result);
-		return static_cast<int>(result);
+		glGetInteger64i_v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_index,
+			p_out.data()
+		);
 	}
 
-	float GetFloat(uint32_t p_parameter)
+	template<>
+	void GetValue<bool>(
+		baregl::types::EGetParameter p_param,
+		std::span<bool> p_out
+	)
 	{
-		GLfloat result;
-		glGetFloatv(p_parameter, &result);
-		return static_cast<float>(result);
+		std::vector<GLboolean> values(p_out.size());
+		glGetBooleanv(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			values.data()
+		);
+
+		for (size_t i = 0; i < p_out.size(); ++i)
+		{
+			p_out[i] = values[i] != GL_FALSE;
+		}
 	}
 
-	float GetFloat(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<bool>(
+		baregl::types::EGetParameter p_param,
+		std::span<bool> p_out,
+		uint32_t p_index
+	)
 	{
-		GLfloat result;
-		glGetFloati_v(p_parameter, p_index, &result);
-		return static_cast<float>(result);
+		std::vector<GLboolean> values(p_out.size());
+		glGetBooleani_v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_index,
+			values.data()
+		);
+
+		for (size_t i = 0; i < p_out.size(); ++i)
+		{
+			p_out[i] = values[i] != GL_FALSE;
+		}
 	}
 
-	double GetDouble(uint32_t p_parameter)
+	template<>
+	void GetValue<float>(
+		baregl::types::EGetParameter p_param,
+		std::span<float> p_out
+	)
 	{
-		GLdouble result;
-		glGetDoublev(p_parameter, &result);
-		return static_cast<double>(result);
+		glGetFloatv(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_out.data()
+		);
 	}
 
-	double GetDouble(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<float>(
+		baregl::types::EGetParameter p_param,
+		std::span<float> p_out,
+		uint32_t p_index
+	)
 	{
-		GLdouble result;
-		glGetDoublei_v(p_parameter, p_index, &result);
-		return static_cast<double>(result);
+		glGetFloati_v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_index,
+			p_out.data()
+		);
 	}
 
-	int64_t GetInt64(uint32_t p_parameter)
+	template<>
+	void GetValue<double>(
+		baregl::types::EGetParameter p_param,
+		std::span<double> p_out
+	)
 	{
-		GLint64 result;
-		glGetInteger64v(p_parameter, &result);
-		return static_cast<int64_t>(result);
+		glGetDoublev(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_out.data()
+		);
 	}
 
-	int64_t GetInt64(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<double>(
+		baregl::types::EGetParameter p_param,
+		std::span<double> p_out,
+		uint32_t p_index
+	)
 	{
-		GLint64 result;
-		glGetInteger64i_v(p_parameter, p_index, &result);
-		return static_cast<int64_t>(result);
+		glGetDoublei_v(
+			baregl::utils::EnumToValue<GLenum>(p_param),
+			p_index,
+			p_out.data()
+		);
 	}
 
-	std::string GetString(uint32_t p_parameter)
+	template<>
+	void GetValue<std::string>(
+		baregl::types::EGetParameter p_param,
+		std::span<std::string> p_out
+	)
 	{
-		const GLubyte* result = glGetString(p_parameter);
-		return result ? reinterpret_cast<const char*>(result) : std::string();
+		const GLubyte* result = glGetString(
+			baregl::utils::EnumToValue<GLenum>(p_param)
+		);
+
+		p_out[0] = 
+			result ?
+			reinterpret_cast<const char*>(result) :
+			std::string();
 	}
 
-	std::string GetString(uint32_t p_parameter, uint32_t p_index)
+	template<>
+	void GetValueIndexed<std::string>(
+		baregl::types::EGetParameter p_param,
+		std::span<std::string> p_out,
+		uint32_t p_index
+	)
 	{
-		const GLubyte* result = glGetStringi(p_parameter, p_index);
-		return result ? reinterpret_cast<const char*>(result) : std::string();
+		const GLubyte* result = glGetStringi(
+			baregl::utils::EnumToValue<GLenum>(p_param), 
+			p_index
+		);
+
+		p_out[0] = 
+			result ?
+			reinterpret_cast<const char*>(result) :
+			std::string();
 	}
 }
 
@@ -176,7 +306,6 @@ namespace baregl
 		// Seamless cubemap (always on)
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glCullFace(GL_BACK);
 	}
 
 	Context::~Context()
@@ -318,153 +447,198 @@ namespace baregl
 		glViewport(x, y, width, height);
 	}
 
-	std::string Context::GetVendor()
+	template<auto PName>
+		requires (data::GetResult<PName>::non_indexed)
+	data::GetResultType<PName> Context::Get()
 	{
-		return GetString(GL_VENDOR);
+		using R = data::GetResult<PName>;
+		using Elem = typename R::get_type;
+
+		if constexpr (R::dynamic_count)
+		{
+			using CountGet = data::GetResult<R::dynamic_count_parameter>;
+			using CountElem = typename CountGet::get_type;
+			using ResultElem = typename StdVectorTraits<typename R::type>::value_type;
+			std::array<CountElem, CountGet::count> countRaw;
+			GetValue<CountElem>(R::dynamic_count_parameter, countRaw);
+
+			const auto elementCount = static_cast<size_t>(countRaw[0] > 0 ? countRaw[0] : 0);
+			std::vector<Elem> raw(elementCount);
+			if constexpr (std::same_as<Elem, std::string>)
+			{
+				for (size_t i = 0; i < elementCount; ++i)
+				{
+					std::array<Elem, 1> value;
+					GetValueIndexed<Elem>(PName, value, static_cast<uint32_t>(i));
+					raw[i] = value[0];
+				}
+			}
+			else
+			{
+				GetValue<Elem>(PName, raw);
+			}
+
+			if constexpr (std::same_as<ResultElem, Elem>)
+				return raw;
+			else if constexpr (std::is_enum_v<ResultElem> && std::integral<Elem>)
+			{
+				std::vector<ResultElem> converted(raw.size());
+				for (size_t i = 0; i < raw.size(); ++i)
+					converted[i] = utils::ValueToEnum<ResultElem>(static_cast<GLenum>(raw[i]));
+				return converted;
+			}
+			else if constexpr (std::integral<ResultElem> && std::integral<Elem>)
+			{
+				std::vector<ResultElem> converted(raw.size());
+				for (size_t i = 0; i < raw.size(); ++i)
+					converted[i] = static_cast<ResultElem>(raw[i]);
+				return converted;
+			}
+			else
+			{
+				static_assert(
+					std::same_as<ResultElem, Elem> ||
+					(std::is_enum_v<ResultElem> && std::integral<Elem>) ||
+					(std::integral<ResultElem> && std::integral<Elem>),
+					"Unsupported dynamic get result type"
+				);
+			}
+
+		}
+		else
+		{
+			constexpr size_t N = R::count;
+			std::array<Elem, N> raw;
+			GetValue<Elem>(PName, raw);
+
+			if constexpr (std::same_as<typename R::type, Elem>)
+				return raw[0];
+			else if constexpr (std::same_as<typename R::type, std::array<Elem, N>>)
+				return raw;
+			else if constexpr (std::integral<typename R::type> && std::integral<Elem>)
+				return static_cast<typename R::type>(raw[0]);
+			else if constexpr (std::is_enum_v<typename R::type>)
+				return utils::ValueToEnum<typename R::type>(static_cast<GLenum>(raw[0]));
+
+			static_assert(
+				std::same_as<typename R::type, Elem> ||
+				std::same_as<typename R::type, std::array<Elem, N>> ||
+				(std::integral<typename R::type> && std::integral<Elem>) ||
+				std::is_enum_v<typename R::type>,
+				"Unsupported get result type"
+			);
+		}
 	}
 
-	std::string Context::GetHardware()
+	template<auto PName>
+		requires (data::GetResult<PName>::indexed)
+	data::GetResultType<PName> Context::Get(uint32_t p_index)
 	{
-		return GetString(GL_RENDERER);
+		using R = data::GetResult<PName>;
+		using Elem = typename R::get_type;
+
+		if constexpr (R::dynamic_count)
+		{
+			using CountGet = data::GetResult<R::dynamic_count_parameter>;
+			using CountElem = typename CountGet::get_type;
+			using ResultElem = typename StdVectorTraits<typename R::type>::value_type;
+
+			std::array<CountElem, CountGet::count> countRaw;
+			GetValue<CountElem>(R::dynamic_count_parameter, countRaw);
+
+			const auto elementCount = static_cast<size_t>(countRaw[0] > 0 ? countRaw[0] : 0);
+			std::vector<Elem> raw(elementCount);
+			GetValueIndexed<Elem>(PName, raw, p_index);
+
+			if constexpr (std::same_as<ResultElem, Elem>)
+			{
+				return raw;
+			}
+			else if constexpr (std::is_enum_v<ResultElem> && std::integral<Elem>)
+			{
+				std::vector<ResultElem> converted(raw.size());
+				for (size_t i = 0; i < raw.size(); ++i)
+					converted[i] = utils::ValueToEnum<ResultElem>(static_cast<GLenum>(raw[i]));
+				return converted;
+			}
+			else if constexpr (std::integral<ResultElem> && std::integral<Elem>)
+			{
+				std::vector<ResultElem> converted(raw.size());
+				for (size_t i = 0; i < raw.size(); ++i)
+					converted[i] = static_cast<ResultElem>(raw[i]);
+				return converted;
+			}
+			else
+			{
+				static_assert(
+					std::same_as<ResultElem, Elem> ||
+					(std::is_enum_v<ResultElem> && std::integral<Elem>) ||
+					(std::integral<ResultElem> && std::integral<Elem>),
+					"Unsupported dynamic indexed get result type"
+				);
+			}
+		}
+		else
+		{
+			constexpr size_t N = R::count;
+			std::array<Elem, N> raw;
+			GetValueIndexed<Elem>(PName, raw, p_index);
+
+			if constexpr (std::same_as<typename R::type, Elem>)
+				return raw[0];
+			else if constexpr (std::same_as<typename R::type, std::array<Elem, N>>)
+				return raw;
+			else if constexpr (std::integral<typename R::type> && std::integral<Elem>)
+				return static_cast<typename R::type>(raw[0]);
+			else if constexpr (std::is_enum_v<typename R::type>)
+				return utils::ValueToEnum<typename R::type>(static_cast<GLenum>(raw[0]));
+
+			static_assert(
+				std::same_as<typename R::type, Elem> ||
+				std::same_as<typename R::type, std::array<Elem, N>> ||
+				(std::integral<typename R::type> && std::integral<Elem>) ||
+				std::is_enum_v<typename R::type>,
+				"Unsupported indexed get result type"
+			);
+		}
 	}
 
-	std::string Context::GetVersion()
-	{
-		return GetString(GL_VERSION);
-	}
+#define INSTANTIATE_GET(PARAM, GET_TYPE, COUNT_SPEC, INDEXING, ...) \
+	INSTANTIATE_GET_##INDEXING(PARAM)
 
-	std::string Context::GetShadingLanguageVersion()
-	{
-		return GetString(GL_SHADING_LANGUAGE_VERSION);
-	}
-	
-	template<>
-	void Context::GetValue<int>(
-		types::EGetParameter p_param,
-		std::span<int> p_out
-	)
-	{
-		glGetIntegerv(
-			utils::EnumToValue<GLenum>(p_param),
-			p_out.data()
-		);
-	}
+#define INSTANTIATE_GET_NOT_INDEXED(PARAM) \
+	template data::GetResultType<baregl::types::EGetParameter::PARAM> \
+	Context::Get<baregl::types::EGetParameter::PARAM>();
 
-	template<>
-	void Context::GetValueIndexed<int>(
-		types::EGetParameter p_param,
-		std::span<int> p_out,
-		uint32_t p_index
-	)
-	{
-		glGetIntegeri_v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_index,
-			p_out.data()
-		);
-	}
+#define INSTANTIATE_GET_INDEXED(PARAM)
 
-	template<>
-	void Context::GetValue<int64_t>(
-		types::EGetParameter p_param,
-		std::span<int64_t> p_out
-	)
-	{
-		glGetInteger64v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_out.data()
-		);
-	}
+#define INSTANTIATE_GET_BOTH(PARAM) \
+	template data::GetResultType<baregl::types::EGetParameter::PARAM> \
+	Context::Get<baregl::types::EGetParameter::PARAM>();
 
-	template<>
-	void Context::GetValueIndexed<int64_t>(
-		types::EGetParameter p_param,
-		std::span<int64_t> p_out,
-		uint32_t p_index
-	)
-	{
-		glGetInteger64i_v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_index,
-			p_out.data()
-		);
-	}
+#define INSTANTIATE_INDEXED_GET(PARAM, GET_TYPE, COUNT_SPEC, INDEXING, ...) \
+	INSTANTIATE_INDEXED_GET_##INDEXING(PARAM)
 
-	template<>
-	void Context::GetValue<bool>(
-		types::EGetParameter p_param,
-		std::span<bool> p_out
-	)
-	{
-		glGetBooleanv(
-			utils::EnumToValue<GLenum>(p_param),
-			reinterpret_cast<GLboolean*>(p_out.data())
-		);
-	}
+#define INSTANTIATE_INDEXED_GET_NOT_INDEXED(PARAM)
 
-	template<>
-	void Context::GetValueIndexed<bool>(
-		types::EGetParameter p_param,
-		std::span<bool> p_out,
-		uint32_t p_index
-	)
-	{
-		glGetBooleani_v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_index,
-			reinterpret_cast<GLboolean*>(p_out.data())
-		);
-	}
+#define INSTANTIATE_INDEXED_GET_INDEXED(PARAM) \
+	template data::GetResultType<baregl::types::EGetParameter::PARAM> \
+	Context::Get<baregl::types::EGetParameter::PARAM>(uint32_t);
 
-	template<>
-	void Context::GetValue<float>(
-		types::EGetParameter p_param,
-		std::span<float> p_out
-	)
-	{
-		glGetFloatv(
-			utils::EnumToValue<GLenum>(p_param),
-			p_out.data()
-		);
-	}
+#define INSTANTIATE_INDEXED_GET_BOTH(PARAM) \
+	template data::GetResultType<baregl::types::EGetParameter::PARAM> \
+	Context::Get<baregl::types::EGetParameter::PARAM>(uint32_t);
 
-	template<>
-	void Context::GetValueIndexed<float>(
-		types::EGetParameter p_param,
-		std::span<float> p_out,
-		uint32_t p_index
-	)
-	{
-		glGetFloati_v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_index,
-			p_out.data()
-		);
-	}
+BAREGL_GET_RESULTS(INSTANTIATE_GET)
+BAREGL_GET_RESULTS(INSTANTIATE_INDEXED_GET)
 
-	template<>
-	void Context::GetValue<double>(
-		types::EGetParameter p_param,
-		std::span<double> p_out
-	)
-	{
-		glGetDoublev(
-			utils::EnumToValue<GLenum>(p_param),
-			p_out.data()
-		);
-	}
+#undef INSTANTIATE_INDEXED_GET_BOTH
+#undef INSTANTIATE_INDEXED_GET_INDEXED
+#undef INSTANTIATE_INDEXED_GET_NOT_INDEXED
+#undef INSTANTIATE_INDEXED_GET
+#undef INSTANTIATE_GET_BOTH
+#undef INSTANTIATE_GET_INDEXED
+#undef INSTANTIATE_GET_NOT_INDEXED
+#undef INSTANTIATE_GET
 
-	template<>
-	void Context::GetValueIndexed<double>(
-		types::EGetParameter p_param,
-		std::span<double> p_out,
-		uint32_t p_index
-	)
-	{
-		glGetDoublei_v(
-			utils::EnumToValue<GLenum>(p_param),
-			p_index,
-			p_out.data()
-		);
-	}
 }

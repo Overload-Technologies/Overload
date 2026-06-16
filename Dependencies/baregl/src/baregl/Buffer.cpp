@@ -7,6 +7,7 @@
 #include <baregl/Buffer.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
 
@@ -15,11 +16,13 @@ namespace baregl
 	Buffer::Buffer()
 	{
 		glCreateBuffers(1, &m_id);
+		NOTIFY_BUFFER_CREATED;
 	}
 
 	Buffer::~Buffer()
 	{
 		glDeleteBuffers(1, &m_id);
+		NOTIFY_BUFFER_DESTROYED;
 	}
 
 	uint64_t Buffer::Allocate(uint64_t p_size, types::EAccessSpecifier p_usage)

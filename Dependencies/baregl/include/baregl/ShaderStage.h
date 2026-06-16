@@ -40,7 +40,7 @@ namespace baregl
 		* @note Use this method after uploading the shader source.
 		* @return The compilation result.
 		*/
-		baregl::data::ShaderCompilationResult Compile() const;
+		data::ShaderCompilationResult Compile() const;
 
 		/**
 		* Returns the type of shader stage.

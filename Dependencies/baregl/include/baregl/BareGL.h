@@ -17,5 +17,6 @@
 
 #include <baregl/debug/Debug.h>
 #include <baregl/debug/IAssertHandler.h>
+#include <baregl/debug/IEventHandler.h>
 #include <baregl/debug/ILogHandler.h>
 

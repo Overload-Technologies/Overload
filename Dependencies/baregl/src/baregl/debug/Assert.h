@@ -8,7 +8,11 @@
 
 #include <string_view>
 
-#define BAREGL_ASSERT(condition, message) baregl::debug::Assert(condition, message)
+#if defined(DEBUG) || defined(_DEBUG)
+	#define BAREGL_ASSERT(condition, message) baregl::debug::Assert(condition, message)
+#else
+	#define BAREGL_ASSERT(condition, message) ((void)(condition), (void)(message))
+#endif
 
 namespace baregl::debug
 {

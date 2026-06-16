@@ -7,6 +7,7 @@
 #include <baregl/Texture.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/debug/Log.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
@@ -44,6 +45,7 @@ namespace baregl
 	{
 		glCreateTextures(m_type, 1, &m_id);
 		m_debugName = p_debugName;
+		NOTIFY_TEXTURE_CREATED;
 	}
 
 	void Texture::Bind(std::optional<uint32_t> p_slot) const
@@ -79,6 +81,7 @@ namespace baregl
 	Texture::~Texture()
 	{
 		glDeleteTextures(1, &m_id);
+		NOTIFY_TEXTURE_DESTROYED;
 	}
 
 	void Texture::Allocate(const data::TextureDesc& p_desc)

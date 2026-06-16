@@ -14,7 +14,7 @@ namespace baregl::math
 {
 	struct Mat3
 	{
-		std::array<Vec3, 4> data {{
+		std::array<Vec3, 3> data {{
 			{0.0f, 0.0f, 0.0f},
 			{0.0f, 0.0f, 0.0f},
 			{0.0f, 0.0f, 0.0f}

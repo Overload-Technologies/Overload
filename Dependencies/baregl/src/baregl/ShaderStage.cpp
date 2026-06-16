@@ -6,6 +6,7 @@
 
 #include <baregl/ShaderStage.h>
 
+#include <baregl/debug/Event.h>
 #include <baregl/debug/Log.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
@@ -18,11 +19,13 @@ namespace baregl
 		detail::NativeObject(glCreateShader(utils::EnumToValue<GLenum>(p_type))),
 		m_type{ p_type }
 	{
+		NOTIFY_SHADER_STAGE_CREATED;
 	}
 
 	ShaderStage::~ShaderStage()
 	{
 		glDeleteShader(m_id);
+		NOTIFY_SHADER_STAGE_DESTROYED;
 	}
 
 	void ShaderStage::Upload(const std::string& p_source) const

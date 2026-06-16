@@ -104,18 +104,18 @@ namespace baregl
 		* Returns information about the uniform identified by the given name or std::nullopt if not found.
 		* @param p_name
 		*/
-		std::optional<std::reference_wrapper<const baregl::data::UniformInfo>> GetUniformInfo(const std::string& p_name) const;
+		std::optional<std::reference_wrapper<const data::UniformInfo>> GetUniformInfo(const std::string& p_name) const;
 
 		/**
 		* Returns the uniforms associated with this program.
 		*/
-		const std::unordered_map<std::string, baregl::data::UniformInfo>& GetUniforms() const;
+		const std::unordered_map<std::string, data::UniformInfo>& GetUniforms() const;
 
 	private:
 		void QueryUniforms();
 
 	private:
-		std::unordered_map<std::string, baregl::data::UniformInfo> m_uniforms;
+		std::unordered_map<std::string, data::UniformInfo> m_uniforms;
 		std::unordered_map<std::string, uint32_t> m_uniformsLocationCache;
 		std::vector<std::reference_wrapper<const ShaderStage>> m_attachedShaders;
 	};

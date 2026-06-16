@@ -8,6 +8,7 @@
 
 #include <baregl/debug/IAssertHandler.h>
 #include <baregl/debug/ILogHandler.h>
+#include <baregl/debug/IEventHandler.h>
 
 #include <memory>
 
@@ -24,5 +25,11 @@ namespace baregl::debug
 	* @param p_handler
 	*/
 	void SetLogHandler(std::unique_ptr<ILogHandler> p_handler);
+
+	/**
+	* Provides an event handler for baregl notifications
+	* @param p_handler
+	*/
+	void SetEventHandler(std::unique_ptr<IEventHandler> p_handler);
 }
 

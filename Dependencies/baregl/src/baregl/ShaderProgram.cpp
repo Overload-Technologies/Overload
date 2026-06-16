@@ -7,6 +7,7 @@
 #include <baregl/ShaderProgram.h>
 
 #include <baregl/debug/Assert.h>
+#include <baregl/debug/Event.h>
 #include <baregl/debug/Log.h>
 #include <baregl/detail/glad/glad.h>
 #include <baregl/detail/Types.h>
@@ -21,11 +22,13 @@ namespace baregl
 	ShaderProgram::ShaderProgram() :
 		detail::NativeObject(glCreateProgram())
 	{
+		NOTIFY_SHADER_PROGRAM_CREATED;
 	}
 
 	ShaderProgram::~ShaderProgram()
 	{
 		glDeleteProgram(m_id);
+		NOTIFY_SHADER_PROGRAM_DESTROYED;
 	}
 
 	void ShaderProgram::Bind() const
@@ -158,7 +161,7 @@ void ShaderProgram::SetUniform<type>(const std::string& p_name, const type& valu
 		GLint activeUniformCount = 0;
 		glGetProgramiv(m_id, GL_ACTIVE_UNIFORMS, &activeUniformCount);
 
-		uint32_t textureIndexCounter = 0;
+		uint32_t textureIndex = 0;
 
 		for (GLint i = 0; i < activeUniformCount; ++i)
 		{
@@ -198,18 +201,18 @@ void ShaderProgram::SetUniform<type>(const std::string& p_name, const type& valu
 				}
 			}();
 
+			const bool isTexture =
+				uniformType == types::EUniformType::SAMPLER_2D ||
+				uniformType == types::EUniformType::SAMPLER_CUBE;
+
 			// Only add the uniform if it has a value (unsupported uniform types will be ignored)
 			if (uniformValue.has_value())
 			{
-				const bool isTexture =
-					uniformType == types::EUniformType::SAMPLER_2D ||
-					uniformType == types::EUniformType::SAMPLER_CUBE;
-
-				m_uniforms.emplace(name, baregl::data::UniformInfo{
+				m_uniforms.emplace(name, data::UniformInfo{
 					.type = uniformType,
 					.name = name,
 					.defaultValue = uniformValue,
-					.textureIndex = isTexture ? textureIndexCounter++ : 0
+					.textureIndex = isTexture ? textureIndex++ : 0
 				});
 			}
 		}

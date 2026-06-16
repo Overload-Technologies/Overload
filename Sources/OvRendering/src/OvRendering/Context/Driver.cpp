@@ -7,8 +7,6 @@
 #include <cstdint>
 
 #include <baregl/Context.h>
-#include <baregl/utils/EnumMapper.h>
-#include <baregl/detail/Types.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
@@ -34,17 +32,12 @@ namespace
 		OvRendering::Data::PipelineState pso;
 
 		// Rasterization
-		pso.rasterizationMode = ValueToEnum<ERasterizationMode>(
-			static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::POLYGON_MODE))
-		);
-		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(
-			m_gfxContext->GetValue<float>(EGetParameter::LINE_WIDTH)
-		);
+		pso.rasterizationMode = m_gfxContext->Get<EGetParameter::POLYGON_MODE>();
+		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(m_gfxContext->Get<EGetParameter::LINE_WIDTH>());
 
 		// Color write mask
 		{
-			std::array<bool, 4> colorWriteMask;
-			m_gfxContext->GetValue<bool>(EGetParameter::COLOR_WRITEMASK, colorWriteMask);
+			std::array<bool, 4> colorWriteMask = m_gfxContext->Get<EGetParameter::COLOR_WRITEMASK>();
 			pso.colorWriting.r = colorWriteMask[0];
 			pso.colorWriting.g = colorWriteMask[1];
 			pso.colorWriting.b = colorWriteMask[2];
@@ -52,7 +45,7 @@ namespace
 		}
 
 		// Capabilities
-		pso.depthWriting          = m_gfxContext->GetValue<bool>(EGetParameter::DEPTH_WRITEMASK);
+		pso.depthWriting          = m_gfxContext->Get<EGetParameter::DEPTH_WRITEMASK>();
 		pso.blending              = m_gfxContext->GetCapability(ERenderingCapability::BLEND);
 		pso.culling               = m_gfxContext->GetCapability(ERenderingCapability::CULL_FACE);
 		pso.dither                = m_gfxContext->GetCapability(ERenderingCapability::DITHER);
@@ -64,26 +57,26 @@ namespace
 		pso.multisample           = m_gfxContext->GetCapability(ERenderingCapability::MULTISAMPLE);
 
 		// Stencil
-		pso.stencilFuncOp    = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FUNC)));
-		pso.stencilFuncRef   = m_gfxContext->GetValue<int>(EGetParameter::STENCIL_REF);
-		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_VALUE_MASK));
+		pso.stencilFuncOp    = m_gfxContext->Get<EGetParameter::STENCIL_FUNC>();
+		pso.stencilFuncRef   = m_gfxContext->Get<EGetParameter::STENCIL_REF>();
+		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->Get<EGetParameter::STENCIL_VALUE_MASK>());
 
-		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_WRITEMASK));
+		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->Get<EGetParameter::STENCIL_WRITEMASK>());
 
-		pso.stencilOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_FAIL)));
-		pso.depthOpFail      = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_FAIL)));
-		pso.bothOpFail       = ValueToEnum<EOperation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::STENCIL_PASS_DEPTH_PASS)));
+		pso.stencilOpFail      = m_gfxContext->Get<EGetParameter::STENCIL_FAIL>();
+		pso.depthOpFail      = m_gfxContext->Get<EGetParameter::STENCIL_PASS_DEPTH_FAIL>();
+		pso.bothOpFail       = m_gfxContext->Get<EGetParameter::STENCIL_PASS_DEPTH_PASS>();
 
 		// Depth
-		pso.depthFunc = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::DEPTH_FUNC)));
+		pso.depthFunc = m_gfxContext->Get<EGetParameter::DEPTH_FUNC>();
 
 		// Culling
-		pso.cullFace = ValueToEnum<ECullFace>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::CULL_FACE_MODE)));
+		pso.cullFace = m_gfxContext->Get<EGetParameter::CULL_FACE_MODE>();
 
 		// Blending
-		pso.blendingSrcFactor  = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_SRC_RGB)));
-		pso.blendingDestFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_DST_RGB)));
-		pso.blendingEquation   = ValueToEnum<EBlendingEquation>(static_cast<GLenum>(m_gfxContext->GetValue<int>(EGetParameter::BLEND_EQUATION_RGB)));
+		pso.blendingSrcFactor  = m_gfxContext->Get<EGetParameter::BLEND_SRC_RGB>();
+		pso.blendingDestFactor = m_gfxContext->Get<EGetParameter::BLEND_DST_RGB>();
+		pso.blendingEquation   = m_gfxContext->Get<EGetParameter::BLEND_EQUATION_RGB>();
 
 		return pso;
 	}
@@ -107,10 +100,10 @@ OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings
 	m_pipelineState = initialPipelineState;
 	SetPipelineState(m_defaultPipelineState);
 
-	m_vendor = m_gfxContext->GetVendor();
-	m_hardware = m_gfxContext->GetHardware();
-	m_version = m_gfxContext->GetVersion();
-	m_shadingLanguageVersion = m_gfxContext->GetShadingLanguageVersion();
+	m_vendor = m_gfxContext->Get<baregl::types::EGetParameter::VENDOR>();
+	m_hardware = m_gfxContext->Get<baregl::types::EGetParameter::RENDERER>();
+	m_version = m_gfxContext->Get<baregl::types::EGetParameter::VERSION>();
+	m_shadingLanguageVersion = m_gfxContext->Get<baregl::types::EGetParameter::SHADING_LANGUAGE_VERSION>();
 
 	OVLOG_INFO("Graphics driver initialized:");
 	OVLOG_INFO("\tVendor => " + m_vendor);

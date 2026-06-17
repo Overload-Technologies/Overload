@@ -4,7 +4,11 @@
 * @licence: MIT
 */
 
+#include <array>
+#include <concepts>
+#include <cstdint>
 #include <format>
+#include <span>
 
 #include <glad.h>
 
@@ -73,74 +77,134 @@ namespace
 		}
 	}
 
-	bool GetBool(uint32_t p_parameter)
+	/**
+	* Constrains the OpenGL state query helpers to the value types OpenGL can return.
+	*/
+	template<typename T>
+	concept SupportedGetType =
+		std::same_as<T, bool> ||
+		std::same_as<T, int> ||
+		std::same_as<T, int64_t> ||
+		std::same_as<T, float> ||
+		std::same_as<T, double>;
+
+	/**
+	* Upper bound for the scratch buffer used when the requested type does not match
+	* the OpenGL native type (bool, and int64_t on some platforms). No such query
+	* returns more than four values (GL_COLOR_WRITEMASK returns four).
+	*/
+	constexpr size_t kMaximumConvertedValueCount = 4;
+
+	/**
+	* Reads one or more values for an OpenGL parameter into a caller-provided buffer.
+	* @param p_parameter The OpenGL parameter to query.
+	* @param p_output The buffer the values are written into.
+	*/
+	template<SupportedGetType T>
+	void GetValue(uint32_t p_parameter, std::span<T> p_output)
 	{
-		GLboolean result;
-		glGetBooleanv(p_parameter, &result);
-		return static_cast<bool>(result);
+		if constexpr (std::same_as<T, bool>)
+		{
+			std::array<GLboolean, kMaximumConvertedValueCount> nativeResult{};
+			glGetBooleanv(p_parameter, nativeResult.data());
+
+			for (size_t i = 0; i < p_output.size() && i < nativeResult.size(); ++i)
+			{
+				p_output[i] = static_cast<bool>(nativeResult[i]);
+			}
+		}
+		else if constexpr (std::same_as<T, int64_t>)
+		{
+			std::array<GLint64, kMaximumConvertedValueCount> nativeResult{};
+			glGetInteger64v(p_parameter, nativeResult.data());
+
+			for (size_t i = 0; i < p_output.size() && i < nativeResult.size(); ++i)
+			{
+				p_output[i] = static_cast<int64_t>(nativeResult[i]);
+			}
+		}
+		else if constexpr (std::same_as<T, int>)
+		{
+			glGetIntegerv(p_parameter, p_output.data());
+		}
+		else if constexpr (std::same_as<T, float>)
+		{
+			glGetFloatv(p_parameter, p_output.data());
+		}
+		else if constexpr (std::same_as<T, double>)
+		{
+			glGetDoublev(p_parameter, p_output.data());
+		}
 	}
 
-	bool GetBool(uint32_t p_parameter, uint32_t p_index)
+	/**
+	* Reads a single value for an OpenGL parameter.
+	* Use BufferSize to size the read buffer for parameters that return more than one value.
+	* @param p_parameter The OpenGL parameter to query.
+	*/
+	template<SupportedGetType T, size_t BufferSize = 1>
+	T GetValue(uint32_t p_parameter)
 	{
-		GLboolean result;
-		glGetBooleani_v(p_parameter, p_index, &result);
-		return static_cast<bool>(result);
+		std::array<T, BufferSize> result{};
+		GetValue<T>(p_parameter, std::span<T>(result));
+		return result[0];
 	}
 
-	int GetInt(uint32_t p_parameter)
+	/**
+	* Reads one or more values for an indexed OpenGL parameter into a caller-provided buffer.
+	* @param p_parameter The OpenGL parameter to query.
+	* @param p_output The buffer the values are written into.
+	* @param p_index The index of the element to query.
+	*/
+	template<SupportedGetType T>
+	void GetValueIndexed(uint32_t p_parameter, std::span<T> p_output, uint32_t p_index)
 	{
-		GLint result[4];
-		glGetIntegerv(p_parameter, result);
-		return static_cast<int>(result[0]);
+		if constexpr (std::same_as<T, bool>)
+		{
+			std::array<GLboolean, kMaximumConvertedValueCount> nativeResult{};
+			glGetBooleani_v(p_parameter, p_index, nativeResult.data());
+
+			for (size_t i = 0; i < p_output.size() && i < nativeResult.size(); ++i)
+			{
+				p_output[i] = static_cast<bool>(nativeResult[i]);
+			}
+		}
+		else if constexpr (std::same_as<T, int64_t>)
+		{
+			std::array<GLint64, kMaximumConvertedValueCount> nativeResult{};
+			glGetInteger64i_v(p_parameter, p_index, nativeResult.data());
+
+			for (size_t i = 0; i < p_output.size() && i < nativeResult.size(); ++i)
+			{
+				p_output[i] = static_cast<int64_t>(nativeResult[i]);
+			}
+		}
+		else if constexpr (std::same_as<T, int>)
+		{
+			glGetIntegeri_v(p_parameter, p_index, p_output.data());
+		}
+		else if constexpr (std::same_as<T, float>)
+		{
+			glGetFloati_v(p_parameter, p_index, p_output.data());
+		}
+		else if constexpr (std::same_as<T, double>)
+		{
+			glGetDoublei_v(p_parameter, p_index, p_output.data());
+		}
 	}
 
-	int GetInt(uint32_t p_parameter, uint32_t p_index)
+	/**
+	* Reads a single value for an indexed OpenGL parameter.
+	* Use BufferSize to size the read buffer for parameters that return more than one value.
+	* @param p_parameter The OpenGL parameter to query.
+	* @param p_index The index of the element to query.
+	*/
+	template<SupportedGetType T, size_t BufferSize = 1>
+	T GetValueIndexed(uint32_t p_parameter, uint32_t p_index)
 	{
-		GLint result[4];
-		glGetIntegeri_v(p_parameter, p_index, result);
-		return static_cast<int>(result[0]);
-	}
-
-	float GetFloat(uint32_t p_parameter)
-	{
-		GLfloat result;
-		glGetFloatv(p_parameter, &result);
-		return static_cast<float>(result);
-	}
-
-	float GetFloat(uint32_t p_parameter, uint32_t p_index)
-	{
-		GLfloat result;
-		glGetFloati_v(p_parameter, p_index, &result);
-		return static_cast<float>(result);
-	}
-
-	double GetDouble(uint32_t p_parameter)
-	{
-		GLdouble result;
-		glGetDoublev(p_parameter, &result);
-		return static_cast<double>(result);
-	}
-
-	double GetDouble(uint32_t p_parameter, uint32_t p_index)
-	{
-		GLdouble result;
-		glGetDoublei_v(p_parameter, p_index, &result);
-		return static_cast<double>(result);
-	}
-
-	int64_t GetInt64(uint32_t p_parameter)
-	{
-		GLint64 result;
-		glGetInteger64v(p_parameter, &result);
-		return static_cast<int64_t>(result);
-	}
-
-	int64_t GetInt64(uint32_t p_parameter, uint32_t p_index)
-	{
-		GLint64 result;
-		glGetInteger64i_v(p_parameter, p_index, &result);
-		return static_cast<int64_t>(result);
+		std::array<T, BufferSize> result{};
+		GetValueIndexed<T>(p_parameter, std::span<T>(result), p_index);
+		return result[0];
 	}
 
 	std::string GetString(uint32_t p_parameter)
@@ -166,50 +230,50 @@ namespace
 		OvRendering::Data::PipelineState pso;
 
 		// Rasterization
-		pso.rasterizationMode = static_cast<ERasterizationMode>(GetInt(GL_POLYGON_MODE));
-		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(GetFloat(GL_LINE_WIDTH));
+		pso.rasterizationMode = static_cast<ERasterizationMode>(GetValue<int, 2>(GL_POLYGON_MODE));
+		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(GetValue<float>(GL_LINE_WIDTH));
 
 		// Color write mask
-		GLboolean colorWriteMask[4];
-		glGetBooleanv(GL_COLOR_WRITEMASK, colorWriteMask);
+		std::array<bool, 4> colorWriteMask{};
+		GetValue<bool>(GL_COLOR_WRITEMASK, colorWriteMask);
 		pso.colorWriting.r = colorWriteMask[0];
 		pso.colorWriting.g = colorWriteMask[1];
 		pso.colorWriting.b = colorWriteMask[2];
 		pso.colorWriting.a = colorWriteMask[3];
 
 		// Capability
-		pso.depthWriting = GetBool(GL_DEPTH_WRITEMASK);
-		pso.blending = GetBool(GL_BLEND);
-		pso.culling = GetBool(GL_CULL_FACE);
-		pso.dither = GetBool(GL_DITHER);
-		pso.polygonOffsetFill = GetBool(GL_POLYGON_OFFSET_FILL);
-		pso.sampleAlphaToCoverage = GetBool(GL_SAMPLE_ALPHA_TO_COVERAGE);
-		pso.depthTest = GetBool(GL_DEPTH_TEST);
-		pso.scissorTest = GetBool(GL_SCISSOR_TEST);
-		pso.stencilTest = GetBool(GL_STENCIL_TEST);
-		pso.multisample = GetBool(GL_MULTISAMPLE);
+		pso.depthWriting = GetValue<bool>(GL_DEPTH_WRITEMASK);
+		pso.blending = GetValue<bool>(GL_BLEND);
+		pso.culling = GetValue<bool>(GL_CULL_FACE);
+		pso.dither = GetValue<bool>(GL_DITHER);
+		pso.polygonOffsetFill = GetValue<bool>(GL_POLYGON_OFFSET_FILL);
+		pso.sampleAlphaToCoverage = GetValue<bool>(GL_SAMPLE_ALPHA_TO_COVERAGE);
+		pso.depthTest = GetValue<bool>(GL_DEPTH_TEST);
+		pso.scissorTest = GetValue<bool>(GL_SCISSOR_TEST);
+		pso.stencilTest = GetValue<bool>(GL_STENCIL_TEST);
+		pso.multisample = GetValue<bool>(GL_MULTISAMPLE);
 
 		// Stencil
-		pso.stencilFuncOp = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(GetInt(GL_STENCIL_FUNC)));
-		pso.stencilFuncRef = GetInt(GL_STENCIL_REF);
-		pso.stencilFuncMask = static_cast<uint32_t>(GetInt(GL_STENCIL_VALUE_MASK));
+		pso.stencilFuncOp = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(GetValue<int>(GL_STENCIL_FUNC)));
+		pso.stencilFuncRef = GetValue<int>(GL_STENCIL_REF);
+		pso.stencilFuncMask = static_cast<uint32_t>(GetValue<int>(GL_STENCIL_VALUE_MASK));
 
-		pso.stencilWriteMask = static_cast<uint32_t>(GetInt(GL_STENCIL_WRITEMASK));
+		pso.stencilWriteMask = static_cast<uint32_t>(GetValue<int>(GL_STENCIL_WRITEMASK));
 
-		pso.stencilOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetInt(GL_STENCIL_FAIL)));
-		pso.depthOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetInt(GL_STENCIL_PASS_DEPTH_FAIL)));
-		pso.bothOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetInt(GL_STENCIL_PASS_DEPTH_PASS)));
+		pso.stencilOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetValue<int>(GL_STENCIL_FAIL)));
+		pso.depthOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetValue<int>(GL_STENCIL_PASS_DEPTH_FAIL)));
+		pso.bothOpFail = ValueToEnum<EOperation>(static_cast<GLenum>(GetValue<int>(GL_STENCIL_PASS_DEPTH_PASS)));
 
 		// Depth
-		pso.depthFunc = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(GetInt(GL_DEPTH_FUNC)));
+		pso.depthFunc = ValueToEnum<EComparaisonAlgorithm>(static_cast<GLenum>(GetValue<int>(GL_DEPTH_FUNC)));
 
 		// Culling
-		pso.cullFace = ValueToEnum<ECullFace>(static_cast<GLenum>(GetInt(GL_CULL_FACE_MODE)));
+		pso.cullFace = ValueToEnum<ECullFace>(static_cast<GLenum>(GetValue<int>(GL_CULL_FACE_MODE)));
 
 		// Blending
-		pso.blendingSrcFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(GetInt(GL_BLEND_SRC)));
-		pso.blendingDestFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(GetInt(GL_BLEND_DST)));
-		pso.blendingEquation = ValueToEnum<EBlendingEquation>(static_cast<GLenum>(GetInt(GL_BLEND_EQUATION)));
+		pso.blendingSrcFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(GetValue<int>(GL_BLEND_SRC)));
+		pso.blendingDestFactor = ValueToEnum<EBlendingFactor>(static_cast<GLenum>(GetValue<int>(GL_BLEND_DST)));
+		pso.blendingEquation = ValueToEnum<EBlendingEquation>(static_cast<GLenum>(GetValue<int>(GL_BLEND_EQUATION)));
 
 		return pso;
 	}

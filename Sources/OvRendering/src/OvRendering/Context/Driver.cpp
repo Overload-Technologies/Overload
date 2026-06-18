@@ -92,7 +92,7 @@ namespace
 
 		return pso;
 	}
-} // namespace
+}
 
 OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings& p_driverSettings)
 {

@@ -84,6 +84,8 @@ namespace
 
 	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, const baregl::Texture& p_texture)
 	{
+		if (!p_texture.IsValid()) { return OvMaths::FVector2::Zero; }
+
 		const float scale =
 			p_mode == OvEditor::Panels::EScaleMode::ONE_TO_ONE ?
 			CalculateOneToOneScale(p_windowSize, p_texture) :
@@ -100,9 +102,6 @@ namespace
 		return
 			p_texture != nullptr &&
 			p_texture->GetID() != 0 &&
-			// p_texture->IsValid() &&
-			// p_texture->GetDesc().width > 0 &&
-			// p_texture->GetDesc().height > 0 &&
 			// Only 2D textures are supported in the debugger
 			p_texture->GetType() == baregl::types::ETextureType::TEXTURE_2D;
 	}

@@ -23,8 +23,8 @@ namespace OvRendering::Utils::ResourceTracking
 		const baregl::Texture* texture;
 	};
 
-	static OvTools::Eventing::Event<const TextureRegistryEntryDesc&> TextureAddedEvent;
-	static OvTools::Eventing::Event<const TextureRegistryEntryDesc&> TextureRemovedEvent;
+	extern OvTools::Eventing::Event<const TextureRegistryEntryDesc&> TextureAddedEvent;
+	extern OvTools::Eventing::Event<const TextureRegistryEntryDesc&> TextureRemovedEvent;
 
 	/**
 	* Start tracking resource events

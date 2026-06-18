@@ -12,10 +12,10 @@
 
 #include <OvDebug/Assertion.h>
 
-namespace OvRendering::Utils
+namespace OvRendering::Utils::ResourceTracking
 {
-	static OvTools::Eventing::Event<const ResourceTracking::TextureRegistryEntryDesc&> TextureAddedEvent;
-	static OvTools::Eventing::Event<const ResourceTracking::TextureRegistryEntryDesc&> TextureRemovedEvent;
+	OvTools::Eventing::Event<const ResourceTracking::TextureRegistryEntryDesc&> TextureAddedEvent;
+	OvTools::Eventing::Event<const ResourceTracking::TextureRegistryEntryDesc&> TextureRemovedEvent;
 }
 
 namespace

@@ -114,7 +114,6 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 
 	/* Graphics context creation */
 	driver = std::make_unique<OvRendering::Context::Driver>(OvRendering::Settings::DriverSettings{ true });
-	textureRegistry = std::make_unique<OvEditor::Utils::TextureRegistry>();
 
 	std::filesystem::create_directories(Utils::FileSystem::kEditorDataPath);
 
@@ -174,7 +173,6 @@ OvEditor::Core::Context::Context(const std::filesystem::path& p_projectFolder) :
 	ServiceLocator::Provide<OvCore::SceneSystem::SceneManager>(sceneManager);
 	ServiceLocator::Provide<OvAudio::Core::AudioEngine>(*audioEngine);
 	ServiceLocator::Provide<OvCore::Scripting::ScriptEngine>(*scriptEngine);
-	ServiceLocator::Provide<OvEditor::Utils::TextureRegistry>(*textureRegistry);
 
 	ApplyProjectSettings();
 }

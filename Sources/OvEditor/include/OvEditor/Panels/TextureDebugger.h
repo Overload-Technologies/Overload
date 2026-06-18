@@ -6,14 +6,11 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <memory>
-
 #include <baregl/Texture.h>
+#include <OvTools/Utils/OptRef.h>
 #include <OvUI/Widgets/Visual/Image.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 #include <OvUI/Panels/PanelWindow.h>
-#include <OvEditor/Utils/TextureRegistry.h>
 
 namespace OvEditor::Panels
 {
@@ -48,7 +45,7 @@ namespace OvEditor::Panels
 		/**
 		* Destroys the texture debugger.
 		*/
-		~TextureDebugger();
+		virtual ~TextureDebugger();
 
 		/**
 		* Updates the texture debugger.
@@ -63,6 +60,6 @@ namespace OvEditor::Panels
 		OvUI::Widgets::Visual::Image& m_image;
 		OvTools::Eventing::ListenerID m_creationListenerID;
 		OvTools::Eventing::ListenerID m_destructionListenerID;
-		OvTools::Utils::OptRef<baregl::Texture> m_selectedTexture;
+		OvTools::Utils::OptRef<const baregl::Texture> m_selectedTexture;
 	};
 }

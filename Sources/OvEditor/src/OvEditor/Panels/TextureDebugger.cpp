@@ -4,7 +4,6 @@
 * @licence: MIT
 */
 
-#include <array>
 #include <format>
 
 #include <baregl/Texture.h>
@@ -13,6 +12,7 @@
 #include <OvDebug/Assertion.h>
 #include <OvDebug/Logger.h>
 #include <OvEditor/Panels/TextureDebugger.h>
+#include <OvRendering/Utils/ResourceTracking.h>
 #include <OvTools/Utils/EnumMapper.h>
 
 template <>
@@ -70,7 +70,7 @@ namespace
 		);
 	}
 
-	float CalculateOneToOneScale(const OvMaths::FVector2& p_windowSize, baregl::Texture& p_texture)
+	float CalculateOneToOneScale(const OvMaths::FVector2& p_windowSize, const baregl::Texture& p_texture)
 	{
 		constexpr float kPanelImageMarginX = 45.0f;
 		constexpr float kPanelImageMarginY = 120.0f; // Based on the size of the settings above the image
@@ -82,7 +82,7 @@ namespace
 		return std::min(safeSizeX / texDesc.width, safeSizeY / texDesc.height);
 	}
 
-	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, baregl::Texture& p_texture)
+	OvMaths::FVector2 CalculateImageSize(OvEditor::Panels::EScaleMode p_mode, const OvMaths::FVector2& p_windowSize, const baregl::Texture& p_texture)
 	{
 		const float scale =
 			p_mode == OvEditor::Panels::EScaleMode::ONE_TO_ONE ?
@@ -100,9 +100,9 @@ namespace
 		return
 			p_texture != nullptr &&
 			p_texture->GetID() != 0 &&
-			p_texture->IsValid() &&
-			p_texture->GetDesc().width > 0 &&
-			p_texture->GetDesc().height > 0 &&
+			// p_texture->IsValid() &&
+			// p_texture->GetDesc().width > 0 &&
+			// p_texture->GetDesc().height > 0 &&
 			// Only 2D textures are supported in the debugger
 			p_texture->GetType() == baregl::types::ETextureType::TEXTURE_2D;
 	}
@@ -120,17 +120,15 @@ namespace OvEditor::Panels
 		m_textureSelector(CreateWidget<OvUI::Widgets::Selection::ComboBox>()),
 		m_scaleSelector(CreateWidget<OvUI::Widgets::Selection::ComboBox>())
 	{
-		auto& textureRegistry = OVSERVICE(OvEditor::Utils::TextureRegistry);
-
 		allowHorizontalScrollbar = true;
 
 		constexpr int kNoneTextureID = 0;
 
 		m_textureSelector.choices = { {kNoneTextureID, "None"} };
 
-		for (auto& textureID : textureRegistry.GetTextureIDs())
+		for (auto& textureID : OvRendering::Utils::ResourceTracking::GetTextureIDs())
 		{
-			if (auto texture = textureRegistry.GetTexture(textureID); texture.has_value())
+			if (auto texture = OvRendering::Utils::ResourceTracking::GetTexture(textureID); texture.has_value())
 			{
 				if (IsValidTexture(&texture.value()))
 				{
@@ -139,7 +137,7 @@ namespace OvEditor::Panels
 			}
 		}
 
-		m_textureSelector.ValueChangedEvent += [this, &textureRegistry](int p_selectedTextureID)
+		m_textureSelector.ValueChangedEvent += [this](int p_selectedTextureID)
 		{
 			if (p_selectedTextureID == kNoneTextureID)
 			{
@@ -148,7 +146,7 @@ namespace OvEditor::Panels
 			}
 			else
 			{
-				if (auto texture = textureRegistry.GetTexture(p_selectedTextureID))
+				if (auto texture = OvRendering::Utils::ResourceTracking::GetTexture(p_selectedTextureID))
 				{
 					m_selectedTexture = texture;
 					m_image.textureID = { texture->GetID() };
@@ -164,7 +162,7 @@ namespace OvEditor::Panels
 			m_textureSelector.ValueChangedEvent.Invoke(m_textureSelector.currentChoice);
 		}
 
-		m_creationListenerID = textureRegistry.textureAddedEvent += [this](const auto& p_desc)
+		m_creationListenerID = OvRendering::Utils::ResourceTracking::TextureAddedEvent += [this](const auto& p_desc)
 		{
 			if (IsValidTexture(p_desc.texture))
 			{
@@ -172,7 +170,7 @@ namespace OvEditor::Panels
 			}
 		};
 
-		m_destructionListenerID = textureRegistry.textureRemovedEvent += [this](const auto& p_desc)
+		m_destructionListenerID = OvRendering::Utils::ResourceTracking::TextureRemovedEvent += [this](const auto& p_desc)
 		{
 			if (p_desc.id != 0)
 			{
@@ -222,8 +220,8 @@ namespace OvEditor::Panels
 
 	TextureDebugger::~TextureDebugger()
 	{
-		// baregl::Texture::CreationEvent -= m_creationListenerID;
-		// baregl::Texture::DestructionEvent -= m_destructionListenerID;
+		OvRendering::Utils::ResourceTracking::TextureAddedEvent -= m_creationListenerID;
+		OvRendering::Utils::ResourceTracking::TextureRemovedEvent -= m_destructionListenerID;
 	}
 
 	void TextureDebugger::Update(float p_deltaTime)

@@ -5,7 +5,6 @@
 */
 
 #include <filesystem>
-#include <fstream>
 
 #include <OvEditor/Core/Application.h>
 #include <OvEditor/Core/ProjectHub.h>
@@ -14,6 +13,7 @@
 #include <OvEditor/Utils/ProjectManagement.h>
 
 #include <OvRendering/Utils/Defines.h>
+#include <OvRendering/Utils/ResourceTracking.h>
 
 #include <OvTools/Profiling/TracyAllocators.h>
 #include <OvTools/Utils/String.h>
@@ -82,6 +82,7 @@ int main(int argc, char** argv)
 	// UpdateWorkingDirectory(argv[0]);
 
 	OvEditor::Settings::EditorSettings::Load();
+	OvRendering::Utils::ResourceTracking::TrackResources();
 
 	std::optional<std::filesystem::path> projectPath;
 

@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include <baregl/Context.h>
+#include <baregl/debug/Debug.h>
 #include <tracy/Tracy.hpp>
 
 #include <OvDebug/Logger.h>
@@ -18,12 +18,22 @@
 
 namespace
 {
-	std::unique_ptr<baregl::Context> m_gfxContext;
+	class AssertHandler : public baregl::debug::IAssertHandler
+	{
+		void OnAssert(const std::string_view p_message) override { OVASSERT(false, p_message); }
+	};
+
+	class LogHandler : public baregl::debug::ILogHandler
+	{
+		void LogInfo(const std::string_view p_message) override { OVLOG_INFO(std::string{p_message}); }
+		void LogWarning(const std::string_view p_message) override { OVLOG_WARNING(std::string{p_message}); }
+		void LogError(const std::string_view p_message) override { OVLOG_ERROR(std::string{p_message}); }
+	};
 
 	/**
 	* Very expensive! Call it once, and make sure you always keep track of state changes
 	*/
-	OvRendering::Data::PipelineState RetrieveOpenGLPipelineState()
+	OvRendering::Data::PipelineState RetrieveOpenGLPipelineState(baregl::Context &p_ctx)
 	{
 		using namespace OvRendering::Settings;
 		using namespace baregl::types;
@@ -32,12 +42,14 @@ namespace
 		OvRendering::Data::PipelineState pso;
 
 		// Rasterization
-		pso.rasterizationMode = m_gfxContext->Get<EGetParameter::POLYGON_MODE>();
-		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(m_gfxContext->Get<EGetParameter::LINE_WIDTH>());
+		pso.rasterizationMode = p_ctx.Get<EGetParameter::POLYGON_MODE>();
+		pso.lineWidthPow2 = OvRendering::Utils::Conversions::FloatToPow2(
+				p_ctx.Get<EGetParameter::LINE_WIDTH>());
 
 		// Color write mask
 		{
-			std::array<bool, 4> colorWriteMask = m_gfxContext->Get<EGetParameter::COLOR_WRITEMASK>();
+			std::array<bool, 4> colorWriteMask =
+					p_ctx.Get<EGetParameter::COLOR_WRITEMASK>();
 			pso.colorWriting.r = colorWriteMask[0];
 			pso.colorWriting.g = colorWriteMask[1];
 			pso.colorWriting.b = colorWriteMask[2];
@@ -45,52 +57,55 @@ namespace
 		}
 
 		// Capabilities
-		pso.depthWriting          = m_gfxContext->Get<EGetParameter::DEPTH_WRITEMASK>();
-		pso.blending              = m_gfxContext->GetCapability(ERenderingCapability::BLEND);
-		pso.culling               = m_gfxContext->GetCapability(ERenderingCapability::CULL_FACE);
-		pso.dither                = m_gfxContext->GetCapability(ERenderingCapability::DITHER);
-		pso.polygonOffsetFill     = m_gfxContext->GetCapability(ERenderingCapability::POLYGON_OFFSET_FILL);
-		pso.sampleAlphaToCoverage = m_gfxContext->GetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE);
-		pso.depthTest             = m_gfxContext->GetCapability(ERenderingCapability::DEPTH_TEST);
-		pso.scissorTest           = m_gfxContext->GetCapability(ERenderingCapability::SCISSOR_TEST);
-		pso.stencilTest           = m_gfxContext->GetCapability(ERenderingCapability::STENCIL_TEST);
-		pso.multisample           = m_gfxContext->GetCapability(ERenderingCapability::MULTISAMPLE);
+		pso.depthWriting = p_ctx.Get<EGetParameter::DEPTH_WRITEMASK>();
+		pso.blending = p_ctx.GetCapability(ERenderingCapability::BLEND);
+		pso.culling = p_ctx.GetCapability(ERenderingCapability::CULL_FACE);
+		pso.dither = p_ctx.GetCapability(ERenderingCapability::DITHER);
+		pso.polygonOffsetFill = p_ctx.GetCapability(ERenderingCapability::POLYGON_OFFSET_FILL);
+		pso.sampleAlphaToCoverage = p_ctx.GetCapability(ERenderingCapability::SAMPLE_ALPHA_TO_COVERAGE);
+		pso.depthTest = p_ctx.GetCapability(ERenderingCapability::DEPTH_TEST);
+		pso.scissorTest = p_ctx.GetCapability(ERenderingCapability::SCISSOR_TEST);
+		pso.stencilTest = p_ctx.GetCapability(ERenderingCapability::STENCIL_TEST);
+		pso.multisample = p_ctx.GetCapability(ERenderingCapability::MULTISAMPLE);
 
 		// Stencil
-		pso.stencilFuncOp    = m_gfxContext->Get<EGetParameter::STENCIL_FUNC>();
-		pso.stencilFuncRef   = m_gfxContext->Get<EGetParameter::STENCIL_REF>();
-		pso.stencilFuncMask  = static_cast<uint32_t>(m_gfxContext->Get<EGetParameter::STENCIL_VALUE_MASK>());
+		pso.stencilFuncOp = p_ctx.Get<EGetParameter::STENCIL_FUNC>();
+		pso.stencilFuncRef = p_ctx.Get<EGetParameter::STENCIL_REF>();
+		pso.stencilFuncMask = static_cast<uint32_t>(p_ctx.Get<EGetParameter::STENCIL_VALUE_MASK>());
 
-		pso.stencilWriteMask = static_cast<uint32_t>(m_gfxContext->Get<EGetParameter::STENCIL_WRITEMASK>());
+		pso.stencilWriteMask = static_cast<uint32_t>(p_ctx.Get<EGetParameter::STENCIL_WRITEMASK>());
 
-		pso.stencilOpFail      = m_gfxContext->Get<EGetParameter::STENCIL_FAIL>();
-		pso.depthOpFail      = m_gfxContext->Get<EGetParameter::STENCIL_PASS_DEPTH_FAIL>();
-		pso.bothOpFail       = m_gfxContext->Get<EGetParameter::STENCIL_PASS_DEPTH_PASS>();
+		pso.stencilOpFail = p_ctx.Get<EGetParameter::STENCIL_FAIL>();
+		pso.depthOpFail = p_ctx.Get<EGetParameter::STENCIL_PASS_DEPTH_FAIL>();
+		pso.bothOpFail = p_ctx.Get<EGetParameter::STENCIL_PASS_DEPTH_PASS>();
 
 		// Depth
-		pso.depthFunc = m_gfxContext->Get<EGetParameter::DEPTH_FUNC>();
+		pso.depthFunc = p_ctx.Get<EGetParameter::DEPTH_FUNC>();
 
 		// Culling
-		pso.cullFace = m_gfxContext->Get<EGetParameter::CULL_FACE_MODE>();
+		pso.cullFace = p_ctx.Get<EGetParameter::CULL_FACE_MODE>();
 
 		// Blending
-		pso.blendingSrcFactor  = m_gfxContext->Get<EGetParameter::BLEND_SRC_RGB>();
-		pso.blendingDestFactor = m_gfxContext->Get<EGetParameter::BLEND_DST_RGB>();
-		pso.blendingEquation   = m_gfxContext->Get<EGetParameter::BLEND_EQUATION_RGB>();
+		pso.blendingSrcFactor = p_ctx.Get<EGetParameter::BLEND_SRC_RGB>();
+		pso.blendingDestFactor = p_ctx.Get<EGetParameter::BLEND_DST_RGB>();
+		pso.blendingEquation = p_ctx.Get<EGetParameter::BLEND_EQUATION_RGB>();
 
 		return pso;
 	}
-}
+} // namespace
 
 OvRendering::Context::Driver::Driver(const OvRendering::Settings::DriverSettings& p_driverSettings)
 {
+	baregl::debug::SetAssertHandler(std::make_unique<AssertHandler>());
+	baregl::debug::SetLogHandler(std::make_unique<LogHandler>());
+
 	m_gfxContext = std::make_unique<baregl::Context>(baregl::data::ContextDesc{
 		p_driverSettings.debugMode
 	});
 
 	TracyGpuContext;
 	
-	auto initialPipelineState = RetrieveOpenGLPipelineState();
+	auto initialPipelineState = RetrieveOpenGLPipelineState(*m_gfxContext);
 
 	if (p_driverSettings.defaultPipelineState)
 	{

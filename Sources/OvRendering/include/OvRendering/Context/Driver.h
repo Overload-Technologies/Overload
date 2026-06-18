@@ -18,6 +18,7 @@
 #include <OvRendering/Settings/DriverSettings.h>
 #include <OvRendering/Settings/ECullingOptions.h>
 
+#include <baregl/Context.h>
 #include <baregl/types/ERenderingCapability.h>
 #include <baregl/types/EPrimitiveMode.h>
 #include <baregl/types/ERasterizationMode.h>
@@ -124,6 +125,7 @@ namespace OvRendering::Context
 		void ResetPipelineState();
 
 	private:
+		std::unique_ptr<baregl::Context> m_gfxContext;
 		std::string m_vendor;
 		std::string m_hardware;
 		std::string m_version;

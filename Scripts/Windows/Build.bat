@@ -56,10 +56,16 @@ exit /b 1
 echo vswhere.exe found at: "!VSWHERE_PATH!"
 echo.
 
-:: Get the msbuild path using vswhere
-echo Searching for msbuild.exe...
+:: Get the msbuild path using vswhere.
+:: Prefer 64-bit MSBuild to avoid compiler heap exhaustion on template-heavy translation units.
+echo Searching for 64-bit msbuild.exe...
 
-for /f "tokens=*" %%i in ('"!VSWHERE_PATH!" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe') do set "MSBUILD_PATH=%%i"
+for /f "tokens=*" %%i in ('"!VSWHERE_PATH!" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\amd64\MSBuild.exe') do set "MSBUILD_PATH=%%i"
+
+if not defined MSBUILD_PATH (
+    echo 64-bit msbuild.exe not found, searching for any msbuild.exe...
+    for /f "tokens=*" %%i in ('"!VSWHERE_PATH!" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe') do set "MSBUILD_PATH=%%i"
+)
 
 if not defined MSBUILD_PATH (
     echo msbuild.exe was not found using vswhere.
@@ -76,10 +82,10 @@ echo.
 pushd "%~dp0..\..\"
 if "%CONFIGURATION%"=="" (
     echo Building with default configuration configuration...
-    "!MSBUILD_PATH!" Overload.sln -m -verbosity:minimal
+    "!MSBUILD_PATH!" Overload.sln -m -verbosity:minimal /p:PreferredToolArchitecture=x64
 ) else (
     echo Building with configuration: %CONFIGURATION%...
-    "!MSBUILD_PATH!" Overload.sln -m -verbosity:minimal /p:Configuration=%CONFIGURATION% 
+    "!MSBUILD_PATH!" Overload.sln -m -verbosity:minimal /p:Configuration=%CONFIGURATION% /p:PreferredToolArchitecture=x64
 )
 popd
 

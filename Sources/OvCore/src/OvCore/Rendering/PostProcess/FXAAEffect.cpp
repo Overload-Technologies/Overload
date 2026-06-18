@@ -7,7 +7,7 @@
 #include <OvCore/Global/ServiceLocator.h>
 #include <OvCore/Rendering/PostProcess/FXAAEffect.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
-#include <OvRendering/HAL/Profiling.h>
+#include <OvRendering/Utils/Profiling.h>
 
 OvCore::Rendering::PostProcess::FXAAEffect::FXAAEffect(OvRendering::Core::CompositeRenderer& p_renderer) : AEffect(p_renderer)
 {
@@ -16,8 +16,8 @@ OvCore::Rendering::PostProcess::FXAAEffect::FXAAEffect(OvRendering::Core::Compos
 
 void OvCore::Rendering::PostProcess::FXAAEffect::Draw(
 	OvRendering::Data::PipelineState p_pso,
-	OvRendering::HAL::Framebuffer& p_src,
-	OvRendering::HAL::Framebuffer& p_dst,
+	baregl::Framebuffer& p_src,
+	baregl::Framebuffer& p_dst,
 	const EffectSettings& p_settings
 )
 {

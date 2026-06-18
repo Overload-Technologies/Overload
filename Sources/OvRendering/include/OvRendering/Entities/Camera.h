@@ -12,9 +12,9 @@
 
 #include <OvTools/Utils/OptRef.h>
 
-#include "OvRendering/Data/Frustum.h"
-#include "OvRendering/Settings/EProjectionMode.h"
-#include "OvRendering/Entities/Entity.h"
+#include <OvRendering/Data/Frustum.h>
+#include <OvRendering/Entities/Entity.h>
+#include <OvRendering/Settings/EProjectionMode.h>
 
 namespace OvRendering::Entities
 {

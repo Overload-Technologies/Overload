@@ -8,7 +8,7 @@
 
 #include <OvCore/Rendering/PostProcess/AEffect.h>
 #include <OvRendering/Data/Material.h>
-#include <OvRendering/HAL/Framebuffer.h>
+#include <baregl/Framebuffer.h>
 
 namespace OvCore::Rendering::PostProcess
 {
@@ -58,14 +58,14 @@ namespace OvCore::Rendering::PostProcess
 		*/
 		virtual void Draw(
 			OvRendering::Data::PipelineState p_pso,
-			OvRendering::HAL::Framebuffer& p_src,
-			OvRendering::HAL::Framebuffer& p_dst,
+			baregl::Framebuffer& p_src,
+			baregl::Framebuffer& p_dst,
 			const EffectSettings& p_settings
 		) override;
 
 	private:
-		std::array<OvRendering::HAL::Framebuffer, BloomConstants::kMaxPassCount> m_bloomSamplingBuffers;
-		OvRendering::HAL::Framebuffer m_bloomOutputBuffer;
+		std::array<baregl::Framebuffer, BloomConstants::kMaxPassCount> m_bloomSamplingBuffers;
+		baregl::Framebuffer m_bloomOutputBuffer;
 		OvRendering::Data::Material m_downsamplingMaterial;
 		OvRendering::Data::Material m_upsamplingMaterial;
 		OvRendering::Data::Material m_bloomMaterial;

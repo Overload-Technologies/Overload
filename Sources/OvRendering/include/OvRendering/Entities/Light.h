@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <baregl/Framebuffer.h>
+
 #include <OvMaths/FVector3.h>
 #include <OvMaths/FMatrix4.h>
 #include <OvMaths/FTransform.h>
@@ -13,7 +15,6 @@
 #include <OvRendering/Data/FrameDescriptor.h>
 #include <OvRendering/Entities/Camera.h>
 #include <OvRendering/Entities/Entity.h>
-#include <OvRendering/HAL/Framebuffer.h>
 #include <OvRendering/Resources/Texture.h>
 #include <OvRendering/Settings/ELightType.h>
 
@@ -38,7 +39,7 @@ namespace OvRendering::Entities
 		bool shadowFollowCamera = true;
 		int16_t shadowMapResolution = 8192;
 
-		std::unique_ptr<OvRendering::HAL::Framebuffer> shadowBuffer;
+		std::unique_ptr<baregl::Framebuffer> shadowBuffer;
 		std::optional<OvRendering::Entities::Camera> shadowCamera;
 		std::optional<OvMaths::FMatrix4> lightSpaceMatrix;
 

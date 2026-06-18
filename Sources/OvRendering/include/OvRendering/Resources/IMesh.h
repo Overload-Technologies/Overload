@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <OvRendering/HAL/VertexArray.h>
+#include <baregl/VertexArray.h>
 #include <OvRendering/Geometry/BoundingSphere.h>
 
 namespace OvRendering::Resources

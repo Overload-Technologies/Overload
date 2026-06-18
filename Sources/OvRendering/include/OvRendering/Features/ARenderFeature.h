@@ -9,6 +9,7 @@
 #include <set>
 
 #include <OvRendering/Data/FrameDescriptor.h>
+#include <OvRendering/Data/PipelineState.h>
 #include <OvRendering/Entities/Drawable.h>
 #include <OvRendering/Types/RenderPassType.h>
 

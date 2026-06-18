@@ -7,10 +7,10 @@
 #pragma once
 
 #include <memory>
+#include <span>
 
-#include <OvRendering/HAL/IndexBuffer.h>
-#include <OvRendering/HAL/VertexArray.h>
-#include <OvRendering/HAL/VertexBuffer.h>
+#include <baregl/Buffer.h>
+#include <baregl/VertexArray.h>
 #include <OvRendering/Geometry/Vertex.h>
 #include <OvRendering/Geometry/BoundingSphere.h>
 #include <OvRendering/Resources/IMesh.h>
@@ -92,9 +92,9 @@ namespace OvRendering::Resources
 		const uint32_t m_materialIndex;
 		const bool m_hasSkinningData;
 
-		HAL::VertexArray m_vertexArray;
-		HAL::VertexBuffer m_vertexBuffer;
-		HAL::IndexBuffer m_indexBuffer;
+		baregl::VertexArray m_vertexArray;
+		baregl::Buffer m_vertexBuffer;
+		baregl::Buffer m_indexBuffer;
 
 		Geometry::BoundingSphere m_boundingSphere;
 	};

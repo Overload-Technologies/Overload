@@ -15,19 +15,19 @@
 namespace
 {
 	void PrepareTexture(
-		OvRendering::HAL::Texture& p_texture,
+		baregl::Texture& p_texture,
 		const void* p_data,
-		OvRendering::Settings::ETextureFilteringMode p_minFilter,
-		OvRendering::Settings::ETextureFilteringMode p_magFilter,
-		OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-		OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+		baregl::types::ETextureFilteringMode p_minFilter,
+		baregl::types::ETextureFilteringMode p_magFilter,
+		baregl::types::ETextureWrapMode p_horizontalWrapMode,
+		baregl::types::ETextureWrapMode p_verticalWrapMode,
 		uint32_t p_width,
 		uint32_t p_height,
 		bool p_generateMipmap,
 		bool p_hdr
 	)
 	{
-		using namespace OvRendering::Settings;
+		using namespace baregl::types;
 
 		p_texture.Allocate({
 			.width = p_width,
@@ -51,17 +51,17 @@ namespace
 
 OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::Create(
 	const std::string& p_filepath,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Data::Image image{ p_filepath })
 	{
-		auto texture = std::make_unique<HAL::Texture>(
-			Settings::ETextureType::TEXTURE_2D,
+		auto texture = std::make_unique<baregl::Texture>(
+			baregl::types::ETextureType::TEXTURE_2D,
 			OvTools::Utils::PathParser::GetElementName(p_filepath)
 		);
 
@@ -95,10 +95,10 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 
 	return OvRendering::Resources::Loaders::TextureLoader::CreateFromMemory(
 		colorData.data(), 1, 1,
-		OvRendering::Settings::ETextureFilteringMode::NEAREST,
-		OvRendering::Settings::ETextureFilteringMode::NEAREST,
-		OvRendering::Settings::ETextureWrapMode::REPEAT,
-		OvRendering::Settings::ETextureWrapMode::REPEAT,
+		baregl::types::ETextureFilteringMode::NEAREST,
+		baregl::types::ETextureFilteringMode::NEAREST,
+		baregl::types::ETextureWrapMode::REPEAT,
+		baregl::types::ETextureWrapMode::REPEAT,
 		false
 	);
 }
@@ -107,14 +107,14 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 	const uint8_t* p_data,
 	uint32_t p_width,
 	uint32_t p_height,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
-	auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromMemory");
+	auto texture = std::make_unique<baregl::Texture>(baregl::types::ETextureType::TEXTURE_2D, "FromMemory");
 
 	PrepareTexture(
 		*texture,
@@ -135,16 +135,16 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader::CreateFromEncodedMemory(
 	const uint8_t* p_data,
 	size_t p_size,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Data::Image image{ p_data, p_size })
 	{
-		auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromEncodedMemory");
+		auto texture = std::make_unique<baregl::Texture>(baregl::types::ETextureType::TEXTURE_2D, "FromEncodedMemory");
 
 		PrepareTexture(
 			*texture,
@@ -168,17 +168,17 @@ OvRendering::Resources::Texture* OvRendering::Resources::Loaders::TextureLoader:
 void OvRendering::Resources::Loaders::TextureLoader::Reload(
 	Texture& p_texture,
 	const std::string& p_filePath,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Data::Image image{ p_filePath })
 	{
-		auto texture = std::make_unique<HAL::Texture>(
-			Settings::ETextureType::TEXTURE_2D,
+		auto texture = std::make_unique<baregl::Texture>(
+			baregl::types::ETextureType::TEXTURE_2D,
 			OvTools::Utils::PathParser::GetElementName(p_filePath)
 		);
 
@@ -204,14 +204,14 @@ void OvRendering::Resources::Loaders::TextureLoader::ReloadFromMemory(
 	const uint8_t* p_data,
 	uint32_t p_width,
 	uint32_t p_height,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
-	auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromMemory");
+	auto texture = std::make_unique<baregl::Texture>(baregl::types::ETextureType::TEXTURE_2D, "FromMemory");
 
 	PrepareTexture(
 		*texture,
@@ -233,16 +233,16 @@ void OvRendering::Resources::Loaders::TextureLoader::ReloadFromEncodedMemory(
 	Texture& p_texture,
 	const uint8_t* p_data,
 	size_t p_size,
-	OvRendering::Settings::ETextureFilteringMode p_minFilter,
-	OvRendering::Settings::ETextureFilteringMode p_magFilter,
-	OvRendering::Settings::ETextureWrapMode p_horizontalWrapMode,
-	OvRendering::Settings::ETextureWrapMode p_verticalWrapMode,
+	baregl::types::ETextureFilteringMode p_minFilter,
+	baregl::types::ETextureFilteringMode p_magFilter,
+	baregl::types::ETextureWrapMode p_horizontalWrapMode,
+	baregl::types::ETextureWrapMode p_verticalWrapMode,
 	bool p_generateMipmap
 )
 {
 	if (Data::Image image{ p_data, p_size })
 	{
-		auto texture = std::make_unique<HAL::Texture>(Settings::ETextureType::TEXTURE_2D, "FromEncodedMemory");
+		auto texture = std::make_unique<baregl::Texture>(baregl::types::ETextureType::TEXTURE_2D, "FromEncodedMemory");
 
 		PrepareTexture(
 			*texture,

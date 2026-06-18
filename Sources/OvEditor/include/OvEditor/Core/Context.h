@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <variant>
 
+#include <baregl/Buffer.h>
+
 #include <OvAudio/Core/AudioEngine.h>
 #include <OvCore/ResourceManagement/MaterialManager.h>
 #include <OvCore/ResourceManagement/ModelManager.h>
@@ -19,10 +21,7 @@
 #include <OvCore/SceneSystem/SceneManager.h>
 #include <OvCore/Scripting/ScriptEngine.h>
 #include <OvEditor/Core/EditorResources.h>
-#include <OvEditor/Utils/TextureRegistry.h>
 #include <OvPhysics/Core/PhysicsEngine.h>
-#include <OvRendering/HAL/UniformBuffer.h>
-#include <OvRendering/HAL/ShaderStorageBuffer.h>
 #include <OvTools/Filesystem/IniFile.h>
 #include <OvWindowing/Window.h>
 #include <OvUI/Core/UIManager.h>
@@ -81,7 +80,6 @@ namespace OvEditor::Core
 		std::unique_ptr<OvWindowing::Context::Device> device;
 		std::unique_ptr<OvWindowing::Window> window;
 		std::unique_ptr<OvWindowing::Inputs::InputManager> inputManager;
-		std::unique_ptr<OvEditor::Utils::TextureRegistry> textureRegistry;
 		std::unique_ptr<OvRendering::Context::Driver> driver;
 		std::unique_ptr<OvUI::Core::UIManager> uiManager;
 		std::unique_ptr<OvPhysics::Core::PhysicsEngine> physicsEngine;

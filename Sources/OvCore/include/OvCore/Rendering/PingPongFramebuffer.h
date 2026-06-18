@@ -8,7 +8,7 @@
 
 #include <array>
 
-#include <OvRendering/HAL/Framebuffer.h>
+#include <baregl/Framebuffer.h>
 #include <OvTools/Utils/CircularIterator.h>
 
 namespace OvCore::Rendering
@@ -16,7 +16,7 @@ namespace OvCore::Rendering
 	/**
 	* Convenient ping-pong buffer holding two framebuffers
 	*/
-	class PingPongFramebuffer : public OvTools::Utils::CircularIterator<OvRendering::HAL::Framebuffer, 2>
+	class PingPongFramebuffer : public OvTools::Utils::CircularIterator<baregl::Framebuffer, 2>
 	{
 	public:
 		/**
@@ -28,9 +28,9 @@ namespace OvCore::Rendering
 		/**
 		* Return the two framebuffers
 		*/
-		std::array<OvRendering::HAL::Framebuffer, 2>& GetFramebuffers();
+		std::array<baregl::Framebuffer, 2>& GetFramebuffers();
 
 	private:
-		std::array<OvRendering::HAL::Framebuffer, 2> m_framebuffers;
+		std::array<baregl::Framebuffer, 2> m_framebuffers;
 	};
 }

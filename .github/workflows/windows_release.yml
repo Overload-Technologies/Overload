@@ -16,6 +16,8 @@ jobs:
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v3
+      with:
+        msbuild-architecture: x64
 
     - name: Make Release Build
       run: .\Scripts\Windows\MakeReleaseBuild.bat --no-open

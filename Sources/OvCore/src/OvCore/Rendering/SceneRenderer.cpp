@@ -26,8 +26,8 @@
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvRendering/Data/Frustum.h>
 #include <OvRendering/Features/LightingRenderFeature.h>
-#include <OvRendering/HAL/Profiling.h>
 #include <OvRendering/Resources/Loaders/ShaderLoader.h>
+#include <OvRendering/Utils/Profiling.h>
 
 namespace
 {
@@ -50,9 +50,9 @@ namespace
 			p_pso.stencilWriteMask = 0xFF;
 			p_pso.stencilFuncRef = 1;
 			p_pso.stencilFuncMask = 0xFF;
-			p_pso.stencilOpFail = OvRendering::Settings::EOperation::REPLACE;
-			p_pso.depthOpFail = OvRendering::Settings::EOperation::REPLACE;
-			p_pso.bothOpFail = OvRendering::Settings::EOperation::REPLACE;
+			p_pso.stencilOpFail = baregl::types::EOperation::REPLACE;
+			p_pso.depthOpFail = baregl::types::EOperation::REPLACE;
+			p_pso.bothOpFail = baregl::types::EOperation::REPLACE;
 			p_pso.colorWriting.mask = 0x00;
 		}
 

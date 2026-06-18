@@ -1,0 +1,44 @@
+/**
+* @project: baregl
+* @author: Adrien Givry
+* @licence: MIT
+*/
+
+#pragma once
+
+#include <cstdint>
+
+namespace baregl::types
+{
+	/**
+	* Read/draw buffer selector.
+	*/
+	enum class EDrawBuffer : uint32_t
+	{
+		NONE,
+		FRONT_LEFT,
+		FRONT_RIGHT,
+		BACK_LEFT,
+		BACK_RIGHT,
+		FRONT,
+		BACK,
+		LEFT,
+		RIGHT,
+		COLOR_ATTACHMENT0,
+		COLOR_ATTACHMENT1,
+		COLOR_ATTACHMENT2,
+		COLOR_ATTACHMENT3,
+		COLOR_ATTACHMENT4,
+		COLOR_ATTACHMENT5,
+		COLOR_ATTACHMENT6,
+		COLOR_ATTACHMENT7,
+		COLOR_ATTACHMENT8,
+		COLOR_ATTACHMENT9,
+		COLOR_ATTACHMENT10,
+		COLOR_ATTACHMENT11,
+		COLOR_ATTACHMENT12,
+		COLOR_ATTACHMENT13,
+		COLOR_ATTACHMENT14,
+		COLOR_ATTACHMENT15
+	};
+}

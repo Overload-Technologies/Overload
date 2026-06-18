@@ -27,6 +27,8 @@ jobs:
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v3
+      with:
+        msbuild-architecture: x64
 
     - name: Generate premake5 solution
       working-directory: ${{env.SOLUTION_FILE_PATH}}
@@ -34,4 +36,4 @@ jobs:
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64
+      run: msbuild /m /p:Configuration=${{ matrix.configuration }} ${{env.SOLUTION_FILE_PATH}} /p:Platform=x64 /p:PreferredToolArchitecture=x64

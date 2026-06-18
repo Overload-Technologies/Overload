@@ -21,10 +21,10 @@ namespace
 {
 	struct TextureMetadata
 	{
-		OvRendering::Settings::ETextureFilteringMode minFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR;
-		OvRendering::Settings::ETextureFilteringMode magFilter = OvRendering::Settings::ETextureFilteringMode::LINEAR;
-		OvRendering::Settings::ETextureWrapMode horizontalWrap = OvRendering::Settings::ETextureWrapMode::REPEAT;
-		OvRendering::Settings::ETextureWrapMode verticalWrap = OvRendering::Settings::ETextureWrapMode::REPEAT;
+		baregl::types::ETextureFilteringMode minFilter = baregl::types::ETextureFilteringMode::LINEAR_MIPMAP_LINEAR;
+		baregl::types::ETextureFilteringMode magFilter = baregl::types::ETextureFilteringMode::LINEAR;
+		baregl::types::ETextureWrapMode horizontalWrap = baregl::types::ETextureWrapMode::REPEAT;
+		baregl::types::ETextureWrapMode verticalWrap = baregl::types::ETextureWrapMode::REPEAT;
 		bool generateMipmap = true;
 	};
 
@@ -33,10 +33,10 @@ namespace
 		const auto metaFile = OvTools::Filesystem::IniFile(std::format("{}.meta", p_filePath));
 		auto metadata = TextureMetadata{};
 
-		metadata.minFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(metadata.minFilter)));
-		metadata.magFilter = static_cast<OvRendering::Settings::ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(metadata.magFilter)));
-		metadata.horizontalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(metadata.horizontalWrap)));
-		metadata.verticalWrap = static_cast<OvRendering::Settings::ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(metadata.verticalWrap)));
+		metadata.minFilter = static_cast<baregl::types::ETextureFilteringMode>(metaFile.GetOrDefault("MIN_FILTER", static_cast<int>(metadata.minFilter)));
+		metadata.magFilter = static_cast<baregl::types::ETextureFilteringMode>(metaFile.GetOrDefault("MAG_FILTER", static_cast<int>(metadata.magFilter)));
+		metadata.horizontalWrap = static_cast<baregl::types::ETextureWrapMode>(metaFile.GetOrDefault("HORIZONTAL_WRAP", static_cast<int>(metadata.horizontalWrap)));
+		metadata.verticalWrap = static_cast<baregl::types::ETextureWrapMode>(metaFile.GetOrDefault("VERTICAL_WRAP", static_cast<int>(metadata.verticalWrap)));
 		metadata.generateMipmap = metaFile.GetOrDefault("ENABLE_MIPMAPPING", metadata.generateMipmap);
 
 		return metadata;

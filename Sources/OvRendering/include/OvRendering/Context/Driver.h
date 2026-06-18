@@ -10,21 +10,23 @@
 #include <array>
 #include <memory>
 
-#include "OvRendering/Settings/DriverSettings.h"
-#include "OvRendering/Settings/ERenderingCapability.h"
-#include "OvRendering/Settings/EPrimitiveMode.h"
-#include "OvRendering/Settings/ERasterizationMode.h"
-#include "OvRendering/Settings/EComparaisonAlgorithm.h"
-#include "OvRendering/Settings/EOperation.h"
-#include "OvRendering/Settings/ECullFace.h"
-#include "OvRendering/Settings/ECullingOptions.h"
-#include "OvRendering/Settings/EPixelDataFormat.h"
-#include "OvRendering/Settings/EPixelDataType.h"
-#include "OvRendering/Data/PipelineState.h"
-#include "OvRendering/Resources/IMesh.h"
-
 #include <OvMaths/FVector4.h>
 #include <OvTools/Utils/OptRef.h>
+
+#include <OvRendering/Data/PipelineState.h>
+#include <OvRendering/Resources/IMesh.h>
+#include <OvRendering/Settings/DriverSettings.h>
+#include <OvRendering/Settings/ECullingOptions.h>
+
+#include <baregl/Context.h>
+#include <baregl/types/ERenderingCapability.h>
+#include <baregl/types/EPrimitiveMode.h>
+#include <baregl/types/ERasterizationMode.h>
+#include <baregl/types/EComparaisonAlgorithm.h>
+#include <baregl/types/EOperation.h>
+#include <baregl/types/ECullFace.h>
+#include <baregl/types/EPixelDataFormat.h>
+#include <baregl/types/EPixelDataType.h>
 
 namespace OvRendering::Context
 {
@@ -89,7 +91,7 @@ namespace OvRendering::Context
 		void Draw(
 			OvRendering::Data::PipelineState p_pso,
 			const Resources::IMesh& p_mesh,
-			Settings::EPrimitiveMode p_primitiveMode = Settings::EPrimitiveMode::TRIANGLES,
+			baregl::types::EPrimitiveMode p_primitiveMode = baregl::types::EPrimitiveMode::TRIANGLES,
 			uint32_t p_instances = 1
 		);
 
@@ -123,6 +125,7 @@ namespace OvRendering::Context
 		void ResetPipelineState();
 
 	private:
+		std::unique_ptr<baregl::Context> m_gfxContext;
 		std::string m_vendor;
 		std::string m_hardware;
 		std::string m_version;

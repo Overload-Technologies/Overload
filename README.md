@@ -102,7 +102,7 @@ We designed theses libraries with reusability in mind. They are highly modular a
 - `OvMaths`: Vectors, matrices, quaternions, transforms.
 - `OvAudio`: Audio engine, built around [SoLoud](https://github.com/jarikomppa/soloud).
 - `OvPhysics`: Physics engine, built around [Bullet3](https://github.com/bulletphysics/bullet3).
-- `OvRendering`: Fully agnostic rendering engine (HAL), with OpenGL implementation using [GLAD](https://github.com/Dav1dde/glad).
+- `OvRendering`: Rendering engine, built around [BareGL](https://github.com/adriengivry/baregl).
 - `OvWindowing`: Handles inputs and windows using [GLFW](https://github.com/glfw/glfw).
 - `OvUI`: Widget-based UI, leveraging [ImGui](https://github.com/ocornut/imgui) under the hood.
 - `OvCore`: Component-based scene system, scripting, and resource management.
@@ -116,7 +116,7 @@ Overload applications use the Overload SDK to operate.
 
 ## Dependencies
 Overload depends on a few third-party libraries:
-- [GLAD](https://github.com/Dav1dde/glad) (OpengGL Graphics API)
+- [BareGL](https://github.com/adriengivry/baregl) (C++20 OpengGL 4.5 wrapper)
 - [GLFW](https://github.com/glfw/glfw) (Windowing and inputs)
 - [Assimp](https://github.com/assimp/assimp) (3D model loader)
 - [Bullet3](https://github.com/bulletphysics/bullet3) (Physics)

@@ -7,6 +7,7 @@
 #include <OvRendering/Features/FrameInfoRenderFeature.h>
 
 #include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/Helpers/InputHelpers.h>
 #include <OvCore/Rendering/SceneRenderer.h>
 
 #include "OvEditor/Panels/GameView.h"
@@ -27,6 +28,8 @@ OvEditor::Panels::GameView::GameView
 		OvRendering::Features::FrameInfoRenderFeature,
 		OvRendering::Features::EFeatureExecutionPolicy::ALWAYS
 	>();
+
+	OvCore::Helpers::InputHelpers::SetMousePositionProvider([this]() { return GetMousePosition(); });
 }
 
 OvRendering::Entities::Camera* OvEditor::Panels::GameView::GetCamera()

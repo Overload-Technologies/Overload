@@ -34,7 +34,8 @@ function Inputs.GetMouseButtonUp(button) end
 ---@return boolean
 function Inputs.GetMouseButton(button) end
 
---- Returns the current position of the mouse cursor
+--- Returns the current position of the mouse cursor, relative to the top-left corner of the Game View in the editor, or of the window in a built game
+--- The position isn't clamped, so it can be outside of the rendered area
 ---@return Vector2
 function Inputs.GetMousePos() end
 

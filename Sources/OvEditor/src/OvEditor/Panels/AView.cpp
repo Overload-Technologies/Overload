@@ -95,6 +95,15 @@ std::pair<uint16_t, uint16_t> OvEditor::Panels::AView::GetSafeSize() const
 	}; 
 }
 
+OvMaths::FVector2 OvEditor::Panels::AView::GetMousePosition() const
+{
+	const auto [mouseX, mouseY] = EDITOR_CONTEXT(inputManager)->GetMousePosition();
+	return {
+		static_cast<float>(mouseX) - m_position.x,
+		static_cast<float>(mouseY) - m_position.y - ImGui::GetFrameHeight() // accounts for the imgui window title bar
+	};
+}
+
 const OvCore::Rendering::SceneRenderer& OvEditor::Panels::AView::GetRenderer() const
 {
 	return *m_renderer.get();

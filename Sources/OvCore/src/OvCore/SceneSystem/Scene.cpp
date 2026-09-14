@@ -121,9 +121,16 @@ void OvCore::SceneSystem::Scene::Play()
 	/* Wake up actors to allow them to react to OnEnable, OnDisable and OnDestroy, */
 	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { p_element->SetSleeping(false); });
 
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnAwake(); });
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnEnable(); });
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnStart(); });
+	/* Batch actor creation to handle actors created during initialization callbacks */
+	BeginBatchActorCreation();
+
+	/* Iterate over a copy to prevent iterator invalidation if CreateActor is called during callbacks */
+	auto actors = m_actors;
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnAwake(); });
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnEnable(); });
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnStart(); });
+
+	EndBatchActorCreation(true);
 }
 
 bool OvCore::SceneSystem::Scene::IsPlaying() const
@@ -200,42 +207,46 @@ void OvCore::SceneSystem::Scene::EndBatchActorCreation(bool p_startCreatedActors
 {
 	OVASSERT(m_batchActorCreation, "No active actor creation batch to end.");
 
-	std::vector<std::reference_wrapper<ECS::Actor>> actors;
-	// Keep callback-created actors out of the batch being started below.
-	actors.swap(m_batchCreatedActors);
-	m_batchActorCreation = false;
-
 	if (p_startCreatedActors && m_isPlaying)
 	{
-		for (auto actor : actors)
+		// Process actors recursively until no new actors are created during callbacks
+		while (!m_batchCreatedActors.empty())
 		{
-			actor.get().SetSleeping(false);
-		}
+			std::vector<std::reference_wrapper<ECS::Actor>> actors;
+			actors.swap(m_batchCreatedActors);
 
-		for (auto actor : actors)
-		{
-			if (actor.get().IsActive())
+			for (auto actor : actors)
 			{
-				actor.get().OnAwake();
+				actor.get().SetSleeping(false);
 			}
-		}
 
-		for (auto actor : actors)
-		{
-			if (actor.get().IsActive())
+			for (auto actor : actors)
 			{
-				actor.get().OnEnable();
+				if (actor.get().IsActive())
+				{
+					actor.get().OnAwake();
+				}
 			}
-		}
 
-		for (auto actor : actors)
-		{
-			if (actor.get().IsActive())
+			for (auto actor : actors)
 			{
-				actor.get().OnStart();
+				if (actor.get().IsActive())
+				{
+					actor.get().OnEnable();
+				}
+			}
+
+			for (auto actor : actors)
+			{
+				if (actor.get().IsActive())
+				{
+					actor.get().OnStart();
+				}
 			}
 		}
 	}
+
+	m_batchActorCreation = false;
 }
 
 OvCore::ECS::Actor* OvCore::SceneSystem::Scene::InstantiatePrefab(const std::string& p_prefabPath)

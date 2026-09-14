@@ -241,6 +241,7 @@ void BindLuaGlobal(sol::state& p_luaState)
 		"GetMouseButtonUp", [](EMouseButton p_button) { return OVSERVICE(InputManager).IsMouseButtonReleased(p_button); },
 		"GetMouseButton", [](EMouseButton p_button) { return OVSERVICE(InputManager).GetMouseButtonState(p_button) == EMouseButtonState::MOUSE_DOWN; },
 		"GetMousePos", []() { return OvCore::Helpers::InputHelpers::GetMousePosition(); },
+		"GetViewportSize", []() { return OvCore::Helpers::InputHelpers::GetViewportSize(); },
 		"GetMouseScroll", []() {
 			const auto scroll = OVSERVICE(InputManager).GetMouseScroll();
 			return FVector2(static_cast<float>(scroll.first), static_cast<float>(scroll.second));

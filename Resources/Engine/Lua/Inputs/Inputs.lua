@@ -39,6 +39,11 @@ function Inputs.GetMouseButton(button) end
 ---@return Vector2
 function Inputs.GetMousePos() end
 
+--- Returns the size of the area where the game is rendered, which is the Game View in the editor, or the window in a built game
+--- The size can be 0 when this area is minimized or too small
+---@return Vector2
+function Inputs.GetViewportSize() end
+
 --- Returns the current scroll value
 ---@return Vector2
 function Inputs.GetMouseScroll() end

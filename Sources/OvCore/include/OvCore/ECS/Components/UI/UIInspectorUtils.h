@@ -13,7 +13,7 @@ namespace OvCore::ECS { class Actor; }
 namespace OvCore::ECS::Components::UI::UIInspectorUtils
 {
 	/**
-	* Draws a message when the given actor isn't part of a canvas hierarchy, and therefore isn't rendered
+	* Draws whether the given actor has a canvas on one of its parents, which is required to render its user interface components
 	* @param p_root
 	* @param p_owner
 	*/

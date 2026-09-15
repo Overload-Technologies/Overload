@@ -127,7 +127,6 @@ namespace OvEditor::Core
 		OvMaths::FVector3 m_targetSpeed;
 		OvMaths::FVector3 m_currentMovementSpeed;
 
-		OvMaths::FTransform* m_orbitTarget = nullptr;
 		OvMaths::FVector3 m_orbitStartOffset;
 		bool m_firstMouse = true;
 		double m_lastMousePosX = 0.0;

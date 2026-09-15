@@ -162,6 +162,20 @@ namespace
 			GetActor3DFocusDist(p_actor)
 		};
 	}
+
+	OvCore::Rendering::UIRenderingUtils::UIFrameResolver CreateUIFrameResolver(const OvEditor::Panels::AView& p_view)
+	{
+		auto [winWidth, winHeight] = p_view.GetSafeSize();
+		const auto renderSize = OvMaths::FVector2{
+			winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+			winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+		};
+
+		return OvCore::Rendering::UIRenderingUtils::UIFrameResolver{
+			renderSize,
+			EDITOR_EXEC(IsSceneUIRenderingEnabled())
+		};
+	}
 }
 
 void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
@@ -179,18 +193,9 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 		{
 			if (auto target = GetTargetActor())
 			{
-				auto [winWidth, winHeight] = m_view.GetSafeSize();
-				const auto renderSize = OvMaths::FVector2{
-					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
-					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
-				};
-				const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
-					renderSize,
-					EDITOR_EXEC(IsSceneUIRenderingEnabled())
-				};
 				const auto focusTarget = GetActorFocusTarget(
 					target.value(),
-					uiFrameResolver
+					CreateUIFrameResolver(m_view)
 				);
 
 				if (m_inputManager.IsKeyPressed(OvWindowing::Inputs::EKey::KEY_F))
@@ -298,18 +303,9 @@ void OvEditor::Core::CameraController::HandleInputs(float p_deltaTime)
 
 void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target)
 {
-	auto [winWidth, winHeight] = m_view.GetSafeSize();
-	const auto renderSize = OvMaths::FVector2{
-		winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
-		winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
-	};
-	const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
-		renderSize,
-		EDITOR_EXEC(IsSceneUIRenderingEnabled())
-	};
 	const auto focusTarget = GetActorFocusTarget(
 		p_target,
-		uiFrameResolver
+		CreateUIFrameResolver(m_view)
 	);
 
 	m_cameraDestinations.push({
@@ -418,20 +414,24 @@ void OvEditor::Core::CameraController::HandleCameraOrbit(
 {
 	auto mouseOffset = p_mouseOffset * m_cameraOrbitSpeed;
 
+	// User interface elements are drawn where their canvas resolves them, not at their actor world position
+	ActorFocusTarget uiFocusTarget;
+	const auto orbitPosition = TryGetUIFocusTarget(p_target, CreateUIFrameResolver(m_view), uiFocusTarget) ?
+		uiFocusTarget.position :
+		p_target.transform.GetWorldPosition();
+
 	if (p_firstMouse)
 	{
 		m_ypr = OvMaths::FQuaternion::EulerAngles(m_camera.GetRotation());
 		m_ypr = RemoveRoll(m_ypr);
-		m_orbitTarget = &p_target.transform.GetFTransform();
-		m_orbitStartOffset = -OvMaths::FVector3::Forward * OvMaths::FVector3::Distance(m_orbitTarget->GetWorldPosition(), m_camera.GetPosition());
+		m_orbitStartOffset = -OvMaths::FVector3::Forward * OvMaths::FVector3::Distance(orbitPosition, m_camera.GetPosition());
 	}
 
 	m_ypr.y += -mouseOffset.x;
 	m_ypr.x += -mouseOffset.y;
 	m_ypr.x = std::max(std::min(m_ypr.x, 90.0f), -90.0f);
 
-	auto& target = p_target.transform.GetFTransform();
-	OvMaths::FTransform pivotTransform(target.GetWorldPosition());
+	OvMaths::FTransform pivotTransform(orbitPosition);
 	OvMaths::FTransform cameraTransform(m_orbitStartOffset);
 	cameraTransform.SetParent(pivotTransform);
 	pivotTransform.RotateLocal(OvMaths::FQuaternion(m_ypr));

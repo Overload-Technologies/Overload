@@ -16,6 +16,7 @@
 #include "OvCore/ECS/Actor.h"
 #include "OvCore/ECS/PhysicsWrapper.h"
 #include "OvCore/Global/ServiceLocator.h"
+#include "OvCore/Helpers/InputHelpers.h"
 #include "OvCore/SceneSystem/SceneManager.h"
 #include "OvCore/ResourceManagement/ModelManager.h"
 #include "OvCore/ResourceManagement/ShaderManager.h"
@@ -239,10 +240,8 @@ void BindLuaGlobal(sol::state& p_luaState)
 		"GetMouseButtonDown", [](EMouseButton p_button) { return OVSERVICE(InputManager).IsMouseButtonPressed(p_button); },
 		"GetMouseButtonUp", [](EMouseButton p_button) { return OVSERVICE(InputManager).IsMouseButtonReleased(p_button); },
 		"GetMouseButton", [](EMouseButton p_button) { return OVSERVICE(InputManager).GetMouseButtonState(p_button) == EMouseButtonState::MOUSE_DOWN; },
-		"GetMousePos", []() {
-			const auto mousePos = OVSERVICE(InputManager).GetMousePosition();
-			return FVector2(static_cast<float>(mousePos.first), static_cast<float>(mousePos.second));
-		},
+		"GetMousePos", []() { return OvCore::Helpers::InputHelpers::GetMousePosition(); },
+		"GetViewportSize", []() { return OvCore::Helpers::InputHelpers::GetViewportSize(); },
 		"GetMouseScroll", []() {
 			const auto scroll = OVSERVICE(InputManager).GetMouseScroll();
 			return FVector2(static_cast<float>(scroll.first), static_cast<float>(scroll.second));

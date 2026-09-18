@@ -248,9 +248,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 	{
 		auto [winWidth, winHeight] = GetSafeSize();
 
-		auto mousePosition = EDITOR_CONTEXT(inputManager)->GetMousePosition();
-
-		m_gizmoOperations.SetCurrentMouse({ static_cast<float>(mousePosition.first - m_position.x), static_cast<float>(mousePosition.second - m_position.y - ImGui::GetFrameHeight()) });
+		m_gizmoOperations.SetCurrentMouse(GetMousePosition());
 		m_gizmoOperations.ApplyOperation(m_camera.GetViewMatrix(), m_camera.GetProjectionMatrix(), m_camera.GetPosition(), { static_cast<float>(winWidth), static_cast<float>(winHeight) });
 		m_highlightedGizmoDirection = m_gizmoOperations.GetDirection();
 	}
@@ -258,10 +256,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 
 OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Panels::SceneView::GetPickingResult()
 {
-	auto [mouseX, mouseY] = EDITOR_CONTEXT(inputManager)->GetMousePosition();
-	mouseX -= m_position.x;
-	mouseY -= m_position.y;
-	mouseY = GetSafeSize().second - mouseY + ImGui::GetFrameHeight();
+	const auto mousePosition = GetMousePosition();
 
 	auto& scene = *GetScene();
 
@@ -269,8 +264,8 @@ OvEditor::Rendering::PickingRenderPass::PickingResult OvEditor::Panels::SceneVie
 
 	return actorPickingFeature.ReadbackPickingResult(
 		scene,
-		static_cast<uint32_t>(mouseX),
-		static_cast<uint32_t>(mouseY)
+		static_cast<uint32_t>(mousePosition.x),
+		static_cast<uint32_t>(GetSafeSize().second - mousePosition.y)
 	);
 }
 

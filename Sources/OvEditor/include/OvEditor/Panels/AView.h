@@ -78,6 +78,12 @@ namespace OvEditor::Panels
 		std::pair<uint16_t, uint16_t> GetSafeSize() const;
 
 		/**
+		* Returns the mouse position relative to the top-left corner of the rendered image
+		* @note The position isn't clamped, so it can be outside of the view
+		*/
+		OvMaths::FVector2 GetMousePosition() const;
+
+		/**
 		* Returns the renderer used by this view
 		*/
 		const OvCore::Rendering::SceneRenderer& GetRenderer() const;

@@ -146,6 +146,30 @@ function Actor:GetPostProcessStack() end
 ---@return ReflectionProbe|nil
 function Actor:GetReflectionProbe() end
 
+--- Returns the Canvas attached to this actor (If any)
+---@return Canvas|nil
+function Actor:GetCanvas() end
+
+--- Returns the Image attached to this actor (If any)
+---@return Image|nil
+function Actor:GetImage() end
+
+--- Returns the LayoutGroup attached to this actor (If any)
+---@return LayoutGroup|nil
+function Actor:GetLayoutGroup() end
+
+--- Returns the HorizontalLayout attached to this actor (If any)
+---@return HorizontalLayout|nil
+function Actor:GetHorizontalLayout() end
+
+--- Returns the VerticalLayout attached to this actor (If any)
+---@return VerticalLayout|nil
+function Actor:GetVerticalLayout() end
+
+--- Returns the Text attached to this actor (If any)
+---@return Text|nil
+function Actor:GetText() end
+
 --- Returns the Behaviour of the given type attached to this actor (If any)
 ---@param name string
 ---@return table|nil
@@ -219,6 +243,30 @@ function Actor:AddPostProcessStack() end
 ---@return ReflectionProbe
 function Actor:AddReflectionProbe() end
 
+--- Adds a Canvas component to the actor and returns it
+---@return Canvas
+function Actor:AddCanvas() end
+
+--- Adds an Image component to the actor and returns it
+---@return Image
+function Actor:AddImage() end
+
+--- Adds a LayoutGroup component to the actor and returns it
+---@return LayoutGroup
+function Actor:AddLayoutGroup() end
+
+--- Adds a HorizontalLayout component to the actor and returns it
+---@return HorizontalLayout
+function Actor:AddHorizontalLayout() end
+
+--- Adds a VerticalLayout component to the actor and returns it
+---@return VerticalLayout
+function Actor:AddVerticalLayout() end
+
+--- Adds a Text component to the actor and returns it
+---@return Text
+function Actor:AddText() end
+
 --- Removes the ModelRenderer component from the actor
 function Actor:RemoveModelRenderer() end
 --- Removes the PhysicalBox component from the actor
@@ -251,7 +299,18 @@ function Actor:RemoveAudioListener() end
 function Actor:RemovePostProcessStack() end
 --- Removes the ReflectionProbe component from the actor
 function Actor:RemoveReflectionProbe() end
-
+--- Removes the Canvas component from the actor
+function Actor:RemoveCanvas() end
+--- Removes the Image component from the actor
+function Actor:RemoveImage() end
+--- Removes the LayoutGroup component from the actor
+function Actor:RemoveLayoutGroup() end
+--- Removes the HorizontalLayout component from the actor
+function Actor:RemoveHorizontalLayout() end
+--- Removes the VerticalLayout component from the actor
+function Actor:RemoveVerticalLayout() end
+--- Removes the Text component from the actor
+function Actor:RemoveText() end
 --- Adds a behaviour of given type to the actor and returns it
 ---@param name string
 ---@param scriptPath string

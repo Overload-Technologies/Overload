@@ -4,9 +4,27 @@
 * @licence: MIT
 */
 
+#include <cfloat>
+#include <cstddef>
 #include <imgui.h>
 
 #include <OvUI/Widgets/InputFields/InputText.h>
+
+namespace
+{
+	int ResizeInputTextBuffer(ImGuiInputTextCallbackData* p_data)
+	{
+		if (p_data->EventFlag != ImGuiInputTextFlags_CallbackResize || !p_data->UserData)
+		{
+			return 0;
+		}
+
+		auto& content = *static_cast<std::string*>(p_data->UserData);
+		content.resize(static_cast<std::size_t>(p_data->BufTextLen));
+		p_data->Buf = content.data();
+		return 0;
+	}
+}
 
 OvUI::Widgets::InputFields::InputText::InputText(const std::string& p_content, const std::string& p_label) :
 	DataWidget<std::string>(content), content(p_content), label(p_label)
@@ -50,9 +68,39 @@ void OvUI::Widgets::InputFields::InputText::_Draw_Impl()
 	if (needFocus)
 		ImGui::SetKeyboardFocusHere(0);
 
-	content.resize(256, '\0');
-	bool enterPressed = ImGui::InputText((label + m_widgetID).c_str(), &content[0], 256, ImGuiInputTextFlags_EnterReturnsTrue | (selectAllOnClick ? ImGuiInputTextFlags_AutoSelectAll : 0));
-	content = content.c_str();
+	const auto commonFlags =
+		(selectAllOnClick ? ImGuiInputTextFlags_AutoSelectAll : ImGuiInputTextFlags_None) |
+		ImGuiInputTextFlags_CallbackResize;
+	bool enterPressed = false;
+
+	if (multiline)
+	{
+		const float fieldHeight = multilineHeight > 0.0f ?
+			multilineHeight :
+			ImGui::GetTextLineHeightWithSpacing() * 4.0f;
+		const float fieldWidth = fullWidth ? -FLT_MIN : 0.0f;
+
+		enterPressed = ImGui::InputTextMultiline(
+			(label + m_widgetID).c_str(),
+			content.data(),
+			content.capacity() + 1,
+			ImVec2(fieldWidth, fieldHeight),
+			commonFlags,
+			ResizeInputTextBuffer,
+			&content
+		);
+	}
+	else
+	{
+		enterPressed = ImGui::InputText(
+			(label + m_widgetID).c_str(),
+			content.data(),
+			content.capacity() + 1,
+			ImGuiInputTextFlags_EnterReturnsTrue | commonFlags,
+			ResizeInputTextBuffer,
+			&content
+		);
+	}
 
 	if (content != previousContent)
 	{
@@ -60,6 +108,6 @@ void OvUI::Widgets::InputFields::InputText::_Draw_Impl()
 		this->NotifyChange();
 	}
 
-	if (enterPressed)
+	if (enterPressed && !multiline)
 		EnterPressedEvent.Invoke(content);
 }

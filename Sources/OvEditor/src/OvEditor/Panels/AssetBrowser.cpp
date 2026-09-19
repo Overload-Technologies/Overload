@@ -21,6 +21,7 @@
 #include <OvCore/ResourceManagement/ModelManager.h>
 #include <OvCore/ResourceManagement/ShaderManager.h>
 #include <OvCore/ResourceManagement/TextureManager.h>
+#include <OvCore/ResourceManagement/FontManager.h>
 
 #include <OvDebug/Logger.h>
 
@@ -809,6 +810,30 @@ namespace
 		}
 	};
 
+	class FontContextualMenu : public FileContextualMenu
+	{
+	public:
+		FontContextualMenu(const std::string& p_filePath, bool p_protected = false) : FileContextualMenu(p_filePath, p_protected) {}
+
+		virtual void CreateList() override
+		{
+			auto& reloadAction = CreateWidget<OvUI::Widgets::Menu::MenuItem>("Reload");
+
+			reloadAction.ClickedEvent += [this]
+			{
+				auto& fontManager = OVSERVICE(OvCore::ResourceManagement::FontManager);
+				const std::string resourcePath = EDITOR_EXEC(GetResourcePath(filePath.string(), m_protected));
+				if (fontManager.IsResourceRegistered(resourcePath))
+				{
+					fontManager.AResourceManager::ReloadResource(resourcePath);
+					EDITOR_PANEL(OvEditor::Panels::Inspector, "Inspector").Refresh();
+				}
+			};
+
+			FileContextualMenu::CreateList();
+		}
+	};
+
 	class EmbeddedFileContextualMenu : public OvUI::Plugins::ContextualMenu
 	{
 	public:
@@ -887,6 +912,7 @@ namespace
 			case TEXTURE: return p_root.AddPlugin<TextureContextualMenu>(path, p_protected);
 			case SHADER: return p_root.AddPlugin<ShaderContextualMenu>(path, p_protected);
 			case MATERIAL: return p_root.AddPlugin<MaterialContextualMenu>(path, p_protected);
+			case FONT: return p_root.AddPlugin<FontContextualMenu>(path, p_protected);
 			default: return p_root.AddPlugin<FileContextualMenu>(path, p_protected);
 		}
 	}

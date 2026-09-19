@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <optional>
+
+#include <OvMaths/FMatrix4.h>
 #include <OvRendering/Features/ARenderFeature.h>
 
 namespace OvEditor::Rendering
@@ -38,7 +41,9 @@ namespace OvEditor::Rendering
 			OvRendering::Data::PipelineState p_pso,
 			OvRendering::Resources::Model& p_model,
 			OvRendering::Data::Material& p_material,
-			const OvMaths::FMatrix4& p_modelMatrix
+			const OvMaths::FMatrix4& p_modelMatrix,
+			std::optional<OvMaths::FMatrix4> p_viewMatrixOverride = std::nullopt,
+			std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride = std::nullopt
 		);
 	};
 }

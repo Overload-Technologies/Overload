@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "OvUI/Widgets/AWidget.h"
@@ -88,5 +89,6 @@ namespace OvUI::Internal
 	protected:
 		std::vector<std::pair<OvUI::Widgets::AWidget*, Internal::EMemoryMode>> m_widgets;
         bool m_reversedDrawOrder = false;
+		uint32_t m_drawCallDepth = 0;
 	};
 }

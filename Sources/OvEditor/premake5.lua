@@ -62,7 +62,7 @@ project "OvEditor"
 		-- Dependencies that others depend on - must come after
 		"assimp",
 		"glfw",
-    }
+	}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG", "_DEBUG" }

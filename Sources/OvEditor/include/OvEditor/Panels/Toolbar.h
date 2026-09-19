@@ -37,5 +37,6 @@ namespace OvEditor::Panels
 		OvUI::Widgets::Buttons::ButtonImage* m_pauseButton;
 		OvUI::Widgets::Buttons::ButtonImage* m_stopButton;
 		OvUI::Widgets::Buttons::ButtonImage* m_nextButton;
+		OvUI::Widgets::Buttons::ButtonImage* m_sceneUIButton;
 	};
 }

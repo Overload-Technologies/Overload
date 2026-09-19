@@ -5,6 +5,7 @@
 */
 
 #include <cmath>
+#include <algorithm>
 
 #include "OvEditor/Core/GizmoBehaviour.h"
 #include "OvEditor/Core/EditorActions.h"
@@ -32,20 +33,57 @@ bool OvEditor::Core::GizmoBehaviour::IsSnappedBehaviourEnabled() const
 	return inputManager->GetKeyState(EKey::KEY_LEFT_CONTROL) == EKeyState::KEY_DOWN || inputManager->GetKeyState(EKey::KEY_RIGHT_CONTROL) == EKeyState::KEY_DOWN;
 }
 
-void OvEditor::Core::GizmoBehaviour::StartPicking(OvCore::ECS::Actor& p_target, const OvMaths::FVector3& p_cameraPosition, EGizmoOperation p_operation, EDirection p_direction)
+void OvEditor::Core::GizmoBehaviour::StartPicking(
+	OvCore::ECS::Actor& p_target,
+	const OvMaths::FVector3& p_cameraPosition,
+	EGizmoOperation p_operation,
+	EDirection p_direction,
+	const UITranslationContext* p_uiTranslationContext
+)
 {
 	m_target = &p_target;
 	m_firstMouse = true;
 	m_firstPick = true;
 	m_originalTransform = p_target.transform.GetFTransform();
-	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_target->transform.GetWorldPosition());
+	if (p_uiTranslationContext)
+	{
+		m_originalTransform.SetWorldPosition(p_uiTranslationContext->origin);
+	}
+	m_distanceToActor = OvMaths::FVector3::Distance(p_cameraPosition, m_originalTransform.GetWorldPosition());
 	m_currentOperation = p_operation;
 	m_direction = p_direction;
+	m_isUITranslation = p_target.transform.HasActiveUIData() && p_uiTranslationContext != nullptr;
+	m_isUIScreenSpace = m_isUITranslation && p_uiTranslationContext->screenSpace;
+	m_uiPositionDirection = OvMaths::FVector2::Zero;
+	m_uiWorldAxis = OvMaths::FVector3::Zero;
+
+	if (m_isUITranslation)
+	{
+		m_originalUIPosition = p_target.transform.GetUIPosition();
+		if (m_direction == EDirection::X)
+		{
+			m_uiPositionDirection = p_uiTranslationContext->xPositionDirection;
+			m_uiWorldAxis = p_uiTranslationContext->xWorldAxis;
+		}
+		else if (m_direction == EDirection::Y)
+		{
+			m_uiPositionDirection = p_uiTranslationContext->yPositionDirection;
+			m_uiWorldAxis = p_uiTranslationContext->yWorldAxis;
+		}
+	}
+	else
+	{
+		m_originalUIPosition = OvMaths::FVector2::Zero;
+	}
 }
 
 void OvEditor::Core::GizmoBehaviour::StopPicking()
 {
 	m_target = nullptr;
+	m_isUITranslation = false;
+	m_isUIScreenSpace = false;
+	m_uiPositionDirection = OvMaths::FVector2::Zero;
+	m_uiWorldAxis = OvMaths::FVector3::Zero;
 }
 
 OvMaths::FVector3 OvEditor::Core::GizmoBehaviour::GetFakeDirection() const
@@ -122,6 +160,84 @@ OvMaths::FVector2 OvEditor::Core::GizmoBehaviour::GetScreenDirection(const OvMat
 
 void OvEditor::Core::GizmoBehaviour::ApplyTranslation(const OvMaths::FMatrix4& p_viewMatrix, const OvMaths::FMatrix4& p_projectionMatrix, const OvMaths::FVector3& p_cameraPosition, const OvMaths::FVector2& p_viewSize)
 {
+	if (m_isUITranslation)
+	{
+		if (m_direction == EDirection::X && !m_target->transform.IsHorizontalUIPositionEditable())
+		{
+			return;
+		}
+
+		if (m_direction == EDirection::Y && !m_target->transform.IsVerticalUIPositionEditable())
+		{
+			return;
+		}
+
+		if (m_isUIScreenSpace)
+		{
+			const float unitsScale = OvMaths::FVector3::Length(m_uiWorldAxis);
+			if (unitsScale <= 0.0001f)
+			{
+				return;
+			}
+
+			const auto mouseDelta = m_currentMouse - m_originMouse;
+			const auto screenAxis = OvMaths::FVector2::Normalize({ m_uiWorldAxis.x, -m_uiWorldAxis.y });
+			auto translationUnits = OvMaths::FVector2::Dot(mouseDelta, screenAxis) / unitsScale;
+
+			if (IsSnappedBehaviourEnabled())
+			{
+				translationUnits = SnapValue(translationUnits, OvEditor::Settings::EditorSettings::TranslationSnapUnit);
+			}
+
+			m_target->transform.SetUIPosition(m_originalUIPosition + m_uiPositionDirection * translationUnits);
+			return;
+		}
+
+		const auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
+		const float axisScale = OvMaths::FVector3::Length(m_uiWorldAxis);
+		if (axisScale <= 0.0001f)
+		{
+			return;
+		}
+		const OvMaths::FVector3 direction = OvMaths::FVector3::Normalize(m_uiWorldAxis);
+		const OvMaths::FVector3 planePoint = m_originalTransform.GetWorldPosition();
+		const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(direction, planePoint - p_cameraPosition);
+		const OvMaths::FVector3 planeNormal = OvMaths::FVector3::Cross(direction, planeTangent);
+
+		const float denom = OvMaths::FVector3::Dot(ray, planeNormal);
+
+		if (std::abs(denom) <= 0.001f)
+		{
+			return;
+		}
+
+		const float t = OvMaths::FVector3::Dot(planePoint - p_cameraPosition, planeNormal) / denom;
+
+		if (t <= 0.001f)
+		{
+			return;
+		}
+
+		const OvMaths::FVector3 point = p_cameraPosition + ray * t;
+
+		if (m_firstPick)
+		{
+			m_initialOffset = m_originalTransform.GetWorldPosition() - point;
+			m_firstPick = false;
+		}
+
+		const auto translationVector = point - planePoint + m_initialOffset;
+		auto translationUnits = OvMaths::FVector3::Dot(translationVector, direction) / axisScale;
+
+		if (IsSnappedBehaviourEnabled())
+		{
+			translationUnits = SnapValue(translationUnits, OvEditor::Settings::EditorSettings::TranslationSnapUnit);
+		}
+
+		m_target->transform.SetUIPosition(m_originalUIPosition + m_uiPositionDirection * translationUnits);
+		return;
+	}
+
 	auto ray = GetMouseRay(m_currentMouse, p_viewMatrix, p_projectionMatrix, p_viewSize);
 
 	const OvMaths::FVector3 planeTangent = OvMaths::FVector3::Cross(GetRealDirection(true), m_target->transform.GetWorldPosition() - p_cameraPosition);
@@ -315,4 +431,27 @@ OvMaths::FVector3 OvEditor::Core::GizmoBehaviour::GetMouseRay(const OvMaths::FVe
 	OvMaths::FVector4 farthestPoint = inverseViewProjection * OvMaths::FVector4(x, y, 1.0f, 1.0f);
 
 	return OvMaths::FVector3(farthestPoint.x, farthestPoint.y, farthestPoint.z) * nearestPoint.w - OvMaths::FVector3(nearestPoint.x, nearestPoint.y, nearestPoint.z) * farthestPoint.w; ;
+}
+
+int OvEditor::Core::GetUIGizmoAxes(const OvCore::ECS::Actor& p_actor, EGizmoOperation p_operation, bool p_screenSpace)
+{
+	// User interface elements are laid out on the canvas plane, so the Z axis is meaningless in screen space
+	int axes = p_screenSpace ? kGizmoAxisX | kGizmoAxisY : kGizmoAxisAll;
+
+	if (p_operation != EGizmoOperation::TRANSLATE)
+	{
+		return axes;
+	}
+
+	if (!p_actor.transform.IsHorizontalUIPositionEditable())
+	{
+		axes &= ~kGizmoAxisX;
+	}
+
+	if (!p_actor.transform.IsVerticalUIPositionEditable())
+	{
+		axes &= ~kGizmoAxisY;
+	}
+
+	return axes;
 }

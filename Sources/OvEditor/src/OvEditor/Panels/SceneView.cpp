@@ -4,9 +4,13 @@
 * @licence: MIT
 */
 
+#include <optional>
+
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvEditor/Rendering/DebugSceneRenderer.h>
+#include <OvEditor/Rendering/GridRenderPass.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
 #include <OvEditor/Core/EditorActions.h>
 #include <OvEditor/Panels/SceneView.h>
@@ -30,6 +34,31 @@ namespace
 		}
 
 		return std::nullopt;
+	}
+
+	std::optional<OvEditor::Core::GizmoBehaviour::UITranslationContext> ResolveUIGizmoContext(
+		OvCore::ECS::Actor& p_actor,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver
+	)
+	{
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIGizmoTransform resolvedTransform;
+		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIGizmoTransform(
+			p_uiFrameResolver,
+			p_actor,
+			resolvedTransform
+		))
+		{
+			return std::nullopt;
+		}
+
+		return OvEditor::Core::GizmoBehaviour::UITranslationContext{
+			.origin = resolvedTransform.position,
+			.xPositionDirection = resolvedTransform.xPositionDirection,
+			.yPositionDirection = resolvedTransform.yPositionDirection,
+			.xWorldAxis = resolvedTransform.xWorldAxis,
+			.yWorldAxis = resolvedTransform.yWorldAxis,
+			.screenSpace = resolvedTransform.screenSpace
+		};
 	}
 }
 
@@ -104,6 +133,12 @@ void OvEditor::Panels::SceneView::InitFrame()
 {
 	AViewControllable::InitFrame();
 
+	m_renderer->SetDescriptor<Rendering::GridRenderPass::GridDescriptor>({
+		m_gridColor,
+		m_camera.GetPosition(),
+		!EDITOR_EXEC(IsSceneUIRenderingEnabled())
+	});
+
 	OvTools::Utils::OptRef<OvCore::ECS::Actor> selectedActor;
 
 	if (EDITOR_EXEC(IsAnyActorSelected()))
@@ -148,6 +183,8 @@ OvCore::Rendering::SceneRenderer::SceneDescriptor OvEditor::Panels::SceneView::C
 {
 	auto descriptor = AViewControllable::CreateSceneDescriptor();
 	descriptor.fallbackMaterial = m_fallbackMaterial;
+	descriptor.includeUI = true;
+	descriptor.renderUIInScreenSpace = EDITOR_EXEC(IsSceneUIRenderingEnabled());
 
 	if (Settings::EditorSettings::DebugFrustumCulling)
 	{
@@ -222,11 +259,27 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 		{
 			if (m_highlightedGizmoDirection)
 			{
+				auto& selectedActor = EDITOR_EXEC(GetSelectedActor());
+				auto [winWidth, winHeight] = GetSafeSize();
+				const auto renderSize = OvMaths::FVector2{
+					winWidth > 0 ? static_cast<float>(winWidth) : 1.0f,
+					winHeight > 0 ? static_cast<float>(winHeight) : 1.0f
+				};
+				const OvCore::Rendering::UIRenderingUtils::UIFrameResolver uiFrameResolver{
+					renderSize,
+					EDITOR_EXEC(IsSceneUIRenderingEnabled())
+				};
+				const auto uiGizmoContext = ResolveUIGizmoContext(
+					selectedActor,
+					uiFrameResolver
+				);
 				m_gizmoOperations.StartPicking(
-					EDITOR_EXEC(GetSelectedActor()),
+					selectedActor,
 					m_camera.GetPosition(),
 					m_currentOperation,
-					m_highlightedGizmoDirection.value());
+					m_highlightedGizmoDirection.value(),
+					uiGizmoContext ? &uiGizmoContext.value() : nullptr
+				);
 			}
 			else if (m_highlightedActor)
 			{

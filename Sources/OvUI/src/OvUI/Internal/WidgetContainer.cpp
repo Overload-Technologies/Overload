@@ -24,6 +24,17 @@ void OvUI::Internal::WidgetContainer::RemoveWidget(Widgets::AWidget& p_widget)
 
 	if (found != m_widgets.end())
 	{
+		if (m_drawCallDepth > 0)
+		{
+			if (found->first)
+			{
+				found->first->SetParent(nullptr);
+				found->first->Destroy();
+			}
+
+			return;
+		}
+
 		if (found->second == Internal::EMemoryMode::INTERNAL_MANAGMENT)
 			delete found->first;
 
@@ -33,6 +44,20 @@ void OvUI::Internal::WidgetContainer::RemoveWidget(Widgets::AWidget& p_widget)
 
 void OvUI::Internal::WidgetContainer::RemoveAllWidgets()
 {
+	if (m_drawCallDepth > 0)
+	{
+		for (auto& pair : m_widgets)
+		{
+			if (pair.first)
+			{
+				pair.first->SetParent(nullptr);
+				pair.first->Destroy();
+			}
+		}
+
+		return;
+	}
+
 	std::for_each(m_widgets.begin(), m_widgets.end(), [](auto& pair)
 	{
 		if (pair.second == Internal::EMemoryMode::INTERNAL_MANAGMENT)
@@ -68,8 +93,13 @@ void OvUI::Internal::WidgetContainer::CollectGarbages()
 	{
 		bool toDestroy = p_item.first && p_item.first->IsDestroyed();
 
-		if (toDestroy && p_item.second == Internal::EMemoryMode::INTERNAL_MANAGMENT)
-			delete p_item.first;
+		if (toDestroy)
+		{
+			p_item.first->SetParent(nullptr);
+
+			if (p_item.second == Internal::EMemoryMode::INTERNAL_MANAGMENT)
+				delete p_item.first;
+		}
 
 		return toDestroy;
 	}), m_widgets.end());
@@ -88,19 +118,34 @@ void OvUI::Internal::WidgetContainer::DrawWidgets()
 	widgetsToDraw.reserve(m_widgets.size());
 	std::ranges::copy(m_widgets | std::views::keys, std::back_inserter(widgetsToDraw));
 
+	++m_drawCallDepth;
+
 	if (m_reversedDrawOrder) [[unlikely]]
 	{
 		for (WidgetType widget : widgetsToDraw | std::views::reverse)
 		{
-			widget->Draw();
+			if (widget && !widget->IsDestroyed())
+			{
+				widget->Draw();
+			}
 		}
 	}
 	else
 	{
 		for (WidgetType widget : widgetsToDraw)
 		{
-			widget->Draw();
+			if (widget && !widget->IsDestroyed())
+			{
+				widget->Draw();
+			}
 		}
+	}
+
+	--m_drawCallDepth;
+
+	if (m_drawCallDepth == 0)
+	{
+		CollectGarbages();
 	}
 }
 

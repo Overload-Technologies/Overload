@@ -38,6 +38,11 @@ void OvEditor::Rendering::GridRenderPass::Draw(OvRendering::Data::PipelineState 
 	auto& gridDescriptor = m_renderer.GetDescriptor<GridDescriptor>();
 	auto& debugShapeRenderer = m_renderer.GetFeature<OvRendering::Features::DebugShapeRenderFeature>();
 
+	if (!gridDescriptor.visible)
+	{
+		return;
+	}
+
 	auto pso = m_renderer.CreatePipelineState();
 
 	constexpr float gridSize = 5000.0f;

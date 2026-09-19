@@ -101,8 +101,12 @@ namespace OvWindowing::Inputs
 		OvTools::Eventing::ListenerID m_mouseButtonReleasedListener;
 		OvTools::Eventing::ListenerID m_mouseScrollListener;
 
-		std::unordered_map<EKey, EKeyState> m_keyEvents;
-		std::unordered_map<EMouseButton, EMouseButtonState> m_mouseButtonEvents;
+		std::unordered_map<EKey, bool> m_keyPressed;
+		std::unordered_map<EKey, bool> m_keyReleased;
+
+		std::unordered_map<EMouseButton, bool> m_mouseButtonPressed;
+		std::unordered_map<EMouseButton, bool> m_mouseButtonReleased;
+
 		std::pair<double, double> m_scrollData;
 	};
 }

@@ -30,6 +30,7 @@ project 'assimp'
 		'contrib/unzip/',
 		'contrib/pugixml/src/',
 		'contrib/zlib/',
+		'contrib/rapidjson/include/',
 		'contrib/utf8cpp/source',
 		'code',
 		'include'
@@ -56,6 +57,14 @@ project 'assimp'
 		-- Importers
 		'code/AssetLib/Obj/**',
 		'code/AssetLib/FBX/**',
+		'code/AssetLib/glTF/**',
+		'code/AssetLib/glTF2/**',
+		'code/AssetLib/glTFCommon/**',
+	}
+
+	-- Special defines
+	defines {
+		'RAPIDJSON_HAS_STDSTRING=1'
 	}
 
 	-- Importers
@@ -77,7 +86,7 @@ project 'assimp'
 		'ASSIMP_BUILD_NO_CSM_IMPORTER',
 		'ASSIMP_BUILD_NO_DXF_IMPORTER',
 		-- 'ASSIMP_BUILD_NO_FBX_IMPORTER',
-		'ASSIMP_BUILD_NO_GLTF_IMPORTER',
+		-- 'ASSIMP_BUILD_NO_GLTF_IMPORTER',
 		'ASSIMP_BUILD_NO_HMP_IMPORTER',
 		'ASSIMP_BUILD_NO_IFC_IMPORTER',
 		'ASSIMP_BUILD_NO_IQM_IMPORTER',

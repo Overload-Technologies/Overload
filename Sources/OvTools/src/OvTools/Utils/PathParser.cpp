@@ -125,7 +125,7 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 	std::string ext = GetExtension(p_path);
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-	if (ext == "fbx" || ext == "obj") return EFileType::MODEL;
+	if (ext == "fbx" || ext == "obj" || ext == "glb" || ext == "gltf" || ext == "vrm") return EFileType::MODEL;
 	else if (ext == "png" || ext == "jpeg" || ext == "jpg" || ext == "tga" || ext == "hdr") return EFileType::TEXTURE;
 	else if (ext == "ovfx") return EFileType::SHADER;
 	else if (ext == "ovfxh") return EFileType::SHADER_PART;

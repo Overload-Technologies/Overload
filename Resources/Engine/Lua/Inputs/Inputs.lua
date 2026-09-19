@@ -47,3 +47,7 @@ function Inputs.LockMouse() end
 
 --- Unlocks and shows the mouse cursor
 function Inputs.UnlockMouse() end
+
+--- Sets the shape of the mouse cursor
+---@param shape CursorShape
+function Inputs.SetCursorShape(shape) end

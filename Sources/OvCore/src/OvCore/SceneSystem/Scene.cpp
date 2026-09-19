@@ -121,9 +121,11 @@ void OvCore::SceneSystem::Scene::Play()
 	/* Wake up actors to allow them to react to OnEnable, OnDisable and OnDestroy, */
 	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { p_element->SetSleeping(false); });
 
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnAwake(); });
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnEnable(); });
-	std::for_each(m_actors.begin(), m_actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnStart(); });
+	/* Iterate over a copy to prevent iterator invalidation if CreateActor is called during callbacks */
+	auto actors = m_actors;
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnAwake(); });
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnEnable(); });
+	std::for_each(actors.begin(), actors.end(), [](ECS::Actor * p_element) { if (p_element->IsActive()) p_element->OnStart(); });
 }
 
 bool OvCore::SceneSystem::Scene::IsPlaying() const
@@ -201,7 +203,6 @@ void OvCore::SceneSystem::Scene::EndBatchActorCreation(bool p_startCreatedActors
 	OVASSERT(m_batchActorCreation, "No active actor creation batch to end.");
 
 	std::vector<std::reference_wrapper<ECS::Actor>> actors;
-	// Keep callback-created actors out of the batch being started below.
 	actors.swap(m_batchCreatedActors);
 	m_batchActorCreation = false;
 

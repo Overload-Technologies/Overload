@@ -8,7 +8,9 @@
 
 #include "OvWindowing/Inputs/InputManager.h"
 
-OvWindowing::Inputs::InputManager::InputManager(Window& p_window) : m_window(p_window)
+OvWindowing::Inputs::InputManager::InputManager(Window& p_window) :
+	m_window(p_window),
+	m_scrollData{ 0.0, 0.0 }
 {
 	m_keyPressedListener = m_window.KeyPressedEvent.AddListener(std::bind(&InputManager::OnKeyPressed, this, std::placeholders::_1));
 	m_keyReleasedListener = m_window.KeyReleasedEvent.AddListener(std::bind(&InputManager::OnKeyReleased, this, std::placeholders::_1));
@@ -50,22 +52,22 @@ OvWindowing::Inputs::EMouseButtonState OvWindowing::Inputs::InputManager::GetMou
 
 bool OvWindowing::Inputs::InputManager::IsKeyPressed(EKey p_key) const
 {
-	return m_keyEvents.find(p_key) != m_keyEvents.end() && m_keyEvents.at(p_key) == EKeyState::KEY_DOWN;
+	return m_keyPressed.contains(p_key);
 }
 
 bool OvWindowing::Inputs::InputManager::IsKeyReleased(EKey p_key) const
 {
-	return m_keyEvents.find(p_key) != m_keyEvents.end() && m_keyEvents.at(p_key) == EKeyState::KEY_UP;
+	return m_keyReleased.contains(p_key);
 }
 
 bool OvWindowing::Inputs::InputManager::IsMouseButtonPressed(EMouseButton p_button) const
 {
-	return m_mouseButtonEvents.find(p_button) != m_mouseButtonEvents.end() && m_mouseButtonEvents.at(p_button) == EMouseButtonState::MOUSE_DOWN;
+	return m_mouseButtonPressed.contains(p_button);
 }
 
 bool OvWindowing::Inputs::InputManager::IsMouseButtonReleased(EMouseButton p_button) const
 {
-	return m_mouseButtonEvents.find(p_button) != m_mouseButtonEvents.end() && m_mouseButtonEvents.at(p_button) == EMouseButtonState::MOUSE_UP;
+	return m_mouseButtonReleased.contains(p_button);
 }
 
 std::pair<double, double> OvWindowing::Inputs::InputManager::GetMousePosition() const
@@ -82,32 +84,37 @@ std::pair<double, double> OvWindowing::Inputs::InputManager::GetMouseScroll() co
 
 void OvWindowing::Inputs::InputManager::ClearEvents()
 {
-	m_keyEvents.clear();
-	m_mouseButtonEvents.clear();
+	m_keyPressed.clear();
+	m_keyReleased.clear();
+
+	m_mouseButtonPressed.clear();
+	m_mouseButtonReleased.clear();
+
 	m_scrollData = { 0.0, 0.0 };
 }
 
 void OvWindowing::Inputs::InputManager::OnKeyPressed(int p_key)
 {
-	m_keyEvents[static_cast<EKey>(p_key)] = EKeyState::KEY_DOWN;
+	m_keyPressed.insert(static_cast<EKey>(p_key));
 }
 
 void OvWindowing::Inputs::InputManager::OnKeyReleased(int p_key)
 {
-	m_keyEvents[static_cast<EKey>(p_key)] = EKeyState::KEY_UP;
+	m_keyReleased.insert(static_cast<EKey>(p_key));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseButtonPressed(int p_button)
 {
-	m_mouseButtonEvents[static_cast<EMouseButton>(p_button)] = EMouseButtonState::MOUSE_DOWN;
+	m_mouseButtonPressed.insert(static_cast<EMouseButton>(p_button));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseButtonReleased(int p_button)
 {
-	m_mouseButtonEvents[static_cast<EMouseButton>(p_button)] = EMouseButtonState::MOUSE_UP;
+	m_mouseButtonReleased.insert(static_cast<EMouseButton>(p_button));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseScroll(double p_xOffset, double p_yOffset)
 {
-	m_scrollData = { p_xOffset, p_yOffset };
+	m_scrollData.first += p_xOffset;
+	m_scrollData.second += p_yOffset;
 }

@@ -1,4 +1,5 @@
 /**
+/This is InputManager.h
 * @project: Overload
 * @author: Overload Tech.
 * @licence: MIT
@@ -6,7 +7,7 @@
 
 #pragma once
 
-#include <unordered_map>
+#include <unordered_set>
 
 #include <OvWindowing/Inputs/EMouseButton.h>
 #include <OvWindowing/Inputs/EMouseButtonState.h>
@@ -101,11 +102,11 @@ namespace OvWindowing::Inputs
 		OvTools::Eventing::ListenerID m_mouseButtonReleasedListener;
 		OvTools::Eventing::ListenerID m_mouseScrollListener;
 
-		std::unordered_map<EKey, bool> m_keyPressed;
-		std::unordered_map<EKey, bool> m_keyReleased;
+		std::unordered_set<EKey> m_keyPressed;
+		std::unordered_set<EKey> m_keyReleased;
 
-		std::unordered_map<EMouseButton, bool> m_mouseButtonPressed;
-		std::unordered_map<EMouseButton, bool> m_mouseButtonReleased;
+		std::unordered_set<EMouseButton> m_mouseButtonPressed;
+		std::unordered_set<EMouseButton> m_mouseButtonReleased;
 
 		std::pair<double, double> m_scrollData;
 	};

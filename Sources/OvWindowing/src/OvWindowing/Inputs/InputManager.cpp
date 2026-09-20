@@ -1,4 +1,5 @@
 /**
+/This is InputManager.cpp
 * @project: Overload
 * @author: Overload Tech.
 * @licence: MIT
@@ -52,22 +53,22 @@ OvWindowing::Inputs::EMouseButtonState OvWindowing::Inputs::InputManager::GetMou
 
 bool OvWindowing::Inputs::InputManager::IsKeyPressed(EKey p_key) const
 {
-	return m_keyPressed.find(p_key) != m_keyPressed.end() && m_keyPressed.at(p_key);
+	return m_keyPressed.contains(p_key);
 }
 
 bool OvWindowing::Inputs::InputManager::IsKeyReleased(EKey p_key) const
 {
-	return m_keyReleased.find(p_key) != m_keyReleased.end() && m_keyReleased.at(p_key);
+	return m_keyReleased.contains(p_key);
 }
 
 bool OvWindowing::Inputs::InputManager::IsMouseButtonPressed(EMouseButton p_button) const
 {
-	return m_mouseButtonPressed.find(p_button) != m_mouseButtonPressed.end() && m_mouseButtonPressed.at(p_button);
+	return m_mouseButtonPressed.contains(p_button);
 }
 
 bool OvWindowing::Inputs::InputManager::IsMouseButtonReleased(EMouseButton p_button) const
 {
-	return m_mouseButtonReleased.find(p_button) != m_mouseButtonReleased.end() && m_mouseButtonReleased.at(p_button);
+	return m_mouseButtonReleased.contains(p_button);
 }
 
 std::pair<double, double> OvWindowing::Inputs::InputManager::GetMousePosition() const
@@ -95,22 +96,22 @@ void OvWindowing::Inputs::InputManager::ClearEvents()
 
 void OvWindowing::Inputs::InputManager::OnKeyPressed(int p_key)
 {
-	m_keyPressed[static_cast<EKey>(p_key)] = true;
+	m_keyPressed.insert(static_cast<EKey>(p_key));
 }
 
 void OvWindowing::Inputs::InputManager::OnKeyReleased(int p_key)
 {
-	m_keyReleased[static_cast<EKey>(p_key)] = true;
+	m_keyReleased.insert(static_cast<EKey>(p_key));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseButtonPressed(int p_button)
 {
-	m_mouseButtonPressed[static_cast<EMouseButton>(p_button)] = true;
+	m_mouseButtonPressed.insert(static_cast<EMouseButton>(p_button));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseButtonReleased(int p_button)
 {
-	m_mouseButtonReleased[static_cast<EMouseButton>(p_button)] = true;
+	m_mouseButtonReleased.insert(static_cast<EMouseButton>(p_button));
 }
 
 void OvWindowing::Inputs::InputManager::OnMouseScroll(double p_xOffset, double p_yOffset)

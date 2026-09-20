@@ -1,5 +1,4 @@
 /**
-/This is InputManager.h
 * @project: Overload
 * @author: Overload Tech.
 * @licence: MIT

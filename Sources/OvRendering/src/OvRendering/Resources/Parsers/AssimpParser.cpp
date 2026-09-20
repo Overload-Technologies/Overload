@@ -65,6 +65,10 @@ namespace
 		aiTextureType_HEIGHT
 	};
 
+    const std::array<aiTextureType, 1> kMetallicRoughnessTextureTypes = {
+        aiTextureType_GLTF_METALLIC_ROUGHNESS
+    };
+
 	constexpr std::array kOpacityTextureTypes{
 		aiTextureType_OPACITY
 	};
@@ -241,7 +245,8 @@ namespace
 		const std::string& p_texturePath,
 		const std::filesystem::path& p_modelDirectory,
 		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
-		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures,
+        uint32_t p_singleChannelChannelId = 0
 	)
 	{
 		const std::string normalizedTexturePath = OvTools::Utils::PathParser::MakeNonWindowsStyle(p_texturePath);
@@ -288,10 +293,33 @@ namespace
 				for (size_t i = 0; i < texelCount; ++i)
 				{
 					const aiTexel texel = embeddedTexture->pcData[i];
-					textureData.rawRGBAData[i * 4 + 0] = texel.r;
-					textureData.rawRGBAData[i * 4 + 1] = texel.g;
-					textureData.rawRGBAData[i * 4 + 2] = texel.b;
-					textureData.rawRGBAData[i * 4 + 3] = texel.a;
+
+                    if (p_singleChannelChannelId == 0) {
+                        textureData.rawRGBAData[i * 4 + 0] = texel.r;
+                        textureData.rawRGBAData[i * 4 + 1] = texel.g;
+                        textureData.rawRGBAData[i * 4 + 2] = texel.b;
+                        textureData.rawRGBAData[i * 4 + 3] = texel.a;
+                    } else if (p_singleChannelChannelId == 1) {
+                        textureData.rawRGBAData[i * 4 + 0] = texel.r;
+                        textureData.rawRGBAData[i * 4 + 1] = texel.r;
+                        textureData.rawRGBAData[i * 4 + 2] = texel.r;
+                        textureData.rawRGBAData[i * 4 + 3] = texel.r;
+                    } else if (p_singleChannelChannelId == 2) {
+                        textureData.rawRGBAData[i * 4 + 0] = texel.g;
+                        textureData.rawRGBAData[i * 4 + 1] = texel.g;
+                        textureData.rawRGBAData[i * 4 + 2] = texel.g;
+                        textureData.rawRGBAData[i * 4 + 3] = texel.g;
+                    } else if (p_singleChannelChannelId == 3) {
+                        textureData.rawRGBAData[i * 4 + 0] = texel.b;
+                        textureData.rawRGBAData[i * 4 + 1] = texel.b;
+                        textureData.rawRGBAData[i * 4 + 2] = texel.b;
+                        textureData.rawRGBAData[i * 4 + 3] = texel.b;
+                    } else if (p_singleChannelChannelId == 4) {
+                        textureData.rawRGBAData[i * 4 + 0] = texel.a;
+                        textureData.rawRGBAData[i * 4 + 1] = texel.a;
+                        textureData.rawRGBAData[i * 4 + 2] = texel.a;
+                        textureData.rawRGBAData[i * 4 + 3] = texel.a;
+                    }
 				}
 			}
 		}
@@ -315,13 +343,30 @@ namespace
 		aiTextureType type;
 	};
 
+    bool HasTexture(
+        aiMaterial& p_material,
+        std::span<const aiTextureType> p_textureTypes
+    )
+    {
+        for (const auto textureType : p_textureTypes)
+        {
+            if (p_material.GetTextureCount(textureType) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 	std::optional<TextureSearchResult> FindFirstTexture(
 		const aiScene& p_scene,
 		aiMaterial& p_material,
 		std::span<const aiTextureType> p_textureTypes,
 		const std::filesystem::path& p_modelDirectory,
 		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
-		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures,
+        uint32_t p_singleChannelChannelId = 0
 	)
 	{
 		aiString texturePath;
@@ -346,7 +391,8 @@ namespace
 					texturePath.C_Str(),
 					p_modelDirectory,
 					p_textureIndexByKey,
-					p_embeddedTextures
+					p_embeddedTextures,
+                    p_singleChannelChannelId
 				))
 				{
 					return TextureSearchResult{
@@ -366,7 +412,8 @@ namespace
 		std::span<const aiTextureType> p_textureTypes,
 		const std::filesystem::path& p_modelDirectory,
 		std::unordered_map<std::string, uint32_t>& p_textureIndexByKey,
-		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures
+		std::vector<OvRendering::Resources::EmbeddedTextureData>& p_embeddedTextures,
+        uint32_t p_singleChannelChannelId = 0
 	)
 	{
 		if (const auto foundTexture = FindFirstTexture(
@@ -375,7 +422,8 @@ namespace
 			p_textureTypes,
 			p_modelDirectory,
 			p_textureIndexByKey,
-			p_embeddedTextures
+			p_embeddedTextures,
+            p_singleChannelChannelId
 		))
 		{
 			return foundTexture->index;
@@ -463,23 +511,46 @@ namespace
 			);
 			embeddedMaterial.normalTexture = normalTexture ? std::optional<uint32_t>{ normalTexture->index } : std::nullopt;
 
-			embeddedMaterial.metallicTexture = FindFirstTextureIndex(
-				*p_scene,
-				*material,
-				std::span{ kMetallicTextureTypes },
-				p_modelDirectory,
-				textureIndexByKey,
-				p_embeddedTextures
-			);
 
-			embeddedMaterial.roughnessTexture = FindFirstTextureIndex(
-				*p_scene,
-				*material,
-				std::span{ kRoughnessTextureTypes },
-				p_modelDirectory,
-				textureIndexByKey,
-				p_embeddedTextures
-			);
+            if (HasTexture(*material, kMetallicRoughnessTextureTypes)) {
+                embeddedMaterial.metallicTexture = FindFirstTextureIndex(
+                    *p_scene,
+                    *material,
+                    std::span{ kMetallicRoughnessTextureTypes },
+                    p_modelDirectory,
+                    textureIndexByKey,
+                    p_embeddedTextures,
+                    3 // B = Metallic
+                );
+
+                embeddedMaterial.roughnessTexture = FindFirstTextureIndex(
+                    *p_scene,
+                    *material,
+                    std::span{ kMetallicRoughnessTextureTypes },
+                    p_modelDirectory,
+                    textureIndexByKey,
+                    p_embeddedTextures,
+                    2 // G = Roughness
+                );
+            } else {
+                embeddedMaterial.metallicTexture = FindFirstTextureIndex(
+                    *p_scene,
+                    *material,
+                    std::span{ kMetallicTextureTypes },
+                    p_modelDirectory,
+                    textureIndexByKey,
+                    p_embeddedTextures
+                );
+
+                embeddedMaterial.roughnessTexture = FindFirstTextureIndex(
+                    *p_scene,
+                    *material,
+                    std::span{ kRoughnessTextureTypes },
+                    p_modelDirectory,
+                    textureIndexByKey,
+                    p_embeddedTextures
+                );
+            }
 
 			embeddedMaterial.ambientOcclusionTexture = FindFirstTextureIndex(
 				*p_scene,

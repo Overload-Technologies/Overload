@@ -30,12 +30,15 @@ namespace OvEditor::Panels
 		/**
 		* Returns the main camera used by the attached scene
 		*/
-		virtual OvRendering::Entities::Camera* GetCamera();
+		virtual OvRendering::Entities::Camera* GetCamera() override;
 
 		/**
 		* Returns the scene used by this view
 		*/
-		virtual OvCore::SceneSystem::Scene* GetScene();
+		virtual OvCore::SceneSystem::Scene* GetScene() override;
+
+	protected:
+		virtual OvCore::Rendering::SceneRenderer::SceneDescriptor CreateSceneDescriptor() override;
 
 	private:
 		OvCore::SceneSystem::SceneManager& m_sceneManager;

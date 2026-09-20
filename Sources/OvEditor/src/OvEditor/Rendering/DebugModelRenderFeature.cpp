@@ -16,13 +16,22 @@ OvEditor::Rendering::DebugModelRenderFeature::DebugModelRenderFeature(
 {
 }
 
-void OvEditor::Rendering::DebugModelRenderFeature::DrawModelWithSingleMaterial(OvRendering::Data::PipelineState p_pso, OvRendering::Resources::Model& p_model, OvRendering::Data::Material& p_material, const OvMaths::FMatrix4& p_modelMatrix)
+void OvEditor::Rendering::DebugModelRenderFeature::DrawModelWithSingleMaterial(
+	OvRendering::Data::PipelineState p_pso,
+	OvRendering::Resources::Model& p_model,
+	OvRendering::Data::Material& p_material,
+	const OvMaths::FMatrix4& p_modelMatrix,
+	std::optional<OvMaths::FMatrix4> p_viewMatrixOverride,
+	std::optional<OvMaths::FMatrix4> p_projectionMatrixOverride
+)
 {
 	auto stateMask = p_material.GenerateStateMask();
 
 	auto engineDrawableDescriptor = OvCore::Rendering::EngineDrawableDescriptor{
 		p_modelMatrix,
-		OvMaths::FMatrix4::Identity
+		OvMaths::FMatrix4::Identity,
+		p_viewMatrixOverride,
+		p_projectionMatrixOverride
 	};
 
 	for (auto mesh : p_model.GetMeshes())

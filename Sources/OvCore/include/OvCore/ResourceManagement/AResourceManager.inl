@@ -70,6 +70,7 @@ namespace OvCore::ResourceManagement
 		if (auto resource = GetResource(p_path, false); resource)
 		{
 			ReloadResource(resource, p_path);
+			++m_resourcesRevision;
 		}
 	}
 
@@ -80,12 +81,42 @@ namespace OvCore::ResourceManagement
 	}
 
 	template<typename T>
+	inline bool AResourceManager<T>::ContainsResource(const T* p_resource) const
+	{
+		if (!p_resource)
+		{
+			return false;
+		}
+
+		return std::any_of(
+			m_resources.begin(),
+			m_resources.end(),
+			[p_resource](const auto& p_entry)
+			{
+				return p_entry.second == p_resource;
+			}
+		);
+	}
+
+	template<typename T>
+	inline uint64_t AResourceManager<T>::GetResourcesRevision() const
+	{
+		return m_resourcesRevision;
+	}
+
+	template<typename T>
 	inline void AResourceManager<T>::UnloadResources()
 	{
+		if (m_resources.empty())
+		{
+			return;
+		}
+
 		for (auto&[key, value] : m_resources)
 			DestroyResource(value);
 
 		m_resources.clear();
+		++m_resourcesRevision;
 	}
 
 	template<typename T>
@@ -99,6 +130,7 @@ namespace OvCore::ResourceManagement
 		}
 
 		m_resources[key] = p_instance;
+		++m_resourcesRevision;
 
 		return p_instance;
 	}
@@ -106,7 +138,10 @@ namespace OvCore::ResourceManagement
 	template<typename T>
 	inline void AResourceManager<T>::UnregisterResource(const std::filesystem::path & p_path)
 	{
-		m_resources.erase(NormalizeKey(p_path));
+		if (m_resources.erase(NormalizeKey(p_path)) != 0)
+		{
+			++m_resourcesRevision;
+		}
 	}
 
 	template<typename T>

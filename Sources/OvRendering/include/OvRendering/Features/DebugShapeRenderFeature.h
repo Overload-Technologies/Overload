@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <OvMaths/FMatrix4.h>
+
 #include "OvRendering/Features/ARenderFeature.h"
 
 namespace OvRendering::Features
@@ -47,6 +49,12 @@ namespace OvRendering::Features
 			float p_lineWidth = 1.0f,
 			bool p_depthTest = true
 		);
+
+		/**
+		* Overrides the view-projection matrix used by subsequent debug lines
+		* @param p_viewProjection
+		*/
+		void SetViewProjection(const OvMaths::FMatrix4& p_viewProjection);
 
 		/**
 		* Draw a box in world space

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 
 #include <OvTools/Eventing/Event.h>
@@ -61,7 +62,63 @@ namespace OvUI::Widgets::Drags
 					values[i] = max;
 			}
 
-			if (ImGui::DragScalarN((label + this->m_widgetID).c_str(), m_dataType, values.data(), _Size, speed, &min, &max, format.c_str()))
+			bool valueChanged = false;
+			const bool hasDisabledComponent = std::any_of(
+				disabledComponents.begin(),
+				disabledComponents.end(),
+				[](bool p_disabled) { return p_disabled; }
+			);
+
+			if (!hasDisabledComponent)
+			{
+				valueChanged = ImGui::DragScalarN(
+					(label + this->m_widgetID).c_str(),
+					m_dataType,
+					values.data(),
+					_Size,
+					speed,
+					&min,
+					&max,
+					format.c_str()
+				);
+			}
+			else
+			{
+				const float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
+				const float componentWidth = std::max(
+					1.0f,
+					(ImGui::CalcItemWidth() - spacing * static_cast<float>(_Size - 1)) / static_cast<float>(_Size)
+				);
+
+				ImGui::BeginGroup();
+				ImGui::PushID((label + this->m_widgetID).c_str());
+				for (size_t i = 0; i < _Size; ++i)
+				{
+					if (i > 0)
+					{
+						ImGui::SameLine(0.0f, spacing);
+					}
+
+					ImGui::PushID(static_cast<int>(i));
+					ImGui::SetNextItemWidth(componentWidth);
+					ImGui::BeginDisabled(disabledComponents[i]);
+					valueChanged |= ImGui::DragScalar(
+						"",
+						m_dataType,
+						&values[i],
+						speed,
+						&min,
+						&max,
+						format.c_str()
+					);
+					ImGui::EndDisabled();
+					ImGui::PopID();
+				}
+				ImGui::PopID();
+				ImGui::EndGroup();
+			}
+
+			if (valueChanged)
 			{
 				ValueChangedEvent.Invoke(values);
 				this->NotifyChange();
@@ -73,6 +130,7 @@ namespace OvUI::Widgets::Drags
 		T max;
 		float speed;
 		std::array<T, _Size> values;
+		std::array<bool, _Size> disabledComponents{};
 		std::string label;
 		std::string format;
 		OvTools::Eventing::Event<std::array<T, _Size>&> ValueChangedEvent;

@@ -58,7 +58,7 @@ project "OvGame"
 		"OvTools",
 		"OvUI",
 		"OvWindowing"
-    }
+	}
 
 	filter { "configurations:Debug" }
 		defines { "DEBUG", "_DEBUG" }

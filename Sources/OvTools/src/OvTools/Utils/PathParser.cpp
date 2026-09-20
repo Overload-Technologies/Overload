@@ -111,12 +111,16 @@ std::string OvTools::Utils::PathParser::FileTypeToString(EFileType p_fileType)
 
 OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::StringToFileType(const std::string& p_type)
 {
-	if (p_type == "Model")    return EFileType::MODEL;
-	if (p_type == "Texture")  return EFileType::TEXTURE;
-	if (p_type == "Shader")   return EFileType::SHADER;
-	if (p_type == "Material") return EFileType::MATERIAL;
-	if (p_type == "Sound")    return EFileType::SOUND;
-	if (p_type == "Prefab")   return EFileType::PREFAB;
+	if (p_type == "Model")       return EFileType::MODEL;
+	if (p_type == "Texture")     return EFileType::TEXTURE;
+	if (p_type == "Shader")      return EFileType::SHADER;
+	if (p_type == "Shader_Part") return EFileType::SHADER_PART;
+	if (p_type == "Material")    return EFileType::MATERIAL;
+	if (p_type == "Sound")       return EFileType::SOUND;
+	if (p_type == "Scene")       return EFileType::SCENE;
+	if (p_type == "Prefab")      return EFileType::PREFAB;
+	if (p_type == "Script")      return EFileType::SCRIPT;
+	if (p_type == "Font")        return EFileType::FONT;
 	return EFileType::UNKNOWN;
 }
 
@@ -134,7 +138,7 @@ OvTools::Utils::PathParser::EFileType OvTools::Utils::PathParser::GetFileType(co
 	else if (ext == "ovscene") return EFileType::SCENE;
 	else if (ext == "ovprefab") return EFileType::PREFAB;
 	else if (ext == "lua" || ext == "ovscript") return EFileType::SCRIPT;
-	else if (ext == "ttf") return EFileType::FONT;
+	else if (ext == "ttf" || ext == "otf") return EFileType::FONT;
 
 	return EFileType::UNKNOWN;
 }

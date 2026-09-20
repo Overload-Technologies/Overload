@@ -4,10 +4,14 @@
 * @licence: MIT
 */
 
+#include <array>
 #include <filesystem>
 #include <format>
+#include <memory>
 #include <ranges>
 #include <string>
+#include <string_view>
+#include <type_traits>
 
 #include <OvCore/ECS/Components/CAmbientBoxLight.h>
 #include <OvCore/ECS/Components/CAmbientSphereLight.h>
@@ -26,6 +30,12 @@
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
 #include <OvCore/ECS/Components/CTransform.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CHorizontalLayout.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
+#include <OvCore/ECS/Components/UI/CVerticalLayout.h>
 #include <OvCore/Helpers/GUIDrawer.h>
 #include <OvCore/Helpers/GUIHelpers.h>
 #include <OvEditor/Core/EditorActions.h>
@@ -75,6 +85,10 @@ namespace
 			{
 				return !p_actor.GetComponent<CPhysicalObject>();
 			}
+			else if constexpr (std::is_base_of_v<UI::CLayoutGroup, TComponent>)
+			{
+				return !p_actor.GetComponent<UI::CLayoutGroup>();
+			}
 			else
 			{
 				return !p_actor.GetComponent<TComponent>();
@@ -105,6 +119,11 @@ namespace
 		CreateComponentInfo<CAudioListener>("Audio Listener"),
 		CreateComponentInfo<CPostProcessStack>("Post Process Stack"),
 		CreateComponentInfo<CReflectionProbe>("Reflection Probe"),
+		CreateComponentInfo<UI::CCanvas>("Canvas"),
+		CreateComponentInfo<UI::CHorizontalLayout>("Horizontal Layout"),
+		CreateComponentInfo<UI::CImage>("Image"),
+		CreateComponentInfo<UI::CText>("Text"),
+		CreateComponentInfo<UI::CVerticalLayout>("Vertical Layout"),
 	});
 
 }
@@ -123,11 +142,21 @@ OvEditor::Panels::Inspector::Inspector(
 			UnFocus();
 		}
 	};
+
+	m_attachedListener = Actor::AttachEvent += [this](Actor& p_attached, Actor&) {
+		_RefreshIfTargetHierarchyChanged(p_attached);
+	};
+
+	m_detachedListener = Actor::DettachEvent += [this](Actor& p_detached) {
+		_RefreshIfTargetHierarchyChanged(p_detached);
+	};
 }
 
 OvEditor::Panels::Inspector::~Inspector()
 {
 	Actor::DestroyedEvent -= m_destroyedListener;
+	Actor::AttachEvent -= m_attachedListener;
+	Actor::DettachEvent -= m_detachedListener;
 	UnFocus();
 }
 
@@ -142,8 +171,16 @@ void OvEditor::Panels::Inspector::FocusActor(Actor& p_target)
 
 	m_componentAddedListener = m_targetActor->ComponentAddedEvent += [this] (auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
 	m_behaviourAddedListener = m_targetActor->BehaviourAddedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
-	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
-	m_behaviourRemovedListener = m_targetActor->BehaviourRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
+	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&)
+	{
+		OvCore::Helpers::GUIHelpers::ClosePicker();
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
+	m_behaviourRemovedListener = m_targetActor->BehaviourRemovedEvent += [this](auto&)
+	{
+		OvCore::Helpers::GUIHelpers::ClosePicker();
+		EDITOR_EXEC(DelayAction([this] { Refresh(); }));
+	};
 
 	_Populate();
 
@@ -162,6 +199,7 @@ void OvEditor::Panels::Inspector::UnFocus()
 	m_targetActor->BehaviourAddedEvent -= m_behaviourAddedListener;
 	m_targetActor->BehaviourRemovedEvent -= m_behaviourRemovedListener;
 
+	OvCore::Helpers::GUIHelpers::ClosePicker();
 	m_content->RemoveAllWidgets();
 
 	EDITOR_EVENT(ActorUnselectedEvent).Invoke(m_targetActor.value());
@@ -366,7 +404,8 @@ void OvEditor::Panels::Inspector::_DrawComponent(AComponent& p_component, int p_
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(p_component.GetName());
 	const bool isTransform = dynamic_cast<CTransform*>(&p_component) != nullptr;
 	header.closable = !isTransform;
-	header.CloseEvent += [this, &header, &p_component] { 
+	header.CloseEvent += [&p_component] {
+		OvCore::Helpers::GUIHelpers::ClosePicker();
 		p_component.owner.RemoveComponent(p_component);
 	};
 
@@ -403,6 +442,7 @@ void OvEditor::Panels::Inspector::_DrawBehaviour(Behaviour& p_behaviour, int p_i
 	auto& header = m_content->CreateWidget<Layout::GroupCollapsable>(std::filesystem::path(p_behaviour.name).replace_extension().string());
 	header.closable = true;
 	header.CloseEvent += [&p_behaviour] {
+		OvCore::Helpers::GUIHelpers::ClosePicker();
 		p_behaviour.owner.RemoveBehaviour(p_behaviour);
 	};
 
@@ -444,4 +484,20 @@ void OvEditor::Panels::Inspector::Refresh()
 		m_content->RemoveAllWidgets();
 		_Populate();
 	}
+}
+
+void OvEditor::Panels::Inspector::_RefreshIfTargetHierarchyChanged(Actor& p_changedActor)
+{
+	if (!m_targetActor)
+	{
+		return;
+	}
+
+	auto& targetActor = m_targetActor.value();
+	if (&targetActor != &p_changedActor && !targetActor.IsDescendantOf(&p_changedActor))
+	{
+		return;
+	}
+
+	EDITOR_EXEC(DelayAction([this] { Refresh(); }));
 }

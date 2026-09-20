@@ -30,6 +30,11 @@ namespace OvRendering::Resources
 		*/
 		baregl::Texture& GetTexture();
 
+		/**
+		* Returns the resource content revision
+		*/
+		uint64_t GetRevision() const;
+
 	private:
 		Texture(const std::string p_path, std::unique_ptr<baregl::Texture>&& p_texture);
 		~Texture() = default;
@@ -40,5 +45,6 @@ namespace OvRendering::Resources
 
 	private:
 		std::unique_ptr<baregl::Texture> m_texture;
+		uint64_t m_revision = 0;
 	};
 }

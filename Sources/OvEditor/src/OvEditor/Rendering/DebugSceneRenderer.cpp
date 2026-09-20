@@ -4,7 +4,11 @@
 * @licence: MIT
 */
 
+#include <algorithm>
+#include <array>
+
 #include <OvCore/ECS/Components/CCamera.h>
+#include <OvCore/ECS/Components/CTransform.h>
 #include <OvCore/ECS/Components/CDirectionalLight.h>
 #include <OvCore/ECS/Components/CMaterialRenderer.h>
 #include <OvCore/ECS/Components/CPhysicalBox.h>
@@ -12,8 +16,13 @@
 #include <OvCore/ECS/Components/CPhysicalSphere.h>
 #include <OvCore/ECS/Components/CPointLight.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/ECS/Components/UI/CCanvas.h>
+#include <OvCore/ECS/Components/UI/CImage.h>
+#include <OvCore/ECS/Components/UI/CLayoutGroup.h>
+#include <OvCore/ECS/Components/UI/CText.h>
 #include <OvCore/Rendering/EngineDrawableDescriptor.h>
 #include <OvCore/Rendering/ReflectionRenderFeature.h>
+#include <OvCore/Rendering/UIRenderingUtils.h>
 
 #include <OvDebug/Assertion.h>
 
@@ -44,12 +53,17 @@ namespace
 	const OvMaths::FVector3 kLightVolumeColor = { 1.0f, 1.0f, 0.0f };
 	const OvMaths::FVector3 kColliderColor = { 0.0f, 1.0f, 0.0f };
 	const OvMaths::FVector3 kFrustumColor = { 1.0f, 1.0f, 1.0f };
+	const OvMaths::FVector3 kCanvasBoundsColor = { 1.0f, 0.35f, 0.0f };
+	const OvMaths::FVector3 kUIBoundsColor = { 0.0f, 0.75f, 1.0f };
 
 	const OvMaths::FVector4 kHoveredOutlineColor{ 1.0f, 1.0f, 0.0f, 1.0f };
 	const OvMaths::FVector4 kSelectedOutlineColor{ 1.0f, 0.7f, 0.0f, 1.0f };
 
 	constexpr float kHoveredOutlineWidth = 2.5f;
 	constexpr float kSelectedOutlineWidth = 5.0f;
+	constexpr float kUIBoundsWidth = 1.5f;
+	constexpr float kUIScreenSpaceGizmoScale = 80.0f;
+	constexpr float kUIScreenSpaceGizmoDepth = 1000.0f;
 
 	OvMaths::FMatrix4 CalculateUnscaledModelMatrix(OvCore::ECS::Actor& p_actor)
 	{
@@ -99,15 +113,54 @@ namespace
 	{
 		auto lightBuffer = std::make_unique<baregl::Buffer>();
 
-		const auto lightMatrices = std::to_array<OvMaths::FMatrix4>({
+		const std::array<OvMaths::FMatrix4, 2> lightMatrices = {
 			CreateDebugDirectionalLight(),
 			CreateDebugAmbientLight()
-		});
+		};
 
 		lightBuffer->Allocate(sizeof(lightMatrices), baregl::types::EAccessSpecifier::STATIC_READ);
 		lightBuffer->Upload(lightMatrices.data());
 
 		return lightBuffer;
+	}
+
+	bool TryGetUIActorGizmoTransform(
+		bool p_includeUI,
+		const OvCore::Rendering::UIRenderingUtils::UIFrameResolver& p_uiFrameResolver,
+		OvCore::ECS::Actor& p_actor,
+		OvMaths::FVector3& p_position,
+		OvMaths::FQuaternion& p_rotation
+	)
+	{
+		if (!p_includeUI)
+		{
+			return false;
+		}
+
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIGizmoTransform resolvedTransform;
+		if (!OvCore::Rendering::UIRenderingUtils::ResolveUIGizmoTransform(
+			p_uiFrameResolver,
+			p_actor,
+			resolvedTransform
+		))
+		{
+			return false;
+		}
+
+		p_position = resolvedTransform.position;
+		p_rotation = resolvedTransform.rotation;
+		return true;
+	}
+
+	bool ShouldRenderWorldDebugElements(const OvRendering::Core::CompositeRenderer& p_renderer)
+	{
+		if (!p_renderer.HasDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>())
+		{
+			return true;
+		}
+
+		const auto& sceneDescriptor = p_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+		return !sceneDescriptor.renderUIInScreenSpace;
 	}
 }
 
@@ -131,6 +184,11 @@ protected:
 	{
 		ZoneScoped;
 		TracyGpuZone("DebugCamerasRenderPass");
+
+		if (!ShouldRenderWorldDebugElements(m_renderer))
+		{
+			return;
+		}
 
 		using namespace OvRendering::Features;
 
@@ -197,6 +255,11 @@ protected:
 	{
 		ZoneScoped;
 		TracyGpuZone("DebugReflectionProbesRenderPass");
+
+		if (!ShouldRenderWorldDebugElements(m_renderer))
+		{
+			return;
+		}
 
 		using namespace OvRendering::Features;
 
@@ -272,6 +335,11 @@ protected:
 		ZoneScoped;
 		TracyGpuZone("DebugLightsRenderPass");
 
+		if (!ShouldRenderWorldDebugElements(m_renderer))
+		{
+			return;
+		}
+
 		auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
 
 		m_lightMaterial.SetProperty("u_Scale", OvEditor::Settings::EditorSettings::LightBillboardScale * 0.1f);
@@ -332,26 +400,75 @@ protected:
 		{
 			auto& selectedActor = debugSceneDescriptor.selectedActor.value();
 			const bool isActorHovered = debugSceneDescriptor.highlightedActor && debugSceneDescriptor.highlightedActor->GetID() == selectedActor.GetID();
+			const bool renderWorldDebugElements = ShouldRenderWorldDebugElements(m_renderer);
 
 			DrawActorDebugElements(selectedActor);
-			m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
+			if (!selectedActor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
+			{
+				if (auto* canvasOwner = OvCore::Rendering::UIRenderingUtils::FindCanvasOwner(selectedActor))
+				{
+					DrawCanvasBounds(*canvasOwner);
+				}
+			}
+			auto gizmoPosition = selectedActor.transform.GetWorldPosition();
+			auto gizmoRotation = selectedActor.transform.GetWorldRotation();
+			const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+			const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
+			const bool hasUIGizmoTransform = TryGetUIActorGizmoTransform(
+				sceneDescriptor.includeUI,
+				uiFrameResolver,
 				selectedActor,
-				isActorHovered ?
-				kHoveredOutlineColor :
-				kSelectedOutlineColor,
-				kSelectedOutlineWidth
+				gizmoPosition,
+				gizmoRotation
 			);
-			m_renderer.Clear(false, true, false, OvMaths::FVector3::Zero);
-			m_renderer.GetFeature<OvEditor::Rendering::GizmoRenderFeature>().DrawGizmo(
-				selectedActor.transform.GetWorldPosition(),
-				selectedActor.transform.GetWorldRotation(),
-				debugSceneDescriptor.gizmoOperation,
-				false,
-				debugSceneDescriptor.highlightedGizmoDirection
-			);
+			std::optional<OvMaths::FMatrix4> gizmoViewMatrixOverride;
+			std::optional<OvMaths::FMatrix4> gizmoProjectionMatrixOverride;
+			std::optional<float> gizmoScaleOverride;
+			int gizmoVisibleAxes = OvEditor::Core::kGizmoAxisAll;
+			if (hasUIGizmoTransform)
+			{
+				gizmoVisibleAxes = OvEditor::Core::GetUIGizmoAxes(
+					selectedActor,
+					debugSceneDescriptor.gizmoOperation,
+					uiFrameResolver.IsScreenSpace()
+				);
+
+				if (uiFrameResolver.IsScreenSpace())
+				{
+					gizmoViewMatrixOverride = OvMaths::FMatrix4::Identity;
+					gizmoProjectionMatrixOverride = uiFrameResolver.CreateProjectionMatrix(
+						-kUIScreenSpaceGizmoDepth,
+						kUIScreenSpaceGizmoDepth
+					);
+					gizmoScaleOverride = kUIScreenSpaceGizmoScale;
+				}
+			}
+
+			if (renderWorldDebugElements || hasUIGizmoTransform)
+			{
+				m_renderer.GetFeature<OvEditor::Rendering::OutlineRenderFeature>().DrawOutline(
+					selectedActor,
+					isActorHovered ?
+						kHoveredOutlineColor :
+						kSelectedOutlineColor,
+					kSelectedOutlineWidth
+				);
+				m_renderer.Clear(false, true, false, OvMaths::FVector3::Zero);
+				m_renderer.GetFeature<OvEditor::Rendering::GizmoRenderFeature>().DrawGizmo(
+					gizmoPosition,
+					gizmoRotation,
+					debugSceneDescriptor.gizmoOperation,
+					false,
+					debugSceneDescriptor.highlightedGizmoDirection,
+					gizmoViewMatrixOverride,
+					gizmoProjectionMatrixOverride,
+					gizmoScaleOverride,
+					gizmoVisibleAxes
+				);
+			}
 		}
 		
-		if (debugSceneDescriptor.highlightedActor)
+		if (debugSceneDescriptor.highlightedActor && ShouldRenderWorldDebugElements(m_renderer))
 		{
 			auto& highlightedActor = debugSceneDescriptor.highlightedActor.value();
 
@@ -367,61 +484,184 @@ protected:
 	{
 		if (p_actor.IsActive())
 		{
-			/* Render static mesh outline and bounding spheres */
-			if (OvEditor::Settings::EditorSettings::ShowGeometryBounds)
-			{
-				auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>();
+			const bool renderWorldDebugElements = ShouldRenderWorldDebugElements(m_renderer);
 
-				if (modelRenderer && modelRenderer->GetModel())
+			if (auto layout = p_actor.GetComponent<OvCore::ECS::Components::UI::CLayoutGroup>())
+			{
+				DrawUIBounds(p_actor, layout->GetComputedSize());
+			}
+
+			if (renderWorldDebugElements)
+			{
+				/* Render static mesh outline and bounding spheres */
+				if (OvEditor::Settings::EditorSettings::ShowGeometryBounds)
 				{
-					DrawBoundingSpheres(*modelRenderer);
+					auto modelRenderer = p_actor.GetComponent<OvCore::ECS::Components::CModelRenderer>();
+
+					if (modelRenderer && modelRenderer->GetModel())
+					{
+						DrawBoundingSpheres(*modelRenderer);
+					}
+				}
+
+				/* Render camera component frustum */
+				if (auto cameraComponent = p_actor.GetComponent<OvCore::ECS::Components::CCamera>(); cameraComponent)
+				{
+					DrawCameraFrustum(*cameraComponent);
+				}
+
+				/* Render reflection probe influence volume */
+				if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
+				{
+					if (reflectionProbeComponent->GetInfluencePolicy() == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL)
+					{
+						DrawReflectionProbeInfluenceVolume(*reflectionProbeComponent);
+					}
+				}
+
+				/* Render the actor collider */
+				if (p_actor.GetComponent<OvCore::ECS::Components::CPhysicalObject>())
+				{
+					DrawActorCollider(p_actor);
+				}
+
+				/* Render the actor ambient light */
+				if (auto ambientBoxComp = p_actor.GetComponent<OvCore::ECS::Components::CAmbientBoxLight>())
+				{
+					DrawAmbientBoxVolume(*ambientBoxComp);
+				}
+
+				if (auto ambientSphereComp = p_actor.GetComponent<OvCore::ECS::Components::CAmbientSphereLight>())
+				{
+					DrawAmbientSphereVolume(*ambientSphereComp);
+				}
+
+				if (OvEditor::Settings::EditorSettings::ShowLightBounds)
+				{
+					if (auto light = p_actor.GetComponent<OvCore::ECS::Components::CLight>())
+					{
+						DrawLightBounds(*light);
+					}
 				}
 			}
 
-			/* Render camera component frustum */
-			if (auto cameraComponent = p_actor.GetComponent<OvCore::ECS::Components::CCamera>(); cameraComponent)
+			if (auto image = p_actor.GetComponent<OvCore::ECS::Components::UI::CImage>())
 			{
-				DrawCameraFrustum(*cameraComponent);
+				DrawUIBounds(p_actor, image->GetSize());
 			}
 
-			/* Render camera component frustum */
-			if (auto reflectionProbeComponent = p_actor.GetComponent<OvCore::ECS::Components::CReflectionProbe>(); reflectionProbeComponent)
+			if (auto text = p_actor.GetComponent<OvCore::ECS::Components::UI::CText>())
 			{
-				if (reflectionProbeComponent->GetInfluencePolicy() == OvCore::ECS::Components::CReflectionProbe::EInfluencePolicy::LOCAL)
-				{
-					DrawReflectionProbeInfluenceVolume(*reflectionProbeComponent);
-				}
+				DrawUIBounds(p_actor, text->GetSize());
 			}
 
-			/* Render the actor collider */
-			if (p_actor.GetComponent<OvCore::ECS::Components::CPhysicalObject>())
+			if (p_actor.GetComponent<OvCore::ECS::Components::UI::CCanvas>())
 			{
-				DrawActorCollider(p_actor);
-			}
-
-			/* Render the actor ambient light */
-			if (auto ambientBoxComp = p_actor.GetComponent<OvCore::ECS::Components::CAmbientBoxLight>())
-			{
-				DrawAmbientBoxVolume(*ambientBoxComp);
-			}
-
-			if (auto ambientSphereComp = p_actor.GetComponent<OvCore::ECS::Components::CAmbientSphereLight>())
-			{
-				DrawAmbientSphereVolume(*ambientSphereComp);
-			}
-
-			if (OvEditor::Settings::EditorSettings::ShowLightBounds)
-			{
-				if (auto light = p_actor.GetComponent<OvCore::ECS::Components::CLight>())
-				{
-					DrawLightBounds(*light);
-				}
+				DrawCanvasBounds(p_actor);
 			}
 
 			for (auto& child : p_actor.GetChildren())
 			{
 				DrawActorDebugElements(*child);
 			}
+		}
+	}
+
+	void DrawUIBounds(OvCore::ECS::Actor& p_actor, const OvMaths::FVector2& p_size)
+	{
+		if (p_size.x <= 0.0f || p_size.y <= 0.0f)
+		{
+			return;
+		}
+
+		const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+		if (!sceneDescriptor.includeUI)
+		{
+			return;
+		}
+
+		const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
+		const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
+
+		OvCore::Rendering::UIRenderingUtils::ResolvedUIElement resolvedElement;
+		if (!uiFrameResolver.ResolveElement(
+			p_actor,
+			p_size,
+			resolvedElement
+		))
+		{
+			return;
+		}
+
+		const auto halfSize = p_size * 0.5f;
+		const std::array<OvMaths::FVector3, 4> corners = {
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, {  halfSize.x,  halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedElement.modelMatrix, { -halfSize.x,  halfSize.y })
+		};
+
+		auto pso = m_renderer.CreatePipelineState();
+		if (uiFrameResolver.IsScreenSpace())
+		{
+			m_debugShapeFeature.SetViewProjection(uiFrameResolver.CreateProjectionMatrix());
+		}
+
+		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kUIBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kUIBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kUIBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kUIBoundsColor, kUIBoundsWidth, false);
+
+		if (uiFrameResolver.IsScreenSpace())
+		{
+			const auto& camera = frameDescriptor.camera;
+			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());
+		}
+	}
+
+	void DrawCanvasBounds(OvCore::ECS::Actor& p_actor)
+	{
+		const auto& sceneDescriptor = m_renderer.GetDescriptor<OvCore::Rendering::SceneRenderer::SceneDescriptor>();
+		if (!sceneDescriptor.includeUI)
+		{
+			return;
+		}
+
+		const auto& frameDescriptor = m_renderer.GetFrameDescriptor();
+		const auto& uiFrameResolver = m_renderer.GetDescriptor<OvCore::Rendering::UIRenderingUtils::UIFrameResolver>();
+
+		OvCore::Rendering::UIRenderingUtils::ResolvedUICanvas resolvedCanvas;
+		if (!uiFrameResolver.ResolveCanvas(
+			p_actor,
+			resolvedCanvas
+		))
+		{
+			return;
+		}
+
+		const auto halfSize = resolvedCanvas.size * 0.5f;
+		const std::array<OvMaths::FVector3, 4> corners = {
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedCanvas.modelMatrix, { -halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedCanvas.modelMatrix, {  halfSize.x, -halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedCanvas.modelMatrix, {  halfSize.x,  halfSize.y }),
+			OvCore::Rendering::UIRenderingUtils::TransformUIPoint(resolvedCanvas.modelMatrix, { -halfSize.x,  halfSize.y })
+		};
+
+		auto pso = m_renderer.CreatePipelineState();
+		if (uiFrameResolver.IsScreenSpace())
+		{
+			m_debugShapeFeature.SetViewProjection(uiFrameResolver.CreateProjectionMatrix());
+		}
+
+		m_debugShapeFeature.DrawLine(pso, corners[0], corners[1], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[1], corners[2], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[2], corners[3], kCanvasBoundsColor, kUIBoundsWidth, false);
+		m_debugShapeFeature.DrawLine(pso, corners[3], corners[0], kCanvasBoundsColor, kUIBoundsWidth, false);
+
+		if (uiFrameResolver.IsScreenSpace())
+		{
+			const auto& camera = frameDescriptor.camera;
+			m_debugShapeFeature.SetViewProjection(camera->GetProjectionMatrix() * camera->GetViewMatrix());
 		}
 	}
 

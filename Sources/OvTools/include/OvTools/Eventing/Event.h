@@ -8,6 +8,9 @@
 
 #include <cstdint>
 #include <functional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace OvTools::Eventing
 {
@@ -72,8 +75,23 @@ namespace OvTools::Eventing
 		void Invoke(ArgTypes... p_args);
 
 	private:
-		std::unordered_map<ListenerID, Callback>	m_callbacks;
-		ListenerID									m_availableListenerID = 0;
+		/**
+		* Return true if the given listener has been removed while a dispatch is in progress
+		* @param p_listenerID
+		*/
+		bool IsPendingRemoval(ListenerID p_listenerID) const;
+
+		/**
+		* Apply the listener additions and removals deferred during a dispatch
+		*/
+		void FlushPendingOperations();
+
+	private:
+		std::unordered_map<ListenerID, Callback>		m_callbacks;
+		std::vector<std::pair<ListenerID, Callback>>	m_pendingAdditions;
+		std::vector<ListenerID>							m_pendingRemovals;
+		ListenerID										m_availableListenerID = 0;
+		uint32_t										m_invokeDepth = 0;
 	};
 }
 

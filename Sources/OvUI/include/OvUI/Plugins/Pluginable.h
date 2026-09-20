@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "OvUI/Plugins/IPlugin.h"
@@ -18,6 +21,12 @@ namespace OvUI::Plugins
 	class Pluginable
 	{
 	public:
+		Pluginable() = default;
+		Pluginable(const Pluginable&) = delete;
+		Pluginable& operator=(const Pluginable&) = delete;
+		Pluginable(Pluginable&&) = delete;
+		Pluginable& operator=(Pluginable&&) = delete;
+
 		/**
 		* Destructor (Destroys every plugins)
 		*/
@@ -48,9 +57,9 @@ namespace OvUI::Plugins
 		{
 			static_assert(std::is_base_of<Plugins::IPlugin, T>::value, "T should derive from IPlugin");
 
-			for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
+			for (size_t i = 0; i < m_plugins.size(); ++i)
 			{
-				T* result = dynamic_cast<T*>(*it);
+				T* result = dynamic_cast<T*>(m_plugins[i]);
 				if (result)
 					return result;
 			}

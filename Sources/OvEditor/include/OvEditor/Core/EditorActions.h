@@ -177,6 +177,22 @@ namespace OvEditor::Core
 		* Returns the current gizmo operation
 		*/
 		EGizmoOperation GetGizmoOperation() const;
+
+		/**
+		* Sets whether the scene view renders in-game UI in screen space
+		* @param p_enabled
+		*/
+		void SetSceneUIRenderingEnabled(bool p_enabled);
+
+		/**
+		* Toggles screen-space rendering mode for in-game UI in scene view
+		*/
+		void ToggleSceneUIRendering();
+
+		/**
+		* Returns whether scene view renders in-game UI in screen space
+		*/
+		bool IsSceneUIRenderingEnabled() const;
 		#pragma endregion
 
 		#pragma region ACTOR_CREATION_DESTRUCTION
@@ -511,6 +527,7 @@ namespace OvEditor::Core
 		OvTools::Eventing::Event<OvCore::ECS::Actor&> ActorUnselectedEvent;
 		OvTools::Eventing::Event<EEditorMode> EditorModeChangedEvent;
 		OvTools::Eventing::Event<EGizmoOperation> EditorOperationChanged;
+		OvTools::Eventing::Event<bool> SceneUIRenderingChangedEvent;
 		OvTools::Eventing::Event<> PlayEvent;
 
 	private:
@@ -519,6 +536,7 @@ namespace OvEditor::Core
 
 		EActorSpawnMode m_actorSpawnMode = EActorSpawnMode::ORIGIN;
 		EEditorMode m_editorMode = EEditorMode::EDIT;
+		bool m_sceneUIRenderingEnabled = false;
 
 		std::vector<std::pair<uint32_t, std::function<void()>>> m_delayedActions;
 

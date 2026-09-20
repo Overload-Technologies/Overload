@@ -13,6 +13,7 @@ namespace
 	OvRendering::Resources::Texture* __EMPTY_TEXTURE = nullptr;
 	OvCore::Helpers::GUIHelpers::FileItemBuilderCallback __FILE_ITEM_BUILDER;
 	OvCore::Helpers::GUIHelpers::PickerProviderCallback __PICKER_PROVIDER;
+	OvCore::Helpers::GUIHelpers::PickerCloseProviderCallback __PICKER_CLOSE_PROVIDER;
 	OvCore::Helpers::GUIHelpers::PickerSearchTextProviderCallback __PICKER_SEARCH_TEXT_PROVIDER;
 	OvCore::Helpers::GUIHelpers::IconProviderCallback __ICON_PROVIDER;
 	OvCore::Helpers::GUIHelpers::OpenProviderCallback __OPEN_PROVIDER;
@@ -30,6 +31,7 @@ namespace
 		case EFileType::SHADER:   return "Pick Shader";
 		case EFileType::MATERIAL: return "Pick Material";
 		case EFileType::SOUND:    return "Pick Sound";
+		case EFileType::FONT:     return "Pick Font";
 		case EFileType::SCRIPT:   return "Pick Script";
 		case EFileType::SCENE:    return "Pick Scene";
 		case EFileType::PREFAB:   return "Pick Prefab";
@@ -103,6 +105,17 @@ void OvCore::Helpers::GUIHelpers::OpenPicker(PickerItemList p_items, std::string
 {
 	if (__PICKER_PROVIDER)
 		__PICKER_PROVIDER(std::move(p_items), std::move(p_title));
+}
+
+void OvCore::Helpers::GUIHelpers::SetPickerCloseProvider(PickerCloseProviderCallback p_provider)
+{
+	__PICKER_CLOSE_PROVIDER = std::move(p_provider);
+}
+
+void OvCore::Helpers::GUIHelpers::ClosePicker()
+{
+	if (__PICKER_CLOSE_PROVIDER)
+		__PICKER_CLOSE_PROVIDER();
 }
 
 void OvCore::Helpers::GUIHelpers::SetPickerSearchTextProvider(PickerSearchTextProviderCallback p_provider)

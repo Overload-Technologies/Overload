@@ -31,6 +31,7 @@ namespace OvEditor::Rendering
 		{
 			OvMaths::FVector3 gridColor;
 			OvMaths::FVector3 viewPosition;
+			bool visible = true;
 		};
 
 		/**

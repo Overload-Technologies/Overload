@@ -5,8 +5,10 @@
 */
 
 #include <algorithm>
+#include <functional>
 #include <optional>
 #include <string>
+#include <unordered_set>
 
 #include <tinyxml2.h>
 #include <tracy/Tracy.hpp>
@@ -490,9 +492,38 @@ void OvCore::SceneSystem::Scene::OnSerialize(tinyxml2::XMLDocument & p_doc, tiny
 	tinyxml2::XMLNode* actorsNode = p_doc.NewElement("actors");
 	sceneNode->InsertEndChild(actorsNode);
 
-	for (auto& actor : m_actors)
+	std::unordered_set<ECS::Actor*> serializedActors;
+	const std::function<void(ECS::Actor&)> serializeHierarchy = [&](ECS::Actor& p_actor)
 	{
-		actor->OnSerialize(p_doc, actorsNode);
+		if (!serializedActors.emplace(&p_actor).second)
+		{
+			return;
+		}
+
+		p_actor.OnSerialize(p_doc, actorsNode);
+		for (auto* child : p_actor.GetChildren())
+		{
+			if (child)
+			{
+				serializeHierarchy(*child);
+			}
+		}
+	};
+
+	for (auto* actor : m_actors)
+	{
+		if (actor && !actor->HasParent())
+		{
+			serializeHierarchy(*actor);
+		}
+	}
+
+	for (auto* actor : m_actors)
+	{
+		if (actor)
+		{
+			serializeHierarchy(*actor);
+		}
 	}
 }
 

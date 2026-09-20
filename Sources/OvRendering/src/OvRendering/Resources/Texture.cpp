@@ -13,6 +13,11 @@ baregl::Texture& OvRendering::Resources::Texture::GetTexture()
 	return *m_texture;
 }
 
+uint64_t OvRendering::Resources::Texture::GetRevision() const
+{
+	return m_revision;
+}
+
 OvRendering::Resources::Texture::Texture(const std::string p_path, std::unique_ptr<baregl::Texture>&& p_texture) : path(p_path)
 {
 	SetTexture(std::move(p_texture));
@@ -22,4 +27,5 @@ void OvRendering::Resources::Texture::SetTexture(std::unique_ptr<baregl::Texture
 {
 	OVASSERT(p_texture != nullptr, "Cannot assign an invalid texture!");
 	m_texture = std::move(p_texture);
+	++m_revision;
 }

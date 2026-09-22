@@ -136,6 +136,11 @@ OvPhysics::Entities::PhysicalObject::EActivationState OvPhysics::Entities::Physi
 	return static_cast<EActivationState>(m_body->getActivationState());
 }
 
+uint32_t OvPhysics::Entities::PhysicalObject::GetLayer() const
+{
+	return m_layer;
+}
+
 OvMaths::FTransform& OvPhysics::Entities::PhysicalObject::GetTransform()
 {
 	return *m_transform;
@@ -223,6 +228,15 @@ void OvPhysics::Entities::PhysicalObject::SetActivationState(EActivationState p_
 	m_body->setActivationState(static_cast<int>(p_activationState));
 }
 
+void OvPhysics::Entities::PhysicalObject::SetLayer(uint32_t p_layer)
+{
+	if (m_layer != p_layer)
+	{
+		m_layer = p_layer;
+		MarkCollisionFilterDirty();
+	}
+}
+
 void OvPhysics::Entities::PhysicalObject::SetEnabled(bool p_enabled)
 {
 	m_enabled = p_enabled;
@@ -287,6 +301,27 @@ void OvPhysics::Entities::PhysicalObject::Unconsider()
 	{
 		m_considered = false;
 		UnconsiderEvent.Invoke(*m_body);
+	}
+}
+
+void OvPhysics::Entities::PhysicalObject::MarkCollisionFilterDirty()
+{
+	m_filterDirty = true;
+}
+
+void OvPhysics::Entities::PhysicalObject::FlushCollisionFilter()
+{
+	if (m_filterDirty)
+	{
+		m_filterDirty = false;
+
+		/* The collision filter lives on the broadphase proxy, which is created when the body enters the
+		   world. Re-entering it applies the new filter and drops the pairs cached with the previous one */
+		if (m_considered)
+		{
+			Unconsider();
+			Consider();
+		}
 	}
 }
 

@@ -9,14 +9,32 @@
 #include <OvCore/ECS/Actor.h>
 #include <OvCore/ECS/Components/CPhysicalObject.h>
 
+#include <OvCore/Global/ServiceLocator.h>
+
 #include <OvDebug/Logger.h>
 
+#include <OvPhysics/Core/PhysicsEngine.h>
 #include <OvPhysics/Entities/PhysicalObject.h>
 
 #include <OvUI/Widgets/Drags/DragFloat.h>
 #include <OvUI/Widgets/Selection/ComboBox.h>
 
-OvCore::ECS::Components::CPhysicalObject::CPhysicalObject(ECS::Actor & p_owner) : 
+namespace
+{
+	const OvPhysics::Settings::CollisionLayers& GetCollisionLayers()
+	{
+		return OVSERVICE(OvPhysics::Core::PhysicsEngine).GetCollisionLayers();
+	}
+
+	std::string GetLayerDisplayName(const OvPhysics::Settings::CollisionLayers& p_collisionLayers, uint32_t p_layer)
+	{
+		return p_collisionLayers.IsLayerUsed(p_layer) ?
+			p_collisionLayers.GetLayerName(p_layer) :
+			"Layer " + std::to_string(p_layer);
+	}
+}
+
+OvCore::ECS::Components::CPhysicalObject::CPhysicalObject(ECS::Actor & p_owner) :
 	AComponent(p_owner)
 {
 }
@@ -96,6 +114,11 @@ OvPhysics::Entities::PhysicalObject::EActivationState OvCore::ECS::Components::C
 	return m_physicalObject->GetActivationState();
 }
 
+uint32_t OvCore::ECS::Components::CPhysicalObject::GetLayer() const
+{
+	return m_physicalObject->GetLayer();
+}
+
 void OvCore::ECS::Components::CPhysicalObject::SetMass(float p_mass)
 {
 	m_physicalObject->SetMass(p_mass);
@@ -146,6 +169,17 @@ void OvCore::ECS::Components::CPhysicalObject::SetActivationState(OvPhysics::Ent
 	m_physicalObject->SetActivationState(p_state);
 }
 
+void OvCore::ECS::Components::CPhysicalObject::SetLayer(uint32_t p_layer)
+{
+	if (p_layer >= OvPhysics::Settings::CollisionLayers::kMaxLayerCount)
+	{
+		OVLOG_WARNING("Ignored collision layer " + std::to_string(p_layer) + ": out of the layer range");
+		return;
+	}
+
+	m_physicalObject->SetLayer(p_layer);
+}
+
 void OvCore::ECS::Components::CPhysicalObject::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
 {
 	Helpers::Serializer::SerializeBoolean(p_doc, p_node, "is_trigger", IsTrigger());
@@ -156,6 +190,7 @@ void OvCore::ECS::Components::CPhysicalObject::OnSerialize(tinyxml2::XMLDocument
 	Helpers::Serializer::SerializeVec3(p_doc, p_node, "linear_factor", GetLinearFactor());
 	Helpers::Serializer::SerializeVec3(p_doc, p_node, "angular_factor", GetAngularFactor());
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "collision_mode", static_cast<int>(GetCollisionDetectionMode()));
+	Helpers::Serializer::SerializeInt(p_doc, p_node, "collision_layer", static_cast<int>(GetLayer()));
 }
 
 void OvCore::ECS::Components::CPhysicalObject::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
@@ -168,6 +203,7 @@ void OvCore::ECS::Components::CPhysicalObject::OnDeserialize(tinyxml2::XMLDocume
 	SetLinearFactor(Helpers::Serializer::DeserializeVec3(p_doc, p_node, "linear_factor"));
 	SetAngularFactor(Helpers::Serializer::DeserializeVec3(p_doc, p_node, "angular_factor"));
 	SetCollisionDetectionMode(static_cast<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>(Helpers::Serializer::DeserializeInt(p_doc, p_node, "collision_mode")));
+	SetLayer(static_cast<uint32_t>(Helpers::Serializer::DeserializeInt(p_doc, p_node, "collision_layer")));
 }
 
 void OvCore::ECS::Components::CPhysicalObject::OnInspector(OvUI::Internal::WidgetContainer & p_root)
@@ -187,6 +223,21 @@ void OvCore::ECS::Components::CPhysicalObject::OnInspector(OvUI::Internal::Widge
 	collisionMode.ValueChangedEvent += [this](int p_choice)
 	{
 		SetCollisionDetectionMode(static_cast<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>(p_choice));
+	};
+
+	Helpers::GUIDrawer::CreateTitle(p_root, "Collision Layer");
+	auto& collisionLayer = p_root.CreateWidget<OvUI::Widgets::Selection::ComboBox>(static_cast<int>(GetLayer()));
+	const auto& collisionLayers = GetCollisionLayers();
+	for (uint32_t layer = 0; layer < OvPhysics::Settings::CollisionLayers::kMaxLayerCount; ++layer)
+	{
+		if (collisionLayers.IsLayerUsed(layer) || layer == GetLayer())
+		{
+			collisionLayer.choices.emplace(static_cast<int>(layer), GetLayerDisplayName(collisionLayers, layer));
+		}
+	}
+	collisionLayer.ValueChangedEvent += [this](int p_choice)
+	{
+		SetLayer(static_cast<uint32_t>(p_choice));
 	};
 }
 

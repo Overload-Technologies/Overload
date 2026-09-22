@@ -4,6 +4,9 @@
 * @licence: MIT
 */
 
+#include <OvPhysics/Settings/CollisionLayers.h>
+
+#include <OvUI/Widgets/Layout/Group.h>
 #include <OvUI/Widgets/Texts/Text.h>
 #include <OvUI/Panels/PanelWindow.h>
 
@@ -48,6 +51,24 @@ namespace OvEditor::Panels
 		}
 
 	private:
+		/**
+		* Rebuild the widgets used to edit the collision layers and their collision matrix
+		* @param p_container
+		*/
+		void BuildCollisionLayerWidgets(OvUI::Internal::WidgetContainer& p_container);
+
+		/**
+		* Restore the collision layers from the project settings and rebuild their widgets
+		*/
+		void ReloadCollisionLayers();
+
+		/**
+		* Store the collision layers into the project settings
+		*/
+		void StoreCollisionLayers();
+
 		OvTools::Filesystem::IniFile& m_projectFile;
+		OvPhysics::Settings::CollisionLayers m_collisionLayers;
+		OvUI::Widgets::Layout::Group* m_collisionLayersRoot = nullptr;
 	};
 }

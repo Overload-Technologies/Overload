@@ -183,6 +183,12 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 				StoreCollisionLayers();
 			};
 
+			// Rebuilding restores the field to the stored name, showing that a rename was refused
+			layerName.EnterPressedEvent += [this](const std::string&)
+			{
+				BuildCollisionLayerWidgets(*m_collisionLayersRoot);
+			};
+
 			auto& removeButton = layerRow.CreateWidget<Buttons::Button>("Remove Layer");
 			removeButton.ClickedEvent += [this, layer]
 			{

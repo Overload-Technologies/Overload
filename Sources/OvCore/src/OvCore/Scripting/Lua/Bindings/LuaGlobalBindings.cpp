@@ -24,6 +24,7 @@
 #include "OvCore/ResourceManagement/MaterialManager.h"
 #include "OvCore/ResourceManagement/SoundManager.h"
 #include "OvCore/Scripting/Common/ScriptPropertyValue.h"
+#include "OvCore/Scripting/ScriptEngine.h"
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 
@@ -271,7 +272,8 @@ void BindLuaGlobal(sol::state& p_luaState)
 		"GetShader", [](const std::string& p_resPath) { return OVSERVICE(ShaderManager).GetResource(p_resPath); },
 		"GetTexture", [](const std::string& p_resPath) { return OVSERVICE(TextureManager).GetResource(p_resPath); },
 		"GetMaterial", [](const std::string& p_resPath) { return OVSERVICE(MaterialManager).GetResource(p_resPath); },
-		"GetSound", [](const std::string& p_resPath) { return OVSERVICE(SoundManager).GetResource(p_resPath); }
+		"GetSound", [](const std::string& p_resPath) { return OVSERVICE(SoundManager).GetResource(p_resPath); },
+		"GetScript", [](const std::string& p_resPath) { return OVSERVICE(ScriptEngine).GetScript(p_resPath); }
 	);
 
 	p_luaState.create_named_table("Math",

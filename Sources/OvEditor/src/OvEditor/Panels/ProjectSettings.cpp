@@ -26,28 +26,27 @@ using namespace OvCore::Helpers;
 
 namespace
 {
-	std::optional<uint32_t> FindFreeLayer(const OvPhysics::Settings::CollisionLayers& p_collisionLayers)
+	bool HasFreeLayer(const OvPhysics::Settings::CollisionLayers& p_collisionLayers)
 	{
 		for (uint32_t layer = 0; layer < OvPhysics::Settings::CollisionLayers::kMaxLayerCount; ++layer)
 		{
 			if (!p_collisionLayers.IsLayerUsed(layer))
 			{
-				return layer;
+				return true;
 			}
 		}
 
-		return {};
+		return false;
 	}
 
-	std::string GenerateLayerName(const OvPhysics::Settings::CollisionLayers& p_collisionLayers, uint32_t p_layer)
+	std::string GenerateLayerName(const OvPhysics::Settings::CollisionLayers& p_collisionLayers)
 	{
-		uint32_t suffix = p_layer;
-		std::string name;
+		std::string name = "New Layer";
 
-		do
+		for (uint32_t suffix = 2; p_collisionLayers.FindLayer(name); ++suffix)
 		{
-			name = "Layer " + std::to_string(suffix++);
-		} while (p_collisionLayers.FindLayer(name));
+			name = "New Layer " + std::to_string(suffix);
+		}
 
 		return name;
 	}
@@ -166,9 +165,12 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 			continue;
 		}
 
-		auto& layerRow = p_container.CreateWidget<Layout::Group>();
-		layerRow.horizontal = true;
+		auto& layerRow = p_container.CreateWidget<Layout::Columns<2>>();
+		layerRow.widths[0] = 125 * OVUI_SCALE;
 		layerRow.SetID("collision_layer_" + std::to_string(layer));
+
+		/* Scenes store the slot index, so it is shown to tell the layers apart whatever their name */
+		GUIDrawer::CreateTitle(layerRow, "Layer " + std::to_string(layer));
 
 		if (layer == OvPhysics::Settings::CollisionLayers::kDefaultLayer)
 		{
@@ -176,7 +178,11 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 		}
 		else
 		{
-			auto& layerName = layerRow.CreateWidget<InputFields::InputText>(m_collisionLayers.GetLayerName(layer));
+			auto& layerEditor = layerRow.CreateWidget<Layout::Group>();
+			layerEditor.horizontal = true;
+			layerEditor.stretchWidget = 0; // Otherwise the name field shrinks down to its content
+
+			auto& layerName = layerEditor.CreateWidget<InputFields::InputText>(m_collisionLayers.GetLayerName(layer));
 			layerName.ContentChangedEvent += [this, layer](const std::string& p_name)
 			{
 				m_collisionLayers.RenameLayer(layer, p_name);
@@ -189,7 +195,7 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 				BuildCollisionLayerWidgets(*m_collisionLayersRoot);
 			};
 
-			auto& removeButton = layerRow.CreateWidget<Buttons::Button>("Remove Layer");
+			auto& removeButton = layerEditor.CreateWidget<Buttons::Button>("Remove");
 			removeButton.ClickedEvent += [this, layer]
 			{
 				m_collisionLayers.RemoveLayer(layer);
@@ -199,12 +205,12 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 		}
 	}
 
-	if (const auto freeLayer = FindFreeLayer(m_collisionLayers))
+	if (HasFreeLayer(m_collisionLayers))
 	{
 		auto& addButton = p_container.CreateWidget<Buttons::Button>("Add Layer");
-		addButton.ClickedEvent += [this, layer = freeLayer.value()]
+		addButton.ClickedEvent += [this]
 		{
-			m_collisionLayers.AddLayer(GenerateLayerName(m_collisionLayers, layer));
+			m_collisionLayers.AddLayer(GenerateLayerName(m_collisionLayers));
 			StoreCollisionLayers();
 			BuildCollisionLayerWidgets(*m_collisionLayersRoot);
 		};

@@ -6,6 +6,7 @@
 
 #include "OvEditor/Panels/ProjectSettings.h"
 #include "OvEditor/Core/EditorActions.h"
+#include "OvEditor/Panels/Inspector.h"
 #include "OvTools/Utils/PathParser.h"
 
 #include <OvCore/Resources/Loaders/MaterialLoader.h>
@@ -77,6 +78,9 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 	{
 		EDITOR_CONTEXT(ApplyProjectSettings());
 		m_projectFile.Rewrite();
+
+		/* Inspectors built from the settings, such as the collision layer picker, are now stale */
+		EDITOR_PANEL(OvEditor::Panels::Inspector, "Inspector").Refresh();
 	};
 
 	saveButton.lineBreak = false;

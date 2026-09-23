@@ -24,6 +24,7 @@ class btConstraintSolver;
 class btRigidBody;
 class btManifoldPoint;
 struct btCollisionObjectWrapper;
+struct btOverlapFilterCallback;
 
 namespace OvPhysics::Core
 {
@@ -113,6 +114,7 @@ namespace OvPhysics::Core
 
 	private:
 		/* Bullet world */
+		std::unique_ptr<btOverlapFilterCallback> m_collisionFilter; // Outlives the world, which holds it
 		std::unique_ptr<btDynamicsWorld> m_world;
 		std::unique_ptr<btDispatcher> m_dispatcher;
 		std::unique_ptr<btCollisionConfiguration> m_collisionConfig;

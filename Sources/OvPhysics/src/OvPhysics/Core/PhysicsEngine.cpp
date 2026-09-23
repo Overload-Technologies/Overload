@@ -19,6 +19,31 @@
 using namespace OvPhysics::Tools;
 using namespace OvPhysics::Entities;
 
+namespace
+{
+	/**
+	* Filters broadphase pairs with the collision layers, carried by the proxy groups and masks
+	*/
+	struct CollisionFilterCallback : btOverlapFilterCallback
+	{
+		bool needBroadphaseCollision(btBroadphaseProxy* p_first, btBroadphaseProxy* p_second) const override
+		{
+			if ((p_first->m_collisionFilterGroup & p_second->m_collisionFilterMask) == 0 ||
+				(p_second->m_collisionFilterGroup & p_first->m_collisionFilterMask) == 0)
+			{
+				return false;
+			}
+
+			/* Assigning the groups ourselves loses the static/static exclusion that the dynamics
+			   world applies when it assigns them, so it is restored here */
+			const auto first = static_cast<const btCollisionObject*>(p_first->m_clientObject);
+			const auto second = static_cast<const btCollisionObject*>(p_second->m_clientObject);
+
+			return !first->isStaticOrKinematicObject() || !second->isStaticOrKinematicObject();
+		}
+	};
+}
+
 std::map<std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
 
 OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & p_settings)
@@ -30,6 +55,9 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 	m_world = std::make_unique<btDiscreteDynamicsWorld>(m_dispatcher.get(), m_broadphase.get(), m_solver.get(), m_collisionConfig.get());
 
 	m_world->setGravity(Conversion::ToBtVector3(p_settings.gravity));
+
+	m_collisionFilter = std::make_unique<CollisionFilterCallback>();
+	m_world->getPairCache()->setOverlapFilterCallback(m_collisionFilter.get());
 
 	m_collisionLayers = p_settings.collisionLayers;
 

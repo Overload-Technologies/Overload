@@ -27,9 +27,21 @@ using namespace OvCore::Helpers;
 
 namespace
 {
+	constexpr uint32_t kSlotCount = OvPhysics::Settings::CollisionLayers::kMaxLayerCount;
+
+	// Widgets are destroyed rather than removed, so this stays safe when called from the event
+	// handler of one of the widgets being replaced
+	void ClearWidgets(OvUI::Internal::WidgetContainer& p_container)
+	{
+		for (auto& widget : p_container.GetWidgets())
+		{
+			widget.first->Destroy();
+		}
+	}
+
 	bool HasFreeLayer(const OvPhysics::Settings::CollisionLayers& p_collisionLayers)
 	{
-		for (uint32_t layer = 0; layer < OvPhysics::Settings::CollisionLayers::kMaxLayerCount; ++layer)
+		for (uint32_t layer = 0; layer < kSlotCount; ++layer)
 		{
 			if (!p_collisionLayers.IsLayerUsed(layer))
 			{
@@ -90,6 +102,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 		GUIDrawer::DrawScalar<float>(columns, "Gravity", GenerateGatherer<float>("gravity"), GenerateProvider<float>("gravity"), 0.1f, GUIDrawer::_MIN_FLOAT, GUIDrawer::_MAX_FLOAT);
 
 		m_collisionLayersRoot = &root.CreateWidget<Layout::Group>();
+		m_collisionMatrixRoot = &root.CreateWidget<Layout::Group>();
 		ReloadCollisionLayers();
 	}
 
@@ -148,14 +161,7 @@ OvEditor::Panels::ProjectSettings::ProjectSettings(const std::string & p_title, 
 
 void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Internal::WidgetContainer& p_container)
 {
-	// Widgets are destroyed rather than removed, so this stays safe when called from the event
-	// handler of one of the widgets being replaced
-	for (auto& widget : p_container.GetWidgets())
-	{
-		widget.first->Destroy();
-	}
-
-	constexpr uint32_t kSlotCount = OvPhysics::Settings::CollisionLayers::kMaxLayerCount;
+	ClearWidgets(p_container);
 
 	GUIDrawer::CreateTitle(p_container, "Collision Layers");
 
@@ -188,6 +194,9 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 			{
 				m_collisionLayers.RenameLayer(layer, p_name);
 				StoreCollisionLayers();
+
+				// Only the matrix is rebuilt, so the field being typed into keeps its focus
+				BuildCollisionMatrixWidgets(*m_collisionMatrixRoot);
 			};
 
 			// Rebuilding restores the field to the stored name, showing that a rename was refused
@@ -202,6 +211,7 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 				m_collisionLayers.RemoveLayer(layer);
 				StoreCollisionLayers();
 				BuildCollisionLayerWidgets(*m_collisionLayersRoot);
+				BuildCollisionMatrixWidgets(*m_collisionMatrixRoot);
 			};
 		}
 	}
@@ -214,8 +224,14 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 			m_collisionLayers.AddLayer(GenerateLayerName(m_collisionLayers));
 			StoreCollisionLayers();
 			BuildCollisionLayerWidgets(*m_collisionLayersRoot);
+			BuildCollisionMatrixWidgets(*m_collisionMatrixRoot);
 		};
 	}
+}
+
+void OvEditor::Panels::ProjectSettings::BuildCollisionMatrixWidgets(OvUI::Internal::WidgetContainer& p_container)
+{
+	ClearWidgets(p_container);
 
 	GUIDrawer::CreateTitle(p_container, "Collision Matrix");
 
@@ -227,7 +243,10 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 		}
 
 		auto& matrixRow = p_container.CreateWidget<Layout::TreeNode>(m_collisionLayers.GetLayerName(first));
-		matrixRow.SetID("collision_matrix_" + std::to_string(first));
+
+		/* The extra '#' makes it a '###' id, which ImGui derives from the slot alone, so the node
+		   keeps its folded state while its layer is being renamed */
+		matrixRow.SetID("#collision_matrix_" + std::to_string(first));
 
 		/* The matrix is symmetric, so every pair is only offered once, on the row of its first layer */
 		for (uint32_t second = first; second < kSlotCount; ++second)
@@ -255,6 +274,7 @@ void OvEditor::Panels::ProjectSettings::ReloadCollisionLayers()
 	m_collisionLayers.Deserialize(m_projectFile);
 
 	BuildCollisionLayerWidgets(*m_collisionLayersRoot);
+	BuildCollisionMatrixWidgets(*m_collisionMatrixRoot);
 }
 
 void OvEditor::Panels::ProjectSettings::StoreCollisionLayers()

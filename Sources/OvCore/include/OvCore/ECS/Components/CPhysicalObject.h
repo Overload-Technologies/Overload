@@ -99,6 +99,11 @@ namespace OvCore::ECS::Components
 		OvPhysics::Entities::PhysicalObject::EActivationState GetActivationState() const;
 
 		/**
+		* Returns the collision layer of the physical object
+		*/
+		uint32_t GetLayer() const;
+
+		/**
 		* Defines a new mass for the physical object
 		* @param p_mass
 		*/
@@ -163,6 +168,12 @@ namespace OvCore::ECS::Components
 		* @param p_activationState
 		*/
 		void SetActivationState(OvPhysics::Entities::PhysicalObject::EActivationState p_activationState);
+
+		/**
+		* Defines the collision layer of the physical object. Invalid layers are ignored
+		* @param p_layer
+		*/
+		void SetLayer(uint32_t p_layer);
 
 		/**
 		* Serialize the component

@@ -222,15 +222,18 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 		auto& cells = matrixRow.CreateWidget<Layout::Group>();
 		cells.horizontal = true;
 
-		for (uint32_t second = 0; second < kSlotCount; ++second)
+		/* The matrix is symmetric, so every pair is only offered once, on the row of its first layer */
+		for (uint32_t second = first; second < kSlotCount; ++second)
 		{
 			if (!m_collisionLayers.IsLayerUsed(second))
 			{
 				continue;
 			}
 
-			auto& cell = cells.CreateWidget<Selection::CheckBox>(m_collisionLayers.GetLayerCollision(first, second));
-			cell.tooltip = m_collisionLayers.GetLayerName(first) + " / " + m_collisionLayers.GetLayerName(second);
+			auto& cell = cells.CreateWidget<Selection::CheckBox>(
+				m_collisionLayers.GetLayerCollision(first, second),
+				m_collisionLayers.GetLayerName(second)
+			);
 			cell.ValueChangedEvent += [this, first, second](bool p_collide)
 			{
 				m_collisionLayers.SetLayerCollision(first, second, p_collide);

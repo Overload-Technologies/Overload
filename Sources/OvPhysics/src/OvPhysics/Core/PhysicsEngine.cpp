@@ -42,6 +42,20 @@ namespace
 			return !first->isStaticOrKinematicObject() || !second->isStaticOrKinematicObject();
 		}
 	};
+
+	/**
+	* Ray callback ignoring the collision layers, rays not being bound to one
+	*/
+	template <typename T>
+	struct LayerAgnosticRayCallback : T
+	{
+		using T::T;
+
+		bool needsCollision(btBroadphaseProxy*) const override
+		{
+			return true;
+		}
+	};
 }
 
 std::map<std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
@@ -108,10 +122,8 @@ std::optional<RaycastHit> OvPhysics::Core::PhysicsEngine::Raycast(OvMaths::FVect
 
 	RaycastHit resultHit;
 
-	// Rays are not bound to a collision layer, so they use a filter matching every layer
 	// Try to get First Hit
-	btCollisionWorld::ClosestRayResultCallback ClosestRayCallback(origin, target);
-	ClosestRayCallback.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+	LayerAgnosticRayCallback<btCollisionWorld::ClosestRayResultCallback> ClosestRayCallback(origin, target);
 	m_world->rayTest(origin, target, ClosestRayCallback);
 
 	if (ClosestRayCallback.hasHit())
@@ -120,8 +132,7 @@ std::optional<RaycastHit> OvPhysics::Core::PhysicsEngine::Raycast(OvMaths::FVect
 		resultHit.FirstResultObject = reinterpret_cast<OvPhysics::Entities::PhysicalObject*>(ClosestRayCallback.m_collisionObject->getUserPointer());
 
 		// Try to get all Hit
-		btCollisionWorld::AllHitsRayResultCallback rayCallback(origin, target);
-		rayCallback.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+		LayerAgnosticRayCallback<btCollisionWorld::AllHitsRayResultCallback> rayCallback(origin, target);
 		m_world->rayTest(origin, target, rayCallback);
 
 		// Get all Hit

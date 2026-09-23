@@ -13,6 +13,7 @@
 #include <OvUI/Styling/Style.h>
 #include <OvUI/Widgets/Layout/Columns.h>
 #include <OvUI/Widgets/Layout/GroupCollapsable.h>
+#include <OvUI/Widgets/Layout/TreeNode.h>
 #include <OvUI/Widgets/Visual/Separator.h>
 #include <OvUI/Widgets/Buttons/Button.h>
 #include <OvUI/Widgets/InputFields/InputText.h>
@@ -225,14 +226,8 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 			continue;
 		}
 
-		auto& matrixRow = p_container.CreateWidget<Layout::Columns<2>>();
-		matrixRow.widths[0] = 125 * OVUI_SCALE;
+		auto& matrixRow = p_container.CreateWidget<Layout::TreeNode>(m_collisionLayers.GetLayerName(first));
 		matrixRow.SetID("collision_matrix_" + std::to_string(first));
-
-		GUIDrawer::CreateTitle(matrixRow, m_collisionLayers.GetLayerName(first));
-
-		auto& cells = matrixRow.CreateWidget<Layout::Group>();
-		cells.horizontal = true;
 
 		/* The matrix is symmetric, so every pair is only offered once, on the row of its first layer */
 		for (uint32_t second = first; second < kSlotCount; ++second)
@@ -242,7 +237,7 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 				continue;
 			}
 
-			auto& cell = cells.CreateWidget<Selection::CheckBox>(
+			auto& cell = matrixRow.CreateWidget<Selection::CheckBox>(
 				m_collisionLayers.GetLayerCollision(first, second),
 				m_collisionLayers.GetLayerName(second)
 			);
@@ -250,7 +245,6 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionLayerWidgets(OvUI::Interna
 			{
 				m_collisionLayers.SetLayerCollision(first, second, p_collide);
 				StoreCollisionLayers();
-				BuildCollisionLayerWidgets(*m_collisionLayersRoot);
 			};
 		}
 	}

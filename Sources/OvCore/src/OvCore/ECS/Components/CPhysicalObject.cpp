@@ -190,7 +190,7 @@ void OvCore::ECS::Components::CPhysicalObject::OnSerialize(tinyxml2::XMLDocument
 	Helpers::Serializer::SerializeVec3(p_doc, p_node, "linear_factor", GetLinearFactor());
 	Helpers::Serializer::SerializeVec3(p_doc, p_node, "angular_factor", GetAngularFactor());
 	Helpers::Serializer::SerializeInt(p_doc, p_node, "collision_mode", static_cast<int>(GetCollisionDetectionMode()));
-	Helpers::Serializer::SerializeInt(p_doc, p_node, "collision_layer", static_cast<int>(GetLayer()));
+	Helpers::Serializer::SerializeUint32(p_doc, p_node, "collision_layer", GetLayer());
 }
 
 void OvCore::ECS::Components::CPhysicalObject::OnDeserialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)
@@ -203,7 +203,10 @@ void OvCore::ECS::Components::CPhysicalObject::OnDeserialize(tinyxml2::XMLDocume
 	SetLinearFactor(Helpers::Serializer::DeserializeVec3(p_doc, p_node, "linear_factor"));
 	SetAngularFactor(Helpers::Serializer::DeserializeVec3(p_doc, p_node, "angular_factor"));
 	SetCollisionDetectionMode(static_cast<OvPhysics::Entities::PhysicalObject::ECollisionDetectionMode>(Helpers::Serializer::DeserializeInt(p_doc, p_node, "collision_mode")));
-	SetLayer(static_cast<uint32_t>(Helpers::Serializer::DeserializeInt(p_doc, p_node, "collision_layer")));
+	/* Scenes saved before collision layers have no such key, so the default layer has to be kept */
+	uint32_t collisionLayer = OvPhysics::Settings::CollisionLayers::kDefaultLayer;
+	Helpers::Serializer::DeserializeUint32(p_doc, p_node, "collision_layer", collisionLayer);
+	SetLayer(collisionLayer);
 }
 
 void OvCore::ECS::Components::CPhysicalObject::OnInspector(OvUI::Internal::WidgetContainer & p_root)

@@ -252,8 +252,8 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionMatrixWidgets(OvUI::Intern
 		   keeps its folded state while its layer is being renamed */
 		matrixRow.SetID("#collision_matrix_" + std::to_string(first));
 
-		/* The matrix is symmetric, so every pair is only offered once, on the row of its first layer */
-		for (uint32_t second = first; second < kSlotCount; ++second)
+		/* Every layer lists them all, so unfolding one really shows everything it collides with */
+		for (uint32_t second = 0; second < kSlotCount; ++second)
 		{
 			if (!m_collisionLayers.IsLayerUsed(second))
 			{
@@ -268,6 +268,9 @@ void OvEditor::Panels::ProjectSettings::BuildCollisionMatrixWidgets(OvUI::Intern
 			{
 				m_collisionLayers.SetLayerCollision(first, second, p_collide);
 				StoreCollisionLayers();
+
+				/* The matrix is symmetric, so the mirrored cell has to follow */
+				BuildCollisionMatrixWidgets(*m_collisionMatrixRoot);
 			};
 		}
 	}

@@ -1,3 +1,11 @@
+/**
+* @project: Overload
+* @author: Overload Tech.
+* @licence: MIT
+*/
+
+
+
 #include "OvCore/Scripting/Common/ScriptPropertyValue.h"
 
 #include <format>
@@ -26,16 +34,16 @@ namespace OvCore::Scripting
 	{
     if (guid == 0)
         throw std::runtime_error("attempt to use a null actor reference");
-	
+
     auto* scene = OVSERVICE(OvCore::SceneSystem::SceneManager).GetCurrentScene();
     if (!scene)
         throw std::runtime_error("ActorRef: no active scene");
-	
+
     auto* actor = scene->FindActorByGUID(guid);
     if (!actor || !actor->IsAlive())
         throw std::runtime_error(std::format(
             "attempt to use a destroyed actor (GUID: {:016X})", guid));
-	
+
     return *actor;
 	}
 }

@@ -11,6 +11,7 @@
 #include <variant>
 
 #include <OvTools/Utils/PathParser.h>
+namespace OvCore::ECS { class Actor; } //forward declaration so ActorRef can return Actor&
 
 namespace OvCore::Scripting
 {
@@ -26,11 +27,16 @@ namespace OvCore::Scripting
 
 	/**
 	* Represents a reference to a scene actor by its GUID (0 = none).
-	* Used as a script property so the inspector can display an actor picker.
+	* Serves two roles: as an editor script property so the inspector can
+	* show an actor picker, and as the runtime Lua type for actors (methods
+	* resolve the GUID through the current scene; a dead handle raises).
 	*/
 	struct ActorRef
 	{
 		uint64_t guid = 0;
+
+		bool IsAlive() const;
+		OvCore::ECS::Actor& Resolve() const;
 	};
 
 	/**

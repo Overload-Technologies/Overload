@@ -6,26 +6,29 @@
 
 #include <algorithm>
 
-#include <bullet/btBulletCollisionCommon.h>
+#include <Jolt/Jolt.h>
+
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 
 #include <OvPhysics/Entities/PhysicalSphere.h>
 
-OvPhysics::Entities::PhysicalSphere::PhysicalSphere(float p_radius) : PhysicalObject()
+OvPhysics::Entities::PhysicalSphere::PhysicalSphere(float p_radius) : PhysicalObject(), m_radius(p_radius)
 {
-	CreateCollisionShape(p_radius);
 	Init();
 }
 
-OvPhysics::Entities::PhysicalSphere::PhysicalSphere(OvMaths::FTransform & p_transform, float p_radius) : PhysicalObject(p_transform)
+OvPhysics::Entities::PhysicalSphere::PhysicalSphere(OvMaths::FTransform & p_transform, float p_radius) : PhysicalObject(p_transform), m_radius(p_radius)
 {
-	CreateCollisionShape(p_radius);
 	Init();
 }
 
 void OvPhysics::Entities::PhysicalSphere::SetRadius(float p_radius)
 {
 	if (p_radius != m_radius)
-		RecreateCollisionShape(p_radius);
+	{
+		m_radius = p_radius;
+		RecreateBody();
+	}
 }
 
 float OvPhysics::Entities::PhysicalSphere::GetRadius() const
@@ -33,21 +36,8 @@ float OvPhysics::Entities::PhysicalSphere::GetRadius() const
 	return m_radius;
 }
 
-
-void OvPhysics::Entities::PhysicalSphere::CreateCollisionShape(float p_radius)
+JPH::Shape* OvPhysics::Entities::PhysicalSphere::CreateShape(const OvMaths::FVector3& p_scale) const
 {
-	m_shape = std::make_unique<btSphereShape>(p_radius);
-	m_radius = p_radius;
-}
-
-void OvPhysics::Entities::PhysicalSphere::RecreateCollisionShape(float p_radius)
-{
-	CreateCollisionShape(p_radius);
-	RecreateBody();
-}
-
-void OvPhysics::Entities::PhysicalSphere::SetLocalScaling(const OvMaths::FVector3 & p_scaling)
-{
-	float radiusScale = std::max(std::max(p_scaling.x, p_scaling.y), p_scaling.z);
-	m_shape->setLocalScaling({ radiusScale, radiusScale, radiusScale });
+	const float radiusScale = std::max(std::max(p_scale.x, p_scale.y), p_scale.z);
+	return new JPH::SphereShape(std::max(m_radius * radiusScale, kMinimumShapeRadius));
 }

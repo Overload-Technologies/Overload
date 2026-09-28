@@ -91,11 +91,6 @@ bool OvCore::ECS::Components::CPhysicalObject::IsKinematic() const
 	return m_physicalObject->IsKinematic();
 }
 
-OvPhysics::Entities::PhysicalObject::EActivationState OvCore::ECS::Components::CPhysicalObject::GetActivationState() const
-{
-	return m_physicalObject->GetActivationState();
-}
-
 void OvCore::ECS::Components::CPhysicalObject::SetMass(float p_mass)
 {
 	m_physicalObject->SetMass(p_mass);
@@ -139,11 +134,6 @@ void OvCore::ECS::Components::CPhysicalObject::SetTrigger(bool p_trigger)
 void OvCore::ECS::Components::CPhysicalObject::SetKinematic(bool p_kinematic)
 {
 	m_physicalObject->SetKinematic(p_kinematic);
-}
-
-void OvCore::ECS::Components::CPhysicalObject::SetActivationState(OvPhysics::Entities::PhysicalObject::EActivationState p_state)
-{
-	m_physicalObject->SetActivationState(p_state);
 }
 
 void OvCore::ECS::Components::CPhysicalObject::OnSerialize(tinyxml2::XMLDocument & p_doc, tinyxml2::XMLNode * p_node)

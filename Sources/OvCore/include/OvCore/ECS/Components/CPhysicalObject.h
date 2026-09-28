@@ -94,11 +94,6 @@ namespace OvCore::ECS::Components
 		bool IsKinematic() const;
 
 		/**
-		* Returns the current activation state
-		*/
-		OvPhysics::Entities::PhysicalObject::EActivationState GetActivationState() const;
-
-		/**
 		* Defines a new mass for the physical object
 		* @param p_mass
 		*/
@@ -157,12 +152,6 @@ namespace OvCore::ECS::Components
 		* @param p_kinematic
 		*/
 		void SetKinematic(bool p_kinematic);
-
-		/**
-		* Defines the new activation state for the physical object
-		* @param p_activationState
-		*/
-		void SetActivationState(OvPhysics::Entities::PhysicalObject::EActivationState p_activationState);
 
 		/**
 		* Serialize the component

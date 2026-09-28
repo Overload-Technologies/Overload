@@ -50,6 +50,23 @@ namespace
 	constexpr uint32_t kObjectLayerCount = 1;
 	constexpr uint32_t kBroadPhaseLayerCount = 1;
 	constexpr size_t kTempAllocatorSize = 10 * 1024 * 1024;
+
+	using PhysicalObjectEvent = OvTools::Eventing::Event<PhysicalObject&> PhysicalObject::*;
+
+	/**
+	* Invokes the trigger event of the target if it is a trigger, or its collision event if none of the objects is a trigger
+	*/
+	void InvokeContactEvent(PhysicalObject& p_target, PhysicalObject& p_other, PhysicalObjectEvent p_triggerEvent, PhysicalObjectEvent p_collisionEvent)
+	{
+		if (p_target.IsTrigger())
+		{
+			(p_target.*p_triggerEvent).Invoke(p_other);
+		}
+		else if (!p_other.IsTrigger())
+		{
+			(p_target.*p_collisionEvent).Invoke(p_other);
+		}
+	}
 }
 
 /**
@@ -270,108 +287,75 @@ void OvPhysics::Core::PhysicsEngine::ResetCollisionEvents()
 
 void OvPhysics::Core::PhysicsEngine::CheckCollisionStopEvents()
 {
-	for (auto it = m_collisionEvents.begin(); it != m_collisionEvents.end();)
-	{
-		auto objects = it->first;
-		if (!it->second)
-		{
-			if (!objects.first->IsTrigger() && !objects.second->IsTrigger())
-			{
-				objects.first->CollisionStopEvent.Invoke(*objects.second);
-				objects.second->CollisionStopEvent.Invoke(*objects.first);
-			}
-			else
-			{
-				if (objects.first->IsTrigger())
-					objects.first->TriggerStopEvent.Invoke(*objects.second);
-				else
-					objects.second->TriggerStopEvent.Invoke(*objects.first);
-			}
+	std::vector<std::pair<PhysicalObject*, PhysicalObject*>> stoppedPairs;
 
-			it = m_collisionEvents.erase(it);
+	for (const auto& [pair, touched] : m_collisionEvents)
+	{
+		if (!touched)
+		{
+			stoppedPairs.push_back(pair);
 		}
-		else
-			++it;
+	}
+
+	// A pair is removed from the collision events when one of its objects is destroyed, possibly by a previous event
+	for (const auto& pair : stoppedPairs)
+	{
+		const auto [object1, object2] = pair;
+
+		if (m_collisionEvents.contains(pair))
+		{
+			InvokeContactEvent(*object1, *object2, &PhysicalObject::TriggerStopEvent, &PhysicalObject::CollisionStopEvent);
+		}
+
+		if (m_collisionEvents.contains(pair))
+		{
+			InvokeContactEvent(*object2, *object1, &PhysicalObject::TriggerStopEvent, &PhysicalObject::CollisionStopEvent);
+		}
+
+		m_collisionEvents.erase(pair);
 	}
 }
 
 void OvPhysics::Core::PhysicsEngine::CollisionCallback(const JPH::BodyID& p_body1, const JPH::BodyID& p_body2)
 {
+	// A body destroyed by a previous collision event has no user data anymore
 	const JPH::BodyInterface& bodyInterface = m_physicsSystem->GetBodyInterface();
 	auto object1 = reinterpret_cast<PhysicalObject*>(bodyInterface.GetUserData(p_body1));
 	auto object2 = reinterpret_cast<PhysicalObject*>(bodyInterface.GetUserData(p_body2));
 
-	if (object1 && object2)
+	/* Contacts between two triggers don't generate any event */
+	if (!object1 || !object2 || (object1->IsTrigger() && object2->IsTrigger()))
 	{
-		/* If the objects are not all trigger, enter */
-		if (!object1->IsTrigger() || !object2->IsTrigger())
-		{
-			if (m_collisionEvents.find({ object1 , object2 }) == m_collisionEvents.end())
-			{
-				/* If object is trigger, invoke Trigger event,
-				 * else : is the other object trigger ? yes -> do nothing, no -> invoke Collision event
-				 */
-
-				 // Object 1 (Start event)
-				if (object1->IsTrigger())
-					object1->TriggerStartEvent.Invoke(*object2);
-				else
-				{
-					if (!object2->IsTrigger())
-						object1->CollisionStartEvent.Invoke(*object2);
-				}
-				// Object 2 (Start event)
-				if (object2->IsTrigger())
-					object2->TriggerStartEvent.Invoke(*object1);
-				else
-				{
-					if (!object1->IsTrigger())
-						object2->CollisionStartEvent.Invoke(*object1);
-				}
-
-				// Object 1 (Stay event)
-				if (object1->IsTrigger())
-					object1->TriggerStayEvent.Invoke(*object2);
-				else
-				{
-					if (!object2->IsTrigger())
-						object1->CollisionStayEvent.Invoke(*object2);
-				}
-				// Object 2 (Stay event)
-				if (object2->IsTrigger())
-					object2->TriggerStayEvent.Invoke(*object1);
-				else
-				{
-					if (!object1->IsTrigger())
-						object2->CollisionStayEvent.Invoke(*object1);
-				}
-
-				m_collisionEvents[{ object1, object2 }] = true;
-			}
-			else
-			{
-				if (!m_collisionEvents[{ object1, object2 }])
-				{
-					// Object 1 (Stay event)
-					if (object1->IsTrigger())
-						object1->TriggerStayEvent.Invoke(*object2);
-					else
-					{
-						if (!object2->IsTrigger())
-							object1->CollisionStayEvent.Invoke(*object2);
-					}
-					// Object 2 (Stay event)
-					if (object2->IsTrigger())
-						object2->TriggerStayEvent.Invoke(*object1);
-					else
-					{
-						if (!object1->IsTrigger())
-							object2->CollisionStayEvent.Invoke(*object1);
-					}
-
-					m_collisionEvents[{ object1, object2 }] = true;
-				}
-			}
-		}
+		return;
 	}
+
+	const std::pair<PhysicalObject*, PhysicalObject*> pair{ object1, object2 };
+	const auto found = m_collisionEvents.find(pair);
+	const bool isNewPair = found == m_collisionEvents.end();
+
+	/* The events of this pair have already been invoked during this update */
+	if (!isNewPair && found->second)
+	{
+		return;
+	}
+
+	/* The pair is flagged before invoking its events, so that it gets removed if an event destroys one of its objects */
+	m_collisionEvents[pair] = true;
+
+	const auto invokeIfAlive = [&pair](PhysicalObject& p_target, PhysicalObject& p_other, PhysicalObjectEvent p_triggerEvent, PhysicalObjectEvent p_collisionEvent)
+	{
+		if (m_collisionEvents.contains(pair))
+		{
+			InvokeContactEvent(p_target, p_other, p_triggerEvent, p_collisionEvent);
+		}
+	};
+
+	if (isNewPair)
+	{
+		invokeIfAlive(*object1, *object2, &PhysicalObject::TriggerStartEvent, &PhysicalObject::CollisionStartEvent);
+		invokeIfAlive(*object2, *object1, &PhysicalObject::TriggerStartEvent, &PhysicalObject::CollisionStartEvent);
+	}
+
+	invokeIfAlive(*object1, *object2, &PhysicalObject::TriggerStayEvent, &PhysicalObject::CollisionStayEvent);
+	invokeIfAlive(*object2, *object1, &PhysicalObject::TriggerStayEvent, &PhysicalObject::CollisionStayEvent);
 }

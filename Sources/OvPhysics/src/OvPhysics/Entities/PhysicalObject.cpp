@@ -291,10 +291,24 @@ void OvPhysics::Entities::PhysicalObject::UpdateBodyTransform()
 
 void OvPhysics::Entities::PhysicalObject::UpdateFTransform()
 {
-	if (!m_kinematic)
+	if (m_kinematic)
 	{
-		m_transform->SetLocalPosition(Conversion::ToOvVector3(m_body->GetPosition()));
-		m_transform->SetLocalRotation(Conversion::ToOvQuaternion(m_body->GetRotation()));
+		return;
+	}
+
+	const OvMaths::FVector3 position = Conversion::ToOvVector3(m_body->GetPosition());
+	const OvMaths::FQuaternion rotation = Conversion::ToOvQuaternion(m_body->GetRotation());
+
+	// World setters recompute the local transform (and its scale) from the matrices, so they are only used when required
+	if (m_transform->HasParent())
+	{
+		m_transform->SetWorldPosition(position);
+		m_transform->SetWorldRotation(rotation);
+	}
+	else
+	{
+		m_transform->SetLocalPosition(position);
+		m_transform->SetLocalRotation(rotation);
 	}
 }
 

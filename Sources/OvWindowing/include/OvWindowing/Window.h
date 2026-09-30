@@ -8,6 +8,7 @@
 
 #include <string>
 #include <optional>
+#include <unordered_set>
 
 #include <OvTools/Eventing/Event.h>
 
@@ -43,6 +44,11 @@ namespace OvWindowing
 		OvTools::Eventing::Event<> GainFocusEvent;
 		OvTools::Eventing::Event<> LostFocusEvent;
 		OvTools::Eventing::Event<> CloseEvent;
+
+		// Getter for characters typed this frame
+		std::string GetTypedText() const { return m_typedText; }
+		// Returns true if the given key repeated during this frame
+		bool GetKeyRepeat(int p_key) const { return m_repeatedKeys.find(p_key) != m_repeatedKeys.end(); }
 
 		/**
 		* Create the window
@@ -301,6 +307,7 @@ namespace OvWindowing
 
 		/* Callbacks binding */
 		void BindKeyCallback() const;
+		void BindCharCallback() const;
 		void BindMouseCallback() const;
 		void BindScrollCallback() const;
 		void BindResizeCallback() const;
@@ -328,6 +335,8 @@ namespace OvWindowing
 
 		/* Window settings */
 		std::string m_title;
+		std::string m_typedText; // Buffer for characters typed this frame
+		std::unordered_set<int> m_repeatedKeys; // Keys that received a GLFW_REPEAT event this frame
 		std::pair<uint16_t, uint16_t> m_size;
 		std::pair<int16_t, int16_t> m_minimumSize;
 		std::pair<int16_t, int16_t> m_maximumSize;

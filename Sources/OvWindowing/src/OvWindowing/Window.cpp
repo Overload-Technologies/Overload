@@ -39,6 +39,7 @@ OvWindowing::Window::Window(const Context::Device& p_device, const Settings::Win
 
 	/* Callback binding */
 	BindKeyCallback();
+	BindCharCallback();
 	BindMouseCallback();
 	BindScrollCallback();
 	BindIconifyCallback();
@@ -241,6 +242,8 @@ void OvWindowing::Window::SwapBuffers()
 	}
 
 	glfwSwapBuffers(m_glfwWindow);
+	m_typedText.clear(); // Clear typed characters after the frame is fully presented
+	m_repeatedKeys.clear(); // Clear repeated keys after the frame is fully presented
 }
 
 void OvWindowing::Window::SetCursorMode(Cursor::ECursorMode p_cursorMode)
@@ -384,10 +387,49 @@ void OvWindowing::Window::BindKeyCallback() const
 
 			if (p_action == GLFW_RELEASE)
 				windowInstance->KeyReleasedEvent.Invoke(p_key);
+				
+			if (p_action == GLFW_REPEAT)
+                windowInstance->m_repeatedKeys.insert(p_key);
 		}
 	};
 
 	glfwSetKeyCallback(m_glfwWindow, keyCallback);
+}
+
+void OvWindowing::Window::BindCharCallback() const
+{
+    // Bind the GLFW character callback to capture typed characters
+    glfwSetCharCallback(m_glfwWindow, [](GLFWwindow* p_window, unsigned int p_codepoint)
+    {
+        Window* windowInstance = FindInstance(p_window);
+
+        if (windowInstance)
+        {
+            // Encode the Unicode codepoint as UTF-8 (1–4 bytes depending on value)
+            if (p_codepoint < 0x80)
+            {
+                windowInstance->m_typedText += static_cast<char>(p_codepoint);
+            }
+            else if (p_codepoint < 0x800)
+            {
+                windowInstance->m_typedText += static_cast<char>(0xC0 | (p_codepoint >> 6));
+                windowInstance->m_typedText += static_cast<char>(0x80 | (p_codepoint & 0x3F));
+            }
+            else if (p_codepoint < 0x10000)
+            {
+                windowInstance->m_typedText += static_cast<char>(0xE0 | (p_codepoint >> 12));
+                windowInstance->m_typedText += static_cast<char>(0x80 | ((p_codepoint >> 6) & 0x3F));
+                windowInstance->m_typedText += static_cast<char>(0x80 | (p_codepoint & 0x3F));
+            }
+            else
+            {
+                windowInstance->m_typedText += static_cast<char>(0xF0 | (p_codepoint >> 18));
+                windowInstance->m_typedText += static_cast<char>(0x80 | ((p_codepoint >> 12) & 0x3F));
+                windowInstance->m_typedText += static_cast<char>(0x80 | ((p_codepoint >> 6) & 0x3F));
+                windowInstance->m_typedText += static_cast<char>(0x80 | (p_codepoint & 0x3F));
+            }
+        }
+    });
 }
 
 void OvWindowing::Window::BindMouseCallback() const

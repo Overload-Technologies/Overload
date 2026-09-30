@@ -48,6 +48,7 @@ void BindLuaGlobal(sol::state& p_luaState)
 	p_luaState.new_usertype<AssetRef>("AssetRef",
 		"path", &AssetRef::path
 	);
+	
 
 	using EFT = OvTools::Utils::PathParser::EFileType;
 	p_luaState["Model"]    = []() { return AssetRef{EFT::MODEL,    ""}; };
@@ -258,8 +259,12 @@ void BindLuaGlobal(sol::state& p_luaState)
 		},
 		"LockMouse", []() { return OVSERVICE(Window).SetCursorMode(Cursor::ECursorMode::DISABLED); },
 		"UnlockMouse", []() { return OVSERVICE(Window).SetCursorMode(Cursor::ECursorMode::NORMAL); },
-		"SetCursorShape", [](Cursor::ECursorShape p_shape) { OVSERVICE(Window).SetCursorShape(p_shape); }
-	);
+		"SetCursorShape", [](Cursor::ECursorShape p_shape) { OVSERVICE(Window).SetCursorShape(p_shape); },
+        // Returns characters typed during the current frame as a UTF-8 string
+        "GetTypedText", []() -> std::string { return OVSERVICE(Window).GetTypedText(); },
+        // Returns true if the given key repeated during the current frame
+        "GetKeyRepeat", [](int p_key) -> bool { return OVSERVICE(Window).GetKeyRepeat(p_key); }
+	);	
 
 	p_luaState.create_named_table("Scenes",
 		"GetCurrentScene", []() -> Scene& { return *OVSERVICE(SceneManager).GetCurrentScene(); },

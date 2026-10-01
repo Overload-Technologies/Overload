@@ -387,6 +387,7 @@ namespace OvCore::ECS
 
 		void RecursiveActiveUpdate();
 		void RecursiveWasActiveUpdate();
+		void ReleaseRemovedComponent(std::shared_ptr<Components::AComponent> p_component);
 
 	public:
 		/* Some events that are triggered when an action occur on the actor instance */

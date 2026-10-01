@@ -20,6 +20,8 @@ using namespace OvPhysics::Tools;
 using namespace OvPhysics::Entities;
 
 std::map<std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
+bool OvPhysics::Core::PhysicsEngine::s_dispatching = false;
+std::vector<std::shared_ptr<void>> OvPhysics::Core::PhysicsEngine::s_graveyard;
 
 OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & p_settings)
 {
@@ -37,6 +39,7 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 
 OvPhysics::Core::PhysicsEngine::~PhysicsEngine()
 {
+    FlushGraveyard();
 
 }
 
@@ -56,15 +59,43 @@ void OvPhysics::Core::PhysicsEngine::PostUpdate()
 
 bool OvPhysics::Core::PhysicsEngine::Update(float p_deltaTime)
 {
-	PreUpdate();
+	FlushGraveyard(); //release objects removed during the previous update...
 
-	if (m_world->stepSimulation(p_deltaTime, 10))
+	bool simulated = false;
 	{
-		PostUpdate();
-		return true;
+		struct DispatchScope
+		{
+			DispatchScope()  { s_dispatching = true; }
+			~DispatchScope() { s_dispatching = false; }
+		} scope;
+
+		PreUpdate();
+
+		if (m_world->stepSimulation(p_deltaTime, 10))
+		{
+			PostUpdate();
+			simulated = true;
+		}
 	}
 
-	return false;
+	return simulated; // no flush here
+}
+
+bool OvPhysics::Core::PhysicsEngine::IsDispatching()
+{
+	return s_dispatching;
+}
+
+void OvPhysics::Core::PhysicsEngine::DeferDestruction(std::shared_ptr<void> p_object)
+{
+	s_graveyard.push_back(std::move(p_object));
+}
+
+void OvPhysics::Core::PhysicsEngine::FlushGraveyard()
+{
+	auto dead = std::move(s_graveyard);
+	s_graveyard.clear();
+	dead.clear();
 }
 
 std::optional<RaycastHit> OvPhysics::Core::PhysicsEngine::Raycast(OvMaths::FVector3 p_origin, OvMaths::FVector3 p_direction, float p_distance)

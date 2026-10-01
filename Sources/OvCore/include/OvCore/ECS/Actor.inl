@@ -49,6 +49,7 @@ namespace OvCore::ECS
 			{
 				ComponentRemovedEvent.Invoke(*result.get());
 				m_components.erase(it);
+				ReleaseRemovedComponent(std::move(result));
 				return true;
 			}
 		}

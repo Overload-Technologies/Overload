@@ -200,6 +200,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	/* Collision Events */
 	m_physicalObject->CollisionStartEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		CollisionEnterEvent.Invoke(otherObject);
@@ -207,6 +208,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	};
 	m_physicalObject->CollisionStayEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		CollisionStayEvent.Invoke(otherObject);
@@ -214,6 +216,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	};
 	m_physicalObject->CollisionStopEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		CollisionExitEvent.Invoke(otherObject);
@@ -223,6 +226,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	/* Trigger Events */
 	m_physicalObject->TriggerStartEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		TriggerEnterEvent.Invoke(otherObject);
@@ -230,6 +234,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	};
 	m_physicalObject->TriggerStayEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		TriggerStayEvent.Invoke(otherObject);
@@ -237,6 +242,7 @@ void OvCore::ECS::Components::CPhysicalObject::BindListener()
 	};
 	m_physicalObject->TriggerStopEvent += [this](OvPhysics::Entities::PhysicalObject& otherPhysicalObject)
 	{
+	    if (m_pendingRemoval) return;
 		auto& otherObject = otherPhysicalObject.GetUserData<std::reference_wrapper<CPhysicalObject>>().get();
 
 		TriggerExitEvent.Invoke(otherObject);

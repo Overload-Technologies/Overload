@@ -22,6 +22,7 @@
 #include <OvCore/SceneSystem/PrefabOperations.h>
 #include <OvCore/SceneSystem/Scene.h>
 #include <OvTools/Utils/PathParser.h>
+#include <OvPhysics/Core/PhysicsEngine.h>
 
 OvCore::SceneSystem::Scene::Scene(
 	const std::filesystem::path& p_projectAssetsPath,
@@ -36,7 +37,7 @@ OvCore::SceneSystem::Scene::Scene(
 OvCore::SceneSystem::Scene::~Scene()
 {
 	std::for_each(m_actors.begin(), m_actors.end(), [](OvCore::ECS::Actor* element)
-	{ 
+	{
 		delete element;
 	});
 
@@ -81,7 +82,7 @@ void OvCore::SceneSystem::Scene::AddDefaultSkysphere()
 
 	auto skysphereMaterial = Global::ServiceLocator::Get<ResourceManagement::MaterialManager>().GetResource(":Materials\\Skysphere.ovmat");
 	auto sphereModel = Global::ServiceLocator::Get<ResourceManagement::ModelManager>().GetResource(":Models\\Sphere.fbx");
-	
+
 	if (skysphereMaterial)
 	{
 		materialRenderer.SetMaterialAtIndex(0, *skysphereMaterial);
@@ -315,6 +316,12 @@ bool OvCore::SceneSystem::Scene::DestroyActor(ECS::Actor& p_target)
 
 	if (found != m_actors.end())
 	{
+        if (OvPhysics::Core::PhysicsEngine::IsDispatching())
+       	{
+      		// deleting now wood destroy physical components inside Bullet step.
+      		p_target.MarkAsDestroy();
+      		return true;
+       	}
 		delete *found;
 		m_actors.erase(found);
 		return true;
@@ -337,8 +344,10 @@ void OvCore::SceneSystem::Scene::MoveActorToBack(ECS::Actor& p_actor)
 
 void OvCore::SceneSystem::Scene::CollectGarbages()
 {
+    if (OvPhysics::Core::PhysicsEngine::IsDispatching())
+	return;
 	m_actors.erase(std::remove_if(m_actors.begin(), m_actors.end(), [this](ECS::Actor* element)
-	{ 
+	{
 		bool isGarbage = !element->IsAlive();
 		if (isGarbage)
 		{
@@ -351,7 +360,7 @@ void OvCore::SceneSystem::Scene::CollectGarbages()
 OvCore::ECS::Actor* OvCore::SceneSystem::Scene::FindActorByName(const std::string& p_name) const
 {
 	auto result = std::find_if(m_actors.begin(), m_actors.end(), [p_name](OvCore::ECS::Actor* element)
-	{ 
+	{
 		return element->GetName() == p_name;
 	});
 

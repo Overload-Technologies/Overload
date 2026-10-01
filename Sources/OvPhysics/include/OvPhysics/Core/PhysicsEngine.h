@@ -9,6 +9,7 @@
 #include <map>
 #include <optional>
 #include <vector>
+#include <memory>
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 #include <OvPhysics/Entities/RaycastHit.h>
@@ -68,6 +69,11 @@ namespace OvPhysics::Core
 		* Returns the current world gravity
 		*/
 		OvMaths::FVector3 GetGravity() const;
+		/** True while the simulation step and collision stop dispatch are running */
+		static bool IsDispatching();
+		
+		/** keeps an object alive until the current physics update finished */
+		static void DeferDestruction(std::shared_ptr<void> p_object);
 
 	private:
 		void PreUpdate();
@@ -96,6 +102,9 @@ namespace OvPhysics::Core
 		std::unique_ptr<btConstraintSolver> m_solver;
 
 		static std::map<std::pair<Entities::PhysicalObject*, Entities::PhysicalObject*>, bool> m_collisionEvents;
+		static void FlushGraveyard();
+		static bool s_dispatching;
+		static std::vector<std::shared_ptr<void>> s_graveyard;
 		std::vector<std::reference_wrapper<Entities::PhysicalObject>> m_physicalObjects;
 	};
 }

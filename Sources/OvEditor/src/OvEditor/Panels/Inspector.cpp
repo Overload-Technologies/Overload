@@ -142,7 +142,7 @@ void OvEditor::Panels::Inspector::FocusActor(Actor& p_target)
 
 	m_componentAddedListener = m_targetActor->ComponentAddedEvent += [this] (auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
 	m_behaviourAddedListener = m_targetActor->BehaviourAddedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
-	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
+	m_componentRemovedListener = m_targetActor->ComponentRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); }, 0)); };
 	m_behaviourRemovedListener = m_targetActor->BehaviourRemovedEvent += [this](auto&) { EDITOR_EXEC(DelayAction([this] { Refresh(); })); };
 
 	_Populate();

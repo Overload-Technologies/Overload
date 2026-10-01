@@ -25,6 +25,8 @@
 #include <OvCore/ECS/Components/CReflectionProbe.h>
 #include <OvCore/ECS/Components/CSkinnedMeshRenderer.h>
 #include <OvCore/ECS/Components/CSpotLight.h>
+#include <OvCore/ECS/Components/CPhysicalObject.h>
+#include <OvPhysics/Core/PhysicsEngine.h>
 
 #include <iostream>
 
@@ -108,6 +110,18 @@ void OvCore::ECS::Actor::SetActive(bool p_active)
 		m_active = p_active;
 		RecursiveActiveUpdate();
 	}
+}
+
+void OvCore::ECS::Actor::ReleaseRemovedComponent(std::shared_ptr<Components::AComponent> p_component)
+{
+	if (auto* physical = dynamic_cast<Components::CPhysicalObject*>(p_component.get()))
+	{
+		physical->MarkForRemoval();
+
+		if (OvPhysics::Core::PhysicsEngine::IsDispatching())
+			OvPhysics::Core::PhysicsEngine::DeferDestruction(std::move(p_component));
+	}
+	// otherwise p_component  dies here, as before
 }
 
 bool OvCore::ECS::Actor::IsSelfActive() const
@@ -390,8 +404,10 @@ bool OvCore::ECS::Actor::RemoveComponent(OvCore::ECS::Components::AComponent& p_
 	{
 		if (it->get() == &p_component)
 		{
+			auto removed = *it;
 			ComponentRemovedEvent.Invoke(p_component);
 			m_components.erase(it);
+			ReleaseRemovedComponent(std::move(removed));
 			return true;
 		}
 	}

@@ -164,7 +164,7 @@ namespace OvCore::ECS::Components
 		*/
 		void SetActivationState(OvPhysics::Entities::PhysicalObject::EActivationState p_activationState);
 		
-		/** the component stops emitting events but stays alive */
+		/** the component(s) stops emitting events but stays alive */
 		void MarkForRemoval() { m_pendingRemoval = true; }
 
 		/**

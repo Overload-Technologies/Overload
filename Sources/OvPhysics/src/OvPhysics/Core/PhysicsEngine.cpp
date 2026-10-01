@@ -39,7 +39,7 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 
 OvPhysics::Core::PhysicsEngine::~PhysicsEngine()
 {
-    //reelease physical object(s) whose destruction was deferred during the last update while the engine and the physics events are still alive.
+    //reelease physical object(s) whose destruction was deferred during the last update, while the engine and the physics event(s) are still alive.
     FlushGraveyard();
 
 }

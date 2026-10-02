@@ -224,6 +224,36 @@ void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target
 	});
 }
 
+
+void OvEditor::Core::CameraController::Orbit(float p_deltaX, float p_deltaY)
+{
+    constexpr float kSensitivity = 0.1f; //sensitivity
+
+    OvMaths::FVector3 pivot;
+    float distance = m_focusDistance;
+
+    if (auto target = GetTargetActor())
+    {
+        auto& targetActor = target.value().get();
+        pivot = targetActor.transform.GetWorldPosition();
+        distance = OvMaths::FVector3::Distance(m_camera.GetPosition(), pivot);
+    }
+    else
+    {
+        pivot = m_camera.GetPosition() + m_camera.transform->GetWorldForward() * distance;
+    }
+
+    
+    const OvMaths::FQuaternion yaw(OvMaths::FVector3(0.0f, p_deltaX * kSensitivity, 0.0f));
+    const OvMaths::FQuaternion pitch(OvMaths::FVector3(p_deltaY * kSensitivity, 0.0f, 0.0f));
+
+    const OvMaths::FQuaternion combinedRotation = yaw * m_camera.GetRotation() * pitch;
+    const OvMaths::FVector3 newPosition = pivot + (combinedRotation * OvMaths::FVector3(0.0f, 0.0f, distance));
+
+    m_camera.SetPosition(newPosition);
+    m_camera.SetRotation(combinedRotation);
+}
+
 void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p_axis)
 {
     constexpr float kMinimumViewDistance = 1.0f;
@@ -235,24 +265,19 @@ void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p
     {
         auto& targetActor = target.value().get();
         pivot = targetActor.transform.GetWorldPosition();
-        distance = OvMaths::FVector3::Distance(m_camera.GetPosition(), pivot);
-
-        if (distance < kMinimumViewDistance)
-        {
-            distance = GetActorFocusDist(targetActor);
-        }
+        distance = GetActorFocusDist(targetActor);
     }
     else
     {
-        pivot = m_camera.GetPosition() + m_camera.transform->GetWorldForward() * distance;
+        
+        pivot = m_camera.GetPosition() + m_camera.transform->GetWorldForward() * m_focusDistance;
+        distance = m_focusDistance;
     }
 
     // Determine target axis: If already aligned with p_axis, flip to -p_axis
     OvMaths::FVector3 targetAxis = p_axis;
     const OvMaths::FVector3 currentForward = m_camera.transform->GetWorldForward();
     
-    // Dot product close to -1 means camera forward is pointing opposite to p_axis 
-    // (meaning the camera is located at +p_axis looking toward the origin)
     if (OvMaths::FVector3::Dot(currentForward, -p_axis) > 0.99f)
     {
         targetAxis = -p_axis; // Flip view to opposite side
@@ -260,7 +285,6 @@ void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p
 
     const OvMaths::FVector3 direction = -targetAxis;
 
-    // Up vector selection for vertical/horizontal look alignment
     const bool isVertical = std::abs(direction.y) > 0.999f;
     const OvMaths::FVector3 up = isVertical
         ? OvMaths::FVector3(0.0f, 0.0f, direction.y < 0.0f ? -1.0f : 1.0f)
@@ -269,6 +293,12 @@ void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p
     const OvMaths::FQuaternion rotation = OvMaths::FQuaternion::LookAt(direction, up);
 
     m_camera.SetRotation(rotation);
+    
+    // Clear old destinations and set the exact target position relative to the pivot
+    while (!m_cameraDestinations.empty())
+    {
+        m_cameraDestinations.pop();
+    }
     m_cameraDestinations.push({ pivot + targetAxis * distance, rotation });
 }
 

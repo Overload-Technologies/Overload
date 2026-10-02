@@ -73,6 +73,9 @@ namespace OvEditor::Core
 		*/
 		void SetRotation(const OvMaths::FQuaternion& p_rotation);
 
+		/**void */
+		void Orbit(float p_deltaX, float p_deltaY);
+
 		/**
 		* Returns the position of the camera
 		*/

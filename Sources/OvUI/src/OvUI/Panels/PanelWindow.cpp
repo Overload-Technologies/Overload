@@ -27,6 +27,11 @@ OvUI::Panels::PanelWindow::PanelWindow(const std::string& p_name, bool p_opened,
 	m_opened(p_opened)
 {
 	autoSize = p_floatingPanelSettings.autoSize;
+
+	//derive the ImGui window id from the panel name(instead of the global panel counter),
+	// so saved layouts donot depend on how many panels were created before this one
+	if (!name.empty())
+		m_panelID = "##" + name;
 }
 
 void OvUI::Panels::PanelWindow::Open()

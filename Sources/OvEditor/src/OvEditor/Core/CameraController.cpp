@@ -224,6 +224,44 @@ void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target
 	});
 }
 
+void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p_axis)
+{
+	constexpr float kMinimumViewDistance = 1.0f;
+
+	OvMaths::FVector3 pivot;
+	float distance = m_focusDistance;
+
+	if (auto target = GetTargetActor())
+	{
+		auto& targetActor = target.value().get();
+		pivot = targetActor.transform.GetWorldPosition();
+		distance = OvMaths::FVector3::Distance(m_camera.GetPosition(), pivot);
+
+		if (distance < kMinimumViewDistance)
+		{
+			distance = GetActorFocusDist(targetActor);
+		}
+	}
+	else
+	{
+		pivot = m_camera.GetPosition() + m_camera.transform->GetWorldForward() * distance;
+	}
+
+	const OvMaths::FVector3 direction = -p_axis;
+
+	// looking straight up or down.
+	const bool isVertical = std::abs(direction.y) > 0.999f;
+	const OvMaths::FVector3 up = isVertical
+		? OvMaths::FVector3(0.0f, 0.0f, direction.y < 0.0f ? -1.0f : 1.0f)
+		: OvMaths::FVector3::Up;
+
+	const OvMaths::FQuaternion rotation = OvMaths::FQuaternion::LookAt(direction, up);
+
+	
+	m_camera.SetRotation(rotation);
+	m_cameraDestinations.push({ pivot + p_axis * distance, rotation });
+}
+
 void OvEditor::Core::CameraController::SetSpeed(float p_speed)
 {
 	m_cameraMoveSpeed = p_speed;

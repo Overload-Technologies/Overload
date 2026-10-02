@@ -46,6 +46,11 @@ namespace OvEditor::Core
 		void MoveToTarget(OvCore::ECS::Actor& p_target);
 
 		/**
+		* Moves the camera to the given axis side of its pivot.
+		*/
+		void MoveToAxisView(const OvMaths::FVector3& p_axis);
+
+		/**
 		* Defines the speed of the camera
 		* @param p_speed
 		*/

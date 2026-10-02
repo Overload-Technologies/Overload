@@ -274,13 +274,13 @@ void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p
         distance = m_focusDistance;
     }
 
-    // Determine target axis: If already aligned with p_axis, flip to -p_axis
+    
     OvMaths::FVector3 targetAxis = p_axis;
     const OvMaths::FVector3 currentForward = m_camera.transform->GetWorldForward();
     
     if (OvMaths::FVector3::Dot(currentForward, -p_axis) > 0.99f)
     {
-        targetAxis = -p_axis; // Flip view to opposite side
+        targetAxis = -p_axis; 
     }
 
     const OvMaths::FVector3 direction = -targetAxis;
@@ -294,7 +294,7 @@ void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p
 
     m_camera.SetRotation(rotation);
     
-    // Clear old destinations and set the exact target position relative to the pivot
+    
     while (!m_cameraDestinations.empty())
     {
         m_cameraDestinations.pop();

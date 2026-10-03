@@ -232,7 +232,7 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
         m_cameraController.Orbit(mouseDelta.x, mouseDelta.y);
     }
 
-    // Snap to an axis only on a clean click(not at the end of a drag)
+    // Snap to an axis only on a clean click.
     if (ImGui::IsItemDeactivated() && !m_dragging && hoveredIndex >= 0)
     {
         m_cameraController.MoveToAxisView(projected[static_cast<size_t>(hoveredIndex)].bubble->axis);

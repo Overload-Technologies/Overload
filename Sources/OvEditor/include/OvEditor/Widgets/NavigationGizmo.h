@@ -43,5 +43,6 @@ namespace OvEditor::Widgets
 		OvRendering::Entities::Camera& m_camera;
 		OvEditor::Core::CameraController& m_cameraController;
 		bool m_hovered = false;
+		bool m_dragging = false;
 	};
 }

@@ -96,21 +96,11 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
     const ImVec2 mouse = ImGui::GetMousePos();
     const float mouseOffsetX = mouse.x - center.x;
     const float mouseOffsetY = mouse.y - center.y;
-    m_hovered = areaHovered && (mouseOffsetX * mouseOffsetX + mouseOffsetY * mouseOffsetY <= gizmoRadius * gizmoRadius);
+	m_hovered = areaActive || (areaHovered && (mouseOffsetX * mouseOffsetX + mouseOffsetY * mouseOffsetY <= gizmoRadius * gizmoRadius));
 
-    // Track drag state to prevent triggering an axis snap on drag release
-    static bool isDragging = false;
-    if (areaClicked)
-    {
-        isDragging = false;
-    }
+   
 
-    if (areaActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 2.0f))
-    {
-        isDragging = true;
-        const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-        m_cameraController.Orbit(mouseDelta.x, mouseDelta.y);
-    }
+    
 
     // Project axes on the screen
     const OvMaths::FVector3 cameraRight = m_camera.transform->GetWorldRight();
@@ -225,8 +215,49 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
     }
 
     
-    if (ImGui::IsItemDeactivated() && !isDragging && hoveredIndex >= 0)
+    if (areaClicked)
+    {
+        m_dragging = false;
+    }
+
+    if (areaActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 2.0f))
+    {
+        if (!m_dragging)
+        {
+            m_dragging = true;
+            m_cameraController.BeginOrbit();
+        }
+
+        const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+        m_cameraController.Orbit(mouseDelta.x, mouseDelta.y);
+    }
+
+    // Snap to an axis only on a clean click(not at the end of a drag)
+    if (ImGui::IsItemDeactivated() && !m_dragging && hoveredIndex >= 0)
     {
         m_cameraController.MoveToAxisView(projected[static_cast<size_t>(hoveredIndex)].bubble->axis);
     }
+
+   	if (areaClicked)
+	{
+		m_dragging = false;
+	}
+   
+	if (areaActive && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 2.0f))
+	{
+		if (!m_dragging)
+		{
+			m_dragging = true;
+			m_cameraController.BeginOrbit();
+		}
+   
+		const ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+		m_cameraController.Orbit(mouseDelta.x, mouseDelta.y);
+	}
+   
+	
+	if (ImGui::IsItemDeactivated() && !m_dragging && hoveredIndex >= 0)
+	{
+		m_cameraController.MoveToAxisView(projected[static_cast<size_t>(hoveredIndex)].bubble->axis);
+	}
 }

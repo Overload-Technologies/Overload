@@ -50,7 +50,6 @@ namespace OvEditor::Core
 		*/
 		void MoveToAxisView(const OvMaths::FVector3& p_axis);
 
-		
 		/**
 		* Prepares an orbit around a pivot (the target actor, or a point in front of the camera).
 		* Call it once when the orbit starts, then call Orbit() every frame.
@@ -89,7 +88,7 @@ namespace OvEditor::Core
 
 
 		/**
-		* returns the position of the camera
+		* Returns the position of the camera
 		*/
 		const OvMaths::FVector3& GetPosition() const;
 

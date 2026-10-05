@@ -9,8 +9,9 @@
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Panels/AViewControllable.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
-#include <OvTools/Eventing/Event.h>
 #include <OvEditor/Widgets/NavigationGizmo.h>
+#include <OvTools/Eventing/Event.h>
+
 
 namespace OvEditor::Panels
 {

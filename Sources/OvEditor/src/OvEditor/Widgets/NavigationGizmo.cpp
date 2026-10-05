@@ -112,7 +112,6 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
     for (size_t index = 0; index < kBubbles.size(); ++index)
     {
         const OvMaths::FVector3& axis = kBubbles[index].axis;
-
         
         const float screenX = -Dot(axis, cameraRight);
         const float screenY = -Dot(axis, cameraUp);
@@ -128,7 +127,6 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
         return p_first.depth > p_second.depth;
     });
 
-    
     int hoveredIndex = -1;
 
     if (m_hovered)
@@ -153,7 +151,6 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
         drawList->AddCircleFilled(center, gizmoRadius, IM_COL32(255, 255, 255, 25), 48);
     }
 
-    
     for (const ProjectedBubble& projectedBubble : projected)
     {
         if (projectedBubble.bubble->label)
@@ -214,7 +211,6 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
         }
     }
 
-    
     if (areaClicked)
     {
         m_dragging = false;
@@ -255,7 +251,6 @@ void OvEditor::Widgets::NavigationGizmo::_Draw_Impl()
 		m_cameraController.Orbit(mouseDelta.x, mouseDelta.y);
 	}
    
-	
 	if (ImGui::IsItemDeactivated() && !m_dragging && hoveredIndex >= 0)
 	{
 		m_cameraController.MoveToAxisView(projected[static_cast<size_t>(hoveredIndex)].bubble->axis);

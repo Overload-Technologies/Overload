@@ -429,7 +429,6 @@ void OvEditor::Core::CameraController::BeginOrbit()
 
 void OvEditor::Core::CameraController::Orbit(float p_deltaX, float p_deltaY)
 {
-
 	m_ypr.y -= p_deltaX * m_cameraOrbitSpeed;
 	m_ypr.x += p_deltaY * m_cameraOrbitSpeed;
 	m_ypr.x = std::max(std::min(m_ypr.x, 90.0f), -90.0f);

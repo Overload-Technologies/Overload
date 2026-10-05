@@ -13,11 +13,11 @@ namespace OvEditor::Core { class CameraController; }
 
 namespace OvEditor::Widgets
 {
-	/**
-	* draw a navigation gizmo  in the top-right corner of a view.
-	* Clicking a bubble moves the camera to look along that axis.
-
-	*/
+    
+    /**
+    * Draw a navigation gizmo in the top-right corner of a view.
+    * Clicking a bubble moves the camera to look along that axis.
+    */
 	class NavigationGizmo : public OvUI::Widgets::AWidget
 	{
 	public:
@@ -32,7 +32,7 @@ namespace OvEditor::Widgets
 		);
 
 		/**
-		* returns true if the mouse is over the gizmo
+		* Returns true if the mouse is over the gizmo
 		*/
 		bool IsHovered() const;
 

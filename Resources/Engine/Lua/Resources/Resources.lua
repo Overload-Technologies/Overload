@@ -28,3 +28,9 @@ function Resources.GetMaterial(path) end
 ---@param path string
 ---@return Sound|nil
 function Resources.GetSound(path) end
+
+--- Loads (If not already loaded) and returns the value returned by the script identified by the given path. Returns nil on failure
+--- The returned value is shared by every script. It is discarded whenever the script engine reloads, which happens when entering play mode, when refreshing scripts, and when a Behaviour is removed
+---@param path string
+---@return any
+function Resources.GetScript(path) end

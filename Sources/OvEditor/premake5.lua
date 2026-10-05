@@ -39,9 +39,9 @@ project "OvEditor"
 	links {
 		-- Dependencies (order matters on Linux!)
 		"baregl",
-		"bullet3",
 		"freetype",
 		"ImGui",
+		"jolt",
 		"lua",
 		"soloud",
 		"tinyxml2",
@@ -126,14 +126,14 @@ project "OvEditor"
 			"-Wl,--whole-archive",
 			outputdir .. "%{cfg.buildcfg}/baregl/libbaregl.a",
 			outputdir .. "%{cfg.buildcfg}/ImGui/libImGui.a",
-			outputdir .. "%{cfg.buildcfg}/bullet3/libbullet3.a",
+			outputdir .. "%{cfg.buildcfg}/jolt/libjolt.a",
 			outputdir .. "%{cfg.buildcfg}/lua/liblua.a",
 			outputdir .. "%{cfg.buildcfg}/soloud/libsoloud.a",
 			outputdir .. "%{cfg.buildcfg}/OvAudio/libOvAudio.a",
 			outputdir .. "%{cfg.buildcfg}/assimp/libassimp.a",
 			outputdir .. "%{cfg.buildcfg}/tinyxml2/libtinyxml2.a",
 			"-Wl,--no-whole-archive",
-			"-Wl,--allow-multiple-definition",  -- Tracy and Bullet3 have some duplicate symbols
+			"-Wl,--allow-multiple-definition",  -- Tracy has some duplicate symbols
 		}
 
 		postbuildcommands {

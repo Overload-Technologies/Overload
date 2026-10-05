@@ -43,9 +43,7 @@ namespace OvPhysics::Entities
 		OvMaths::FVector3 GetSize() const;
 
 	private:
-		void CreateCollisionShape(const OvMaths::FVector3& p_size);
-		void RecreateCollisionShape(const OvMaths::FVector3& p_size);
-		virtual void SetLocalScaling(const OvMaths::FVector3& p_scaling) override;
+		virtual JPH::Shape* CreateShape(const OvMaths::FVector3& p_scale) const override;
 
 	private:
 		OvMaths::FVector3 m_size;

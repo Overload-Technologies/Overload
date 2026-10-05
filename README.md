@@ -108,7 +108,7 @@ We designed theses libraries with reusability in mind. They are highly modular a
 - `OvTools`: Serialization, file system, platform, events, clock, and more.
 - `OvMaths`: Vectors, matrices, quaternions, transforms.
 - `OvAudio`: Audio engine, built around [SoLoud](https://github.com/jarikomppa/soloud).
-- `OvPhysics`: Physics engine, built around [Bullet3](https://github.com/bulletphysics/bullet3).
+- `OvPhysics`: Physics engine, built around [Jolt Physics](https://github.com/jrouwe/JoltPhysics).
 - `OvRendering`: Rendering engine, built around [BareGL](https://github.com/adriengivry/baregl).
 - `OvWindowing`: Handles inputs and windows using [GLFW](https://github.com/glfw/glfw).
 - `OvUI`: Widget-based UI, leveraging [ImGui](https://github.com/ocornut/imgui) under the hood.
@@ -126,7 +126,7 @@ Overload depends on a few third-party libraries:
 - [BareGL](https://github.com/adriengivry/baregl) (C++20 OpengGL 4.5 wrapper)
 - [GLFW](https://github.com/glfw/glfw) (Windowing and inputs)
 - [Assimp](https://github.com/assimp/assimp) (3D model loader)
-- [Bullet3](https://github.com/bulletphysics/bullet3) (Physics)
+- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) (Physics)
 - [SoLoud](https://github.com/jarikomppa/soloud) (Audio)
 - [Tinyxml2](https://github.com/leethomason/tinyxml2) (XML serializer)
 - [Sol3](https://github.com/ThePhD/sol2) (Lua binding)

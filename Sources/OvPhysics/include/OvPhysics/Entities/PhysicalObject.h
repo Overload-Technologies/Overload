@@ -7,6 +7,7 @@
 #pragma once
 
 #include <any>
+#include <cstdint>
 #include <memory>
 
 #include <OvMaths/FTransform.h>
@@ -140,6 +141,11 @@ namespace OvPhysics::Entities
 		EActivationState GetActivationState() const;
 
 		/**
+		* Returns the collision layer of the physical object
+		*/
+		uint32_t GetLayer() const;
+
+		/**
 		* Returns a reference to the transform of the physical object
 		*/
 		OvMaths::FTransform& GetTransform();
@@ -211,6 +217,13 @@ namespace OvPhysics::Entities
 		void SetActivationState(EActivationState p_activationState);
 
 		/**
+		* Defines the collision layer of the physical object. The layer is applied by the physics
+		* engine on its next update, to keep this call safe during a simulation step
+		* @param p_layer
+		*/
+		void SetLayer(uint32_t p_layer);
+
+		/**
 		* Defines if the physical object should be enabled or not
 		* @param p_enabled
 		*/
@@ -250,6 +263,8 @@ namespace OvPhysics::Entities
 		btRigidBody&			GetBody();
 		void					UpdateBtTransform();
 		void					UpdateFTransform();
+		void					MarkCollisionFilterDirty();
+		void					FlushCollisionFilter();
 
 	public:
 		OvTools::Eventing::Event<PhysicalObject&>			CollisionStartEvent;
@@ -271,6 +286,8 @@ namespace OvPhysics::Entities
 		bool					m_trigger = false;
 		bool					m_enabled = true;
 		bool					m_considered = false;
+		bool					m_filterDirty = false;
+		uint32_t				m_layer = 0;
 		ECollisionDetectionMode m_collisionMode = ECollisionDetectionMode::DISCRETE;
 
 		/* Other */

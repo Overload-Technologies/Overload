@@ -19,6 +19,45 @@
 using namespace OvPhysics::Tools;
 using namespace OvPhysics::Entities;
 
+namespace
+{
+	/**
+	* Filters broadphase pairs with the collision layers, carried by the proxy groups and masks
+	*/
+	struct CollisionFilterCallback : btOverlapFilterCallback
+	{
+		bool needBroadphaseCollision(btBroadphaseProxy* p_first, btBroadphaseProxy* p_second) const override
+		{
+			if ((p_first->m_collisionFilterGroup & p_second->m_collisionFilterMask) == 0 ||
+				(p_second->m_collisionFilterGroup & p_first->m_collisionFilterMask) == 0)
+			{
+				return false;
+			}
+
+			/* Assigning the groups ourselves loses the static/static exclusion that the dynamics
+			   world applies when it assigns them, so it is restored here */
+			const auto first = static_cast<const btCollisionObject*>(p_first->m_clientObject);
+			const auto second = static_cast<const btCollisionObject*>(p_second->m_clientObject);
+
+			return !first->isStaticOrKinematicObject() || !second->isStaticOrKinematicObject();
+		}
+	};
+
+	/**
+	* Ray callback ignoring the collision layers, rays not being bound to one
+	*/
+	template <typename T>
+	struct LayerAgnosticRayCallback : T
+	{
+		using T::T;
+
+		bool needsCollision(btBroadphaseProxy*) const override
+		{
+			return true;
+		}
+	};
+}
+
 std::map<std::pair<PhysicalObject*, PhysicalObject*>, bool> OvPhysics::Core::PhysicsEngine::m_collisionEvents;
 
 OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & p_settings)
@@ -31,6 +70,11 @@ OvPhysics::Core::PhysicsEngine::PhysicsEngine(const Settings::PhysicsSettings & 
 
 	m_world->setGravity(Conversion::ToBtVector3(p_settings.gravity));
 
+	m_collisionFilter = std::make_unique<CollisionFilterCallback>();
+	m_world->getPairCache()->setOverlapFilterCallback(m_collisionFilter.get());
+
+	m_collisionLayers = p_settings.collisionLayers;
+
 	ListenToPhysicalObjects();
 	SetCollisionCallback();
 }
@@ -42,6 +86,7 @@ OvPhysics::Core::PhysicsEngine::~PhysicsEngine()
 
 void OvPhysics::Core::PhysicsEngine::PreUpdate()
 {
+	std::for_each(m_physicalObjects.begin(), m_physicalObjects.end(), std::mem_fn(&PhysicalObject::FlushCollisionFilter));
 	std::for_each(m_physicalObjects.begin(), m_physicalObjects.end(), std::mem_fn(&PhysicalObject::UpdateBtTransform));
 
 	ResetCollisionEvents();
@@ -78,7 +123,7 @@ std::optional<RaycastHit> OvPhysics::Core::PhysicsEngine::Raycast(OvMaths::FVect
 	RaycastHit resultHit;
 
 	// Try to get First Hit
-	btCollisionWorld::ClosestRayResultCallback ClosestRayCallback(origin, target);
+	LayerAgnosticRayCallback<btCollisionWorld::ClosestRayResultCallback> ClosestRayCallback(origin, target);
 	m_world->rayTest(origin, target, ClosestRayCallback);
 
 	if (ClosestRayCallback.hasHit())
@@ -87,7 +132,7 @@ std::optional<RaycastHit> OvPhysics::Core::PhysicsEngine::Raycast(OvMaths::FVect
 		resultHit.FirstResultObject = reinterpret_cast<OvPhysics::Entities::PhysicalObject*>(ClosestRayCallback.m_collisionObject->getUserPointer());
 
 		// Try to get all Hit
-		btCollisionWorld::AllHitsRayResultCallback rayCallback(origin, target);
+		LayerAgnosticRayCallback<btCollisionWorld::AllHitsRayResultCallback> rayCallback(origin, target);
 		m_world->rayTest(origin, target, rayCallback);
 
 		// Get all Hit
@@ -108,6 +153,39 @@ void OvPhysics::Core::PhysicsEngine::SetGravity(const OvMaths::FVector3 & p_grav
 OvMaths::FVector3 OvPhysics::Core::PhysicsEngine::GetGravity() const
 {
 	return Conversion::ToOvVector3(m_world->getGravity());
+}
+
+const OvPhysics::Settings::CollisionLayers& OvPhysics::Core::PhysicsEngine::GetCollisionLayers() const
+{
+	return m_collisionLayers;
+}
+
+void OvPhysics::Core::PhysicsEngine::SetCollisionLayers(const Settings::CollisionLayers& p_collisionLayers)
+{
+	m_collisionLayers = p_collisionLayers;
+
+	MarkCollisionFiltersDirty();
+}
+
+void OvPhysics::Core::PhysicsEngine::SetLayerCollision(uint32_t p_first, uint32_t p_second, bool p_collide)
+{
+	m_collisionLayers.SetLayerCollision(p_first, p_second, p_collide);
+
+	/* Only the masks of the two given layers changed, so the other objects keep their filter */
+	for (auto& physicalObject : m_physicalObjects)
+	{
+		const uint32_t layer = physicalObject.get().GetLayer();
+
+		if (layer == p_first || layer == p_second)
+		{
+			physicalObject.get().MarkCollisionFilterDirty();
+		}
+	}
+}
+
+void OvPhysics::Core::PhysicsEngine::MarkCollisionFiltersDirty()
+{
+	std::for_each(m_physicalObjects.begin(), m_physicalObjects.end(), std::mem_fn(&PhysicalObject::MarkCollisionFilterDirty));
 }
 
 void OvPhysics::Core::PhysicsEngine::ListenToPhysicalObjects()
@@ -155,7 +233,15 @@ void OvPhysics::Core::PhysicsEngine::Unconsider(PhysicalObject& p_toUnconsider)
 
 void OvPhysics::Core::PhysicsEngine::Consider(btRigidBody& p_toConsider)
 {
-	m_world->addRigidBody(&p_toConsider);
+	const auto physicalObject = reinterpret_cast<PhysicalObject*>(p_toConsider.getUserPointer());
+	const uint32_t objectLayer = physicalObject ? physicalObject->GetLayer() : Settings::CollisionLayers::kDefaultLayer;
+	const uint32_t layer = objectLayer < Settings::CollisionLayers::kMaxLayerCount ? objectLayer : Settings::CollisionLayers::kDefaultLayer;
+
+	m_world->addRigidBody(
+		&p_toConsider,
+		static_cast<int>(1u << layer),
+		static_cast<int>(m_collisionLayers.GetLayerMask(layer))
+	);
 }
 
 void OvPhysics::Core::PhysicsEngine::Unconsider(btRigidBody& p_toUnconsider)

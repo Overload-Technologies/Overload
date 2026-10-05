@@ -6,12 +6,14 @@
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <vector>
 
 #include <OvPhysics/Entities/PhysicalObject.h>
 #include <OvPhysics/Entities/RaycastHit.h>
+#include <OvPhysics/Settings/CollisionLayers.h>
 #include <OvPhysics/Settings/PhysicsSettings.h>
 
 class btDynamicsWorld;
@@ -22,6 +24,7 @@ class btConstraintSolver;
 class btRigidBody;
 class btManifoldPoint;
 struct btCollisionObjectWrapper;
+struct btOverlapFilterCallback;
 
 namespace OvPhysics::Core
 {
@@ -69,7 +72,29 @@ namespace OvPhysics::Core
 		*/
 		OvMaths::FVector3 GetGravity() const;
 
+		/**
+		* Returns the collision layers used to filter collisions
+		*/
+		const Settings::CollisionLayers& GetCollisionLayers() const;
+
+		/**
+		* Defines the collision layers used to filter collisions. Physical objects keep the layer
+		* index they are on, layer slots being stable
+		* @param p_collisionLayers
+		*/
+		void SetCollisionLayers(const Settings::CollisionLayers& p_collisionLayers);
+
+		/**
+		* Defines if the two given collision layers should collide together
+		* @param p_first
+		* @param p_second
+		* @param p_collide
+		*/
+		void SetLayerCollision(uint32_t p_first, uint32_t p_second, bool p_collide);
+
 	private:
+		void MarkCollisionFiltersDirty();
+
 		void PreUpdate();
 		void PostUpdate();
 
@@ -89,6 +114,7 @@ namespace OvPhysics::Core
 
 	private:
 		/* Bullet world */
+		std::unique_ptr<btOverlapFilterCallback> m_collisionFilter; // Outlives the world, which holds it
 		std::unique_ptr<btDynamicsWorld> m_world;
 		std::unique_ptr<btDispatcher> m_dispatcher;
 		std::unique_ptr<btCollisionConfiguration> m_collisionConfig;
@@ -97,5 +123,6 @@ namespace OvPhysics::Core
 
 		static std::map<std::pair<Entities::PhysicalObject*, Entities::PhysicalObject*>, bool> m_collisionEvents;
 		std::vector<std::reference_wrapper<Entities::PhysicalObject>> m_physicalObjects;
+		Settings::CollisionLayers m_collisionLayers;
 	};
 }

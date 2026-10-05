@@ -94,3 +94,11 @@ function PhysicalObject:GetCollisionMode() end
 --- Defines if the physical object should be kinematic or not
 ---@param kinematic boolean
 function PhysicalObject:SetKinematic(kinematic) end
+
+--- Defines the collision layer of the physical object
+---@param layer integer
+function PhysicalObject:SetLayer(layer) end
+
+--- Returns the collision layer of the physical object
+---@return integer
+function PhysicalObject:GetLayer() end

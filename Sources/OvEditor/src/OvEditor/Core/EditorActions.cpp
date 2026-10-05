@@ -992,6 +992,11 @@ void OvEditor::Core::EditorActions::StopPlaying()
 	{
 		m_context.window->SetCursorMode(OvWindowing::Cursor::ECursorMode::NORMAL);
 		SetEditorMode(EEditorMode::EDIT);
+
+		/* Play mode can change engine-level settings through scripting, and the restored actors
+		   recreate their bodies from them */
+		m_context.ApplyProjectSettings();
+
 		bool loadedFromDisk = m_context.sceneManager.IsCurrentSceneLoadedFromDisk();
 		std::string sceneSourcePath = m_context.sceneManager.GetCurrentSceneSourcePath();
 

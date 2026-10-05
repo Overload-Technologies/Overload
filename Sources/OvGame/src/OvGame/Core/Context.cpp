@@ -147,7 +147,9 @@ OvGame::Core::Context::Context() :
 	audioEngine = std::make_unique<OvAudio::Core::AudioEngine>();
 
 	/* Physics engine */
-	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(OvPhysics::Settings::PhysicsSettings{ {0.0f, projectSettings.Get<float>("gravity"), 0.0f } });
+	OvPhysics::Settings::PhysicsSettings physicsSettings{ {0.0f, projectSettings.Get<float>("gravity"), 0.0f } };
+	physicsSettings.collisionLayers.Deserialize(projectSettings);
+	physicsEngine = std::make_unique<OvPhysics::Core::PhysicsEngine>(physicsSettings);
 
 	/* Scripting */
 	scriptEngine = std::make_unique<OvCore::Scripting::ScriptEngine>(

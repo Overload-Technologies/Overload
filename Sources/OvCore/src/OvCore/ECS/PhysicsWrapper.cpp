@@ -25,3 +25,23 @@ std::optional<OvCore::ECS::PhysicsWrapper::RaycastHit> OvCore::ECS::PhysicsWrapp
 	else
 		return {};
 }
+
+std::optional<uint32_t> OvCore::ECS::PhysicsWrapper::GetLayerIndex(const std::string& p_name)
+{
+	return OVSERVICE(OvPhysics::Core::PhysicsEngine).GetCollisionLayers().FindLayer(p_name);
+}
+
+const std::string& OvCore::ECS::PhysicsWrapper::GetLayerName(uint32_t p_layer)
+{
+	return OVSERVICE(OvPhysics::Core::PhysicsEngine).GetCollisionLayers().GetLayerName(p_layer);
+}
+
+void OvCore::ECS::PhysicsWrapper::SetLayerCollision(uint32_t p_first, uint32_t p_second, bool p_collide)
+{
+	OVSERVICE(OvPhysics::Core::PhysicsEngine).SetLayerCollision(p_first, p_second, p_collide);
+}
+
+bool OvCore::ECS::PhysicsWrapper::GetLayerCollision(uint32_t p_first, uint32_t p_second)
+{
+	return OVSERVICE(OvPhysics::Core::PhysicsEngine).GetCollisionLayers().GetLayerCollision(p_first, p_second);
+}

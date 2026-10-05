@@ -24,6 +24,13 @@
 <a href="https://discord.gg/wqe775s"><img src="https://img.shields.io/discord/622075717659656195.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" height=30></img></a>
 </p>
 
+> [!IMPORTANT]
+> **Overload is not currently accepting external contributions.** Until further notice, issues and pull requests are disabled for external users.
+>
+> Looking for community-driven development? Try one of [these active forks](https://github.com/Overload-Technologies/Overload/forks?include=active&page=1&period=2y&sort_by=stargazer_counts).
+> 
+> ⚠️ **WARNING:** Overload Technologies does not vet, monitor, or endorse these forks, and is not responsible for any damage they may cause. Use them at your own risk.
+
 # What's Overload?
 Overload is a free, open-source 3D game engine made in C++ with Lua as its scripting language.
 

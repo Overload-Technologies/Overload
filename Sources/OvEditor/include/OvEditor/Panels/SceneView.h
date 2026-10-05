@@ -9,7 +9,9 @@
 #include <OvEditor/Core/GizmoBehaviour.h>
 #include <OvEditor/Panels/AViewControllable.h>
 #include <OvEditor/Rendering/PickingRenderPass.h>
+#include <OvEditor/Widgets/NavigationGizmo.h>
 #include <OvTools/Eventing/Event.h>
+
 
 namespace OvEditor::Panels
 {
@@ -71,6 +73,7 @@ namespace OvEditor::Panels
 		OvEditor::Core::GizmoBehaviour m_gizmoOperations;
 		OvEditor::Core::EGizmoOperation m_currentOperation = OvEditor::Core::EGizmoOperation::TRANSLATE;
 		OvCore::Resources::Material m_fallbackMaterial;
+		OvEditor::Widgets::NavigationGizmo* m_navigationGizmo = nullptr;
 
 		OvTools::Utils::OptRef<OvCore::ECS::Actor> m_highlightedActor;
 		std::optional<OvEditor::Core::GizmoBehaviour::EDirection> m_highlightedGizmoDirection;

@@ -224,6 +224,66 @@ void OvEditor::Core::CameraController::MoveToTarget(OvCore::ECS::Actor& p_target
 	});
 }
 
+
+  void OvEditor::Core::CameraController::MoveToAxisView(const OvMaths::FVector3& p_axis)
+  {
+	constexpr float kMinimumViewDistance = 1.0f;
+	constexpr float kAlignedThreshold = 0.99f;
+  
+	//if a glide is in progress,work from where it is going
+	//rederiving the pivot from a half-way pose on every click makes it drift.
+	OvMaths::FVector3 referencePosition = m_camera.GetPosition();
+	OvMaths::FQuaternion referenceRotation = m_camera.GetRotation();
+  
+	if (!m_cameraDestinations.empty())
+	{
+		const auto& [destinationPosition, destinationRotation] = m_cameraDestinations.back();
+		referencePosition = destinationPosition;
+		referenceRotation = destinationRotation;
+	}
+  
+	const OvMaths::FVector3 referenceForward = referenceRotation * OvMaths::FVector3::Forward;
+  
+	OvMaths::FVector3 pivot;
+	float distance = m_focusDistance;
+  
+	if (auto target = GetTargetActor())
+	{
+		pivot = target.value().get().transform.GetWorldPosition();
+		distance = std::max(OvMaths::FVector3::Distance(referencePosition, pivot), kMinimumViewDistance);
+	}
+	else
+	{
+		pivot = referencePosition + referenceForward * distance;
+	}
+  
+	//clicking the axis the camera is already looking from goes to the opposite side.
+	OvMaths::FVector3 targetAxis = p_axis;
+	const float alignment = -(referenceForward.x * p_axis.x + referenceForward.y * p_axis.y + referenceForward.z * p_axis.z);
+  
+	if (alignment > kAlignedThreshold)
+	{
+		targetAxis = -p_axis;
+	}
+  
+	const OvMaths::FVector3 direction = -targetAxis;
+  
+	//to look straight up or down, the usual up vector is degenerate, so use Z to orient the view
+	const bool isVertical = std::abs(direction.y) > 0.999f;
+	const OvMaths::FVector3 up = isVertical
+		? OvMaths::FVector3(0.0f, 0.0f, direction.y < 0.0f ? -1.0f : 1.0f)
+		: OvMaths::FVector3::Up;
+  
+	const OvMaths::FQuaternion rotation = OvMaths::FQuaternion::LookAt(direction, up);
+  
+	while (!m_cameraDestinations.empty())
+	{
+		m_cameraDestinations.pop();
+	}
+  
+	m_cameraDestinations.push({ pivot + targetAxis * distance, rotation });
+  }
+
 void OvEditor::Core::CameraController::SetSpeed(float p_speed)
 {
 	m_cameraMoveSpeed = p_speed;
@@ -340,6 +400,43 @@ void OvEditor::Core::CameraController::HandleCameraOrbit(
 	pivotTransform.RotateLocal(OvMaths::FQuaternion(m_ypr));
 	m_camera.SetPosition(cameraTransform.GetWorldPosition());
 	m_camera.SetRotation(cameraTransform.GetWorldRotation());
+}
+
+void OvEditor::Core::CameraController::BeginOrbit()
+{
+	constexpr float kMinimumOrbitDistance = 1.0f;
+
+
+	while (!m_cameraDestinations.empty())
+	{
+		m_cameraDestinations.pop();
+	}
+
+	m_orbitDistance = m_focusDistance;
+
+	if (auto target = GetTargetActor())
+	{
+		m_orbitPivot = target.value().get().transform.GetWorldPosition();
+		m_orbitDistance = std::max(OvMaths::FVector3::Distance(m_camera.GetPosition(), m_orbitPivot), kMinimumOrbitDistance);
+	}
+	else
+	{
+		m_orbitPivot = m_camera.GetPosition() + m_camera.transform->GetWorldForward() * m_orbitDistance;
+	}
+
+	m_ypr = RemoveRoll(OvMaths::FQuaternion::EulerAngles(m_camera.GetRotation()));
+}
+
+void OvEditor::Core::CameraController::Orbit(float p_deltaX, float p_deltaY)
+{
+	m_ypr.y -= p_deltaX * m_cameraOrbitSpeed;
+	m_ypr.x += p_deltaY * m_cameraOrbitSpeed;
+	m_ypr.x = std::max(std::min(m_ypr.x, 90.0f), -90.0f);
+
+	const OvMaths::FQuaternion rotation(m_ypr);
+
+	m_camera.SetRotation(rotation);
+	m_camera.SetPosition(m_orbitPivot - rotation * OvMaths::FVector3::Forward * m_orbitDistance);
 }
 
 void OvEditor::Core::CameraController::HandleCameraZoom()

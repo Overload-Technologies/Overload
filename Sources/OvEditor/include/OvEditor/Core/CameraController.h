@@ -46,6 +46,24 @@ namespace OvEditor::Core
 		void MoveToTarget(OvCore::ECS::Actor& p_target);
 
 		/**
+		* Moves the camera to the given axis side of its pivot.
+		*/
+		void MoveToAxisView(const OvMaths::FVector3& p_axis);
+
+		/**
+		* Prepares an orbit around a pivot (the target actor, or a point in front of the camera).
+		* Call it once when the orbit starts, then call Orbit() every frame.
+		*/
+		void BeginOrbit();
+
+		/**
+		* Orbits the camera around the pivot defined by BeginOrbit()
+		* @param p_deltaX Horizontal mouse movement in pixels
+		* @param p_deltaY Vertical mouse movement in pixels (positive when moving down)
+		*/
+		void Orbit(float p_deltaX, float p_deltaY);
+
+		/**
 		* Defines the speed of the camera
 		* @param p_speed
 		*/
@@ -67,6 +85,7 @@ namespace OvEditor::Core
 		* @param p_rotation
 		*/
 		void SetRotation(const OvMaths::FQuaternion& p_rotation);
+
 
 		/**
 		* Returns the position of the camera
@@ -127,6 +146,8 @@ namespace OvEditor::Core
 		OvMaths::FVector3 m_currentMovementSpeed;
 
 		OvMaths::FTransform* m_orbitTarget = nullptr;
+		OvMaths::FVector3 m_orbitPivot;
+		float m_orbitDistance = 0.0f;
 		OvMaths::FVector3 m_orbitStartOffset;
 		bool m_firstMouse = true;
 		double m_lastMousePosX = 0.0;

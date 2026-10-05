@@ -65,6 +65,7 @@ OvEditor::Panels::SceneView::SceneView
 			default: break;
 		}
 	};
+	m_navigationGizmo = &CreateWidget<OvEditor::Widgets::NavigationGizmo>(m_camera, m_cameraController);
 	
 	OvCore::ECS::Actor::DestroyedEvent += [this](const OvCore::ECS::Actor& actor)
 	{
@@ -123,6 +124,7 @@ void OvEditor::Panels::SceneView::InitFrame()
 	// Enable picking pass only when the scene view is hovered, not picking, and not operating the camera
 	pickingPass.SetEnabled(
 		IsHovered() &&
+		!m_navigationGizmo->IsHovered() &&
 		!m_gizmoOperations.IsPicking() &&
 		!m_cameraController.IsOperating()
 	);
@@ -194,7 +196,7 @@ void OvEditor::Panels::SceneView::HandleActorPicking()
 		m_gizmoOperations.StopPicking();
 	}
 
-	if (!m_gizmoOperations.IsPicking() && IsHovered() && !IsResizing())
+	if (!m_gizmoOperations.IsPicking() && IsHovered() && !IsResizing() && !m_navigationGizmo->IsHovered())
 	{
 		const auto pickingResult = GetPickingResult();
 

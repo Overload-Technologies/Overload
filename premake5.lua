@@ -19,6 +19,7 @@ workspace "Overload"
 	defines {
 		"LUA_SCRIPTING",
 		"OVERLOAD_VERSION=\"" .. version .. "\"",
+		"SOL_ALL_SAFETIES_ON",
 		"SOL_NO_LUA_HPP"
 	}
 

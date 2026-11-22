@@ -62,12 +62,16 @@ void OvUI::Core::UIManager::ApplyStyle(Styling::EStyle p_style)
 	style.ApplyToImGui(m_scale);
 }
 
-bool OvUI::Core::UIManager::LoadFont(const std::string& p_id, const std::string & p_path, std::optional<float> p_fontSize)
+bool OvUI::Core::UIManager::LoadFont(const std::string& p_id, const std::filesystem::path& p_path, std::optional<float> p_fontSize)
 {
 	if (m_fonts.find(p_id) == m_fonts.end())
 	{
 		auto& io = ImGui::GetIO();
-		ImFont* fontInstance = io.Fonts->AddFontFromFileTTF(p_path.c_str(), p_fontSize.value_or(0.0f));
+		const auto utf8Path = p_path.u8string();
+		ImFont* fontInstance = io.Fonts->AddFontFromFileTTF(
+			reinterpret_cast<const char*>(utf8Path.c_str()),
+			p_fontSize.value_or(0.0f)
+		);
 
 		if (fontInstance)
 		{

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -52,7 +53,7 @@ namespace OvUI::Core
 		* @param p_path
 		* @param p_fontSize (optional)
 		*/
-		bool LoadFont(const std::string& p_id, const std::string& p_path, std::optional<float> p_fontSize = std::nullopt);
+		bool LoadFont(const std::string& p_id, const std::filesystem::path& p_path, std::optional<float> p_fontSize = std::nullopt);
 
 		/**
 		* Unload a font (Returns true on success)

@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <OvCore/Scripting/Common/TScriptEngine.h>
@@ -19,6 +20,14 @@ namespace OvCore::ECS::Components
 
 namespace sol
 {
+	template <bool b>
+	class basic_reference;
+	using reference = basic_reference<false>;
+
+	template <typename base_type>
+	class basic_object;
+	using object = basic_object<reference>;
+
 	class state;
 }
 
@@ -68,5 +77,13 @@ namespace OvCore::Scripting
 		* Destroy the lua state
 		*/
 		void DestroyContext();
+
+		/**
+		* Loads (if not already loaded) and returns the value returned by the script identified
+		* by the given path. Returns nil on failure.
+		* The returned value is shared by every script, and is discarded along with the lua state.
+		* @param p_path
+		*/
+		sol::object GetScript(const std::string& p_path);
 	};
 }

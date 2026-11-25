@@ -56,7 +56,7 @@ group "Dependencies"
 	include "Dependencies/soloud"
 	include "Dependencies/assimp"
 	include "Dependencies/glfw"
-	include "Dependencies/bullet3"
+	include "Dependencies/jolt"
 	include "Dependencies/baregl"
 group ""
 

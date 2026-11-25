@@ -6,31 +6,33 @@
 
 #include <algorithm>
 
-#include <bullet/btBulletCollisionCommon.h>
+#include <Jolt/Jolt.h>
+
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
 
 #include <OvPhysics/Entities/PhysicalCapsule.h>
-#include <OvPhysics/Tools/Conversion.h>
 
-OvPhysics::Entities::PhysicalCapsule::PhysicalCapsule(float p_radius, float p_height) : PhysicalObject()
+OvPhysics::Entities::PhysicalCapsule::PhysicalCapsule(float p_radius, float p_height) : PhysicalObject(), m_radius(p_radius), m_height(p_height)
 {
-	CreateCollisionShape(p_radius, p_height);
 	Init();
 }
 
-OvPhysics::Entities::PhysicalCapsule::PhysicalCapsule(OvMaths::FTransform & p_transform, float p_radius, float p_height) : PhysicalObject(p_transform)
+OvPhysics::Entities::PhysicalCapsule::PhysicalCapsule(OvMaths::FTransform & p_transform, float p_radius, float p_height) : PhysicalObject(p_transform), m_radius(p_radius), m_height(p_height)
 {
-	CreateCollisionShape(p_radius, p_height);
 	Init();
 }
 
 void OvPhysics::Entities::PhysicalCapsule::SetRadius(float p_radius)
 {
-	RecreateCollisionShape(p_radius, m_height);
+	m_radius = p_radius;
+	RecreateBody();
 }
 
 void OvPhysics::Entities::PhysicalCapsule::SetHeight(float p_height)
 {
-	RecreateCollisionShape(m_radius, p_height);
+	m_height = p_height;
+	RecreateBody();
 }
 
 float OvPhysics::Entities::PhysicalCapsule::GetRadius() const
@@ -43,20 +45,15 @@ float OvPhysics::Entities::PhysicalCapsule::GetHeight() const
 	return m_height;
 }
 
-void OvPhysics::Entities::PhysicalCapsule::CreateCollisionShape(float p_radius, float p_height)
+JPH::Shape* OvPhysics::Entities::PhysicalCapsule::CreateShape(const OvMaths::FVector3& p_scale) const
 {
-	m_shape = std::make_unique<btCapsuleShape>(p_radius, p_height);
-	m_radius = p_radius;
-	m_height = p_height;
-}
+	const float radius = std::max(m_radius * std::max(p_scale.x, p_scale.z), kMinimumShapeRadius);
+	const float halfHeight = m_height * p_scale.y * 0.5f;
 
-void OvPhysics::Entities::PhysicalCapsule::RecreateCollisionShape(float p_radius, float p_height)
-{
-	CreateCollisionShape(p_radius, p_height);
-	RecreateBody();
-}
+	if (halfHeight > 0.0f)
+	{
+		return new JPH::CapsuleShape(halfHeight, radius);
+	}
 
-void OvPhysics::Entities::PhysicalCapsule::SetLocalScaling(const OvMaths::FVector3 & p_scaling)
-{
-	m_shape->setLocalScaling({ std::max(p_scaling.x, p_scaling.z), p_scaling.y, 1.0f });
+	return new JPH::SphereShape(radius);
 }

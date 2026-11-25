@@ -43,9 +43,7 @@ namespace OvPhysics::Entities
 		float GetRadius() const;
 
 	private:
-		void CreateCollisionShape(float p_radius);
-		void RecreateCollisionShape(float p_radius);
-		virtual void SetLocalScaling(const OvMaths::FVector3& p_scaling) override;
+		virtual JPH::Shape* CreateShape(const OvMaths::FVector3& p_scale) const override;
 
 	private:
 		float m_radius;

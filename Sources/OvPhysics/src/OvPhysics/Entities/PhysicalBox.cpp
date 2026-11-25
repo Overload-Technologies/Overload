@@ -4,27 +4,32 @@
 * @licence: MIT
 */
 
-#include <bullet/btBulletCollisionCommon.h>
+#include <algorithm>
+
+#include <Jolt/Jolt.h>
+
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
 
 #include <OvPhysics/Entities/PhysicalBox.h>
 #include <OvPhysics/Tools/Conversion.h>
 
-OvPhysics::Entities::PhysicalBox::PhysicalBox(const OvMaths::FVector3& p_size) : PhysicalObject()
+OvPhysics::Entities::PhysicalBox::PhysicalBox(const OvMaths::FVector3& p_size) : PhysicalObject(), m_size(p_size)
 {
-	CreateCollisionShape(p_size);
 	Init();
 }
 
-OvPhysics::Entities::PhysicalBox::PhysicalBox(OvMaths::FTransform & p_transform, const OvMaths::FVector3& p_size) : PhysicalObject(p_transform)
+OvPhysics::Entities::PhysicalBox::PhysicalBox(OvMaths::FTransform & p_transform, const OvMaths::FVector3& p_size) : PhysicalObject(p_transform), m_size(p_size)
 {
-	CreateCollisionShape(p_size);
 	Init();
 }
 
 void OvPhysics::Entities::PhysicalBox::SetSize(const OvMaths::FVector3& p_size)
 {
 	if (m_size != p_size)
-		RecreateCollisionShape(p_size);
+	{
+		m_size = p_size;
+		RecreateBody();
+	}
 }
 
 OvMaths::FVector3 OvPhysics::Entities::PhysicalBox::GetSize() const
@@ -32,19 +37,13 @@ OvMaths::FVector3 OvPhysics::Entities::PhysicalBox::GetSize() const
 	return m_size;
 }
 
-void OvPhysics::Entities::PhysicalBox::CreateCollisionShape(const OvMaths::FVector3& p_size)
+JPH::Shape* OvPhysics::Entities::PhysicalBox::CreateShape(const OvMaths::FVector3& p_scale) const
 {
-	m_shape = std::make_unique<btBoxShape>(OvPhysics::Tools::Conversion::ToBtVector3(p_size));
-	m_size = p_size;
-}
+	const OvMaths::FVector3 halfExtent = m_size * p_scale;
 
-void OvPhysics::Entities::PhysicalBox::RecreateCollisionShape(const OvMaths::FVector3& p_size)
-{
-	CreateCollisionShape(p_size);
-	RecreateBody();
-}
-
-void OvPhysics::Entities::PhysicalBox::SetLocalScaling(const OvMaths::FVector3 & p_scaling)
-{
-	m_shape->setLocalScaling(OvPhysics::Tools::Conversion::ToBtVector3(p_scaling));
+	return new JPH::BoxShape(OvPhysics::Tools::Conversion::ToJoltVector3({
+		std::max(halfExtent.x, 0.0f),
+		std::max(halfExtent.y, 0.0f),
+		std::max(halfExtent.z, 0.0f)
+	}));
 }

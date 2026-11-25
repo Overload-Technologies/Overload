@@ -169,7 +169,9 @@ void BindLuaComponents(sol::state& p_luaState)
 		"ClearForces", &CPhysicalObject::ClearForces,
 		"SetCollisionDetectionMode", &CPhysicalObject::SetCollisionDetectionMode,
 		"GetCollisionMode", &CPhysicalObject::GetCollisionDetectionMode,
-		"SetKinematic", &CPhysicalObject::SetKinematic
+		"SetKinematic", &CPhysicalObject::SetKinematic,
+		"SetLayer", &CPhysicalObject::SetLayer,
+		"GetLayer", &CPhysicalObject::GetLayer
 	);
 
 	p_luaState.new_usertype<CPhysicalBox>("PhysicalBox",

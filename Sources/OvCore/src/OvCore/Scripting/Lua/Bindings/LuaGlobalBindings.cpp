@@ -287,6 +287,10 @@ void BindLuaGlobal(sol::state& p_luaState)
 	);
 
 	p_luaState.create_named_table("Physics",
-		"Raycast", [](const OvMaths::FVector3& p_origin, const OvMaths::FVector3& p_direction, float p_distance) { return PhysicsWrapper::Raycast(p_origin, p_direction, p_distance); }
+		"Raycast", [](const OvMaths::FVector3& p_origin, const OvMaths::FVector3& p_direction, float p_distance) { return PhysicsWrapper::Raycast(p_origin, p_direction, p_distance); },
+		"GetLayerIndex", [](const std::string& p_name) { return PhysicsWrapper::GetLayerIndex(p_name); },
+		"GetLayerName", [](uint32_t p_layer) { return PhysicsWrapper::GetLayerName(p_layer); },
+		"SetLayerCollision", [](uint32_t p_first, uint32_t p_second, bool p_collide) { PhysicsWrapper::SetLayerCollision(p_first, p_second, p_collide); },
+		"GetLayerCollision", [](uint32_t p_first, uint32_t p_second) { return PhysicsWrapper::GetLayerCollision(p_first, p_second); }
 	);
 }

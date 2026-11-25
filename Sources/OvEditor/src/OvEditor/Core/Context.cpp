@@ -201,6 +201,8 @@ void OvEditor::Core::Context::ResetProjectSettings()
 	projectSettings.Add<int>("samples", 4);
 	projectSettings.Add<int>("build_type", 0);
 	projectSettings.Add<std::string>("window_icon", "");
+
+	OvPhysics::Settings::CollisionLayers{}.Serialize(projectSettings);
 }
 
 bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
@@ -223,4 +225,8 @@ bool OvEditor::Core::Context::IsProjectSettingsIntegrityVerified()
 void OvEditor::Core::Context::ApplyProjectSettings()
 {
 	physicsEngine->SetGravity({ 0.0f, projectSettings.Get<float>("gravity"), 0.0f });
+
+	OvPhysics::Settings::CollisionLayers collisionLayers;
+	collisionLayers.Deserialize(projectSettings);
+	physicsEngine->SetCollisionLayers(collisionLayers);
 }
